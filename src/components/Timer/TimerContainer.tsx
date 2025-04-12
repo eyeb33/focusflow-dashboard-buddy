@@ -26,12 +26,7 @@ const TimerContainer: React.FC = () => {
     handleModeChange,
     getModeLabel,
     updateSettings
-  } = useTimer({
-    workDuration: 25,
-    breakDuration: 5,
-    longBreakDuration: 15,
-    sessionsUntilLongBreak: 4
-  });
+  } = useTimer();
 
   return (
     <Card className="w-full max-w-md p-6 bg-white/90 dark:bg-black/80 backdrop-blur-sm shadow-md">
