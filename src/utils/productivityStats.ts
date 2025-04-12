@@ -22,7 +22,7 @@ export const updateDailyStats = async (userId: string, durationMinutes: number) 
       .from('sessions_summary')
       .select('date')
       .eq('user_id', userId)
-      .eq('total_completed_sessions', '>', 0)
+      .gt('total_completed_sessions', 0)
       .order('date', { ascending: false });
       
     if (streakError) throw streakError;
