@@ -14,7 +14,22 @@ const UserProfileCard: React.FC = () => {
 
   React.useEffect(() => {
     if (profile) {
-      setUsername(profile.username || user?.user_metadata?.name || user?.email?.split('@')[0] || 'User');
+      // Extract first name from username or user metadata
+      let firstName = null;
+      if (profile.username) {
+        // If username contains spaces, get the first part as first name
+        firstName = profile.username.split(' ')[0];
+      } else if (user?.user_metadata?.name) {
+        // If user has name in metadata, get the first part as first name
+        firstName = user.user_metadata.name.split(' ')[0];
+      } else if (user?.email) {
+        // Fallback to email username portion
+        firstName = user.email.split('@')[0];
+      } else {
+        firstName = 'User';
+      }
+      
+      setUsername(firstName);
     }
   }, [profile, user]);
 
@@ -125,7 +140,7 @@ const ProfileWelcome: React.FC<ProfileWelcomeProps> = ({ loading, username }) =>
             <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading...
           </div>
         ) : (
-          <>Welcome, {username || 'User'}!</>
+          <>Hi {username || 'User'}!</>
         )}
       </h3>
     </div>

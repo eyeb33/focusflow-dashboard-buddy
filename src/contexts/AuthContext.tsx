@@ -71,7 +71,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
         options: {
           data: {
-            username: name
+            name: name, // Store the full name in user metadata
+            username: name // Also store as username for backward compatibility
           }
         }
       });
