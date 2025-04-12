@@ -1,10 +1,11 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { User } from 'lucide-react';
+import { LogOut, User } from 'lucide-react';
 import ThemeToggle from '@/components/Theme/ThemeToggle';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface HeaderProps {
   isAuthenticated?: boolean;
@@ -13,11 +14,28 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({
-  isAuthenticated = false,
   onLoginClick,
   onSignupClick,
 }) => {
   const isMobile = useIsMobile();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  
+  const handleLoginClick = () => {
+    if (onLoginClick) {
+      onLoginClick();
+    } else {
+      navigate('/auth', { state: { mode: 'login' } });
+    }
+  };
+  
+  const handleSignupClick = () => {
+    if (onSignupClick) {
+      onSignupClick();
+    } else {
+      navigate('/auth', { state: { mode: 'signup' } });
+    }
+  };
 
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -34,28 +52,37 @@ const Header: React.FC<HeaderProps> = ({
         <nav className="flex items-center gap-2 md:gap-4">
           <ThemeToggle />
           
-          {isAuthenticated ? (
-            <Link to="/dashboard">
-              <Button variant="ghost" size={isMobile ? "icon" : "default"}>
+          {user ? (
+            <div className="flex items-center gap-2">
+              <Link to="/dashboard">
+                <Button variant="ghost" size={isMobile ? "icon" : "default"}>
+                  {isMobile ? (
+                    <User className="h-5 w-5" />
+                  ) : (
+                    "Dashboard"
+                  )}
+                </Button>
+              </Link>
+              <Button 
+                variant="ghost" 
+                size={isMobile ? "icon" : "default"}
+                onClick={() => signOut()}
+              >
                 {isMobile ? (
-                  <User className="h-5 w-5" />
+                  <LogOut className="h-5 w-5" />
                 ) : (
-                  "Dashboard"
+                  "Logout"
                 )}
               </Button>
-            </Link>
+            </div>
           ) : (
             <>
-              {onLoginClick && (
-                <Button variant="ghost" onClick={onLoginClick} size={isMobile ? "sm" : "default"}>
-                  Login
-                </Button>
-              )}
-              {onSignupClick && (
-                <Button variant="default" onClick={onSignupClick} size={isMobile ? "sm" : "default"} className="bg-pomodoro-work hover:bg-pomodoro-work/90">
-                  Sign Up
-                </Button>
-              )}
+              <Button variant="ghost" onClick={handleLoginClick} size={isMobile ? "sm" : "default"}>
+                Login
+              </Button>
+              <Button variant="default" onClick={handleSignupClick} size={isMobile ? "sm" : "default"} className="bg-pomodoro-work hover:bg-pomodoro-work/90">
+                Sign Up
+              </Button>
             </>
           )}
         </nav>

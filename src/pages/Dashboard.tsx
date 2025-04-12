@@ -1,5 +1,6 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from "@/components/Layout/Header";
 import MobileNav from "@/components/Layout/MobileNav";
 import DashboardHeader from "@/components/Dashboard/DashboardHeader";
@@ -8,11 +9,34 @@ import ChartsGrid from "@/components/Dashboard/ChartsGrid";
 import ProductivityInsights from "@/components/Dashboard/ProductivityInsights";
 import ProductivityTrendChart from "@/components/Dashboard/ProductivityTrendChart";
 import { mockDashboardData } from "@/data/mockDashboardData";
+import { useAuth } from '@/contexts/AuthContext';
+import { Loader2 } from 'lucide-react';
 
 const Dashboard = () => {
+  const { user, isLoading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate('/auth', { state: { mode: 'login' } });
+    }
+  }, [user, isLoading, navigate]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-pomodoro-work" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // This prevents a flash of content before the redirect
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header isAuthenticated={true} />
+      <Header />
       
       <div className="flex-1 container max-w-7xl mx-auto px-4 py-8">
         <DashboardHeader />

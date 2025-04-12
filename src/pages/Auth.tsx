@@ -1,45 +1,86 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 interface LocationState {
   mode?: 'login' | 'signup';
 }
 
+const loginSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email" }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+});
+
+const signupSchema = loginSchema.extend({
+  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
+type SignupFormValues = z.infer<typeof signupSchema>;
+
 const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { mode } = (location.state as LocationState) || {};
+  const { user, isLoading, signIn, signUp } = useAuth();
   
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>(mode || 'login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Login with:', { email, password });
-    // For demo purposes, just navigate to dashboard
-    navigate('/dashboard');
+  const loginForm = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+  
+  const signupForm = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+    },
+  });
+  
+  useEffect(() => {
+    // If user is already authenticated, redirect to dashboard
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
+  
+  const handleLogin = (values: LoginFormValues) => {
+    signIn(values.email, values.password);
   };
   
-  const handleSignup = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Signup with:', { name, email, password });
-    // For demo purposes, just navigate to dashboard
-    navigate('/dashboard');
+  const handleSignup = (values: SignupFormValues) => {
+    signUp(values.email, values.password, values.name);
   };
   
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
+
+  if (isLoading && user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-pomodoro-work" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-muted/50 to-background">
@@ -60,126 +101,177 @@ const Auth = () => {
           </TabsList>
           
           <TabsContent value="login">
-            <form onSubmit={handleLogin}>
-              <CardHeader>
-                <CardTitle>Welcome back</CardTitle>
-                <CardDescription>
-                  Login to your account to track your productivity
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
-                  <Input 
-                    id="login-email" 
-                    type="email" 
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
+            <Form {...loginForm}>
+              <form onSubmit={loginForm.handleSubmit(handleLogin)}>
+                <CardHeader>
+                  <CardTitle>Welcome back</CardTitle>
+                  <CardDescription>
+                    Login to your account to track your productivity
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={loginForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="you@example.com" 
+                            type="email" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <Label htmlFor="login-password">Password</Label>
-                    <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs">
-                      Forgot password?
-                    </Button>
-                  </div>
-                  <div className="relative">
-                    <Input
-                      id="login-password"
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3"
-                      onClick={togglePasswordVisibility}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-muted-foreground" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button type="submit" className="w-full bg-pomodoro-work hover:bg-pomodoro-work/90">
-                  Login
-                </Button>
-              </CardFooter>
-            </form>
+                  
+                  <FormField
+                    control={loginForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex justify-between items-center">
+                          <FormLabel>Password</FormLabel>
+                          <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs">
+                            Forgot password?
+                          </Button>
+                        </div>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              type={showPassword ? "text" : "password"}
+                              {...field}
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-0 top-0 h-full px-3"
+                              onClick={togglePasswordVisibility}
+                            >
+                              {showPassword ? (
+                                <EyeOff className="h-4 w-4 text-muted-foreground" />
+                              ) : (
+                                <Eye className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </Button>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-pomodoro-work hover:bg-pomodoro-work/90"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : null}
+                    Login
+                  </Button>
+                </CardFooter>
+              </form>
+            </Form>
           </TabsContent>
           
           <TabsContent value="signup">
-            <form onSubmit={handleSignup}>
-              <CardHeader>
-                <CardTitle>Create an account</CardTitle>
-                <CardDescription>
-                  Sign up to start tracking your focus sessions
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">Name</Label>
-                  <Input 
-                    id="signup-name" 
-                    placeholder="John Doe"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
+            <Form {...signupForm}>
+              <form onSubmit={signupForm.handleSubmit(handleSignup)}>
+                <CardHeader>
+                  <CardTitle>Create an account</CardTitle>
+                  <CardDescription>
+                    Sign up to start tracking your focus sessions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={signupForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Name</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="John Doe" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input 
-                    id="signup-email" 
-                    type="email" 
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
+                  
+                  <FormField
+                    control={signupForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="you@example.com" 
+                            type="email" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="signup-password"
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3"
-                      onClick={togglePasswordVisibility}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-muted-foreground" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button type="submit" className="w-full bg-pomodoro-work hover:bg-pomodoro-work/90">
-                  Create Account
-                </Button>
-              </CardFooter>
-            </form>
+                  
+                  <FormField
+                    control={signupForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              type={showPassword ? "text" : "password"}
+                              {...field}
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-0 top-0 h-full px-3"
+                              onClick={togglePasswordVisibility}
+                            >
+                              {showPassword ? (
+                                <EyeOff className="h-4 w-4 text-muted-foreground" />
+                              ) : (
+                                <Eye className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </Button>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-pomodoro-work hover:bg-pomodoro-work/90"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : null}
+                    Create Account
+                  </Button>
+                </CardFooter>
+              </form>
+            </Form>
           </TabsContent>
         </Tabs>
       </Card>

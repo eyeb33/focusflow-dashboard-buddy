@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,9 +11,12 @@ import Header from "@/components/Layout/Header";
 import MobileNav from "@/components/Layout/MobileNav";
 import TaskManager from "@/components/Tasks/TaskManager";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [timerMode, setTimerMode] = useState<'work' | 'break' | 'longBreak'>('work');
   const [isRunning, setIsRunning] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(25 * 60); // 25 minutes in seconds
@@ -53,12 +57,25 @@ const Index = () => {
               setCompletedSessions(newCompletedSessions);
               setTotalTimeToday(prev => prev + workDuration);
               
+              // Save completed session to Supabase if user is logged in
+              if (user) {
+                saveFocusSession(workDuration * 60, true);
+              }
+              
               if (newCompletedSessions % sessionsUntilLongBreak === 0) {
                 setTimerMode('longBreak');
               } else {
                 setTimerMode('break');
               }
             } else {
+              // Save break session to Supabase if user is logged in
+              if (user) {
+                saveFocusSession(
+                  timerMode === 'break' ? breakDuration * 60 : longBreakDuration * 60, 
+                  true
+                );
+              }
+              
               setTimerMode('work');
             }
             
@@ -77,6 +94,28 @@ const Index = () => {
     };
   }, [isRunning, timerMode]);
 
+  // Function to save a focus session to Supabase
+  const saveFocusSession = async (duration: number, completed: boolean) => {
+    try {
+      if (user) {
+        const { error } = await supabase.from('focus_sessions').insert({
+          user_id: user.id,
+          session_type: timerMode,
+          duration: duration,
+          completed: completed
+        });
+        
+        if (error) {
+          console.error('Error saving session:', error);
+        } else {
+          console.log('Session saved successfully');
+        }
+      }
+    } catch (error) {
+      console.error('Error saving session:', error);
+    }
+  };
+
   const progress = 1 - (timeRemaining / getTotalTime());
 
   const formatTime = (seconds: number): string => {
@@ -94,13 +133,34 @@ const Index = () => {
   const handleSkip = () => {
     setIsRunning(false);
     if (timerMode === 'work') {
+      // Save skipped work session
+      if (user) {
+        const elapsedTime = getTotalTime() - timeRemaining;
+        if (elapsedTime > 0) {
+          saveFocusSession(elapsedTime, false);
+        }
+      }
       setTimerMode(completedSessions % sessionsUntilLongBreak === sessionsUntilLongBreak - 1 ? 'longBreak' : 'break');
     } else {
+      // Save skipped break session
+      if (user) {
+        const elapsedTime = getTotalTime() - timeRemaining;
+        if (elapsedTime > 0) {
+          saveFocusSession(elapsedTime, false);
+        }
+      }
       setTimerMode('work');
     }
   };
   
   const handleModeChange = (mode: 'work' | 'break' | 'longBreak') => {
+    // Save the current session if it was in progress
+    if (isRunning && user) {
+      const elapsedTime = getTotalTime() - timeRemaining;
+      if (elapsedTime > 0) {
+        saveFocusSession(elapsedTime, false);
+      }
+    }
     setIsRunning(false);
     setTimerMode(mode);
   };
@@ -128,7 +188,6 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Header 
-        isAuthenticated={false} 
         onLoginClick={handleLoginClick} 
         onSignupClick={handleSignupClick}
       />
@@ -225,20 +284,22 @@ const Index = () => {
             </TabsContent>
           </Tabs>
           
-          <div className="max-w-xl text-center mt-8 px-4">
-            <h2 className="text-xl font-semibold mb-2">Track your productivity</h2>
-            <p className="text-muted-foreground mb-6">
-              Sign up to track your progress, analyze your productivity patterns, and improve your focus habits over time.
-            </p>
-            <div className="flex gap-4 justify-center flex-wrap">
-              <Button onClick={handleSignupClick} className="bg-pomodoro-work hover:bg-pomodoro-work/90">
-                Start Tracking
-              </Button>
-              <Button variant="outline" onClick={() => navigate('/dashboard')}>
-                View Demo Dashboard
-              </Button>
+          {!user && (
+            <div className="max-w-xl text-center mt-8 px-4">
+              <h2 className="text-xl font-semibold mb-2">Track your productivity</h2>
+              <p className="text-muted-foreground mb-6">
+                Sign up to track your progress, analyze your productivity patterns, and improve your focus habits over time.
+              </p>
+              <div className="flex gap-4 justify-center flex-wrap">
+                <Button onClick={handleSignupClick} className="bg-pomodoro-work hover:bg-pomodoro-work/90">
+                  Start Tracking
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/dashboard')}>
+                  View Demo Dashboard
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </main>
       
