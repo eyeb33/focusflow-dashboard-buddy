@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
 
 interface StatCardProps {
   title: string;
@@ -37,21 +37,24 @@ const StatCard: React.FC<StatCardProps> = ({
         {description && <p className="text-xs text-muted-foreground">{description}</p>}
         
         <div className="flex items-center mt-2 text-xs">
-          {trend && (
+          {trend ? (
             <>
               <span className={cn(
                 "mr-1 flex items-center",
-                trend.isPositive ? "text-green-500" : "text-red-500"
+                trend.value > 0 ? "text-green-500" : 
+                trend.value < 0 ? "text-red-500" : "text-muted-foreground"
               )}>
-                {trend.isPositive ? <ArrowUp className="h-3 w-3 mr-0.5" /> : <ArrowDown className="h-3 w-3 mr-0.5" />}
+                {trend.value > 0 ? <ArrowUp className="h-3 w-3 mr-0.5" /> : 
+                 trend.value < 0 ? <ArrowDown className="h-3 w-3 mr-0.5" /> : 
+                 <Minus className="h-3 w-3 mr-0.5" />}
                 {Math.abs(trend.value)}%
               </span>
               <span className="text-muted-foreground">from last week</span>
             </>
-          )}
-          {!trend && (
+          ) : (
             <>
               <span className="mr-1 flex items-center text-muted-foreground">
+                <Minus className="h-3 w-3 mr-0.5" />
                 0%
               </span>
               <span className="text-muted-foreground">change from last week</span>

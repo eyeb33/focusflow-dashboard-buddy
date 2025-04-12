@@ -24,7 +24,7 @@ export const saveFocusSession = async (userId: string, sessionType: 'work' | 'br
       return false;
     } 
     
-    console.log('Session saved successfully');
+    console.log('Session saved successfully', { sessionType, duration, completed });
     return true;
   } catch (error) {
     console.error('Error saving session:', error);
@@ -39,22 +39,26 @@ export const fetchTodayStats = async (userId: string | undefined) => {
     const today = new Date();
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     
+    // Fetch all work sessions from today, both complete and partial
     const { data, error } = await supabase
       .from('focus_sessions')
       .select('*')
       .eq('user_id', userId)
       .eq('session_type', 'work')
-      .eq('completed', true)
       .gte('created_at', startOfDay.toISOString());
       
     if (error) throw error;
     
+    // Count completed sessions
+    const completedSessions = data.filter(session => session.completed).length;
+    
+    // Calculate total minutes from all work sessions (both complete and partial)
     const totalMinutes = data.reduce((total, session) => {
       return total + Math.floor(session.duration / 60);
     }, 0);
     
     return {
-      completedSessions: data.length,
+      completedSessions,
       totalTimeToday: totalMinutes
     };
   } catch (error) {

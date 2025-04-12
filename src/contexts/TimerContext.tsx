@@ -49,6 +49,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [completedSessions, setCompletedSessions] = useState(0);
   const [totalTimeToday, setTotalTimeToday] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastRecordedTimeRef = useRef<number | null>(null);
   
   const [settings, setSettings] = useState<TimerSettings>(defaultSettings);
 
@@ -66,6 +67,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     setTimeRemaining(getTotalTime());
+    lastRecordedTimeRef.current = getTotalTime();
   }, [timerMode, settings.workDuration, settings.breakDuration, settings.longBreakDuration]);
 
   useEffect(() => {
@@ -80,6 +82,34 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const stats = await fetchTodayStats(user.id);
     setCompletedSessions(stats.completedSessions);
     setTotalTimeToday(stats.totalTimeToday);
+  };
+
+  // Function to save partial focus time
+  const savePartialSessionTime = async () => {
+    if (!user || !lastRecordedTimeRef.current) return;
+    
+    const totalTime = getTotalTime();
+    const elapsedTime = totalTime - timeRemaining;
+    
+    // Only save if there's meaningful elapsed time (more than 1 second)
+    if (elapsedTime > 1) {
+      console.log(`Saving partial session: ${elapsedTime} seconds`);
+      
+      // Record progress in Supabase - partial session (completed = false)
+      await saveFocusSession(user.id, timerMode, elapsedTime, false);
+      
+      // Only update daily stats for work sessions
+      if (timerMode === 'work') {
+        const elapsedMinutes = Math.floor(elapsedTime / 60);
+        if (elapsedMinutes > 0) {
+          await updateDailyStats(user.id, elapsedMinutes);
+          setTotalTimeToday(prev => prev + elapsedMinutes);
+        }
+      }
+      
+      // Reset the reference time
+      lastRecordedTimeRef.current = timeRemaining;
+    }
   };
 
   useEffect(() => {
@@ -115,6 +145,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               setTimerMode('work');
             }
             
+            lastRecordedTimeRef.current = null;
             setIsRunning(false);
             return 0;
           }
@@ -139,43 +170,44 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const handleStart = () => setIsRunning(true);
-  const handlePause = () => setIsRunning(false);
+  const handleStart = () => {
+    lastRecordedTimeRef.current = timeRemaining;
+    setIsRunning(true);
+  };
+  
+  const handlePause = () => {
+    setIsRunning(false);
+    savePartialSessionTime();
+  };
+  
   const handleReset = () => {
     setIsRunning(false);
+    savePartialSessionTime();
     setTimeRemaining(getTotalTime());
+    lastRecordedTimeRef.current = getTotalTime();
   };
   
   const handleSkip = () => {
     setIsRunning(false);
+    savePartialSessionTime();
+    
     if (timerMode === 'work') {
-      if (user) {
-        const elapsedTime = getTotalTime() - timeRemaining;
-        if (elapsedTime > 0) {
-          saveFocusSession(user.id, timerMode, elapsedTime);
-        }
-      }
       setTimerMode(completedSessions % settings.sessionsUntilLongBreak === settings.sessionsUntilLongBreak - 1 ? 'longBreak' : 'break');
     } else {
-      if (user) {
-        const elapsedTime = getTotalTime() - timeRemaining;
-        if (elapsedTime > 0) {
-          saveFocusSession(user.id, timerMode, elapsedTime);
-        }
-      }
       setTimerMode('work');
     }
+    
+    lastRecordedTimeRef.current = null;
   };
   
   const handleModeChange = (mode: 'work' | 'break' | 'longBreak') => {
-    if (isRunning && user) {
-      const elapsedTime = getTotalTime() - timeRemaining;
-      if (elapsedTime > 0) {
-        saveFocusSession(user.id, timerMode, elapsedTime);
-      }
+    if (isRunning) {
+      savePartialSessionTime();
     }
+    
     setIsRunning(false);
     setTimerMode(mode);
+    lastRecordedTimeRef.current = null;
   };
 
   const getTimerModeLabel = () => getModeLabel(timerMode);
