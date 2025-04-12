@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,6 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
+        console.log('Auth state changed:', event, 'User:', currentSession?.user);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
       }
@@ -34,6 +34,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      console.log('Initial auth check - User:', currentSession?.user);
+      if (currentSession?.user) {
+        console.log('User metadata:', currentSession.user.user_metadata);
+      }
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       setIsLoading(false);
@@ -45,8 +49,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error, data } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      console.log('Sign in successful, user data:', data.user);
       toast({
         title: "Welcome back!",
         description: "You've successfully signed in.",
@@ -66,13 +71,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string, name: string) => {
     setIsLoading(true);
     try {
+      console.log('Signing up with name:', name);
       const { error } = await supabase.auth.signUp({ 
         email, 
         password,
         options: {
           data: {
             name: name, // Store the full name in user metadata
-            username: name // Also store as username for backward compatibility
           }
         }
       });

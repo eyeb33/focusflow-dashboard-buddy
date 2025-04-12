@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Camera, Loader2 } from "lucide-react";
@@ -12,26 +12,39 @@ const UserProfileCard: React.FC = () => {
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [isHovering, setIsHovering] = useState(false);
 
-  React.useEffect(() => {
-    if (user) {
+  // Force re-evaluation of the display name on every render to ensure it's up to date
+  useEffect(() => {
+    const updateDisplayName = () => {
+      if (!user) return;
+      
       // Get first name from user metadata if available
       let firstName = null;
       
+      // Primary source: user_metadata.name from signup
       if (user.user_metadata?.name) {
-        // Extract first name from the full name in user metadata
-        firstName = user.user_metadata.name.split(' ')[0];
-      } else if (profile?.username) {
-        // Fallback to username if available
+        firstName = user.user_metadata.name.split(' ')[0]; // Extract first name
+        console.log('Using name from user_metadata:', user.user_metadata.name, 'First name:', firstName);
+      } 
+      // Secondary source: profile.username
+      else if (profile?.username) {
         firstName = profile.username.split(' ')[0];
-      } else if (user.email) {
-        // Last fallback to email username portion
+        console.log('Using name from profile.username:', profile.username, 'First name:', firstName);
+      } 
+      // Tertiary source: email address
+      else if (user.email) {
         firstName = user.email.split('@')[0];
-      } else {
+        console.log('Using name from email:', user.email, 'First name:', firstName);
+      } 
+      // Fallback
+      else {
         firstName = 'User';
+        console.log('Using fallback name: User');
       }
       
       setDisplayName(firstName);
-    }
+    };
+    
+    updateDisplayName();
   }, [user, profile]);
 
   const handleUploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
