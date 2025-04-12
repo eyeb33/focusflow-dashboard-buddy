@@ -47,10 +47,13 @@ export const fetchTodayStats = async (userId: string | undefined) => {
       .single();
       
     if (summaryData) {
+      console.log('Found summary data for today:', summaryData);
       return {
         completedSessions: summaryData.total_completed_sessions || 0,
         totalTimeToday: summaryData.total_focus_time || 0
       };
+    } else {
+      console.log('No summary data found for today, calculating from focus_sessions');
     }
     
     // If no summary exists, fall back to calculating from individual sessions
@@ -61,20 +64,26 @@ export const fetchTodayStats = async (userId: string | undefined) => {
       .from('focus_sessions')
       .select('*')
       .eq('user_id', userId)
-      .eq('session_type', 'work')
       .gte('created_at', startOfDay.toISOString());
       
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching focus sessions:', error);
+      throw error;
+    }
     
     // Count completed sessions
-    const completedSessions = data.filter(session => session.completed).length;
+    const completedSessions = data.filter(session => 
+      session.completed && session.session_type === 'work'
+    ).length;
     
-    // Calculate total minutes from all work sessions (completed only)
+    // Calculate total minutes from all work sessions (completed or partial)
     const totalMinutes = data
-      .filter(session => session.completed || session.session_type === 'work')
+      .filter(session => session.session_type === 'work')
       .reduce((total, session) => {
         return total + Math.floor(session.duration / 60);
       }, 0);
+    
+    console.log('Calculated from sessions:', { completedSessions, totalMinutes });
     
     return {
       completedSessions,

@@ -27,7 +27,7 @@ export const updateDailyStats = async (userId: string, durationMinutes: number) 
       
     if (streakError) throw streakError;
     
-    // Fixed: Pass only two arguments to calculateStreak
+    // Fixed: Only pass two arguments to calculateStreak
     let currentStreak = calculateStreak(recentDays, today);
     
     if (existingData) {

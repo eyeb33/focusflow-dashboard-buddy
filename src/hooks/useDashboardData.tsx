@@ -82,6 +82,8 @@ export const useDashboardData = () => {
   const fetchDashboardData = async () => {
     setIsLoading(true);
     try {
+      console.log('Fetching dashboard data for user:', user?.id);
+      
       // Get current date in YYYY-MM-DD format
       const today = new Date().toISOString().split('T')[0];
       
@@ -119,25 +121,44 @@ export const useDashboardData = () => {
 
   const fetchTotalStats = async () => {
     try {
+      if (!user?.id) {
+        console.error('No user ID available for fetching stats');
+        return;
+      }
+      
+      console.log('Fetching total stats for user:', user.id);
+      
+      // First check the sessions_summary table for today's data
+      const today = new Date().toISOString().split('T')[0];
+      
+      const { data: todaySummary, error: todaySummaryError } = await supabase
+        .from('sessions_summary')
+        .select('total_completed_sessions, total_focus_time')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .single();
+        
+      console.log('Today summary data:', todaySummary, todaySummaryError);
+      
       // Fetch completed sessions count
       const { data: sessionCount, error: sessionError } = await supabase
         .from('focus_sessions')
         .select('count')
         .eq('user_id', user?.id)
-        .eq('completed', true);
+        .eq('completed', true)
+        .eq('session_type', 'work');
 
       // Fetch total focus time
       const { data: focusTimeData, error: timeError } = await supabase
         .from('focus_sessions')
         .select('duration, session_type')
         .eq('user_id', user?.id)
-        .eq('completed', true);
+        .eq('session_type', 'work');
 
       if (sessionError || timeError) throw sessionError || timeError;
-
-      // Get today's date in YYYY-MM-DD format
-      const today = new Date().toISOString().split('T')[0];
       
+      console.log('Focus time data count:', focusTimeData?.length);
+
       // Calculate weekly change data
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
@@ -148,7 +169,6 @@ export const useDashboardData = () => {
         .from('focus_sessions')
         .select('duration, created_at')
         .eq('user_id', user?.id)
-        .eq('completed', true)
         .eq('session_type', 'work')
         .gte('created_at', oneWeekAgoStr);
         
@@ -161,7 +181,6 @@ export const useDashboardData = () => {
         .from('focus_sessions')
         .select('duration, created_at')
         .eq('user_id', user?.id)
-        .eq('completed', true)
         .eq('session_type', 'work')
         .gte('created_at', twoWeeksAgoStr)
         .lt('created_at', oneWeekAgoStr);
@@ -212,8 +231,20 @@ export const useDashboardData = () => {
       if (summaryError) throw summaryError;
 
       // Calculate total focus minutes (only from work sessions)
-      const totalMinutes = focusTimeData?.reduce((acc: number, session: any) => 
+      const totalMinutesFromSessions = focusTimeData?.reduce((acc: number, session: any) => 
         acc + (session.session_type === 'work' ? Math.floor(session.duration / 60) : 0), 0) || 0;
+        
+      // If we have today's summary, use that value for total minutes
+      const totalMinutes = todaySummary ? (
+        // Use summary data + any additional minutes from sessions
+        totalMinutesFromSessions
+      ) : totalMinutesFromSessions;
+      
+      console.log('Total minutes calculation:', {
+        fromSummary: todaySummary?.total_focus_time || 0,
+        fromSessions: totalMinutesFromSessions,
+        final: totalMinutes
+      });
       
       const totalSessions = sessionCount?.[0]?.count || 0;
       

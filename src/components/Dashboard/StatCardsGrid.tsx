@@ -19,6 +19,8 @@ interface StatCardsGridProps {
 }
 
 const StatCardsGrid: React.FC<StatCardsGridProps> = ({ stats }) => {
+  console.log('StatCardsGrid rendering with stats:', stats);
+  
   // Function to get the appropriate icon component based on icon name
   const getIconComponent = (iconName: string) => {
     switch (iconName) {
