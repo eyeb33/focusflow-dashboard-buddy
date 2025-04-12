@@ -77,12 +77,11 @@ const CircularProgress = ({
           r={radius}
           fill="transparent"
           stroke={colors.fg}
-          className="dark:stroke-purple-400"
+          className="dark:stroke-purple-400 transition-all duration-300 ease-in-out"
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
-          transition="stroke-dashoffset 0.35s"
         />
       </svg>
       
