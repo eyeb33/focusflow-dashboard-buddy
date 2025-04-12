@@ -15,12 +15,12 @@ const mockStreakData = Array.from({ length: 28 }, (_, i) => ({
 }));
 
 const mockDailyData = [
-  { name: '8AM', minutes: 25 },
-  { name: '10AM', minutes: 50 },
-  { name: '12PM', minutes: 25 },
-  { name: '2PM', minutes: 75 },
-  { name: '4PM', minutes: 50 },
-  { name: '6PM', minutes: 25 },
+  { name: '8AM', sessions: 1, minutes: 25 },
+  { name: '10AM', sessions: 2, minutes: 50 },
+  { name: '12PM', sessions: 1, minutes: 25 },
+  { name: '2PM', sessions: 3, minutes: 75 },
+  { name: '4PM', sessions: 2, minutes: 50 },
+  { name: '6PM', sessions: 1, minutes: 25 },
 ];
 
 const mockWeeklyData = [
@@ -34,10 +34,10 @@ const mockWeeklyData = [
 ];
 
 const mockMonthlyData = [
-  { name: 'Week 1', sessions: 20 },
-  { name: 'Week 2', sessions: 35 },
-  { name: 'Week 3', sessions: 25 },
-  { name: 'Week 4', sessions: 30 },
+  { name: 'Week 1', sessions: 20, minutes: 500 },
+  { name: 'Week 2', sessions: 35, minutes: 875 },
+  { name: 'Week 3', sessions: 25, minutes: 625 },
+  { name: 'Week 4', sessions: 30, minutes: 750 },
 ];
 
 const Dashboard = () => {
