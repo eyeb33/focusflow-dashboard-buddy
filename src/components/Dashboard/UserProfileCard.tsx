@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Camera, Loader2 } from "lucide-react";
@@ -53,43 +52,6 @@ const UserProfileCard: React.FC = () => {
       console.error('Error fetching profile:', error.message);
       toast({
         title: "Error fetching profile",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateProfile = async () => {
-    try {
-      setLoading(true);
-      if (!user) return;
-
-      const updates = {
-        id: user.id,
-        username,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { error } = await supabase
-        .from('profiles')
-        .upsert(updates);
-
-      if (error) {
-        throw error;
-      }
-
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully.",
-      });
-      
-      fetchProfile();
-    } catch (error: any) {
-      console.error('Error updating profile:', error.message);
-      toast({
-        title: "Error updating profile",
         description: error.message,
         variant: "destructive",
       });
@@ -161,7 +123,7 @@ const UserProfileCard: React.FC = () => {
 
   return (
     <Card className="mb-6">
-      <CardContent className="pt-6">
+      <CardContent className="py-6">
         <div className="flex flex-col items-center space-y-4">
           <div className="relative">
             <Avatar className="w-24 h-24">
@@ -173,16 +135,18 @@ const UserProfileCard: React.FC = () => {
                 </AvatarFallback>
               )}
             </Avatar>
-            <label 
-              className="absolute bottom-0 right-0 bg-primary hover:bg-primary/90 text-white rounded-full p-2 cursor-pointer"
-              htmlFor="avatar-upload"
-            >
-              {uploading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Camera className="h-4 w-4" />
-              )}
-            </label>
+            {!avatarUrl && (
+              <label 
+                className="absolute bottom-0 right-0 bg-primary hover:bg-primary/90 text-white rounded-full p-2 cursor-pointer"
+                htmlFor="avatar-upload"
+              >
+                {uploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Camera className="h-4 w-4" />
+                )}
+              </label>
+            )}
             <input
               id="avatar-upload"
               type="file"
@@ -193,33 +157,24 @@ const UserProfileCard: React.FC = () => {
             />
           </div>
           
-          <div className="space-y-2 w-full max-w-xs">
-            <label htmlFor="username" className="text-sm font-medium">
-              Username
-            </label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
-              />
-              <Button 
-                onClick={updateProfile} 
-                disabled={loading || !username}
-                size="sm"
-              >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
-              </Button>
-            </div>
+          <div className="text-center">
+            <h3 className="text-xl font-medium">
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading...
+                </div>
+              ) : (
+                <>Welcome back, {username || 'User'}!</>
+              )}
+            </h3>
+            {!avatarUrl && (
+              <p className="text-sm text-muted-foreground mt-2">
+                Add a profile picture by clicking the camera icon
+              </p>
+            )}
           </div>
         </div>
       </CardContent>
-      <CardFooter className="flex justify-center pb-6">
-        <p className="text-sm text-muted-foreground">
-          Update your profile information
-        </p>
-      </CardFooter>
     </Card>
   );
 };
