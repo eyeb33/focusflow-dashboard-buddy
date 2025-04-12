@@ -6,21 +6,42 @@ import DashboardHeader from "@/components/Dashboard/DashboardHeader";
 import StatCardsGrid from "@/components/Dashboard/StatCardsGrid";
 import ChartsGrid from "@/components/Dashboard/ChartsGrid";
 import ProductivityInsights from "@/components/Dashboard/ProductivityInsights";
-import { useNavigate } from 'react-router-dom';
+import TaskManager from "@/components/Tasks/TaskManager";
+import { mockDashboardData } from "@/data/mockDashboardData";
 
 const Dashboard = () => {
-  const navigate = useNavigate();
-
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <Header isAuthenticated={true} />
       
-      <main className="flex-1 container px-4 py-6 md:py-10 mb-16 md:mb-0">
+      <div className="flex-1 container max-w-7xl mx-auto px-4 py-8">
         <DashboardHeader />
-        <StatCardsGrid />
-        <ChartsGrid />
-        <ProductivityInsights />
-      </main>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="md:col-span-2">
+            <StatCardsGrid 
+              stats={mockDashboardData.stats} 
+            />
+          </div>
+          <div className="md:col-span-1">
+            <TaskManager />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <ChartsGrid 
+              dailyData={mockDashboardData.dailyProductivity}
+              weeklyData={mockDashboardData.weeklyProductivity}
+              monthlyData={mockDashboardData.monthlyProductivity}
+              streakData={mockDashboardData.streakData}
+            />
+          </div>
+          <div className="lg:col-span-1">
+            <ProductivityInsights insights={mockDashboardData.insights} />
+          </div>
+        </div>
+      </div>
       
       <MobileNav />
     </div>
