@@ -45,20 +45,28 @@ const Dashboard = () => {
       value: dashboardData.stats.totalSessions.toString(),
       icon: "Clock",
       trend: {
-        value: 12,
-        isPositive: true
+        value: dashboardData.stats.weeklyChange.sessions,
+        isPositive: dashboardData.stats.weeklyChange.sessions >= 0
       }
     },
     {
       title: "Focus Minutes",
       value: dashboardData.stats.totalMinutes.toString(),
-      icon: "Flame"
+      icon: "Flame",
+      trend: {
+        value: dashboardData.stats.weeklyChange.minutes,
+        isPositive: dashboardData.stats.weeklyChange.minutes >= 0
+      }
     },
     {
       title: "Daily Average",
       value: dashboardData.stats.dailyAverage.toString(),
       icon: "Target",
-      description: "sessions per day"
+      description: "sessions per day",
+      trend: {
+        value: dashboardData.stats.weeklyChange.dailyAvg,
+        isPositive: dashboardData.stats.weeklyChange.dailyAvg >= 0
+      }
     },
     {
       title: "Current Streak",

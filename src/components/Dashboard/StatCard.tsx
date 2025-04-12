@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { ArrowUp, ArrowDown } from 'lucide-react';
 
 interface StatCardProps {
   title: string;
@@ -34,17 +35,29 @@ const StatCard: React.FC<StatCardProps> = ({
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
         {description && <p className="text-xs text-muted-foreground">{description}</p>}
-        {trend && (
-          <div className="flex items-center mt-2 text-xs">
-            <span className={cn(
-              "mr-1",
-              trend.isPositive ? "text-green-500" : "text-red-500"
-            )}>
-              {trend.isPositive ? "↑" : "↓"} {Math.abs(trend.value)}%
-            </span>
-            <span className="text-muted-foreground">from last week</span>
-          </div>
-        )}
+        
+        <div className="flex items-center mt-2 text-xs">
+          {trend && (
+            <>
+              <span className={cn(
+                "mr-1 flex items-center",
+                trend.isPositive ? "text-green-500" : "text-red-500"
+              )}>
+                {trend.isPositive ? <ArrowUp className="h-3 w-3 mr-0.5" /> : <ArrowDown className="h-3 w-3 mr-0.5" />}
+                {Math.abs(trend.value)}%
+              </span>
+              <span className="text-muted-foreground">from last week</span>
+            </>
+          )}
+          {!trend && (
+            <>
+              <span className="mr-1 flex items-center text-muted-foreground">
+                0%
+              </span>
+              <span className="text-muted-foreground">change from last week</span>
+            </>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

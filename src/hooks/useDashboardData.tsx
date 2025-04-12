@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +10,12 @@ export type DashboardData = {
     dailyAverage: number;
     currentStreak: number;
     bestStreak: number;
+    weeklyChange: {
+      sessions: number;
+      minutes: number;
+      dailyAvg: number;
+      isPositive: boolean;
+    };
   };
   productivityTrend: {
     date: string;
@@ -51,7 +56,13 @@ export const useDashboardData = () => {
       totalMinutes: 0,
       dailyAverage: 0,
       currentStreak: 0,
-      bestStreak: 0
+      bestStreak: 0,
+      weeklyChange: {
+        sessions: 0,
+        minutes: 0,
+        dailyAvg: 0,
+        isPositive: true
+      }
     },
     productivityTrend: [],
     streakData: [],
@@ -118,7 +129,7 @@ export const useDashboardData = () => {
       // Fetch total focus time
       const { data: focusTimeData, error: timeError } = await supabase
         .from('focus_sessions')
-        .select('duration')
+        .select('duration, session_type')
         .eq('user_id', user?.id)
         .eq('completed', true);
 
@@ -126,6 +137,69 @@ export const useDashboardData = () => {
 
       // Get today's date in YYYY-MM-DD format
       const today = new Date().toISOString().split('T')[0];
+      
+      // Calculate weekly change data
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      const oneWeekAgoStr = oneWeekAgo.toISOString().split('T')[0];
+      
+      // Get current week's sessions
+      const { data: currentWeekSessions, error: currentWeekError } = await supabase
+        .from('focus_sessions')
+        .select('duration, created_at')
+        .eq('user_id', user?.id)
+        .eq('completed', true)
+        .eq('session_type', 'work')
+        .gte('created_at', oneWeekAgoStr);
+        
+      // Get previous week's sessions
+      const twoWeeksAgo = new Date();
+      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+      const twoWeeksAgoStr = twoWeeksAgo.toISOString().split('T')[0];
+      
+      const { data: prevWeekSessions, error: prevWeekError } = await supabase
+        .from('focus_sessions')
+        .select('duration, created_at')
+        .eq('user_id', user?.id)
+        .eq('completed', true)
+        .eq('session_type', 'work')
+        .gte('created_at', twoWeeksAgoStr)
+        .lt('created_at', oneWeekAgoStr);
+        
+      if (currentWeekError || prevWeekError) {
+        console.error('Error fetching weekly comparison data');
+      }
+      
+      // Calculate weekly changes
+      const currentWeekSessionCount = currentWeekSessions?.length || 0;
+      const prevWeekSessionCount = prevWeekSessions?.length || 0;
+      
+      const currentWeekMinutes = currentWeekSessions?.reduce((acc: number, session: any) => 
+        acc + Math.floor(session.duration / 60), 0) || 0;
+        
+      const prevWeekMinutes = prevWeekSessions?.reduce((acc: number, session: any) => 
+        acc + Math.floor(session.duration / 60), 0) || 0;
+        
+      // Calculate session change percentage
+      let sessionChangePercent = 0;
+      if (prevWeekSessionCount > 0) {
+        sessionChangePercent = Math.round(((currentWeekSessionCount - prevWeekSessionCount) / prevWeekSessionCount) * 100);
+      }
+      
+      // Calculate minutes change percentage
+      let minutesChangePercent = 0;
+      if (prevWeekMinutes > 0) {
+        minutesChangePercent = Math.round(((currentWeekMinutes - prevWeekMinutes) / prevWeekMinutes) * 100);
+      }
+      
+      // Calculate avg sessions per day
+      const currentWeekAvg = currentWeekSessionCount / 7;
+      const prevWeekAvg = prevWeekSessionCount / 7;
+      
+      let avgChangePercent = 0;
+      if (prevWeekAvg > 0) {
+        avgChangePercent = Math.round(((currentWeekAvg - prevWeekAvg) / prevWeekAvg) * 100);
+      }
 
       // Get current streak and daily average
       const { data: summaryData, error: summaryError } = await supabase
@@ -137,13 +211,13 @@ export const useDashboardData = () => {
 
       if (summaryError) throw summaryError;
 
-      // Calculate stats
+      // Calculate total focus minutes (only from work sessions)
+      const totalMinutes = focusTimeData?.reduce((acc: number, session: any) => 
+        acc + (session.session_type === 'work' ? Math.floor(session.duration / 60) : 0), 0) || 0;
+      
       const totalSessions = sessionCount?.[0]?.count || 0;
       
-      const totalMinutes = focusTimeData?.reduce((acc: number, session: any) => 
-        acc + Math.floor(session.duration / 60), 0) || 0;
-      
-      // Calculate current streak based on consecutive days with entries
+      // Calculate current streak
       let currentStreak = 0;
       if (summaryData && summaryData.length > 0) {
         // Check if there's an entry for today
@@ -181,7 +255,7 @@ export const useDashboardData = () => {
       const bestStreakValue = summaryData?.reduce((max: number, day: any) => 
         Math.max(max, day.longest_streak || 0), 0) || 0;
       
-      // Calculate daily average from the last 30 days
+      // Calculate daily average from the last 30 days of data
       const daysWithData = summaryData?.length || 1;
       const totalSessionsInPeriod = summaryData?.reduce((acc: number, day: any) => 
         acc + day.total_sessions, 0) || 0;
@@ -194,7 +268,13 @@ export const useDashboardData = () => {
           totalMinutes: totalMinutes,
           dailyAverage: dailyAverage,
           currentStreak: Math.max(1, currentStreak), // Ensure streak is at least 1 if we have data for today
-          bestStreak: Math.max(bestStreakValue, currentStreak) // Update best streak if current is higher
+          bestStreak: Math.max(bestStreakValue, currentStreak), // Update best streak if current is higher
+          weeklyChange: {
+            sessions: sessionChangePercent,
+            minutes: minutesChangePercent,
+            dailyAvg: avgChangePercent,
+            isPositive: sessionChangePercent >= 0
+          }
         }
       }));
     } catch (error: any) {

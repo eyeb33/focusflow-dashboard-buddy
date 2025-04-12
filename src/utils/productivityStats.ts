@@ -63,7 +63,6 @@ export const updateDailyStats = async (userId: string, durationMinutes: number) 
   }
 };
 
-// Fixed the calculateStreak function to properly calculate consecutive days
 const calculateStreak = (recentDays: any[] | null, today: string) => {
   if (!recentDays || recentDays.length === 0) {
     return 1; // Today is the first day with completed sessions
