@@ -12,6 +12,7 @@ interface StatItem {
     value: number;
     isPositive: boolean;
   };
+  iconColor?: string;  // Add an optional iconColor prop
 }
 
 interface StatCardsGridProps {
@@ -19,19 +20,16 @@ interface StatCardsGridProps {
 }
 
 const StatCardsGrid: React.FC<StatCardsGridProps> = ({ stats }) => {
-  console.log('StatCardsGrid rendering with stats:', stats);
-  
-  // Function to get the appropriate icon component based on icon name
-  const getIconComponent = (iconName: string) => {
+  const getIconComponent = (iconName: string, iconColor?: string) => {
     switch (iconName) {
       case 'Clock':
-        return <Clock className="h-4 w-4" />;
+        return <Clock className="h-4 w-4" color={iconColor} />;
       case 'Flame':
-        return <Flame className="h-4 w-4" />;
+        return <Flame className="h-4 w-4" color={iconColor} />;
       case 'Target':
-        return <Target className="h-4 w-4" />;
+        return <Target className="h-4 w-4" color={iconColor} />;
       case 'Zap':
-        return <Zap className="h-4 w-4" />;
+        return <Zap className="h-4 w-4" color={iconColor} />;
       default:
         return <Clock className="h-4 w-4" />;
     }
@@ -44,9 +42,10 @@ const StatCardsGrid: React.FC<StatCardsGridProps> = ({ stats }) => {
           key={index}
           title={stat.title}
           value={stat.value}
-          icon={getIconComponent(stat.icon)}
+          icon={getIconComponent(stat.icon, stat.iconColor)}
           description={stat.description}
           trend={stat.trend}
+          iconColor={stat.iconColor}
         />
       ))}
     </div>

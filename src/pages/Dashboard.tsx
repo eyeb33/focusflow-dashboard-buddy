@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from "@/components/Layout/Header";
@@ -53,12 +52,12 @@ const Dashboard = () => {
     return null; // This prevents a flash of content before the redirect
   }
 
-  // Create stats for the StatCardsGrid
   const stats = [
     {
       title: "Total Sessions",
       value: dashboardData.stats.totalSessions.toString(),
       icon: "Clock",
+      iconColor: "#1EAEDB",
       trend: {
         value: dashboardData.stats.weeklyChange.sessions,
         isPositive: dashboardData.stats.weeklyChange.sessions >= 0
@@ -68,6 +67,7 @@ const Dashboard = () => {
       title: "Focus Minutes",
       value: dashboardData.stats.totalMinutes.toString(),
       icon: "Flame",
+      iconColor: "#ea384c",
       trend: {
         value: dashboardData.stats.weeklyChange.minutes,
         isPositive: dashboardData.stats.weeklyChange.minutes >= 0
@@ -77,6 +77,7 @@ const Dashboard = () => {
       title: "Daily Average",
       value: dashboardData.stats.dailyAverage.toString(),
       icon: "Target",
+      iconColor: "#F97316",
       description: "sessions per day",
       trend: {
         value: dashboardData.stats.weeklyChange.dailyAvg,
@@ -87,6 +88,7 @@ const Dashboard = () => {
       title: "Current Streak",
       value: dashboardData.stats.currentStreak.toString(),
       icon: "Zap",
+      iconColor: "#FEF7CD",
       description: "days"
     }
   ];
