@@ -36,8 +36,25 @@ export const fetchTodayStats = async (userId: string | undefined) => {
   if (!userId) return { completedSessions: 0, totalTimeToday: 0 };
   
   try {
-    const today = new Date();
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    
+    // First try to get today's summary from sessions_summary table
+    const { data: summaryData, error: summaryError } = await supabase
+      .from('sessions_summary')
+      .select('total_completed_sessions, total_focus_time')
+      .eq('user_id', userId)
+      .eq('date', today)
+      .single();
+      
+    if (summaryData) {
+      return {
+        completedSessions: summaryData.total_completed_sessions || 0,
+        totalTimeToday: summaryData.total_focus_time || 0
+      };
+    }
+    
+    // If no summary exists, fall back to calculating from individual sessions
+    const startOfDay = new Date(today);
     
     // Fetch all work sessions from today, both complete and partial
     const { data, error } = await supabase
@@ -52,10 +69,12 @@ export const fetchTodayStats = async (userId: string | undefined) => {
     // Count completed sessions
     const completedSessions = data.filter(session => session.completed).length;
     
-    // Calculate total minutes from all work sessions (both complete and partial)
-    const totalMinutes = data.reduce((total, session) => {
-      return total + Math.floor(session.duration / 60);
-    }, 0);
+    // Calculate total minutes from all work sessions (completed only)
+    const totalMinutes = data
+      .filter(session => session.completed || session.session_type === 'work')
+      .reduce((total, session) => {
+        return total + Math.floor(session.duration / 60);
+      }, 0);
     
     return {
       completedSessions,

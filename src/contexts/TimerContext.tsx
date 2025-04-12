@@ -50,6 +50,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [totalTimeToday, setTotalTimeToday] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastRecordedTimeRef = useRef<number | null>(null);
+  const lastRecordedFullMinutesRef = useRef<number>(0);
   
   const [settings, setSettings] = useState<TimerSettings>(defaultSettings);
 
@@ -68,6 +69,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     setTimeRemaining(getTotalTime());
     lastRecordedTimeRef.current = getTotalTime();
+    lastRecordedFullMinutesRef.current = 0;
   }, [timerMode, settings.workDuration, settings.breakDuration, settings.longBreakDuration]);
 
   useEffect(() => {
@@ -84,31 +86,30 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setTotalTimeToday(stats.totalTimeToday);
   };
 
-  // Function to save partial focus time
+  // Function to save partial focus time - only counting complete minutes
   const savePartialSessionTime = async () => {
     if (!user || !lastRecordedTimeRef.current) return;
     
     const totalTime = getTotalTime();
     const elapsedTime = totalTime - timeRemaining;
+    const elapsedFullMinutes = Math.floor(elapsedTime / 60);
+    const newFullMinutes = elapsedFullMinutes - lastRecordedFullMinutesRef.current;
     
-    // Only save if there's meaningful elapsed time (more than 1 second)
-    if (elapsedTime > 1) {
-      console.log(`Saving partial session: ${elapsedTime} seconds`);
+    // Only save if there are new full minutes completed
+    if (newFullMinutes > 0) {
+      console.log(`Saving partial session with ${newFullMinutes} new complete minutes`);
       
-      // Record progress in Supabase - partial session (completed = false)
-      await saveFocusSession(user.id, timerMode, elapsedTime, false);
+      // Save the completed minutes (in seconds) to the database
+      await saveFocusSession(user.id, timerMode, newFullMinutes * 60, false);
       
       // Only update daily stats for work sessions
       if (timerMode === 'work') {
-        const elapsedMinutes = Math.floor(elapsedTime / 60);
-        if (elapsedMinutes > 0) {
-          await updateDailyStats(user.id, elapsedMinutes);
-          setTotalTimeToday(prev => prev + elapsedMinutes);
-        }
+        await updateDailyStats(user.id, newFullMinutes);
+        setTotalTimeToday(prev => prev + newFullMinutes);
       }
       
-      // Reset the reference time
-      lastRecordedTimeRef.current = timeRemaining;
+      // Update the reference for completed minutes
+      lastRecordedFullMinutesRef.current = elapsedFullMinutes;
     }
   };
 
@@ -146,10 +147,30 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             }
             
             lastRecordedTimeRef.current = null;
+            lastRecordedFullMinutesRef.current = 0;
             setIsRunning(false);
             return 0;
           }
-          return prevTime - 1;
+          
+          // Check if we've completed another full minute
+          const newTime = prevTime - 1;
+          const totalTime = getTotalTime();
+          const elapsedSeconds = totalTime - newTime;
+          const newFullMinutes = Math.floor(elapsedSeconds / 60);
+          const prevFullMinutes = Math.floor((totalTime - prevTime) / 60);
+          
+          // If we've completed a new full minute and user is logged in
+          if (user && newFullMinutes > prevFullMinutes) {
+            console.log(`Completed a new minute: ${newFullMinutes} minutes`);
+            
+            // Only for work sessions
+            if (timerMode === 'work') {
+              // Save the single minute progress
+              savePartialSessionTime();
+            }
+          }
+          
+          return newTime;
         });
       }, 1000);
     }
@@ -172,6 +193,10 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const handleStart = () => {
     lastRecordedTimeRef.current = timeRemaining;
+    // When starting, record the current completed full minutes
+    const totalTime = getTotalTime();
+    const elapsedSeconds = totalTime - timeRemaining;
+    lastRecordedFullMinutesRef.current = Math.floor(elapsedSeconds / 60);
     setIsRunning(true);
   };
   
@@ -185,6 +210,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     savePartialSessionTime();
     setTimeRemaining(getTotalTime());
     lastRecordedTimeRef.current = getTotalTime();
+    lastRecordedFullMinutesRef.current = 0;
   };
   
   const handleSkip = () => {
@@ -198,6 +224,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     
     lastRecordedTimeRef.current = null;
+    lastRecordedFullMinutesRef.current = 0;
   };
   
   const handleModeChange = (mode: 'work' | 'break' | 'longBreak') => {
@@ -208,6 +235,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsRunning(false);
     setTimerMode(mode);
     lastRecordedTimeRef.current = null;
+    lastRecordedFullMinutesRef.current = 0;
   };
 
   const getTimerModeLabel = () => getModeLabel(timerMode);
