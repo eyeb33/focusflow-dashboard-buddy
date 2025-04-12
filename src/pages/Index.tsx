@@ -2,13 +2,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import CircularProgress from "@/components/Timer/CircularProgress";
 import TimerControls from "@/components/Timer/TimerControls";
 import TimerSettings from "@/components/Timer/TimerSettings";
 import Header from "@/components/Layout/Header";
 import MobileNav from "@/components/Layout/MobileNav";
+import TaskManager from "@/components/Tasks/TaskManager";
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
@@ -22,6 +23,7 @@ const Index = () => {
   const [sessionsUntilLongBreak, setSessionsUntilLongBreak] = useState(4);
   const [completedSessions, setCompletedSessions] = useState(0);
   const [totalTimeToday, setTotalTimeToday] = useState(0);
+  const [activeTab, setActiveTab] = useState('timer');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   
   // Get total time based on current mode
@@ -144,80 +146,95 @@ const Index = () => {
       
       <main className="flex-1 flex flex-col">
         <div className="relative flex flex-col items-center justify-center flex-1 px-4 py-8 md:py-16 timer-gradient">
-          <Card className="w-full max-w-md p-6 bg-white/90 backdrop-blur-sm shadow-md">
-            <div className="flex items-center justify-between mb-6">
-              <Tabs 
-                value={timerMode} 
-                onValueChange={(v) => handleModeChange(v as 'work' | 'break' | 'longBreak')}
-                className="w-full"
-              >
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="work">Focus</TabsTrigger>
-                  <TabsTrigger value="break">Break</TabsTrigger>
-                  <TabsTrigger value="longBreak">Long Break</TabsTrigger>
-                </TabsList>
-              </Tabs>
-              
-              <TimerSettings
-                workDuration={workDuration}
-                breakDuration={breakDuration}
-                longBreakDuration={longBreakDuration}
-                sessionsUntilLongBreak={sessionsUntilLongBreak}
-                onWorkDurationChange={setWorkDuration}
-                onBreakDurationChange={setBreakDuration}
-                onLongBreakDurationChange={setLongBreakDuration}
-                onSessionsUntilLongBreakChange={setSessionsUntilLongBreak}
-              />
-            </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-md">
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="timer">Timer</TabsTrigger>
+              <TabsTrigger value="tasks">Tasks</TabsTrigger>
+            </TabsList>
             
-            <div className="flex flex-col items-center">
-              <Badge variant="outline" className="mb-4">
-                {getModeLabel()}
-              </Badge>
-              
-              <CircularProgress 
-                progress={progress} 
-                mode={timerMode}
-                size={260}
-                className="mb-6"
-              >
-                <div className="text-center">
-                  <div className="text-5xl font-bold tracking-tighter">
-                    {formatTime(timeRemaining)}
+            <TabsContent value="timer">
+              <Card className="w-full max-w-md p-6 bg-white/90 backdrop-blur-sm shadow-md">
+                <div className="flex items-center justify-between mb-6">
+                  <Tabs 
+                    value={timerMode} 
+                    onValueChange={(v) => handleModeChange(v as 'work' | 'break' | 'longBreak')}
+                    className="w-full"
+                  >
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="work">Focus</TabsTrigger>
+                      <TabsTrigger value="break">Break</TabsTrigger>
+                      <TabsTrigger value="longBreak">Long Break</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                  
+                  <TimerSettings
+                    workDuration={workDuration}
+                    breakDuration={breakDuration}
+                    longBreakDuration={longBreakDuration}
+                    sessionsUntilLongBreak={sessionsUntilLongBreak}
+                    onWorkDurationChange={setWorkDuration}
+                    onBreakDurationChange={setBreakDuration}
+                    onLongBreakDurationChange={setLongBreakDuration}
+                    onSessionsUntilLongBreakChange={setSessionsUntilLongBreak}
+                  />
+                </div>
+                
+                <div className="flex flex-col items-center">
+                  <Badge variant="outline" className="mb-4">
+                    {getModeLabel()}
+                  </Badge>
+                  
+                  <CircularProgress 
+                    progress={progress} 
+                    mode={timerMode}
+                    size={260}
+                    className="mb-6"
+                  >
+                    <div className="text-center">
+                      <div className="text-5xl font-bold tracking-tighter">
+                        {formatTime(timeRemaining)}
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-2">
+                        {timerMode === 'work' ? "Focus on your task" : "Take a break"}
+                      </div>
+                    </div>
+                  </CircularProgress>
+                  
+                  <TimerControls
+                    isRunning={isRunning}
+                    onStart={handleStart}
+                    onPause={handlePause}
+                    onReset={handleReset}
+                    onSkip={handleSkip}
+                    className="mb-2"
+                  />
+                </div>
+                
+                <div className="mt-8 pt-4 border-t grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-xl font-bold">{completedSessions}</div>
+                    <div className="text-xs text-muted-foreground">Sessions</div>
                   </div>
-                  <div className="text-sm text-muted-foreground mt-2">
-                    {timerMode === 'work' ? "Focus on your task" : "Take a break"}
+                  <div>
+                    <div className="text-xl font-bold">{totalTimeToday}</div>
+                    <div className="text-xs text-muted-foreground">Minutes</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold">
+                      {Math.floor(completedSessions / sessionsUntilLongBreak)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Rounds</div>
                   </div>
                 </div>
-              </CircularProgress>
-              
-              <TimerControls
-                isRunning={isRunning}
-                onStart={handleStart}
-                onPause={handlePause}
-                onReset={handleReset}
-                onSkip={handleSkip}
-                className="mb-2"
-              />
-            </div>
+              </Card>
+            </TabsContent>
             
-            <div className="mt-8 pt-4 border-t grid grid-cols-3 gap-4 text-center">
-              <div>
-                <div className="text-xl font-bold">{completedSessions}</div>
-                <div className="text-xs text-muted-foreground">Sessions</div>
+            <TabsContent value="tasks">
+              <div className="w-full max-w-md">
+                <TaskManager />
               </div>
-              <div>
-                <div className="text-xl font-bold">{totalTimeToday}</div>
-                <div className="text-xs text-muted-foreground">Minutes</div>
-              </div>
-              <div>
-                <div className="text-xl font-bold">
-                  {Math.floor(completedSessions / sessionsUntilLongBreak)}
-                </div>
-                <div className="text-xs text-muted-foreground">Rounds</div>
-              </div>
-            </div>
-          </Card>
+            </TabsContent>
+          </Tabs>
           
           <div className="max-w-xl text-center mt-8 px-4">
             <h2 className="text-xl font-semibold mb-2">Track your productivity</h2>

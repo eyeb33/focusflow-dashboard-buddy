@@ -6,7 +6,6 @@ import DashboardHeader from "@/components/Dashboard/DashboardHeader";
 import StatCardsGrid from "@/components/Dashboard/StatCardsGrid";
 import ChartsGrid from "@/components/Dashboard/ChartsGrid";
 import ProductivityInsights from "@/components/Dashboard/ProductivityInsights";
-import TaskManager from "@/components/Tasks/TaskManager";
 import { mockDashboardData } from "@/data/mockDashboardData";
 
 const Dashboard = () => {
@@ -17,14 +16,11 @@ const Dashboard = () => {
       <div className="flex-1 container max-w-7xl mx-auto px-4 py-8">
         <DashboardHeader />
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="md:col-span-2">
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-6">
+          <div className="md:col-span-1">
             <StatCardsGrid 
               stats={mockDashboardData.stats} 
             />
-          </div>
-          <div className="md:col-span-1">
-            <TaskManager />
           </div>
         </div>
         
