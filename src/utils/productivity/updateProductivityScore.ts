@@ -9,12 +9,20 @@ export const updateProductivityScore = async (userId: string, date: string) => {
   try {
     if (!userId) return;
     
+    // Get start and end of the day for proper date filtering
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+    
     const { data: sessions, error: sessionsError } = await supabase
       .from('focus_sessions')
       .select('*')
       .eq('user_id', userId)
       .eq('session_type', 'work')
-      .like('created_at', `${date}%`);
+      .gte('created_at', startOfDay.toISOString())
+      .lte('created_at', endOfDay.toISOString());
       
     if (sessionsError) throw sessionsError;
     

@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -151,7 +150,7 @@ export const useProductivityData = (userId: string | undefined) => {
     queryKey: ['productivity', 'daily', userId],
     queryFn: fetchDailyProductivity,
     enabled: !!userId,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 60 * 1000, // 1 minute - reduced from 2 minutes
   });
 
   // Weekly productivity data query
@@ -159,7 +158,7 @@ export const useProductivityData = (userId: string | undefined) => {
     queryKey: ['productivity', 'weekly', userId],
     queryFn: fetchWeeklyProductivity,
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 2 * 60 * 1000, // 2 minutes - reduced from 5 minutes
   });
 
   // Monthly productivity data query
@@ -167,7 +166,7 @@ export const useProductivityData = (userId: string | undefined) => {
     queryKey: ['productivity', 'monthly', userId],
     queryFn: fetchMonthlyProductivity,
     enabled: !!userId,
-    staleTime: 15 * 60 * 1000, // 15 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes - reduced from 15 minutes
   });
 
   return {

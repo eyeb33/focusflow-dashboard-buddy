@@ -46,6 +46,11 @@ export const useDashboardData = () => {
         refetchProductivity()
       ]);
       
+      toast({
+        title: "Dashboard refreshed",
+        description: "Latest productivity data has been loaded.",
+      });
+      
       console.log('All dashboard data refreshed successfully');
     } catch (error: any) {
       console.error('Error refreshing dashboard data:', error.message);

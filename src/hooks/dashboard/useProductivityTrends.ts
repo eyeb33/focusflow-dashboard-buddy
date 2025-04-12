@@ -37,7 +37,7 @@ export const useProductivityTrends = (userId: string | undefined) => {
     queryKey: ['productivityTrends', userId],
     queryFn: fetchProductivityTrends,
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 60 * 1000, // 1 minute - reduced from 5 minutes
   });
 
   return {

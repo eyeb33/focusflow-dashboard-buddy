@@ -48,7 +48,7 @@ export const useInsights = (userId: string | undefined) => {
     queryKey: ['insights', userId],
     queryFn: fetchInsights,
     enabled: !!userId,
-    staleTime: 15 * 60 * 1000, // 15 minutes (insights change less frequently)
+    staleTime: 3 * 60 * 1000, // 3 minutes - reduced from 15 minutes
   });
 
   return {

@@ -10,12 +10,15 @@ import ProductivityInsights from "@/components/Dashboard/ProductivityInsights";
 import ProductivityTrendChart from "@/components/Dashboard/ProductivityTrendChart";
 import UserProfileCard from "@/components/Dashboard/UserProfileCard";
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 const Dashboard = () => {
   const { user, isLoading: authLoading } = useAuth();
-  const { dashboardData, isLoading: dataLoading } = useDashboardData();
+  const { dashboardData, isLoading: dataLoading, refreshData } = useDashboardData();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,6 +28,18 @@ const Dashboard = () => {
   }, [user, authLoading, navigate]);
 
   const isLoading = authLoading || dataLoading;
+
+  const handleRefreshData = async () => {
+    try {
+      await refreshData();
+    } catch (error: any) {
+      toast({
+        title: "Error refreshing data",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -81,7 +96,18 @@ const Dashboard = () => {
       <Header />
       
       <div className="flex-1 container max-w-7xl mx-auto px-4 py-8">
-        <DashboardHeader />
+        <div className="flex justify-between items-center mb-6">
+          <DashboardHeader />
+          <Button 
+            onClick={handleRefreshData} 
+            variant="ghost" 
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh Data
+          </Button>
+        </div>
         
         <UserProfileCard />
         
