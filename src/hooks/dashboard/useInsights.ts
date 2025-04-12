@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface InsightData {
@@ -8,10 +8,10 @@ export interface InsightData {
 }
 
 export const useInsights = (userId: string | undefined) => {
-  const [insights, setInsights] = useState<InsightData[]>([]);
-
-  const fetchInsights = async () => {
+  const fetchInsights = async (): Promise<InsightData[]> => {
     try {
+      if (!userId) return [];
+      
       const { data, error } = await supabase
         .from('insights')
         .select('title, content')
@@ -37,7 +37,6 @@ export const useInsights = (userId: string | undefined) => {
         }
       ];
 
-      setInsights(insightsData);
       return insightsData;
     } catch (error: any) {
       console.error('Error fetching insights:', error.message);
@@ -45,5 +44,18 @@ export const useInsights = (userId: string | undefined) => {
     }
   };
 
-  return { insights, fetchInsights };
+  const result = useQuery({
+    queryKey: ['insights', userId],
+    queryFn: fetchInsights,
+    enabled: !!userId,
+    staleTime: 15 * 60 * 1000, // 15 minutes (insights change less frequently)
+  });
+
+  return {
+    insights: result.data || [],
+    isLoading: result.isLoading,
+    isError: result.isError,
+    error: result.error,
+    refetch: result.refetch
+  };
 };

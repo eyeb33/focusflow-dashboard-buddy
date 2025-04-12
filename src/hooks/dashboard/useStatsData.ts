@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { calculateStreak } from '@/utils/streak/calculateStreak';
 
@@ -18,25 +18,11 @@ export interface StatsData {
 }
 
 export const useStatsData = (userId: string | undefined) => {
-  const [stats, setStats] = useState<StatsData>({
-    totalSessions: 0,
-    totalMinutes: 0,
-    dailyAverage: 0,
-    currentStreak: 0,
-    bestStreak: 0,
-    weeklyChange: {
-      sessions: 0,
-      minutes: 0,
-      dailyAvg: 0,
-      isPositive: true
-    }
-  });
-
-  const fetchTotalStats = async () => {
+  const fetchTotalStats = async (): Promise<StatsData | null> => {
     try {
       if (!userId) {
         console.error('No user ID available for fetching stats');
-        return;
+        return null;
       }
       
       console.log('Fetching total stats for user:', userId);
@@ -152,12 +138,6 @@ export const useStatsData = (userId: string | undefined) => {
       // If we have today's summary, use that value for total minutes
       const totalMinutes = todaySummary ? todaySummary.total_focus_time : totalMinutesFromSessions;
       
-      console.log('Total minutes calculation:', {
-        fromSummary: todaySummary?.total_focus_time || 0,
-        fromSessions: totalMinutesFromSessions,
-        final: totalMinutes
-      });
-      
       const totalSessions = sessionCount?.[0]?.count || 0;
       
       // Calculate current streak
@@ -179,7 +159,7 @@ export const useStatsData = (userId: string | undefined) => {
       const bestStreakValue = summaryData?.reduce((max: number, day: any) => 
         Math.max(max, day.longest_streak || 0), 0) || 0;
       
-      // Calculate daily average from the summary data
+      // Calculate daily average
       // First, include today's sessions if available
       let todayCompletedSessions = 0;
       if (todaySummary) {
@@ -199,7 +179,6 @@ export const useStatsData = (userId: string | undefined) => {
           
         if (!todaySessionsError) {
           todayCompletedSessions = todaySessions?.length || 0;
-          console.log('Today completed sessions from focus_sessions:', todayCompletedSessions);
         }
       }
       
@@ -208,12 +187,6 @@ export const useStatsData = (userId: string | undefined) => {
       const totalCompletedSessions = summaryData?.reduce((acc: number, day: any) => 
         acc + (day.total_completed_sessions || 0), 0) || 0;
       
-      console.log('Daily average calculation:', {
-        totalCompletedSessions,
-        totalDaysWithActivity,
-        todayCompletedSessions
-      });
-      
       // Ensure we don't double-count today's sessions if it's already in the summary data
       const hasEntryToday = summaryData && summaryData.some(day => day.date === today);
       const adjustedTotalSessions = hasEntryToday ? 
@@ -221,28 +194,13 @@ export const useStatsData = (userId: string | undefined) => {
         totalCompletedSessions + todayCompletedSessions;
         
       const dailyAverage = Math.round((adjustedTotalSessions / totalDaysWithActivity) * 10) / 10;
-      
-      console.log('Calculated daily average:', dailyAverage);
 
-      setStats({
-        totalSessions: totalSessions,
-        totalMinutes: totalMinutes,
-        dailyAverage: dailyAverage,
-        currentStreak: Math.max(1, currentStreak), // Ensure streak is at least 1 if we have data for today
-        bestStreak: Math.max(bestStreakValue, currentStreak), // Update best streak if current is higher
-        weeklyChange: {
-          sessions: sessionChangePercent,
-          minutes: minutesChangePercent,
-          dailyAvg: avgChangePercent,
-          isPositive: sessionChangePercent >= 0
-        }
-      });
       return {
         totalSessions,
         totalMinutes,
         dailyAverage,
-        currentStreak: Math.max(1, currentStreak),
-        bestStreak: Math.max(bestStreakValue, currentStreak),
+        currentStreak: Math.max(1, currentStreak), // Ensure streak is at least 1 if we have data for today
+        bestStreak: Math.max(bestStreakValue, currentStreak), // Update best streak if current is higher
         weeklyChange: {
           sessions: sessionChangePercent,
           minutes: minutesChangePercent,
@@ -256,5 +214,30 @@ export const useStatsData = (userId: string | undefined) => {
     }
   };
 
-  return { stats, fetchTotalStats };
+  const result = useQuery({
+    queryKey: ['stats', userId],
+    queryFn: fetchTotalStats,
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000, // 5 minutes before considering data stale
+  });
+
+  return {
+    stats: result.data ?? {
+      totalSessions: 0,
+      totalMinutes: 0,
+      dailyAverage: 0,
+      currentStreak: 0,
+      bestStreak: 0,
+      weeklyChange: {
+        sessions: 0,
+        minutes: 0,
+        dailyAvg: 0,
+        isPositive: true
+      }
+    },
+    isLoading: result.isLoading,
+    isError: result.isError,
+    error: result.error,
+    refetch: result.refetch
+  };
 };

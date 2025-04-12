@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,15 +15,11 @@ export interface UserProfile {
 export const useUserProfile = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [updating, setUpdating] = useState(false);
+  const queryClient = useQueryClient();
 
-  const fetchProfile = async () => {
+  const fetchProfile = async (): Promise<UserProfile | null> => {
     try {
-      setLoading(true);
       if (!user) {
-        setProfile(null);
         return null;
       }
 
@@ -37,7 +33,6 @@ export const useUserProfile = () => {
         throw error;
       }
 
-      setProfile(data as UserProfile);
       return data as UserProfile;
     } catch (error: any) {
       console.error('Error fetching profile:', error.message);
@@ -47,14 +42,20 @@ export const useUserProfile = () => {
         variant: "destructive",
       });
       return null;
-    } finally {
-      setLoading(false);
     }
   };
 
-  const updateProfile = async (updates: Partial<UserProfile>) => {
-    try {
-      setUpdating(true);
+  // Query for profile data
+  const profileQuery = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: fetchProfile,
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Mutation for updating profile
+  const updateProfileMutation = useMutation({
+    mutationFn: async (updates: Partial<UserProfile>) => {
       if (!user) {
         throw new Error('No user authenticated');
       }
@@ -71,29 +72,27 @@ export const useUserProfile = () => {
         throw error;
       }
 
+      return true;
+    },
+    onSuccess: () => {
       toast({
         title: "Profile updated",
         description: "Your profile has been updated successfully.",
       });
-      
-      // Refresh profile data after update
-      await fetchProfile();
-      return true;
-    } catch (error: any) {
+      queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
+    },
+    onError: (error: any) => {
       toast({
         title: "Error updating profile",
         description: error.message,
         variant: "destructive",
       });
-      return false;
-    } finally {
-      setUpdating(false);
     }
-  };
+  });
 
-  const uploadAvatar = async (file: File) => {
-    try {
-      setUpdating(true);
+  // Mutation for uploading avatar
+  const uploadAvatarMutation = useMutation({
+    mutationFn: async (file: File) => {
       if (!user) {
         throw new Error('No user authenticated');
       }
@@ -117,37 +116,42 @@ export const useUserProfile = () => {
         .getPublicUrl(filePath);
 
       // Update the user's profile with the avatar URL
-      await updateProfile({ avatar_url: publicUrl });
-      
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          avatar_url: publicUrl,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      return publicUrl;
+    },
+    onSuccess: () => {
       toast({
         title: "Avatar updated",
         description: "Your profile picture has been updated successfully.",
       });
-      
-      return publicUrl;
-    } catch (error: any) {
+      queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
+    },
+    onError: (error: any) => {
       toast({
         title: "Error uploading avatar",
         description: error.message,
         variant: "destructive",
       });
-      return null;
-    } finally {
-      setUpdating(false);
     }
-  };
-
-  // Load profile on mount and when user changes
-  useEffect(() => {
-    fetchProfile();
-  }, [user?.id]);
+  });
 
   return {
-    profile,
-    loading,
-    updating,
-    fetchProfile,
-    updateProfile,
-    uploadAvatar,
+    profile: profileQuery.data,
+    loading: profileQuery.isLoading,
+    updating: updateProfileMutation.isPending || uploadAvatarMutation.isPending,
+    fetchProfile: () => queryClient.invalidateQueries({ queryKey: ['profile', user?.id] }),
+    updateProfile: updateProfileMutation.mutate,
+    uploadAvatar: uploadAvatarMutation.mutate,
   };
 };

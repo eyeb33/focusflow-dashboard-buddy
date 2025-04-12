@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface StreakDay {
@@ -8,10 +8,10 @@ export interface StreakDay {
 }
 
 export const useStreakData = (userId: string | undefined) => {
-  const [streakData, setStreakData] = useState<StreakDay[]>([]);
-
-  const fetchStreakData = async () => {
+  const fetchStreakData = async (): Promise<StreakDay[]> => {
     try {
+      if (!userId) return [];
+      
       // First, get actual focus sessions by day
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -48,7 +48,6 @@ export const useStreakData = (userId: string | undefined) => {
         });
       }
 
-      setStreakData(result);
       return result;
     } catch (error: any) {
       console.error('Error fetching streak data:', error.message);
@@ -56,5 +55,18 @@ export const useStreakData = (userId: string | undefined) => {
     }
   };
 
-  return { streakData, fetchStreakData };
+  const result = useQuery({
+    queryKey: ['streakData', userId],
+    queryFn: fetchStreakData,
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  return {
+    streakData: result.data || [],
+    isLoading: result.isLoading,
+    isError: result.isError,
+    error: result.error,
+    refetch: result.refetch
+  };
 };

@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface TrendData {
@@ -8,10 +8,10 @@ export interface TrendData {
 }
 
 export const useProductivityTrends = (userId: string | undefined) => {
-  const [productivityTrend, setProductivityTrend] = useState<TrendData[]>([]);
-
-  const fetchProductivityTrends = async () => {
+  const fetchProductivityTrends = async (): Promise<TrendData[]> => {
     try {
+      if (!userId) return [];
+      
       const { data, error } = await supabase
         .from('productivity_trends')
         .select('date, productivity_score')
@@ -26,7 +26,6 @@ export const useProductivityTrends = (userId: string | undefined) => {
         productivity: item.productivity_score
       })) || [];
 
-      setProductivityTrend(formattedData);
       return formattedData;
     } catch (error: any) {
       console.error('Error fetching productivity trends:', error.message);
@@ -34,5 +33,18 @@ export const useProductivityTrends = (userId: string | undefined) => {
     }
   };
 
-  return { productivityTrend, fetchProductivityTrends };
+  const result = useQuery({
+    queryKey: ['productivityTrends', userId],
+    queryFn: fetchProductivityTrends,
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  return {
+    productivityTrend: result.data || [],
+    isLoading: result.isLoading,
+    isError: result.isError,
+    error: result.error,
+    refetch: result.refetch
+  };
 };

@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface ProductivityDataPoint {
@@ -8,21 +8,11 @@ export interface ProductivityDataPoint {
   minutes: number;
 }
 
-export interface ProductivityData {
-  dailyProductivity: ProductivityDataPoint[];
-  weeklyProductivity: ProductivityDataPoint[];
-  monthlyProductivity: ProductivityDataPoint[];
-}
-
 export const useProductivityData = (userId: string | undefined) => {
-  const [productivityData, setProductivityData] = useState<ProductivityData>({
-    dailyProductivity: [],
-    weeklyProductivity: [],
-    monthlyProductivity: []
-  });
-
-  const fetchDailyProductivity = async () => {
+  const fetchDailyProductivity = async (): Promise<ProductivityDataPoint[]> => {
     try {
+      if (!userId) return [];
+      
       const today = new Date();
       const startOfDay = new Date(today);
       startOfDay.setHours(0, 0, 0, 0);
@@ -64,8 +54,10 @@ export const useProductivityData = (userId: string | undefined) => {
     }
   };
 
-  const fetchWeeklyProductivity = async () => {
+  const fetchWeeklyProductivity = async (): Promise<ProductivityDataPoint[]> => {
     try {
+      if (!userId) return [];
+      
       const today = new Date();
       const startOfWeek = new Date(today);
       startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
@@ -109,8 +101,10 @@ export const useProductivityData = (userId: string | undefined) => {
     }
   };
 
-  const fetchMonthlyProductivity = async () => {
+  const fetchMonthlyProductivity = async (): Promise<ProductivityDataPoint[]> => {
     try {
+      if (!userId) return [];
+      
       const today = new Date();
       const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
       
@@ -152,25 +146,40 @@ export const useProductivityData = (userId: string | undefined) => {
     }
   };
 
-  const fetchAllProductivityData = async () => {
-    try {
-      const daily = await fetchDailyProductivity();
-      const weekly = await fetchWeeklyProductivity();
-      const monthly = await fetchMonthlyProductivity();
+  // Daily productivity data query
+  const dailyQuery = useQuery({
+    queryKey: ['productivity', 'daily', userId],
+    queryFn: fetchDailyProductivity,
+    enabled: !!userId,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
 
-      const newData = {
-        dailyProductivity: daily,
-        weeklyProductivity: weekly,
-        monthlyProductivity: monthly
-      };
+  // Weekly productivity data query
+  const weeklyQuery = useQuery({
+    queryKey: ['productivity', 'weekly', userId],
+    queryFn: fetchWeeklyProductivity,
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
-      setProductivityData(newData);
-      return newData;
-    } catch (error: any) {
-      console.error('Error fetching productivity data:', error.message);
-      return productivityData;
+  // Monthly productivity data query
+  const monthlyQuery = useQuery({
+    queryKey: ['productivity', 'monthly', userId],
+    queryFn: fetchMonthlyProductivity,
+    enabled: !!userId,
+    staleTime: 15 * 60 * 1000, // 15 minutes
+  });
+
+  return {
+    dailyProductivity: dailyQuery.data || [],
+    weeklyProductivity: weeklyQuery.data || [],
+    monthlyProductivity: monthlyQuery.data || [],
+    isLoading: dailyQuery.isLoading || weeklyQuery.isLoading || monthlyQuery.isLoading,
+    isError: dailyQuery.isError || weeklyQuery.isError || monthlyQuery.isError,
+    refetch: () => {
+      dailyQuery.refetch();
+      weeklyQuery.refetch();
+      monthlyQuery.refetch();
     }
   };
-
-  return { productivityData, fetchAllProductivityData };
 };
