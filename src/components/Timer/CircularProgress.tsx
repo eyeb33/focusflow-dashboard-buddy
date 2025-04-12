@@ -26,12 +26,21 @@ const CircularProgress = ({
   const getStrokeColor = () => {
     switch (mode) {
       case 'break':
-        return 'rgb(242, 252, 226)';
+        return {
+          light: 'rgb(242, 252, 226)',
+          dark: 'rgba(242, 252, 226, 0.7)'
+        };
       case 'longBreak':
-        return 'rgb(126, 105, 171)';
+        return {
+          light: 'rgb(126, 105, 171)',
+          dark: 'rgba(126, 105, 171, 0.7)'
+        };
       case 'work':
       default:
-        return 'rgb(155, 135, 245)';
+        return {
+          light: 'rgb(155, 135, 245)',
+          dark: 'rgba(155, 135, 245, 0.7)'
+        };
     }
   };
   
@@ -39,6 +48,8 @@ const CircularProgress = ({
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference * (1 - normalizedProgress);
+  
+  const colors = getStrokeColor();
   
   return (
     <div className={cn("relative flex items-center justify-center", className)}>
@@ -54,7 +65,8 @@ const CircularProgress = ({
           cy={size / 2}
           r={radius}
           fill="transparent"
-          stroke="rgba(0,0,0,0.1)"
+          stroke="rgba(128, 128, 128, 0.2)"
+          className="dark:stroke-gray-700/50"
           strokeWidth={strokeWidth}
         />
         
@@ -64,7 +76,7 @@ const CircularProgress = ({
           cy={size / 2}
           r={radius}
           fill="transparent"
-          stroke={getStrokeColor()}
+          stroke={`${colors.light} dark:${colors.dark}`}
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
