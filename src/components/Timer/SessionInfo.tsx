@@ -1,5 +1,5 @@
-
 import React from 'react';
+import { useTimerStats } from '@/hooks/useTimerStats';
 
 interface SessionInfoProps {
   completedSessions: number;

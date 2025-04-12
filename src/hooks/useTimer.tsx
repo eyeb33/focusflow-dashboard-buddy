@@ -1,7 +1,14 @@
 
-// This file now just re-exports the useTimer hook from the TimerContext
-// to maintain compatibility with existing code
+// This file re-exports the useTimer hook from TimerContext
+// and adds additional specialized hooks
 
-import { useTimer } from '@/contexts/TimerContext';
+import { useTimer as useTimerContext } from '@/contexts/TimerContext';
+import { useTimerControls } from './useTimerControls';
+import { useTimerStats } from './useTimerStats';
+import { useTimerSettings } from './useTimerSettings';
 
-export { useTimer };
+// Re-export the main hook
+export const useTimer = useTimerContext;
+
+// Export specialized hooks
+export { useTimerControls, useTimerStats, useTimerSettings };

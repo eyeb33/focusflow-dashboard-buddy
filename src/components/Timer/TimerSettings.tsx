@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Popover,
@@ -9,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Settings } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { useTimerSettings } from "@/hooks/useTimerSettings";
 
 interface TimerSettingsProps {
   workDuration: number;

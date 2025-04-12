@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -113,7 +112,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               setTotalTimeToday(prev => prev + settings.workDuration);
               
               if (user) {
-                saveFocusSession(settings.workDuration * 60, true);
+                saveFocusSession(settings.workDuration * 60);
                 updateDailyStats(settings.workDuration);
               }
               
@@ -125,8 +124,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             } else {
               if (user) {
                 saveFocusSession(
-                  timerMode === 'break' ? settings.breakDuration * 60 : settings.longBreakDuration * 60, 
-                  true
+                  timerMode === 'break' ? settings.breakDuration * 60 : settings.longBreakDuration * 60
                 );
                 updateDailyStats(
                   timerMode === 'break' ? settings.breakDuration : settings.longBreakDuration
@@ -151,14 +149,14 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   }, [isRunning, timerMode, user, settings, completedSessions]);
 
-  const saveFocusSession = async (duration: number, completed: boolean) => {
+  const saveFocusSession = async (duration: number) => {
     try {
       if (user) {
         const { error } = await supabase.from('focus_sessions').insert({
           user_id: user.id,
           session_type: timerMode,
           duration: duration,
-          completed: completed
+          completed: true
         });
         
         if (error) {
@@ -166,7 +164,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         } else {
           console.log('Session saved successfully');
           
-          if (completed && timerMode === 'work') {
+          if (timerMode === 'work') {
             toast({
               title: "Session completed!",
               description: `You completed a ${Math.floor(duration / 60)} minute focus session.`,
@@ -392,7 +390,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (user) {
         const elapsedTime = getTotalTime() - timeRemaining;
         if (elapsedTime > 0) {
-          saveFocusSession(elapsedTime, false);
+          saveFocusSession(elapsedTime);
         }
       }
       setTimerMode(completedSessions % settings.sessionsUntilLongBreak === settings.sessionsUntilLongBreak - 1 ? 'longBreak' : 'break');
@@ -400,7 +398,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (user) {
         const elapsedTime = getTotalTime() - timeRemaining;
         if (elapsedTime > 0) {
-          saveFocusSession(elapsedTime, false);
+          saveFocusSession(elapsedTime);
         }
       }
       setTimerMode('work');
@@ -411,7 +409,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (isRunning && user) {
       const elapsedTime = getTotalTime() - timeRemaining;
       if (elapsedTime > 0) {
-        saveFocusSession(elapsedTime, false);
+        saveFocusSession(elapsedTime);
       }
     }
     setIsRunning(false);
