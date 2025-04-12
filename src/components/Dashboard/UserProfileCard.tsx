@@ -1,111 +1,26 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Camera, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 
 const UserProfileCard: React.FC = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const { profile, loading, updating, uploadAvatar } = useUserProfile();
   const [username, setUsername] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
+  React.useEffect(() => {
+    if (profile) {
+      setUsername(profile.username || user?.user_metadata?.name || user?.email?.split('@')[0] || 'User');
     }
-  }, [user]);
+  }, [profile, user]);
 
-  const fetchProfile = async () => {
-    try {
-      setLoading(true);
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('avatar_url, username')
-        .eq('id', user.id)
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      if (data) {
-        setAvatarUrl(data.avatar_url);
-        setUsername(data.username || user.user_metadata?.name || user.email?.split('@')[0] || 'User');
-      }
-    } catch (error: any) {
-      console.error('Error fetching profile:', error.message);
-      toast({
-        title: "Error fetching profile",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+  const handleUploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0) {
+      return;
     }
-  };
-
-  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      setUploading(true);
-      if (!event.target.files || event.target.files.length === 0) {
-        throw new Error('You must select an image to upload.');
-      }
-
-      const file = event.target.files[0];
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user?.id}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      // Upload the file to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      // Get the public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      // Update the user's profile with the avatar URL
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user?.id,
-          avatar_url: publicUrl,
-          updated_at: new Date().toISOString(),
-        });
-
-      if (updateError) {
-        throw updateError;
-      }
-
-      setAvatarUrl(publicUrl);
-      toast({
-        title: "Avatar updated",
-        description: "Your profile picture has been updated successfully.",
-      });
-      fetchProfile();
-    } catch (error: any) {
-      toast({
-        title: "Error uploading avatar",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setUploading(false);
-    }
+    await uploadAvatar(event.target.files[0]);
   };
 
   const getInitials = (name: string | null) => {
@@ -118,10 +33,10 @@ const UserProfileCard: React.FC = () => {
       <CardContent className="py-6">
         <div className="flex flex-col items-center space-y-4">
           <ProfileAvatar 
-            avatarUrl={avatarUrl} 
+            avatarUrl={profile?.avatar_url} 
             username={username} 
-            uploading={uploading} 
-            uploadAvatar={uploadAvatar} 
+            uploading={updating} 
+            uploadAvatar={handleUploadAvatar} 
             getInitials={getInitials}
           />
           
