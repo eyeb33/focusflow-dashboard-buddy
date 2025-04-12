@@ -36,6 +36,57 @@ export type Database = {
         }
         Relationships: []
       }
+      insights: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      productivity_trends: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          productivity_score: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          id?: string
+          productivity_score: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          productivity_score?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -57,6 +108,42 @@ export type Database = {
           id?: string
           updated_at?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      sessions_summary: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          longest_streak: number
+          total_completed_sessions: number
+          total_focus_time: number
+          total_sessions: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          id?: string
+          longest_streak?: number
+          total_completed_sessions?: number
+          total_focus_time?: number
+          total_sessions?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          longest_streak?: number
+          total_completed_sessions?: number
+          total_focus_time?: number
+          total_sessions?: number
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }

@@ -9,19 +9,22 @@ import ChartsGrid from "@/components/Dashboard/ChartsGrid";
 import ProductivityInsights from "@/components/Dashboard/ProductivityInsights";
 import ProductivityTrendChart from "@/components/Dashboard/ProductivityTrendChart";
 import UserProfileCard from "@/components/Dashboard/UserProfileCard";
-import { mockDashboardData } from "@/data/mockDashboardData";
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
+import { useDashboardData } from '@/hooks/useDashboardData';
 
 const Dashboard = () => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const { dashboardData, isLoading: dataLoading } = useDashboardData();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!authLoading && !user) {
       navigate('/auth', { state: { mode: 'login' } });
     }
-  }, [user, isLoading, navigate]);
+  }, [user, authLoading, navigate]);
+
+  const isLoading = authLoading || dataLoading;
 
   if (isLoading) {
     return (
@@ -35,6 +38,36 @@ const Dashboard = () => {
     return null; // This prevents a flash of content before the redirect
   }
 
+  // Create stats for the StatCardsGrid
+  const stats = [
+    {
+      title: "Total Sessions",
+      value: dashboardData.stats.totalSessions.toString(),
+      icon: "Clock",
+      trend: {
+        value: 12,
+        isPositive: true
+      }
+    },
+    {
+      title: "Focus Minutes",
+      value: dashboardData.stats.totalMinutes.toString(),
+      icon: "Flame"
+    },
+    {
+      title: "Daily Average",
+      value: dashboardData.stats.dailyAverage.toString(),
+      icon: "Target",
+      description: "sessions per day"
+    },
+    {
+      title: "Current Streak",
+      value: dashboardData.stats.currentStreak.toString(),
+      icon: "Zap",
+      description: "days"
+    }
+  ];
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
@@ -47,7 +80,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-6">
           <div className="md:col-span-1">
             <StatCardsGrid 
-              stats={mockDashboardData.stats} 
+              stats={stats} 
             />
           </div>
         </div>
@@ -55,19 +88,19 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-2">
             <ChartsGrid 
-              dailyData={mockDashboardData.dailyProductivity}
-              weeklyData={mockDashboardData.weeklyProductivity}
-              monthlyData={mockDashboardData.monthlyProductivity}
-              streakData={mockDashboardData.streakData}
+              dailyData={dashboardData.dailyProductivity}
+              weeklyData={dashboardData.weeklyProductivity}
+              monthlyData={dashboardData.monthlyProductivity}
+              streakData={dashboardData.streakData}
             />
           </div>
           <div className="lg:col-span-1">
-            <ProductivityInsights insights={mockDashboardData.insights} />
+            <ProductivityInsights insights={dashboardData.insights} />
           </div>
         </div>
         
         <div className="mb-6">
-          <ProductivityTrendChart data={mockDashboardData.productivityTrend} />
+          <ProductivityTrendChart data={dashboardData.productivityTrend} />
         </div>
       </div>
       
