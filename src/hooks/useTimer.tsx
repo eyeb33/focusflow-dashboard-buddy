@@ -51,7 +51,6 @@ export const useTimer = (initialSettings: TimerSettings) => {
       const today = new Date();
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       
-      // Get today's completed work sessions
       const { data, error } = await supabase
         .from('focus_sessions')
         .select('*')
@@ -62,7 +61,6 @@ export const useTimer = (initialSettings: TimerSettings) => {
         
       if (error) throw error;
       
-      // Calculate total time and completed sessions
       const totalMinutes = data.reduce((total, session) => {
         return total + Math.floor(session.duration / 60);
       }, 0);
@@ -86,7 +84,6 @@ export const useTimer = (initialSettings: TimerSettings) => {
               setCompletedSessions(newCompletedSessions);
               setTotalTimeToday(prev => prev + settings.workDuration);
               
-              // Save completed session to Supabase if user is logged in
               if (user) {
                 saveFocusSession(settings.workDuration * 60, true);
                 updateDailyStats(settings.workDuration, true);
@@ -98,10 +95,13 @@ export const useTimer = (initialSettings: TimerSettings) => {
                 setTimerMode('break');
               }
             } else {
-              // Save break session to Supabase if user is logged in
               if (user) {
                 saveFocusSession(
                   timerMode === 'break' ? settings.breakDuration * 60 : settings.longBreakDuration * 60, 
+                  true
+                );
+                updateDailyStats(
+                  timerMode === 'break' ? settings.breakDuration : settings.longBreakDuration, 
                   true
                 );
               }
@@ -124,7 +124,6 @@ export const useTimer = (initialSettings: TimerSettings) => {
     };
   }, [isRunning, timerMode, user, settings, completedSessions]);
 
-  // Function to save a focus session to Supabase
   const saveFocusSession = async (duration: number, completed: boolean) => {
     try {
       if (user) {
@@ -140,7 +139,6 @@ export const useTimer = (initialSettings: TimerSettings) => {
         } else {
           console.log('Session saved successfully');
           
-          // Show toast notification for completed work sessions
           if (completed && timerMode === 'work') {
             toast({
               title: "Session completed!",
@@ -154,14 +152,12 @@ export const useTimer = (initialSettings: TimerSettings) => {
     }
   };
 
-  // Function to update daily stats in sessions_summary
   const updateDailyStats = async (durationMinutes: number, completed: boolean) => {
     try {
       if (!user || !completed) return;
       
       const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
       
-      // Check if there's already a summary for today
       const { data: existingData, error: queryError } = await supabase
         .from('sessions_summary')
         .select('*')
@@ -173,7 +169,6 @@ export const useTimer = (initialSettings: TimerSettings) => {
         throw queryError;
       }
       
-      // Get streak info
       const { data: recentDays, error: streakError } = await supabase
         .from('sessions_summary')
         .select('date')
@@ -183,20 +178,16 @@ export const useTimer = (initialSettings: TimerSettings) => {
         
       if (streakError) throw streakError;
       
-      // Calculate current streak
       let currentStreak = 0;
       if (recentDays && recentDays.length > 0) {
         const dates = recentDays.map(day => new Date(day.date).toISOString().split('T')[0]);
         
-        // Check if today is in the list
         const todayIndex = dates.indexOf(today);
         if (todayIndex === -1) {
-          // Today is not yet in the list, add it
           dates.unshift(today);
         }
         
-        // Calculate streak
-        currentStreak = 1; // Start with today
+        currentStreak = 1;
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         
@@ -204,7 +195,6 @@ export const useTimer = (initialSettings: TimerSettings) => {
           const currentDate = new Date(dates[i-1]);
           const prevDate = new Date(dates[i]);
           
-          // Check if dates are consecutive
           const diffTime = currentDate.getTime() - prevDate.getTime();
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
           
@@ -215,11 +205,10 @@ export const useTimer = (initialSettings: TimerSettings) => {
           }
         }
       } else {
-        currentStreak = 1; // First day with sessions
+        currentStreak = 1;
       }
       
       if (existingData) {
-        // Update existing summary
         const { error } = await supabase
           .from('sessions_summary')
           .update({
@@ -233,7 +222,6 @@ export const useTimer = (initialSettings: TimerSettings) => {
           
         if (error) throw error;
       } else {
-        // Create new summary for today
         const { error } = await supabase
           .from('sessions_summary')
           .insert({
@@ -248,7 +236,6 @@ export const useTimer = (initialSettings: TimerSettings) => {
         if (error) throw error;
       }
       
-      // Update productivity score for trends
       await updateProductivityScore(today);
       
     } catch (error) {
@@ -256,12 +243,10 @@ export const useTimer = (initialSettings: TimerSettings) => {
     }
   };
 
-  // Function to update productivity score
   const updateProductivityScore = async (date: string) => {
     try {
       if (!user) return;
       
-      // Get today's focus sessions
       const { data: sessions, error: sessionsError } = await supabase
         .from('focus_sessions')
         .select('*')
@@ -271,20 +256,16 @@ export const useTimer = (initialSettings: TimerSettings) => {
         
       if (sessionsError) throw sessionsError;
       
-      // Calculate productivity score based on number of completed sessions
-      // and total duration
       const completedSessions = sessions.filter(s => s.completed).length;
       const totalDurationMinutes = sessions
         .filter(s => s.completed)
         .reduce((total, session) => total + (session.duration / 60), 0);
       
-      // Simple formula: 10 points per session + 1 point per 3 minutes, max 100
       const score = Math.min(
         100,
         (completedSessions * 10) + Math.floor(totalDurationMinutes / 3)
       );
       
-      // Check if there's already a trend entry for today
       const { data: existingTrend, error: trendError } = await supabase
         .from('productivity_trends')
         .select('id')
@@ -292,12 +273,11 @@ export const useTimer = (initialSettings: TimerSettings) => {
         .eq('date', date)
         .single();
         
-      if (trendError && trendError.code !== 'PGRST116') { // PGRST116 means no rows returned
+      if (trendError && trendError.code !== 'PGRST116') {
         throw trendError;
       }
       
       if (existingTrend) {
-        // Update existing trend
         await supabase
           .from('productivity_trends')
           .update({
@@ -305,7 +285,6 @@ export const useTimer = (initialSettings: TimerSettings) => {
           })
           .eq('id', existingTrend.id);
       } else {
-        // Create new trend
         await supabase
           .from('productivity_trends')
           .insert({
@@ -315,7 +294,6 @@ export const useTimer = (initialSettings: TimerSettings) => {
           });
       }
       
-      // If the user has completed several sessions, generate insights
       if (completedSessions >= 3) {
         await generateInsights(completedSessions, totalDurationMinutes);
       }
@@ -325,13 +303,11 @@ export const useTimer = (initialSettings: TimerSettings) => {
     }
   };
 
-  // Function to generate insights based on user's behavior
   const generateInsights = async (sessionsCount: number, durationMinutes: number) => {
     try {
       if (!user) return;
       
-      // Check if we already created an insight today
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const today = new Date().toISOString().split('T')[0];
       
       const { data: existingInsights, error: insightError } = await supabase
         .from('insights')
@@ -342,7 +318,6 @@ export const useTimer = (initialSettings: TimerSettings) => {
         
       if (insightError) throw insightError;
       
-      // Only create a new insight if none exists for today
       if (existingInsights && existingInsights.length === 0) {
         let title = '';
         let content = '';
@@ -358,7 +333,6 @@ export const useTimer = (initialSettings: TimerSettings) => {
           content = `You've completed ${sessionsCount} focus sessions today. Each session helps build your productivity habits.`;
         }
         
-        // Save the insight
         await supabase
           .from('insights')
           .insert({
@@ -388,7 +362,6 @@ export const useTimer = (initialSettings: TimerSettings) => {
   const handleSkip = () => {
     setIsRunning(false);
     if (timerMode === 'work') {
-      // Save skipped work session
       if (user) {
         const elapsedTime = getTotalTime() - timeRemaining;
         if (elapsedTime > 0) {
@@ -397,7 +370,6 @@ export const useTimer = (initialSettings: TimerSettings) => {
       }
       setTimerMode(completedSessions % settings.sessionsUntilLongBreak === settings.sessionsUntilLongBreak - 1 ? 'longBreak' : 'break');
     } else {
-      // Save skipped break session
       if (user) {
         const elapsedTime = getTotalTime() - timeRemaining;
         if (elapsedTime > 0) {
@@ -409,7 +381,6 @@ export const useTimer = (initialSettings: TimerSettings) => {
   };
   
   const handleModeChange = (mode: 'work' | 'break' | 'longBreak') => {
-    // Save the current session if it was in progress
     if (isRunning && user) {
       const elapsedTime = getTotalTime() - timeRemaining;
       if (elapsedTime > 0) {
@@ -456,3 +427,5 @@ export const useTimer = (initialSettings: TimerSettings) => {
     updateSettings
   };
 };
+
+export { useTimer };
