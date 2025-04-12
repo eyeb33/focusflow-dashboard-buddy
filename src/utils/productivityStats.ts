@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export const updateDailyStats = async (userId: string, durationMinutes: number) => {
@@ -27,7 +26,6 @@ export const updateDailyStats = async (userId: string, durationMinutes: number) 
       
     if (streakError) throw streakError;
     
-    // Pass only the required 2 arguments to calculateStreak, not 3
     let currentStreak = calculateStreak(recentDays, today);
     
     if (existingData) {
