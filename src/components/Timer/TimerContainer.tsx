@@ -7,33 +7,39 @@ import CircularProgress from "@/components/Timer/CircularProgress";
 import TimerControls from "@/components/Timer/TimerControls";
 import TimerSettings from "@/components/Timer/TimerSettings";
 import SessionInfo from "@/components/Timer/SessionInfo";
-import { useTimer } from "@/hooks/useTimer";
+import { useTimerControls } from "@/hooks/useTimerControls";
+import { useTimerStats } from "@/hooks/useTimerStats";
+import { useTimerSettings } from "@/hooks/useTimerSettings";
 
 const TimerContainer: React.FC = () => {
   const {
-    timerMode,
     isRunning,
+    timerMode,
     timeRemaining,
-    completedSessions,
-    totalTimeToday,
-    settings,
     progress,
     formatTime,
-    handleStart,
-    handlePause,
-    handleReset,
-    handleSkip,
-    handleModeChange,
-    getModeLabel,
-    updateSettings
-  } = useTimer();
+    start,
+    pause,
+    reset,
+    skip,
+    changeMode,
+    getModeLabel
+  } = useTimerControls();
+  
+  const {
+    completedSessions,
+    totalTimeToday,
+    sessionsUntilLongBreak
+  } = useTimerStats();
+  
+  const { settings } = useTimerSettings();
 
   return (
     <Card className="w-full max-w-md p-6 bg-white/90 dark:bg-black/80 backdrop-blur-sm shadow-md">
       <div className="flex items-center justify-between mb-6">
         <Tabs 
           value={timerMode} 
-          onValueChange={(v) => handleModeChange(v as 'work' | 'break' | 'longBreak')}
+          onValueChange={(v) => changeMode(v as 'work' | 'break' | 'longBreak')}
           className="w-full"
         >
           <TabsList className="grid w-full grid-cols-3">
@@ -43,16 +49,7 @@ const TimerContainer: React.FC = () => {
           </TabsList>
         </Tabs>
         
-        <TimerSettings
-          workDuration={settings.workDuration}
-          breakDuration={settings.breakDuration}
-          longBreakDuration={settings.longBreakDuration}
-          sessionsUntilLongBreak={settings.sessionsUntilLongBreak}
-          onWorkDurationChange={(value) => updateSettings({ workDuration: value })}
-          onBreakDurationChange={(value) => updateSettings({ breakDuration: value })}
-          onLongBreakDurationChange={(value) => updateSettings({ longBreakDuration: value })}
-          onSessionsUntilLongBreakChange={(value) => updateSettings({ sessionsUntilLongBreak: value })}
-        />
+        <TimerSettings />
       </div>
       
       <div className="flex flex-col items-center">
@@ -78,10 +75,10 @@ const TimerContainer: React.FC = () => {
         
         <TimerControls
           isRunning={isRunning}
-          onStart={handleStart}
-          onPause={handlePause}
-          onReset={handleReset}
-          onSkip={handleSkip}
+          onStart={start}
+          onPause={pause}
+          onReset={reset}
+          onSkip={skip}
           className="mb-2"
         />
       </div>
@@ -89,7 +86,7 @@ const TimerContainer: React.FC = () => {
       <SessionInfo 
         completedSessions={completedSessions}
         totalTimeToday={totalTimeToday}
-        sessionsUntilLongBreak={settings.sessionsUntilLongBreak}
+        sessionsUntilLongBreak={sessionsUntilLongBreak}
       />
     </Card>
   );

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Popover,
@@ -10,27 +11,22 @@ import { Settings } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { useTimerSettings } from "@/hooks/useTimerSettings";
 
-interface TimerSettingsProps {
-  workDuration: number;
-  breakDuration: number;
-  longBreakDuration: number;
-  sessionsUntilLongBreak: number;
-  onWorkDurationChange: (value: number) => void;
-  onBreakDurationChange: (value: number) => void;
-  onLongBreakDurationChange: (value: number) => void;
-  onSessionsUntilLongBreakChange: (value: number) => void;
-}
+const TimerSettings: React.FC = () => {
+  const {
+    settings,
+    updateWorkDuration,
+    updateBreakDuration,
+    updateLongBreakDuration,
+    updateSessionsUntilLongBreak
+  } = useTimerSettings();
 
-const TimerSettings: React.FC<TimerSettingsProps> = ({
-  workDuration,
-  breakDuration,
-  longBreakDuration,
-  sessionsUntilLongBreak,
-  onWorkDurationChange,
-  onBreakDurationChange,
-  onLongBreakDurationChange,
-  onSessionsUntilLongBreakChange
-}) => {
+  const { 
+    workDuration, 
+    breakDuration, 
+    longBreakDuration, 
+    sessionsUntilLongBreak 
+  } = settings;
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -53,7 +49,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({
               max={60}
               step={5}
               value={[workDuration]}
-              onValueChange={(value) => onWorkDurationChange(value[0])}
+              onValueChange={(value) => updateWorkDuration(value[0])}
               className="[&_[role=slider]]:bg-pomodoro-work"
             />
           </div>
@@ -69,7 +65,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({
               max={15}
               step={1}
               value={[breakDuration]}
-              onValueChange={(value) => onBreakDurationChange(value[0])}
+              onValueChange={(value) => updateBreakDuration(value[0])}
               className="[&_[role=slider]]:bg-green-400"
             />
           </div>
@@ -85,7 +81,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({
               max={30}
               step={5}
               value={[longBreakDuration]}
-              onValueChange={(value) => onLongBreakDurationChange(value[0])}
+              onValueChange={(value) => updateLongBreakDuration(value[0])}
               className="[&_[role=slider]]:bg-pomodoro-longBreak"
             />
           </div>
@@ -101,7 +97,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({
               max={8}
               step={1}
               value={[sessionsUntilLongBreak]}
-              onValueChange={(value) => onSessionsUntilLongBreakChange(value[0])}
+              onValueChange={(value) => updateSessionsUntilLongBreak(value[0])}
             />
           </div>
         </div>

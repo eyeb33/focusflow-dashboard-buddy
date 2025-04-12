@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -177,6 +178,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  // Fix: Remove the third argument here as it's not needed
   const updateDailyStats = async (durationMinutes: number) => {
     try {
       if (!user) return;
