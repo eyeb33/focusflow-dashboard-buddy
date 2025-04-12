@@ -27,19 +27,19 @@ const CircularProgress = ({
     switch (mode) {
       case 'break':
         return {
-          light: 'rgb(242, 252, 226)',
-          dark: 'rgba(242, 252, 226, 0.7)'
+          bg: 'rgba(128, 128, 128, 0.2)',
+          fg: 'rgb(242, 252, 226)'
         };
       case 'longBreak':
         return {
-          light: 'rgb(126, 105, 171)',
-          dark: 'rgba(126, 105, 171, 0.7)'
+          bg: 'rgba(128, 128, 128, 0.2)',
+          fg: 'rgb(126, 105, 171)'
         };
       case 'work':
       default:
         return {
-          light: 'rgb(155, 135, 245)',
-          dark: 'rgba(155, 135, 245, 0.7)'
+          bg: 'rgba(128, 128, 128, 0.2)',
+          fg: 'rgb(155, 135, 245)'
         };
     }
   };
@@ -65,7 +65,7 @@ const CircularProgress = ({
           cy={size / 2}
           r={radius}
           fill="transparent"
-          stroke="rgba(128, 128, 128, 0.2)"
+          stroke={colors.bg}
           className="dark:stroke-gray-700/50"
           strokeWidth={strokeWidth}
         />
@@ -76,12 +76,13 @@ const CircularProgress = ({
           cy={size / 2}
           r={radius}
           fill="transparent"
-          stroke={`${colors.light} dark:${colors.dark}`}
+          stroke={colors.fg}
+          className="dark:stroke-purple-400"
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
-          className="transition-all duration-300 ease-in-out"
+          transition="stroke-dashoffset 0.35s"
         />
       </svg>
       
