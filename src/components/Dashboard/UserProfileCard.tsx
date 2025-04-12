@@ -1,26 +1,19 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Camera, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-
-interface Profile {
-  username: string | null;
-  avatar_url: string | null;
-}
 
 const UserProfileCard: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [profile, setProfile] = useState<Profile>({ username: null, avatar_url: null });
-  const [username, setUsername] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -35,7 +28,7 @@ const UserProfileCard: React.FC = () => {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('username, avatar_url')
+        .select('avatar_url, username')
         .eq('id', user.id)
         .single();
 
@@ -44,9 +37,8 @@ const UserProfileCard: React.FC = () => {
       }
 
       if (data) {
-        setProfile(data);
-        setUsername(data.username || '');
         setAvatarUrl(data.avatar_url);
+        setUsername(data.username || user.user_metadata?.name || user.email?.split('@')[0] || 'User');
       }
     } catch (error: any) {
       console.error('Error fetching profile:', error.message);
@@ -164,14 +156,9 @@ const UserProfileCard: React.FC = () => {
                   <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading...
                 </div>
               ) : (
-                <>Welcome back, {username || 'User'}!</>
+                <>Welcome, {username || 'User'}!</>
               )}
             </h3>
-            {!avatarUrl && (
-              <p className="text-sm text-muted-foreground mt-2">
-                Add a profile picture by clicking the camera icon
-              </p>
-            )}
           </div>
         </div>
       </CardContent>
