@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -9,6 +10,7 @@ const UserProfileCard: React.FC = () => {
   const { user } = useAuth();
   const { profile, loading, updating, uploadAvatar } = useUserProfile();
   const [username, setUsername] = useState<string | null>(null);
+  const [isHovering, setIsHovering] = useState(false);
 
   React.useEffect(() => {
     if (profile) {
@@ -38,6 +40,8 @@ const UserProfileCard: React.FC = () => {
             uploading={updating} 
             uploadAvatar={handleUploadAvatar} 
             getInitials={getInitials}
+            isHovering={isHovering}
+            setIsHovering={setIsHovering}
           />
           
           <ProfileWelcome loading={loading} username={username} />
@@ -53,6 +57,8 @@ interface ProfileAvatarProps {
   uploading: boolean;
   uploadAvatar: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
   getInitials: (name: string | null) => string;
+  isHovering: boolean;
+  setIsHovering: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const ProfileAvatar: React.FC<ProfileAvatarProps> = ({ 
@@ -60,31 +66,39 @@ const ProfileAvatar: React.FC<ProfileAvatarProps> = ({
   username, 
   uploading, 
   uploadAvatar, 
-  getInitials 
+  getInitials,
+  isHovering,
+  setIsHovering
 }) => {
   return (
-    <div className="relative">
-      <Avatar className="w-24 h-24">
-        {avatarUrl ? (
-          <AvatarImage src={avatarUrl} alt={username || 'User'} />
-        ) : (
-          <AvatarFallback className="bg-pomodoro-work text-white text-xl">
-            {getInitials(username)}
-          </AvatarFallback>
-        )}
+    <div 
+      className="relative"
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+    >
+      <Avatar className="w-24 h-24 cursor-pointer">
+        <AvatarImage 
+          src={avatarUrl || ''} 
+          alt={username || 'User'} 
+          className={isHovering ? "opacity-60 transition-opacity" : "transition-opacity"}
+        />
+        <AvatarFallback className="bg-pomodoro-work text-white text-xl">
+          {getInitials(username)}
+        </AvatarFallback>
       </Avatar>
-      {!avatarUrl && (
-        <label 
-          className="absolute bottom-0 right-0 bg-primary hover:bg-primary/90 text-white rounded-full p-2 cursor-pointer"
-          htmlFor="avatar-upload"
-        >
-          {uploading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Camera className="h-4 w-4" />
-          )}
-        </label>
-      )}
+      
+      <label 
+        className={`absolute bottom-0 right-0 bg-primary hover:bg-primary/90 text-white rounded-full p-2 cursor-pointer transition-opacity ${
+          isHovering ? 'opacity-100' : 'opacity-0'
+        }`}
+        htmlFor="avatar-upload"
+      >
+        {uploading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Camera className="h-4 w-4" />
+        )}
+      </label>
       <input
         id="avatar-upload"
         type="file"

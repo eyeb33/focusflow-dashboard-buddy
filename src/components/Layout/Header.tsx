@@ -43,9 +43,9 @@ const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-full bg-pomodoro-work flex items-center justify-center">
-              <span className="text-white font-semibold text-sm">F</span>
+              <span className="text-white font-semibold text-sm">T</span>
             </div>
-            {!isMobile && <span className="text-lg font-semibold">FocusFlow</span>}
+            {!isMobile && <span className="text-lg font-semibold">TimeBubble</span>}
           </Link>
         </div>
         

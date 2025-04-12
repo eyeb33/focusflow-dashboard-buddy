@@ -23,29 +23,26 @@ const TimerControls: React.FC<TimerControlsProps> = ({
 }) => {
   return (
     <div className={cn("flex items-center justify-center gap-4", className)}>
-      {!isRunning ? (
-        <Button 
-          onClick={onStart} 
-          size="lg" 
-          className="bg-pomodoro-work hover:bg-pomodoro-work/90 text-white rounded-full w-14 h-14 flex items-center justify-center"
-        >
+      <Button 
+        onClick={isRunning ? onPause : onStart} 
+        size="lg" 
+        className={cn(
+          "rounded-full w-14 h-14 flex items-center justify-center shadow-md",
+          isRunning ? "bg-white text-pomodoro-work hover:bg-gray-100" : "bg-pomodoro-work text-white hover:bg-pomodoro-work/90"
+        )}
+      >
+        {!isRunning ? (
           <Play className="h-6 w-6" />
-        </Button>
-      ) : (
-        <Button 
-          onClick={onPause} 
-          size="lg" 
-          className="bg-pomodoro-work hover:bg-pomodoro-work/90 text-white rounded-full w-14 h-14 flex items-center justify-center"
-        >
+        ) : (
           <Pause className="h-6 w-6" />
-        </Button>
-      )}
+        )}
+      </Button>
       
       <Button 
         onClick={onReset} 
         variant="outline" 
         size="icon" 
-        className="rounded-full w-10 h-10 border-slate-200"
+        className="rounded-full w-10 h-10 border-slate-200 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
       >
         <RotateCcw className="h-4 w-4" />
       </Button>
@@ -55,7 +52,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
           onClick={onSkip} 
           variant="outline" 
           size="icon" 
-          className="rounded-full w-10 h-10 border-slate-200"
+          className="rounded-full w-10 h-10 border-slate-200 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
         >
           <SkipForward className="h-4 w-4" />
         </Button>

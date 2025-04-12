@@ -64,7 +64,7 @@ const TimerContainer: React.FC = () => {
           className="mb-6"
         >
           <div className="text-center">
-            <div className="text-5xl font-bold tracking-tighter">
+            <div className="text-5xl font-bold tracking-tighter font-mono w-[180px] flex justify-center">
               {formatTime(timeRemaining)}
             </div>
             <div className="text-sm text-muted-foreground mt-2">
