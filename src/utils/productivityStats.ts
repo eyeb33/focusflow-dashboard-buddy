@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export const updateDailyStats = async (userId: string, durationMinutes: number) => {
