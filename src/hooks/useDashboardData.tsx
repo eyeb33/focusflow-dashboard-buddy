@@ -10,6 +10,7 @@ export type DashboardData = {
     totalMinutes: number;
     dailyAverage: number;
     currentStreak: number;
+    bestStreak: number;
   };
   productivityTrend: {
     date: string;
@@ -49,7 +50,8 @@ export const useDashboardData = () => {
       totalSessions: 0,
       totalMinutes: 0,
       dailyAverage: 0,
-      currentStreak: 0
+      currentStreak: 0,
+      bestStreak: 0
     },
     productivityTrend: [],
     streakData: [],
@@ -140,6 +142,10 @@ export const useDashboardData = () => {
       
       const currentStreak = summaryData?.[0]?.longest_streak || 0;
       
+      // Find best streak (maximum longest_streak value)
+      const bestStreakValue = summaryData?.reduce((max: number, day: any) => 
+        Math.max(max, day.longest_streak || 0), 0) || 0;
+      
       // Calculate daily average from the last 30 days
       const daysWithData = summaryData?.length || 1;
       const totalSessionsInPeriod = summaryData?.reduce((acc: number, day: any) => 
@@ -152,7 +158,8 @@ export const useDashboardData = () => {
           totalSessions: totalSessions,
           totalMinutes: totalMinutes,
           dailyAverage: dailyAverage,
-          currentStreak: currentStreak
+          currentStreak: currentStreak,
+          bestStreak: bestStreakValue
         }
       }));
     } catch (error: any) {

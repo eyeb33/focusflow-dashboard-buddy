@@ -92,6 +92,8 @@ const Dashboard = () => {
               weeklyData={dashboardData.weeklyProductivity}
               monthlyData={dashboardData.monthlyProductivity}
               streakData={dashboardData.streakData}
+              currentStreak={dashboardData.stats.currentStreak}
+              bestStreak={dashboardData.stats.bestStreak || 0}
             />
           </div>
           <div className="lg:col-span-1">

@@ -19,9 +19,18 @@ interface ChartsGridProps {
   weeklyData: ChartDataType[];
   monthlyData: ChartDataType[];
   streakData: StreakDataType[];
+  currentStreak: number;
+  bestStreak: number;
 }
 
-const ChartsGrid: React.FC<ChartsGridProps> = ({ dailyData, weeklyData, monthlyData, streakData }) => {
+const ChartsGrid: React.FC<ChartsGridProps> = ({ 
+  dailyData, 
+  weeklyData, 
+  monthlyData, 
+  streakData,
+  currentStreak,
+  bestStreak
+}) => {
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
       <div className="lg:col-span-2">
@@ -35,8 +44,8 @@ const ChartsGrid: React.FC<ChartsGridProps> = ({ dailyData, weeklyData, monthlyD
       <div>
         <StreakCalendar 
           data={streakData}
-          currentStreak={7}
-          bestStreak={12}
+          currentStreak={currentStreak}
+          bestStreak={bestStreak}
         />
       </div>
     </div>
