@@ -32,3 +32,36 @@ export const mockMonthlyData = [
   { name: 'Week 4', sessions: 30, minutes: 750 },
 ];
 
+// Mock insights data
+export const mockInsights = [
+  {
+    title: "Best Focus Time",
+    content: "Your most productive hours are between 2:00 PM - 4:00 PM. Consider scheduling your most important tasks during this time frame."
+  },
+  {
+    title: "Session Length Analysis",
+    content: "You complete the most tasks when working in 25-minute focused sessions followed by 5-minute breaks."
+  },
+  {
+    title: "Productivity Trend",
+    content: "Your focus time has increased by 15% compared to last week. Keep up the great work!"
+  }
+];
+
+// Mock stats data
+export const mockStats = [
+  { title: "Today's Focus", value: "125 min", icon: "Clock", trend: { value: 15, isPositive: true } },
+  { title: "Current Streak", value: "7 days", icon: "Flame", trend: { value: 40, isPositive: true } },
+  { title: "Completion Rate", value: "85%", icon: "Target", trend: { value: 5, isPositive: false } },
+  { title: "Weekly Sessions", value: "32", icon: "Zap", description: "Total focus sessions this week" }
+];
+
+// Create a single export object that contains all mock data
+export const mockDashboardData = {
+  streakData: mockStreakData,
+  dailyProductivity: mockDailyData,
+  weeklyProductivity: mockWeeklyData,
+  monthlyProductivity: mockMonthlyData,
+  insights: mockInsights,
+  stats: mockStats
+};
