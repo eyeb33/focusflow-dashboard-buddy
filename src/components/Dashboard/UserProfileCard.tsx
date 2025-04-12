@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -14,22 +13,20 @@ const UserProfileCard: React.FC = () => {
 
   React.useEffect(() => {
     if (profile) {
-      // Extract first name from username or user metadata
-      let firstName = null;
-      if (profile.username) {
-        // If username contains spaces, get the first part as first name
-        firstName = profile.username.split(' ')[0];
-      } else if (user?.user_metadata?.name) {
-        // If user has name in metadata, get the first part as first name
-        firstName = user.user_metadata.name.split(' ')[0];
+      // Prioritize user metadata name from signup over other options
+      let displayName = null;
+      if (user?.user_metadata?.name) {
+        // Use the full name from user metadata
+        displayName = user.user_metadata.name;
+      } else if (profile.username) {
+        displayName = profile.username;
       } else if (user?.email) {
-        // Fallback to email username portion
-        firstName = user.email.split('@')[0];
+        displayName = user.email.split('@')[0];
       } else {
-        firstName = 'User';
+        displayName = 'User';
       }
       
-      setUsername(firstName);
+      setUsername(displayName);
     }
   }, [profile, user]);
 
@@ -140,7 +137,7 @@ const ProfileWelcome: React.FC<ProfileWelcomeProps> = ({ loading, username }) =>
             <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading...
           </div>
         ) : (
-          <>Hi {username || 'User'}!</>
+          <>Hi {username || 'User'}</>
         )}
       </h3>
     </div>
