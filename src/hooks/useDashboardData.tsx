@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -220,25 +221,24 @@ export const useDashboardData = () => {
         avgChangePercent = Math.round(((currentWeekAvg - prevWeekAvg) / prevWeekAvg) * 100);
       }
 
-      // Get current streak and daily average
+      // Get current streak and best streak
       const { data: summaryData, error: summaryError } = await supabase
         .from('sessions_summary')
-        .select('longest_streak, total_sessions, total_focus_time, date')
+        .select('longest_streak, total_sessions, total_focus_time, date, total_completed_sessions')
         .eq('user_id', user?.id)
         .order('date', { ascending: false })
         .limit(30);
 
       if (summaryError) throw summaryError;
+      
+      console.log('Summary data for calculating stats:', summaryData);
 
       // Calculate total focus minutes (only from work sessions)
       const totalMinutesFromSessions = focusTimeData?.reduce((acc: number, session: any) => 
         acc + (session.session_type === 'work' ? Math.floor(session.duration / 60) : 0), 0) || 0;
         
       // If we have today's summary, use that value for total minutes
-      const totalMinutes = todaySummary ? (
-        // Use summary data + any additional minutes from sessions
-        totalMinutesFromSessions
-      ) : totalMinutesFromSessions;
+      const totalMinutes = todaySummary ? todaySummary.total_focus_time : totalMinutesFromSessions;
       
       console.log('Total minutes calculation:', {
         fromSummary: todaySummary?.total_focus_time || 0,
@@ -286,11 +286,32 @@ export const useDashboardData = () => {
       const bestStreakValue = summaryData?.reduce((max: number, day: any) => 
         Math.max(max, day.longest_streak || 0), 0) || 0;
       
-      // Calculate daily average from the last 30 days of data
-      const daysWithData = summaryData?.length || 1;
-      const totalSessionsInPeriod = summaryData?.reduce((acc: number, day: any) => 
-        acc + day.total_sessions, 0) || 0;
-      const dailyAverage = Math.round((totalSessionsInPeriod / daysWithData) * 10) / 10;
+      // Calculate daily average from the summary data
+      // First, include today's sessions if available
+      let todayCompletedSessions = 0;
+      if (todaySummary) {
+        todayCompletedSessions = todaySummary.total_completed_sessions || 0;
+      }
+      
+      // Calculate daily average including today's sessions
+      const totalDaysWithActivity = (summaryData && summaryData.length > 0) ? summaryData.length : 1;
+      const totalCompletedSessions = summaryData?.reduce((acc: number, day: any) => 
+        acc + (day.total_completed_sessions || 0), 0) || 0;
+      
+      console.log('Daily average calculation:', {
+        totalCompletedSessions,
+        totalDaysWithActivity,
+        todayCompletedSessions
+      });
+      
+      // Ensure we don't double-count today's sessions if it's already in the summary data
+      const adjustedTotalSessions = hasEntryToday ? 
+        totalCompletedSessions : 
+        totalCompletedSessions + todayCompletedSessions;
+        
+      const dailyAverage = Math.round((adjustedTotalSessions / totalDaysWithActivity) * 10) / 10;
+      
+      console.log('Calculated daily average:', dailyAverage);
 
       setDashboardData(prev => ({
         ...prev,

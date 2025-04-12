@@ -38,6 +38,8 @@ export const fetchTodayStats = async (userId: string | undefined) => {
   try {
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
     
+    console.log('Fetching stats for today:', today);
+    
     // First try to get today's summary from sessions_summary table
     const { data: summaryData, error: summaryError } = await supabase
       .from('sessions_summary')
@@ -54,6 +56,10 @@ export const fetchTodayStats = async (userId: string | undefined) => {
       };
     } else {
       console.log('No summary data found for today, calculating from focus_sessions');
+      
+      if (summaryError && summaryError.code !== 'PGRST116') {
+        console.error('Error fetching summary data:', summaryError);
+      }
     }
     
     // If no summary exists, fall back to calculating from individual sessions

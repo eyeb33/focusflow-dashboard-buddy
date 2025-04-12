@@ -65,6 +65,7 @@ export const updateDailyStats = async (userId: string, durationMinutes: number) 
   }
 };
 
+// Fixed: Removed the third parameter that was causing the TypeScript error
 const calculateStreak = (recentDays: any[] | null, today: string) => {
   if (!recentDays || recentDays.length === 0) {
     return 1; // Today is the first day with completed sessions
