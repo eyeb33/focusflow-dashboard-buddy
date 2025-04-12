@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -86,7 +87,7 @@ export const useTimer = (initialSettings: TimerSettings) => {
               
               if (user) {
                 saveFocusSession(settings.workDuration * 60, true);
-                updateDailyStats(settings.workDuration, true);
+                updateDailyStats(settings.workDuration);
               }
               
               if (newCompletedSessions % settings.sessionsUntilLongBreak === 0) {
@@ -101,8 +102,7 @@ export const useTimer = (initialSettings: TimerSettings) => {
                   true
                 );
                 updateDailyStats(
-                  timerMode === 'break' ? settings.breakDuration : settings.longBreakDuration, 
-                  true
+                  timerMode === 'break' ? settings.breakDuration : settings.longBreakDuration
                 );
               }
               
@@ -152,9 +152,9 @@ export const useTimer = (initialSettings: TimerSettings) => {
     }
   };
 
-  const updateDailyStats = async (durationMinutes: number, completed: boolean) => {
+  const updateDailyStats = async (durationMinutes: number) => {
     try {
-      if (!user || !completed) return;
+      if (!user) return;
       
       const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
       
@@ -214,7 +214,7 @@ export const useTimer = (initialSettings: TimerSettings) => {
           .update({
             total_sessions: existingData.total_sessions + 1,
             total_focus_time: existingData.total_focus_time + durationMinutes,
-            total_completed_sessions: existingData.total_completed_sessions + (completed ? 1 : 0),
+            total_completed_sessions: existingData.total_completed_sessions + 1,
             longest_streak: Math.max(existingData.longest_streak, currentStreak),
             updated_at: new Date().toISOString()
           })
@@ -229,7 +229,7 @@ export const useTimer = (initialSettings: TimerSettings) => {
             date: today,
             total_sessions: 1,
             total_focus_time: durationMinutes,
-            total_completed_sessions: completed ? 1 : 0,
+            total_completed_sessions: 1,
             longest_streak: currentStreak
           });
           
@@ -427,5 +427,3 @@ export const useTimer = (initialSettings: TimerSettings) => {
     updateSettings
   };
 };
-
-export { useTimer };
