@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -26,7 +25,6 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState('timer');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   
-  // Get total time based on current mode
   const getTotalTime = () => {
     switch (timerMode) {
       case 'break':
@@ -39,34 +37,28 @@ const Index = () => {
     }
   };
 
-  // Initialize timer when mode changes
   useEffect(() => {
     setTimeRemaining(getTotalTime());
   }, [timerMode, workDuration, breakDuration, longBreakDuration]);
 
-  // Timer logic
   useEffect(() => {
     if (isRunning) {
       timerRef.current = setInterval(() => {
         setTimeRemaining(prevTime => {
           if (prevTime <= 1) {
-            // Timer complete
             clearInterval(timerRef.current as ReturnType<typeof setInterval>);
             
             if (timerMode === 'work') {
-              // Increment completed sessions
               const newCompletedSessions = completedSessions + 1;
               setCompletedSessions(newCompletedSessions);
               setTotalTimeToday(prev => prev + workDuration);
               
-              // Determine break type
               if (newCompletedSessions % sessionsUntilLongBreak === 0) {
                 setTimerMode('longBreak');
               } else {
                 setTimerMode('break');
               }
             } else {
-              // After break, go back to work mode
               setTimerMode('work');
             }
             
@@ -85,17 +77,14 @@ const Index = () => {
     };
   }, [isRunning, timerMode]);
 
-  // Calculate progress
   const progress = 1 - (timeRemaining / getTotalTime());
 
-  // Format time for display
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Timer controls
   const handleStart = () => setIsRunning(true);
   const handlePause = () => setIsRunning(false);
   const handleReset = () => {
@@ -153,7 +142,7 @@ const Index = () => {
             </TabsList>
             
             <TabsContent value="timer">
-              <Card className="w-full max-w-md p-6 bg-white/90 backdrop-blur-sm shadow-md">
+              <Card className="w-full max-w-md p-6 bg-white/90 dark:bg-black/80 backdrop-blur-sm shadow-md">
                 <div className="flex items-center justify-between mb-6">
                   <Tabs 
                     value={timerMode} 

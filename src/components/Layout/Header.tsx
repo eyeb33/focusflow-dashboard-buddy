@@ -3,22 +3,19 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Moon, Sun, User } from 'lucide-react';
+import { User } from 'lucide-react';
+import ThemeToggle from '@/components/Theme/ThemeToggle';
 
 interface HeaderProps {
   isAuthenticated?: boolean;
   onLoginClick?: () => void;
   onSignupClick?: () => void;
-  onToggleTheme?: () => void;
-  isDarkMode?: boolean;
 }
 
 const Header: React.FC<HeaderProps> = ({
   isAuthenticated = false,
   onLoginClick,
   onSignupClick,
-  onToggleTheme,
-  isDarkMode = false
 }) => {
   const isMobile = useIsMobile();
 
@@ -35,15 +32,7 @@ const Header: React.FC<HeaderProps> = ({
         </div>
         
         <nav className="flex items-center gap-2 md:gap-4">
-          {onToggleTheme && (
-            <Button variant="ghost" size="icon" className="rounded-full" onClick={onToggleTheme}>
-              {isDarkMode ? (
-                <Sun className="h-5 w-5" />
-              ) : (
-                <Moon className="h-5 w-5" />
-              )}
-            </Button>
-          )}
+          <ThemeToggle />
           
           {isAuthenticated ? (
             <Link to="/dashboard">
