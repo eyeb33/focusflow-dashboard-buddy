@@ -124,6 +124,9 @@ export const useDashboardData = () => {
 
       if (sessionError || timeError) throw sessionError || timeError;
 
+      // Get today's date in YYYY-MM-DD format
+      const today = new Date().toISOString().split('T')[0];
+
       // Get current streak and daily average
       const { data: summaryData, error: summaryError } = await supabase
         .from('sessions_summary')
@@ -140,7 +143,39 @@ export const useDashboardData = () => {
       const totalMinutes = focusTimeData?.reduce((acc: number, session: any) => 
         acc + Math.floor(session.duration / 60), 0) || 0;
       
-      const currentStreak = summaryData?.[0]?.longest_streak || 0;
+      // Calculate current streak based on consecutive days with entries
+      let currentStreak = 0;
+      if (summaryData && summaryData.length > 0) {
+        // Check if there's an entry for today
+        const hasEntryToday = summaryData.some(day => day.date === today);
+        
+        if (hasEntryToday) {
+          currentStreak = 1; // Start with today
+          
+          // Find consecutive days going back
+          const sortedDates = [...summaryData].sort((a, b) => 
+            new Date(b.date).getTime() - new Date(a.date).getTime()
+          );
+          
+          let lastDate = new Date(today);
+          
+          for (let i = 0; i < sortedDates.length; i++) {
+            const currentDate = new Date(sortedDates[i].date);
+            if (currentDate.getTime() === lastDate.getTime()) continue; // Skip today's date
+            
+            // Check if this date is one day before the last checked date
+            const diffTime = lastDate.getTime() - currentDate.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 1) {
+              currentStreak++;
+              lastDate = currentDate;
+            } else {
+              break; // Break the streak if days are not consecutive
+            }
+          }
+        }
+      }
       
       // Find best streak (maximum longest_streak value)
       const bestStreakValue = summaryData?.reduce((max: number, day: any) => 
@@ -158,8 +193,8 @@ export const useDashboardData = () => {
           totalSessions: totalSessions,
           totalMinutes: totalMinutes,
           dailyAverage: dailyAverage,
-          currentStreak: currentStreak,
-          bestStreak: bestStreakValue
+          currentStreak: Math.max(1, currentStreak), // Ensure streak is at least 1 if we have data for today
+          bestStreak: Math.max(bestStreakValue, currentStreak) // Update best streak if current is higher
         }
       }));
     } catch (error: any) {

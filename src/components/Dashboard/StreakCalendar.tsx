@@ -64,11 +64,11 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ data, currentStreak, be
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
             <p className="text-sm text-muted-foreground">Current Streak</p>
-            <p className="text-2xl font-bold">{currentStreak} days</p>
+            <p className="text-2xl font-bold">{currentStreak} {currentStreak === 1 ? 'day' : 'days'}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Best Streak</p>
-            <p className="text-2xl font-bold">{bestStreak} days</p>
+            <p className="text-2xl font-bold">{bestStreak} {bestStreak === 1 ? 'day' : 'days'}</p>
           </div>
         </div>
         
