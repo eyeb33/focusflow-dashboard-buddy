@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -291,6 +290,23 @@ export const useDashboardData = () => {
       let todayCompletedSessions = 0;
       if (todaySummary) {
         todayCompletedSessions = todaySummary.total_completed_sessions || 0;
+      } else {
+        // If no summary for today, count today's completed sessions from focus_sessions table
+        const startOfDay = new Date(today);
+        startOfDay.setHours(0, 0, 0, 0);
+        
+        const { data: todaySessions, error: todaySessionsError } = await supabase
+          .from('focus_sessions')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('session_type', 'work')
+          .eq('completed', true)
+          .gte('created_at', startOfDay.toISOString());
+          
+        if (!todaySessionsError) {
+          todayCompletedSessions = todaySessions?.length || 0;
+          console.log('Today completed sessions from focus_sessions:', todayCompletedSessions);
+        }
       }
       
       // Calculate daily average including today's sessions
@@ -305,6 +321,7 @@ export const useDashboardData = () => {
       });
       
       // Ensure we don't double-count today's sessions if it's already in the summary data
+      const hasEntryToday = summaryData && summaryData.some(day => day.date === today);
       const adjustedTotalSessions = hasEntryToday ? 
         totalCompletedSessions : 
         totalCompletedSessions + todayCompletedSessions;
