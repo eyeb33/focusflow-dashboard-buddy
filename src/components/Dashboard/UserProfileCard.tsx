@@ -117,52 +117,89 @@ const UserProfileCard: React.FC = () => {
     <Card className="mb-6">
       <CardContent className="py-6">
         <div className="flex flex-col items-center space-y-4">
-          <div className="relative">
-            <Avatar className="w-24 h-24">
-              {avatarUrl ? (
-                <AvatarImage src={avatarUrl} alt={username || 'User'} />
-              ) : (
-                <AvatarFallback className="bg-pomodoro-work text-white text-xl">
-                  {getInitials(username)}
-                </AvatarFallback>
-              )}
-            </Avatar>
-            {!avatarUrl && (
-              <label 
-                className="absolute bottom-0 right-0 bg-primary hover:bg-primary/90 text-white rounded-full p-2 cursor-pointer"
-                htmlFor="avatar-upload"
-              >
-                {uploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Camera className="h-4 w-4" />
-                )}
-              </label>
-            )}
-            <input
-              id="avatar-upload"
-              type="file"
-              accept="image/*"
-              onChange={uploadAvatar}
-              className="hidden"
-              disabled={uploading}
-            />
-          </div>
+          <ProfileAvatar 
+            avatarUrl={avatarUrl} 
+            username={username} 
+            uploading={uploading} 
+            uploadAvatar={uploadAvatar} 
+            getInitials={getInitials}
+          />
           
-          <div className="text-center">
-            <h3 className="text-xl font-medium">
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading...
-                </div>
-              ) : (
-                <>Welcome, {username || 'User'}!</>
-              )}
-            </h3>
-          </div>
+          <ProfileWelcome loading={loading} username={username} />
         </div>
       </CardContent>
     </Card>
+  );
+};
+
+interface ProfileAvatarProps {
+  avatarUrl: string | null;
+  username: string | null;
+  uploading: boolean;
+  uploadAvatar: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+  getInitials: (name: string | null) => string;
+}
+
+const ProfileAvatar: React.FC<ProfileAvatarProps> = ({ 
+  avatarUrl, 
+  username, 
+  uploading, 
+  uploadAvatar, 
+  getInitials 
+}) => {
+  return (
+    <div className="relative">
+      <Avatar className="w-24 h-24">
+        {avatarUrl ? (
+          <AvatarImage src={avatarUrl} alt={username || 'User'} />
+        ) : (
+          <AvatarFallback className="bg-pomodoro-work text-white text-xl">
+            {getInitials(username)}
+          </AvatarFallback>
+        )}
+      </Avatar>
+      {!avatarUrl && (
+        <label 
+          className="absolute bottom-0 right-0 bg-primary hover:bg-primary/90 text-white rounded-full p-2 cursor-pointer"
+          htmlFor="avatar-upload"
+        >
+          {uploading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Camera className="h-4 w-4" />
+          )}
+        </label>
+      )}
+      <input
+        id="avatar-upload"
+        type="file"
+        accept="image/*"
+        onChange={uploadAvatar}
+        className="hidden"
+        disabled={uploading}
+      />
+    </div>
+  );
+};
+
+interface ProfileWelcomeProps {
+  loading: boolean;
+  username: string | null;
+}
+
+const ProfileWelcome: React.FC<ProfileWelcomeProps> = ({ loading, username }) => {
+  return (
+    <div className="text-center">
+      <h3 className="text-xl font-medium">
+        {loading ? (
+          <div className="flex items-center justify-center">
+            <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading...
+          </div>
+        ) : (
+          <>Welcome, {username || 'User'}!</>
+        )}
+      </h3>
+    </div>
   );
 };
 
