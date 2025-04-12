@@ -6,6 +6,7 @@ import DashboardHeader from "@/components/Dashboard/DashboardHeader";
 import StatCardsGrid from "@/components/Dashboard/StatCardsGrid";
 import ChartsGrid from "@/components/Dashboard/ChartsGrid";
 import ProductivityInsights from "@/components/Dashboard/ProductivityInsights";
+import ProductivityTrendChart from "@/components/Dashboard/ProductivityTrendChart";
 import { mockDashboardData } from "@/data/mockDashboardData";
 
 const Dashboard = () => {
@@ -24,7 +25,7 @@ const Dashboard = () => {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-2">
             <ChartsGrid 
               dailyData={mockDashboardData.dailyProductivity}
@@ -36,6 +37,10 @@ const Dashboard = () => {
           <div className="lg:col-span-1">
             <ProductivityInsights insights={mockDashboardData.insights} />
           </div>
+        </div>
+        
+        <div className="mb-6">
+          <ProductivityTrendChart data={mockDashboardData.productivityTrend} />
         </div>
       </div>
       

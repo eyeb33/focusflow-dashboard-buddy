@@ -56,6 +56,26 @@ export const mockStats = [
   { title: "Weekly Sessions", value: "32", icon: "Zap", description: "Total focus sessions this week" }
 ];
 
+// Generate wave-like productivity trend data for the last 30 days
+export const mockProductivityTrend = Array.from({ length: 30 }, (_, i) => {
+  const date = new Date();
+  date.setDate(date.getDate() - (29 - i));
+  
+  // Create a wave pattern with some randomness
+  const baseValue = 65;
+  const amplitude = 20;
+  const frequency = 0.3;
+  const phase = i * frequency;
+  const random = Math.random() * 10 - 5; // Random value between -5 and 5
+  
+  const productivity = Math.round(baseValue + amplitude * Math.sin(phase) + random);
+  
+  return {
+    date: date.toISOString().split('T')[0],
+    productivity: Math.max(0, Math.min(100, productivity)) // Ensure value is between 0-100
+  };
+});
+
 // Create a single export object that contains all mock data
 export const mockDashboardData = {
   streakData: mockStreakData,
@@ -63,5 +83,6 @@ export const mockDashboardData = {
   weeklyProductivity: mockWeeklyData,
   monthlyProductivity: mockMonthlyData,
   insights: mockInsights,
-  stats: mockStats
+  stats: mockStats,
+  productivityTrend: mockProductivityTrend
 };
