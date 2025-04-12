@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RotateCcw, SkipForward } from "lucide-react";
+import { Play, Pause, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TimerControlsProps {
@@ -9,7 +9,6 @@ interface TimerControlsProps {
   onStart: () => void;
   onPause: () => void;
   onReset: () => void;
-  onSkip?: () => void;
   className?: string;
 }
 
@@ -18,7 +17,6 @@ const TimerControls: React.FC<TimerControlsProps> = ({
   onStart,
   onPause,
   onReset,
-  onSkip,
   className
 }) => {
   return (
@@ -40,25 +38,14 @@ const TimerControls: React.FC<TimerControlsProps> = ({
       
       <Button 
         onClick={onReset} 
-        variant="outline" 
-        size="icon" 
-        className="rounded-full w-10 h-10 border-slate-200 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
+        size="lg"
+        className="rounded-full w-14 h-14 flex items-center justify-center shadow-md bg-white text-pomodoro-work hover:bg-gray-100 border border-slate-200"
       >
-        <RotateCcw className="h-4 w-4" />
+        <RotateCcw className="h-6 w-6" />
       </Button>
-      
-      {onSkip && (
-        <Button 
-          onClick={onSkip} 
-          variant="outline" 
-          size="icon" 
-          className="rounded-full w-10 h-10 border-slate-200 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
-        >
-          <SkipForward className="h-4 w-4" />
-        </Button>
-      )}
     </div>
   );
 };
 
 export default TimerControls;
+

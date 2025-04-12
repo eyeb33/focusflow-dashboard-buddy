@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -25,7 +24,6 @@ interface TimerContextType {
   handleStart: () => void;
   handlePause: () => void;
   handleReset: () => void;
-  handleSkip: () => void;
   handleModeChange: (mode: 'work' | 'break' | 'longBreak') => void;
   getModeLabel: () => string;
   updateSettings: (newSettings: Partial<TimerSettings>) => void;
@@ -86,7 +84,6 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setTotalTimeToday(stats.totalTimeToday);
   };
 
-  // Function to save partial focus time - only counting complete minutes
   const savePartialSessionTime = async () => {
     if (!user || !lastRecordedTimeRef.current) return;
     
@@ -95,20 +92,16 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const elapsedFullMinutes = Math.floor(elapsedTime / 60);
     const newFullMinutes = elapsedFullMinutes - lastRecordedFullMinutesRef.current;
     
-    // Only save if there are new full minutes completed
     if (newFullMinutes > 0) {
       console.log(`Saving partial session with ${newFullMinutes} new complete minutes`);
       
-      // Save the completed minutes (in seconds) to the database
       await saveFocusSession(user.id, timerMode, newFullMinutes * 60, false);
       
-      // Only update daily stats for work sessions
       if (timerMode === 'work') {
         await updateDailyStats(user.id, newFullMinutes);
         setTotalTimeToday(prev => prev + newFullMinutes);
       }
       
-      // Update the reference for completed minutes
       lastRecordedFullMinutesRef.current = elapsedFullMinutes;
     }
   };
@@ -152,20 +145,16 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             return 0;
           }
           
-          // Check if we've completed another full minute
           const newTime = prevTime - 1;
           const totalTime = getTotalTime();
           const elapsedSeconds = totalTime - newTime;
           const newFullMinutes = Math.floor(elapsedSeconds / 60);
           const prevFullMinutes = Math.floor((totalTime - prevTime) / 60);
           
-          // If we've completed a new full minute and user is logged in
           if (user && newFullMinutes > prevFullMinutes) {
             console.log(`Completed a new minute: ${newFullMinutes} minutes`);
             
-            // Only for work sessions
             if (timerMode === 'work') {
-              // Save the single minute progress
               savePartialSessionTime();
             }
           }
@@ -193,7 +182,6 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const handleStart = () => {
     lastRecordedTimeRef.current = timeRemaining;
-    // When starting, record the current completed full minutes
     const totalTime = getTotalTime();
     const elapsedSeconds = totalTime - timeRemaining;
     lastRecordedFullMinutesRef.current = Math.floor(elapsedSeconds / 60);
@@ -212,21 +200,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     lastRecordedTimeRef.current = getTotalTime();
     lastRecordedFullMinutesRef.current = 0;
   };
-  
-  const handleSkip = () => {
-    setIsRunning(false);
-    savePartialSessionTime();
-    
-    if (timerMode === 'work') {
-      setTimerMode(completedSessions % settings.sessionsUntilLongBreak === settings.sessionsUntilLongBreak - 1 ? 'longBreak' : 'break');
-    } else {
-      setTimerMode('work');
-    }
-    
-    lastRecordedTimeRef.current = null;
-    lastRecordedFullMinutesRef.current = 0;
-  };
-  
+
   const handleModeChange = (mode: 'work' | 'break' | 'longBreak') => {
     if (isRunning) {
       savePartialSessionTime();
@@ -246,26 +220,25 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const progress = 1 - (timeRemaining / getTotalTime());
 
+  const value = {
+    timerMode,
+    isRunning,
+    timeRemaining,
+    completedSessions,
+    totalTimeToday,
+    settings,
+    progress,
+    formatTime,
+    handleStart,
+    handlePause,
+    handleReset,
+    handleModeChange,
+    getModeLabel: getTimerModeLabel,
+    updateSettings
+  };
+
   return (
-    <TimerContext.Provider
-      value={{
-        timerMode,
-        isRunning,
-        timeRemaining,
-        completedSessions,
-        totalTimeToday,
-        settings,
-        progress,
-        formatTime,
-        handleStart,
-        handlePause,
-        handleReset,
-        handleSkip,
-        handleModeChange,
-        getModeLabel: getTimerModeLabel,
-        updateSettings
-      }}
-    >
+    <TimerContext.Provider value={value}>
       {children}
     </TimerContext.Provider>
   );

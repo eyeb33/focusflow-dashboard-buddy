@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -21,7 +20,6 @@ const TimerContainer: React.FC = () => {
     start,
     pause,
     reset,
-    skip,
     changeMode,
     getModeLabel
   } = useTimerControls();
@@ -78,7 +76,6 @@ const TimerContainer: React.FC = () => {
           onStart={start}
           onPause={pause}
           onReset={reset}
-          onSkip={skip}
           className="mb-2"
         />
       </div>
