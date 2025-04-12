@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -8,27 +9,30 @@ import { useAuth } from '@/contexts/AuthContext';
 const UserProfileCard: React.FC = () => {
   const { user } = useAuth();
   const { profile, loading, updating, uploadAvatar } = useUserProfile();
-  const [username, setUsername] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
   const [isHovering, setIsHovering] = useState(false);
 
   React.useEffect(() => {
-    if (profile) {
-      // Prioritize user metadata name from signup over other options
-      let displayName = null;
-      if (user?.user_metadata?.name) {
-        // Use the full name from user metadata
-        displayName = user.user_metadata.name;
-      } else if (profile.username) {
-        displayName = profile.username;
-      } else if (user?.email) {
-        displayName = user.email.split('@')[0];
+    if (user) {
+      // Get first name from user metadata if available
+      let firstName = null;
+      
+      if (user.user_metadata?.name) {
+        // Extract first name from the full name in user metadata
+        firstName = user.user_metadata.name.split(' ')[0];
+      } else if (profile?.username) {
+        // Fallback to username if available
+        firstName = profile.username.split(' ')[0];
+      } else if (user.email) {
+        // Last fallback to email username portion
+        firstName = user.email.split('@')[0];
       } else {
-        displayName = 'User';
+        firstName = 'User';
       }
       
-      setUsername(displayName);
+      setDisplayName(firstName);
     }
-  }, [profile, user]);
+  }, [user, profile]);
 
   const handleUploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || event.target.files.length === 0) {
@@ -48,7 +52,7 @@ const UserProfileCard: React.FC = () => {
         <div className="flex flex-col items-center space-y-4">
           <ProfileAvatar 
             avatarUrl={profile?.avatar_url} 
-            username={username} 
+            username={displayName} 
             uploading={updating} 
             uploadAvatar={handleUploadAvatar} 
             getInitials={getInitials}
@@ -56,7 +60,7 @@ const UserProfileCard: React.FC = () => {
             setIsHovering={setIsHovering}
           />
           
-          <ProfileWelcome loading={loading} username={username} />
+          <ProfileWelcome loading={loading} username={displayName} />
         </div>
       </CardContent>
     </Card>
