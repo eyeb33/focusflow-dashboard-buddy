@@ -1,5 +1,6 @@
 
 import { useTimer } from '@/contexts/TimerContext';
+import { TimerMode } from '@/utils/timerContextUtils';
 
 export const useTimerControls = () => {
   const timer = useTimer();
@@ -26,8 +27,7 @@ export const useTimerControls = () => {
     start: handleStart,
     pause: handlePause,
     reset: handleReset,
-    changeMode: handleModeChange,
+    changeMode: (mode: TimerMode) => handleModeChange(mode),
     getModeLabel
   };
 };
-

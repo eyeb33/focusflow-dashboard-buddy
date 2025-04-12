@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { saveFocusSession, fetchTodayStats } from '@/utils/timerStorage';
-import { updateDailyStats } from '@/utils/productivityStats';
 import { formatTime, getModeLabel } from '@/utils/timerUtils';
+import { loadTodayStats, TimerMode } from '@/utils/timerContextUtils';
+import { useTimerLogic } from '@/hooks/useTimerLogic';
 
 interface TimerSettings {
   workDuration: number;
@@ -13,7 +13,7 @@ interface TimerSettings {
 }
 
 interface TimerContextType {
-  timerMode: 'work' | 'break' | 'longBreak';
+  timerMode: TimerMode;
   isRunning: boolean;
   timeRemaining: number;
   completedSessions: number;
@@ -24,7 +24,7 @@ interface TimerContextType {
   handleStart: () => void;
   handlePause: () => void;
   handleReset: () => void;
-  handleModeChange: (mode: 'work' | 'break' | 'longBreak') => void;
+  handleModeChange: (mode: TimerMode) => void;
   getModeLabel: () => string;
   updateSettings: (newSettings: Partial<TimerSettings>) => void;
 }
@@ -40,19 +40,39 @@ const TimerContext = createContext<TimerContextType | undefined>(undefined);
 
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [timerMode, setTimerMode] = useState<'work' | 'break' | 'longBreak'>('work');
-  const [isRunning, setIsRunning] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(defaultSettings.workDuration * 60);
-  const [completedSessions, setCompletedSessions] = useState(0);
-  const [totalTimeToday, setTotalTimeToday] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const lastRecordedTimeRef = useRef<number | null>(null);
-  const lastRecordedFullMinutesRef = useRef<number>(0);
-  
   const [settings, setSettings] = useState<TimerSettings>(defaultSettings);
+  
+  const {
+    timerMode,
+    isRunning,
+    timeRemaining,
+    completedSessions,
+    totalTimeToday,
+    setCompletedSessions,
+    setTotalTimeToday,
+    handleStart,
+    handlePause,
+    handleReset,
+    handleModeChange
+  } = useTimerLogic(settings);
+  
+  // Load user's stats when logged in
+  useEffect(() => {
+    if (user) {
+      loadTodayStats(user.id).then(stats => {
+        setCompletedSessions(stats.completedSessions);
+        setTotalTimeToday(stats.totalTimeToday);
+      });
+    }
+  }, [user]);
 
-  const getTotalTime = () => {
+  // Settings update function
+  const updateSettings = (newSettings: Partial<TimerSettings>) => {
+    setSettings(prev => ({ ...prev, ...newSettings }));
+  };
+
+  // Calculate progress percentage
+  const getTotalTime = (): number => {
     switch (timerMode) {
       case 'break':
         return settings.breakDuration * 60;
@@ -63,162 +83,10 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return settings.workDuration * 60;
     }
   };
-
-  useEffect(() => {
-    setTimeRemaining(getTotalTime());
-    lastRecordedTimeRef.current = getTotalTime();
-    lastRecordedFullMinutesRef.current = 0;
-  }, [timerMode, settings.workDuration, settings.breakDuration, settings.longBreakDuration]);
-
-  useEffect(() => {
-    if (user) {
-      loadTodayStats();
-    }
-  }, [user]);
-
-  const loadTodayStats = async () => {
-    if (!user) return;
-    
-    const stats = await fetchTodayStats(user.id);
-    setCompletedSessions(stats.completedSessions);
-    setTotalTimeToday(stats.totalTimeToday);
-  };
-
-  const savePartialSessionTime = async () => {
-    if (!user || !lastRecordedTimeRef.current) return;
-    
-    const totalTime = getTotalTime();
-    const elapsedTime = totalTime - timeRemaining;
-    const elapsedFullMinutes = Math.floor(elapsedTime / 60);
-    const newFullMinutes = elapsedFullMinutes - lastRecordedFullMinutesRef.current;
-    
-    if (newFullMinutes > 0) {
-      console.log(`Saving partial session with ${newFullMinutes} new complete minutes`);
-      
-      await saveFocusSession(user.id, timerMode, newFullMinutes * 60, false);
-      
-      if (timerMode === 'work') {
-        await updateDailyStats(user.id, newFullMinutes);
-        setTotalTimeToday(prev => prev + newFullMinutes);
-      }
-      
-      lastRecordedFullMinutesRef.current = elapsedFullMinutes;
-    }
-  };
-
-  useEffect(() => {
-    if (isRunning) {
-      timerRef.current = setInterval(() => {
-        setTimeRemaining(prevTime => {
-          if (prevTime <= 1) {
-            clearInterval(timerRef.current as ReturnType<typeof setInterval>);
-            
-            if (timerMode === 'work') {
-              const newCompletedSessions = completedSessions + 1;
-              setCompletedSessions(newCompletedSessions);
-              setTotalTimeToday(prev => prev + settings.workDuration);
-              
-              if (user) {
-                saveFocusSession(user.id, timerMode, settings.workDuration * 60);
-                updateDailyStats(user.id, settings.workDuration);
-              }
-              
-              if (newCompletedSessions % settings.sessionsUntilLongBreak === 0) {
-                setTimerMode('longBreak');
-              } else {
-                setTimerMode('break');
-              }
-            } else {
-              if (user) {
-                const duration = timerMode === 'break' ? settings.breakDuration * 60 : settings.longBreakDuration * 60;
-                const durationMinutes = timerMode === 'break' ? settings.breakDuration : settings.longBreakDuration;
-                saveFocusSession(user.id, timerMode, duration);
-                updateDailyStats(user.id, durationMinutes);
-              }
-              
-              setTimerMode('work');
-            }
-            
-            lastRecordedTimeRef.current = null;
-            lastRecordedFullMinutesRef.current = 0;
-            setIsRunning(false);
-            return 0;
-          }
-          
-          const newTime = prevTime - 1;
-          const totalTime = getTotalTime();
-          const elapsedSeconds = totalTime - newTime;
-          const newFullMinutes = Math.floor(elapsedSeconds / 60);
-          const prevFullMinutes = Math.floor((totalTime - prevTime) / 60);
-          
-          if (user && newFullMinutes > prevFullMinutes) {
-            console.log(`Completed a new minute: ${newFullMinutes} minutes`);
-            
-            if (timerMode === 'work') {
-              savePartialSessionTime();
-            }
-          }
-          
-          return newTime;
-        });
-      }, 1000);
-    }
-    
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [isRunning, timerMode, user, settings, completedSessions]);
-
-  const handleTimerCompleted = () => {
-    if (timerMode === 'work' && user) {
-      toast({
-        title: "Session completed!",
-        description: `You completed a ${settings.workDuration} minute focus session.`,
-      });
-    }
-  };
-
-  const handleStart = () => {
-    lastRecordedTimeRef.current = timeRemaining;
-    const totalTime = getTotalTime();
-    const elapsedSeconds = totalTime - timeRemaining;
-    lastRecordedFullMinutesRef.current = Math.floor(elapsedSeconds / 60);
-    setIsRunning(true);
-  };
   
-  const handlePause = () => {
-    setIsRunning(false);
-    savePartialSessionTime();
-  };
-  
-  const handleReset = () => {
-    setIsRunning(false);
-    savePartialSessionTime();
-    setTimeRemaining(getTotalTime());
-    lastRecordedTimeRef.current = getTotalTime();
-    lastRecordedFullMinutesRef.current = 0;
-  };
-
-  const handleModeChange = (mode: 'work' | 'break' | 'longBreak') => {
-    if (isRunning) {
-      savePartialSessionTime();
-    }
-    
-    setIsRunning(false);
-    setTimerMode(mode);
-    lastRecordedTimeRef.current = null;
-    lastRecordedFullMinutesRef.current = 0;
-  };
-
-  const getTimerModeLabel = () => getModeLabel(timerMode);
-
-  const updateSettings = (newSettings: Partial<TimerSettings>) => {
-    setSettings(prev => ({ ...prev, ...newSettings }));
-  };
-
   const progress = 1 - (timeRemaining / getTotalTime());
+  
+  const getTimerModeLabel = () => getModeLabel(timerMode);
 
   const value = {
     timerMode,
