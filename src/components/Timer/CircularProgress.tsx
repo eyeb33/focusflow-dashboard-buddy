@@ -27,13 +27,13 @@ const CircularProgress = ({
     switch (mode) {
       case 'break':
         return {
-          bg: 'rgba(243, 115, 22, 0.2)', // Light orange background
-          fg: '#F97316' // Bright orange for break
+          bg: 'rgba(52, 211, 153, 0.2)', // Light green background
+          fg: '#10B981' // Emerald green for break
         };
       case 'longBreak':
         return {
-          bg: 'rgba(243, 115, 22, 0.2)', // Light orange background
-          fg: '#F97316' // Bright orange for long break
+          bg: 'rgba(52, 211, 153, 0.2)', // Light green background
+          fg: '#10B981' // Emerald green for long break
         };
       case 'work':
       default:
