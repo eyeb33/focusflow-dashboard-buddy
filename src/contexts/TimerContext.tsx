@@ -53,7 +53,8 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     handleStart,
     handlePause,
     handleReset,
-    handleModeChange
+    handleModeChange,
+    setTimeRemaining
   } = useTimerLogic(settings);
   
   // Load user's stats when logged in
@@ -66,11 +67,42 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [user]);
 
-  // Settings update function
+  // Settings update function with immediate time update
   const updateSettings = (newSettings: Partial<TimerSettings>) => {
-    setSettings(prev => ({ ...prev, ...newSettings }));
+    setSettings(prev => {
+      const updatedSettings = { ...prev, ...newSettings };
+      
+      // If the timer isn't running, update the time remaining based on new settings
+      if (!isRunning) {
+        // Update the timer immediately based on current mode and new settings
+        let newTimeRemaining: number;
+        
+        switch (timerMode) {
+          case 'work':
+            if (newSettings.workDuration !== undefined) {
+              newTimeRemaining = newSettings.workDuration * 60;
+              setTimeRemaining(newTimeRemaining);
+            }
+            break;
+          case 'break':
+            if (newSettings.breakDuration !== undefined) {
+              newTimeRemaining = newSettings.breakDuration * 60;
+              setTimeRemaining(newTimeRemaining);
+            }
+            break;
+          case 'longBreak':
+            if (newSettings.longBreakDuration !== undefined) {
+              newTimeRemaining = newSettings.longBreakDuration * 60;
+              setTimeRemaining(newTimeRemaining);
+            }
+            break;
+        }
+      }
+      
+      return updatedSettings;
+    });
   };
-
+  
   // Calculate progress percentage
   const getTotalTime = (): number => {
     switch (timerMode) {

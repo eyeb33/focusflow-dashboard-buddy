@@ -1,113 +1,87 @@
-
 import React from 'react';
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
+import { TimerMode } from '@/utils/timerContextUtils';
 
 interface CircularProgressProps {
-  progress: number; // 0 to 1
+  progress: number;
+  mode: TimerMode;
   size?: number;
   strokeWidth?: number;
-  mode?: 'work' | 'break' | 'longBreak';
   children?: React.ReactNode;
   className?: string;
 }
 
-const CircularProgress = ({
+const CircularProgress: React.FC<CircularProgressProps> = ({
   progress,
-  size = 300,
-  strokeWidth = 15,
-  mode = 'work',
+  mode,
+  size = 200,
+  strokeWidth = 12,
   children,
   className
-}: CircularProgressProps) => {
-  // Ensure progress is between 0 and 1
-  const normalizedProgress = Math.min(Math.max(progress, 0), 1);
+}) => {
+  // Keep progress between 0 and 1
+  const normalizedProgress = Math.min(1, Math.max(0, progress));
   
-  // Calculate stroke colors based on mode
-  const getStrokeColor = () => {
+  // Calculate circle parameters
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference * (1 - normalizedProgress);
+  
+  // Mode-specific colors
+  const getModeColor = () => {
     switch (mode) {
       case 'break':
-        return {
-          bg: 'rgba(52, 211, 153, 0.2)', // Light green background
-          fg: '#10B981' // Emerald green for break
-        };
+        return 'bg-green-400';
       case 'longBreak':
-        return {
-          bg: 'rgba(52, 211, 153, 0.2)', // Light green background
-          fg: '#10B981' // Emerald green for long break
-        };
+        return 'bg-pomodoro-longBreak';
       case 'work':
       default:
-        return {
-          bg: 'rgba(234, 56, 76, 0.2)', // Light red background
-          fg: '#ea384c' // Red for focus
-        };
+        return 'bg-pomodoro-work';
     }
   };
   
-  // SVG parameters for a 3/4 circle (270 degrees)
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius * (270 / 360); // 3/4 of the full circumference
-  
-  // Calculate the stroke dash offset - starts empty and fills up from left to right
-  const strokeDashoffset = circumference * (1 - normalizedProgress);
-  
-  // Calculate start angle (135 degrees in radians)
-  const startAngle = 135 * (Math.PI / 180);
-  
-  // Calculate path for the 3/4 arc
-  const getArcPath = (radius: number) => {
-    const start = {
-      x: size / 2 + radius * Math.cos(startAngle),
-      y: size / 2 + radius * Math.sin(startAngle)
-    };
-    
-    // End angle (135 + 270 = 405 degrees in radians)
-    const endAngle = (startAngle + 270 * (Math.PI / 180));
-    
-    const end = {
-      x: size / 2 + radius * Math.cos(endAngle),
-      y: size / 2 + radius * Math.sin(endAngle)
-    };
-    
-    // Arc flag is 1 for arcs greater than 180 degrees
-    const largeArcFlag = 1;
-    
-    return `M ${start.x},${start.y} A ${radius},${radius} 0 ${largeArcFlag},1 ${end.x},${end.y}`;
+  const getStrokeColor = () => {
+    switch (mode) {
+      case 'break':
+        return 'stroke-green-400';
+      case 'longBreak':
+        return 'stroke-pomodoro-longBreak';
+      case 'work':
+      default:
+        return 'stroke-pomodoro-work';
+    }
   };
-  
-  const colors = getStrokeColor();
   
   return (
     <div className={cn("relative flex items-center justify-center", className)}>
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-      >
-        {/* Background arc */}
-        <path
-          d={getArcPath(radius)}
-          fill="transparent"
-          stroke={colors.bg}
-          className="dark:stroke-gray-700/50"
+      {/* Background track */}
+      <svg width={size} height={size} className="transform rotate-[-90deg]">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="currentColor"
           strokeWidth={strokeWidth}
-          strokeLinecap="round"
+          className="stroke-muted opacity-20"
         />
-        
         {/* Progress arc */}
-        <path
-          d={getArcPath(radius)}
-          fill="transparent"
-          stroke={colors.fg}
-          className="dark:stroke-red-400 transition-all duration-300 ease-in-out"
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
+          className={cn(getStrokeColor())}
+          style={{ transition: 'stroke-dashoffset 0.5s ease' }}
         />
       </svg>
       
-      <div className="absolute inset-0 flex items-center justify-center">
+      {/* Center content */}
+      <div className="absolute flex flex-col items-center justify-center inset-0">
         {children}
       </div>
     </div>

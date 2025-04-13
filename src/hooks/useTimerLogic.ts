@@ -74,8 +74,10 @@ export function useTimerLogic(settings: TimerSettings) {
   useEffect(() => {
     // Only reset if not running and this isn't from restoring a paused state
     if (!isRunning && !autoStart && !lastRecordedTimeRef.current) {
-      setTimeRemaining(getTotalTime(timerMode, settings));
-      lastRecordedTimeRef.current = getTotalTime(timerMode, settings);
+      const newTime = getTotalTime(timerMode, settings);
+      console.log(`Updating timer from settings: mode=${timerMode}, time=${newTime}s`);
+      setTimeRemaining(newTime);
+      lastRecordedTimeRef.current = newTime;
       lastRecordedFullMinutesRef.current = 0;
     }
     
@@ -117,6 +119,7 @@ export function useTimerLogic(settings: TimerSettings) {
     totalTimeToday,
     setCompletedSessions,
     setTotalTimeToday,
+    setTimeRemaining,
     handleStart,
     handlePause,
     handleReset,
