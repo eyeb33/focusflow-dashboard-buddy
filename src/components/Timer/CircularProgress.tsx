@@ -14,7 +14,7 @@ interface CircularProgressProps {
 const CircularProgress = ({
   progress,
   size = 300,
-  strokeWidth = 10,
+  strokeWidth = 15, // Increased stroke width for chunkier appearance
   mode = 'work',
   children,
   className
@@ -47,7 +47,9 @@ const CircularProgress = ({
   // SVG parameters
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference * (1 - normalizedProgress);
+  
+  // Reverse the progress calculation (1 - progress) so the ring starts full and depletes
+  const strokeDashoffset = circumference * normalizedProgress;
   
   const colors = getStrokeColor();
   
@@ -70,7 +72,7 @@ const CircularProgress = ({
           strokeWidth={strokeWidth}
         />
         
-        {/* Progress circle */}
+        {/* Progress circle - now decreasing instead of increasing */}
         <circle
           cx={size / 2}
           cy={size / 2}
