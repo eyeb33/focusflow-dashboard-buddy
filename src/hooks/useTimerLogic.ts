@@ -72,8 +72,8 @@ export function useTimerLogic(settings: TimerSettings) {
   
   // Reset timer when mode or settings change
   useEffect(() => {
-    // Only reset if not running
-    if (!isRunning && !autoStart) {
+    // Only reset if not running and this isn't from restoring a paused state
+    if (!isRunning && !autoStart && !lastRecordedTimeRef.current) {
       setTimeRemaining(getTotalTime(timerMode, settings));
       lastRecordedTimeRef.current = getTotalTime(timerMode, settings);
       lastRecordedFullMinutesRef.current = 0;

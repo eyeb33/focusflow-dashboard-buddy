@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -82,6 +81,12 @@ export function useTimerInterval({
           return newTime;
         });
       }, 1000);
+    } else {
+      // When paused, clear the interval but keep the timeRemaining state
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     }
     
     return () => {

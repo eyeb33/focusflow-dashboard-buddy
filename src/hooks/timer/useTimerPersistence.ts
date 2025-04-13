@@ -137,7 +137,8 @@ export function useTimerPersistence({
               // Timer still has time remaining, restore state
               setTimerMode(state.timerMode);
               setTimeRemaining(newTimeRemaining);
-              setIsRunning(state.isRunning);
+              // Restore as paused - let the user manually start again
+              setIsRunning(false);
               lastRecordedFullMinutesRef.current = state.lastRecordedFullMinutes || 0;
             }
           }
