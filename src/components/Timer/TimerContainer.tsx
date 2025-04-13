@@ -128,6 +128,7 @@ const TimerContainer: React.FC = () => {
           completedSessions={completedSessions}
           sessionsUntilLongBreak={sessionsUntilLongBreak}
           currentMode={timerMode}
+          isRunning={isRunning}
           className="mb-4"
         />
       </div>
@@ -142,4 +143,3 @@ const TimerContainer: React.FC = () => {
 };
 
 export default TimerContainer;
-

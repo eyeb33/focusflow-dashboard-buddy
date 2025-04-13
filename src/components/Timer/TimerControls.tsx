@@ -24,16 +24,22 @@ const TimerControls: React.FC<TimerControlsProps> = ({
   // Color mapping for different modes
   const modeColors = {
     work: {
-      startPauseColor: "bg-red-500",
-      resetColor: "text-red-500"
+      color: "text-red-500",
+      bgColor: "bg-red-500",
+      hoverClass: "hover:bg-red-500 hover:text-white",
+      activeClass: "bg-red-500 text-white"
     },
     break: {
-      startPauseColor: "bg-green-500",
-      resetColor: "text-green-500"
+      color: "text-green-500",
+      bgColor: "bg-green-500",
+      hoverClass: "hover:bg-green-500 hover:text-white",
+      activeClass: "bg-green-500 text-white"
     },
     longBreak: {
-      startPauseColor: "bg-blue-500",
-      resetColor: "text-blue-500"
+      color: "text-blue-500",
+      bgColor: "bg-blue-500",
+      hoverClass: "hover:bg-blue-500 hover:text-white",
+      activeClass: "bg-blue-500 text-white"
     }
   };
 
@@ -45,10 +51,10 @@ const TimerControls: React.FC<TimerControlsProps> = ({
         onClick={isRunning ? onPause : onStart} 
         size="lg" 
         className={cn(
-          "rounded-full w-14 h-14 flex items-center justify-center shadow-md",
+          "rounded-full w-14 h-14 flex items-center justify-center shadow-md transition-colors",
           isRunning 
-            ? `bg-white ${currentModeColors.resetColor} hover:bg-gray-100` 
-            : `${currentModeColors.startPauseColor} text-white hover:opacity-90`
+            ? `bg-white ${currentModeColors.color} border border-slate-200 ${currentModeColors.hoverClass}` 
+            : `${currentModeColors.activeClass} border border-transparent hover:bg-white hover:${currentModeColors.color}`
         )}
       >
         {!isRunning ? (
@@ -63,7 +69,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
         size="lg"
         className={cn(
           "rounded-full w-14 h-14 flex items-center justify-center shadow-md bg-white hover:bg-gray-100 border border-slate-200",
-          currentModeColors.resetColor
+          currentModeColors.color
         )}
       >
         <RotateCcw className="h-6 w-6" />
