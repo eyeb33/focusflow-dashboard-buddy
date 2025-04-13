@@ -147,6 +147,33 @@ export type Database = {
         }
         Relationships: []
       }
+      tasks: {
+        Row: {
+          completed: boolean
+          created_at: string
+          estimated_pomodoros: number
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          estimated_pomodoros?: number
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          estimated_pomodoros?: number
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

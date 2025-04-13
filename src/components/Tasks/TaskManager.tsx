@@ -8,42 +8,51 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useTasks } from '@/hooks/useTasks';
+import { useAuth } from '@/contexts/AuthContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const TaskManager: React.FC = () => {
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editName, setEditName] = useState('');
   const [editPomodoros, setEditPomodoros] = useState(1);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { tasks, isLoading, addTask, toggleComplete, editTask, deleteTask } = useTasks();
 
   const handleAddTask = (taskName: string, estimatedPomodoros: number) => {
-    const newTask: Task = {
-      id: crypto.randomUUID(),
-      name: taskName,
-      estimatedPomodoros,
-      completed: false,
-      createdAt: new Date().toISOString(),
-    };
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to add tasks.",
+        variant: "destructive",
+      });
+      return;
+    }
     
-    setTasks([newTask, ...tasks]);
-    toast({
-      title: "Task added",
-      description: `"${taskName}" has been added to your tasks`,
+    addTask(taskName, estimatedPomodoros).then(success => {
+      if (success) {
+        toast({
+          title: "Task added",
+          description: `"${taskName}" has been added to your tasks`,
+        });
+      }
     });
   };
 
   const handleDeleteTask = (id: string) => {
-    setTasks(tasks.filter(task => task.id !== id));
-    toast({
-      title: "Task deleted",
-      description: "The task has been removed",
+    deleteTask(id).then(success => {
+      if (success) {
+        toast({
+          title: "Task deleted",
+          description: "The task has been removed",
+        });
+      }
     });
   };
 
   const handleToggleComplete = (id: string) => {
-    setTasks(tasks.map(task => 
-      task.id === id ? { ...task, completed: !task.completed } : task
-    ));
+    toggleComplete(id);
   };
 
   const handleEditTask = (id: string) => {
@@ -57,15 +66,14 @@ const TaskManager: React.FC = () => {
 
   const handleSaveEdit = () => {
     if (editingTask && editName.trim()) {
-      setTasks(tasks.map(task => 
-        task.id === editingTask.id 
-          ? { ...task, name: editName, estimatedPomodoros: editPomodoros } 
-          : task
-      ));
-      setEditingTask(null);
-      toast({
-        title: "Task updated",
-        description: "Your task has been updated",
+      editTask(editingTask.id, editName, editPomodoros).then(success => {
+        if (success) {
+          setEditingTask(null);
+          toast({
+            title: "Task updated",
+            description: "Your task has been updated",
+          });
+        }
       });
     }
   };
@@ -78,12 +86,27 @@ const TaskManager: React.FC = () => {
         </CardHeader>
         <CardContent>
           <TaskInput onAddTask={handleAddTask} />
-          <TaskList 
-            tasks={tasks} 
-            onDeleteTask={handleDeleteTask}
-            onToggleComplete={handleToggleComplete}
-            onEditTask={handleEditTask}
-          />
+          
+          {isLoading ? (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="w-full h-16" />
+              ))}
+            </div>
+          ) : (
+            <TaskList 
+              tasks={tasks} 
+              onDeleteTask={handleDeleteTask}
+              onToggleComplete={handleToggleComplete}
+              onEditTask={handleEditTask}
+            />
+          )}
+          
+          {!user && (
+            <div className="text-center py-4 text-muted-foreground">
+              <p>Sign in to save and sync your tasks across devices</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
