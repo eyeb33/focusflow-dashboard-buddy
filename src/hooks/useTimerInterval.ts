@@ -36,6 +36,7 @@ export function useTimerInterval({
       // Set up the timer interval
       timerRef.current = setInterval(() => {
         const now = Date.now();
+        // Calculate elapsed time since last tick, handle tab inactive periods
         const elapsedTimeMs = now - lastTickTimeRef.current;
         lastTickTimeRef.current = now;
         
@@ -48,8 +49,11 @@ export function useTimerInterval({
         setTimeRemaining(prevTime => {
           // Handle timer completion
           if (prevTime <= elapsedSeconds) {
-            clearInterval(timerRef.current as ReturnType<typeof setInterval>);
-            onTimerComplete();
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+            }
+            // We'll handle the completion in a separate effect to ensure it runs
+            setTimeout(() => onTimerComplete(), 0);
             return 0;
           }
           
@@ -87,7 +91,7 @@ export function useTimerInterval({
     };
   }, [isRunning, timerMode, user, getTotalTime, onTimerComplete, setTimeRemaining, lastRecordedFullMinutesRef]);
   
-  // Save timer state to localStorage when timer changes or tab visibility changes
+  // Enhanced localStorage implementation to preserve timer state when tab is inactive
   useEffect(() => {
     const saveTimerState = () => {
       if (isRunning) {
@@ -101,19 +105,25 @@ export function useTimerInterval({
       }
     };
 
-    // Save timer state when timer is running or when tab is hidden
+    // Save timer state when timer is running or when tab is hidden/closed
     if (isRunning) {
       saveTimerState();
       
       // Set up event listeners for page visibility changes
       document.addEventListener('visibilitychange', saveTimerState);
       window.addEventListener('beforeunload', saveTimerState);
+      
+      // Set up a periodic save to ensure state is updated even during long periods of inactivity
+      const periodicSaveInterval = setInterval(saveTimerState, 5000);
+      
+      return () => {
+        document.removeEventListener('visibilitychange', saveTimerState);
+        window.removeEventListener('beforeunload', saveTimerState);
+        clearInterval(periodicSaveInterval);
+      };
     }
 
-    return () => {
-      document.removeEventListener('visibilitychange', saveTimerState);
-      window.addEventListener('beforeunload', saveTimerState);
-    };
+    return undefined;
   }, [isRunning, timerMode, timeRemaining, lastRecordedFullMinutesRef]);
   
   return timerRef;

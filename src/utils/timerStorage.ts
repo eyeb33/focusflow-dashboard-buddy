@@ -10,21 +10,23 @@ export interface FocusSession {
 
 export const saveFocusSession = async (userId: string, sessionType: 'work' | 'break' | 'longBreak', duration: number, completed: boolean = true) => {
   try {
-    if (!userId) return;
+    if (!userId) return false;
     
-    const { error } = await supabase.from('focus_sessions').insert({
+    console.log('Saving focus session:', { userId, sessionType, duration, completed });
+    
+    const { data, error } = await supabase.from('focus_sessions').insert({
       user_id: userId,
       session_type: sessionType,
       duration: duration,
       completed: completed
-    });
+    }).select();
     
     if (error) {
       console.error('Error saving session:', error);
       return false;
     } 
     
-    console.log('Session saved successfully', { sessionType, duration, completed });
+    console.log('Session saved successfully:', data);
     return true;
   } catch (error) {
     console.error('Error saving session:', error);
@@ -70,7 +72,8 @@ export const fetchTodayStats = async (userId: string | undefined) => {
       .from('focus_sessions')
       .select('*')
       .eq('user_id', userId)
-      .gte('created_at', startOfDay.toISOString());
+      .gte('created_at', startOfDay.toISOString())
+      .eq('session_type', 'work');
       
     if (error) {
       console.error('Error fetching focus sessions:', error);

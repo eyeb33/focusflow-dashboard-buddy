@@ -7,20 +7,29 @@ export const calculateStreak = (recentDays: any[] | null, today: string) => {
     return 1; // Today is the first day with completed sessions
   }
   
+  // Format all dates to YYYY-MM-DD to ensure consistent comparison
   const dates = recentDays.map(day => new Date(day.date).toISOString().split('T')[0]);
   
   // Check if today is already in the dates array
   const todayIndex = dates.indexOf(today);
-  if (todayIndex === -1) {
-    dates.unshift(today); // Add today to the beginning of the array if not already present
+  const hasCompletedSessionsToday = todayIndex !== -1;
+  
+  // If today isn't in the array yet (new completed session), add it
+  if (!hasCompletedSessionsToday) {
+    dates.unshift(today);
   }
   
-  let currentStreak = 1; // Start with today
+  let currentStreak = 1; // Start with today or the most recent day
+  
+  // Sort dates in descending order (newest first)
+  const sortedDates = [...new Set(dates)].sort((a, b) => 
+    new Date(b).getTime() - new Date(a).getTime()
+  );
   
   // Loop through dates (which are sorted in descending order) to find consecutive days
-  for (let i = 0; i < dates.length - 1; i++) {
-    const currentDate = new Date(dates[i]);
-    const nextDate = new Date(dates[i + 1]);
+  for (let i = 0; i < sortedDates.length - 1; i++) {
+    const currentDate = new Date(sortedDates[i]);
+    const nextDate = new Date(sortedDates[i + 1]);
     
     // Calculate the difference in days
     const diffTime = Math.abs(currentDate.getTime() - nextDate.getTime());
@@ -34,5 +43,6 @@ export const calculateStreak = (recentDays: any[] | null, today: string) => {
     }
   }
   
+  console.log(`Calculated streak: ${currentStreak} days from dates:`, sortedDates);
   return currentStreak;
 };
