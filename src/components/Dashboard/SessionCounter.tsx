@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, ClockReset } from 'lucide-react';
+import { RefreshCw, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { resetUserStats } from '@/utils/resetUserStats';
@@ -68,7 +68,7 @@ const SessionCounter: React.FC<SessionCounterProps> = ({ sessions, onRefresh }) 
             className="h-8 w-8 p-0"
             title="Reset Sessions (Testing)"
           >
-            <ClockReset className="h-4 w-4" />
+            <RotateCcw className="h-4 w-4" />
             <span className="sr-only">Reset</span>
           </Button>
         </div>
