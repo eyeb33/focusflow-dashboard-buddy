@@ -28,8 +28,8 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
   const circumference = 2 * Math.PI * radius;
   
   // Calculate start and end angles for 3/4 circle (open at bottom)
-  const startAngle = -Math.PI / 4; // -45 degrees
-  const endAngle = startAngle + (Math.PI * 1.5); // -45 + 270 = 225 degrees
+  const startAngle = -Math.PI / 2 - Math.PI / 4; // -135 degrees (bottom left)
+  const endAngle = startAngle + (Math.PI * 1.5); // -135 + 270 = 135 degrees (bottom right)
   
   // Calculate the path for a 3/4 circle
   const getArcPath = (r: number) => {
