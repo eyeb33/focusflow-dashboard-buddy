@@ -14,7 +14,7 @@ interface StatCardProps {
     isPositive: boolean;
   };
   className?: string;
-  iconColor?: string;
+  iconColor?: string;  // Add an optional iconColor prop
 }
 
 const StatCard: React.FC<StatCardProps> = ({
@@ -24,7 +24,7 @@ const StatCard: React.FC<StatCardProps> = ({
   description,
   trend,
   className,
-  iconColor
+  iconColor  // Destructure the new iconColor prop
 }) => {
   return (
     <Card className={cn("h-full", className)}>
@@ -33,11 +33,13 @@ const StatCard: React.FC<StatCardProps> = ({
         <div 
           className={cn(
             "h-8 w-8 rounded-full bg-muted flex items-center justify-center",
-            iconColor && `bg-opacity-20`,
-            iconColor && { backgroundColor: `${iconColor}20` }
+            // Apply the iconColor if provided, otherwise use default muted background
+            iconColor && `bg-[${iconColor}] bg-opacity-20`
           )}
         >
-          {icon}
+          {React.cloneElement(icon as React.ReactElement, { 
+            color: iconColor 
+          })}
         </div>
       </CardHeader>
       <CardContent>

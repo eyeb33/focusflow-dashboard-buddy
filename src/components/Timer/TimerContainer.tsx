@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -6,10 +5,10 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CircularProgress from "@/components/Timer/CircularProgress";
 import TimerControls from "@/components/Timer/TimerControls";
 import TimerSettings from "@/components/Timer/TimerSettings";
+import SessionInfo from "@/components/Timer/SessionInfo";
 import { useTimerControls } from "@/hooks/useTimerControls";
 import { useTimerStats } from "@/hooks/useTimerStats";
 import { useTimerSettings } from "@/hooks/useTimerSettings";
-import { Check, Circle } from "lucide-react";
 
 const TimerContainer: React.FC = () => {
   const {
@@ -27,24 +26,11 @@ const TimerContainer: React.FC = () => {
   
   const {
     completedSessions,
+    totalTimeToday,
     sessionsUntilLongBreak
   } = useTimerStats();
   
   const { settings } = useTimerSettings();
-  
-  // Calculate which pomodoro in the cycle we're on
-  const currentCyclePosition = completedSessions % sessionsUntilLongBreak;
-  
-  // Create an array to represent the pomodoro cycle
-  const cycleIndicators = Array(sessionsUntilLongBreak).fill(0).map((_, index) => {
-    if (index < currentCyclePosition) {
-      return <Check key={index} className="h-4 w-4 text-green-500" />;
-    } else if (index === currentCyclePosition && timerMode === 'work') {
-      return <Circle key={index} className="h-4 w-4 text-red-500 animate-pulse" />;
-    } else {
-      return <Circle key={index} className="h-4 w-4 text-muted-foreground" />;
-    }
-  });
 
   return (
     <Card className="w-full max-w-md p-6 bg-white/90 dark:bg-black/80 backdrop-blur-sm shadow-md">
@@ -90,17 +76,15 @@ const TimerContainer: React.FC = () => {
           onStart={start}
           onPause={pause}
           onReset={reset}
-          className="mb-4"
+          className="mb-2"
         />
-        
-        {/* Pomodoro cycle indicator */}
-        <div className="flex items-center justify-center gap-2 mt-2">
-          {cycleIndicators}
-        </div>
-        <div className="text-xs text-muted-foreground mt-1">
-          {currentCyclePosition}/{sessionsUntilLongBreak} in this cycle
-        </div>
       </div>
+      
+      <SessionInfo 
+        completedSessions={completedSessions}
+        totalTimeToday={totalTimeToday}
+        sessionsUntilLongBreak={sessionsUntilLongBreak}
+      />
     </Card>
   );
 };

@@ -11,7 +11,6 @@ export const updateDailyStats = async (userId: string, durationMinutes: number) 
     if (!userId) return;
     
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    console.log(`Updating daily stats for user ${userId} with ${durationMinutes} minutes on ${today}`);
     
     const { data: existingData, error: queryError } = await supabase
       .from('sessions_summary')
@@ -21,29 +20,21 @@ export const updateDailyStats = async (userId: string, durationMinutes: number) 
       .single();
       
     if (queryError && queryError.code !== 'PGRST116') { // PGRST116 means no rows returned
-      console.error('Error querying sessions summary:', queryError);
       throw queryError;
     }
     
-    // Get recent days with activity to calculate current streak
     const { data: recentDays, error: streakError } = await supabase
       .from('sessions_summary')
-      .select('date, total_completed_sessions')
+      .select('date')
       .eq('user_id', userId)
       .gt('total_completed_sessions', 0)
       .order('date', { ascending: false });
       
-    if (streakError) {
-      console.error('Error fetching streak data:', streakError);
-      throw streakError;
-    }
+    if (streakError) throw streakError;
     
-    console.log('Recent days with activity:', recentDays);
     let currentStreak = calculateStreak(recentDays, today);
-    console.log(`Current streak calculated: ${currentStreak} days`);
     
     if (existingData) {
-      console.log('Updating existing session summary:', existingData);
       const { error } = await supabase
         .from('sessions_summary')
         .update({
@@ -55,14 +46,8 @@ export const updateDailyStats = async (userId: string, durationMinutes: number) 
         })
         .eq('id', existingData.id);
         
-      if (error) {
-        console.error('Error updating sessions summary:', error);
-        throw error;
-      }
-      
-      console.log('Updated session summary successfully');
+      if (error) throw error;
     } else {
-      console.log('Creating new session summary for today');
       const { error } = await supabase
         .from('sessions_summary')
         .insert({
@@ -74,17 +59,10 @@ export const updateDailyStats = async (userId: string, durationMinutes: number) 
           longest_streak: currentStreak
         });
         
-      if (error) {
-        console.error('Error inserting new sessions summary:', error);
-        throw error;
-      }
-      
-      console.log('Created new session summary successfully');
+      if (error) throw error;
     }
     
-    // Update productivity score based on completed sessions and focus time
     await updateProductivityScore(userId, today);
-    console.log('Updated productivity score successfully');
     
   } catch (error) {
     console.error('Error updating daily stats:', error);

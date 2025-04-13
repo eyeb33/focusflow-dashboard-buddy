@@ -152,10 +152,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_daily_completed_sessions: {
-        Args: { user_id_param: string; date_param: string }
-        Returns: number
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

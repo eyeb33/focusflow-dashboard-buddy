@@ -12,7 +12,7 @@ interface StatItem {
     value: number;
     isPositive: boolean;
   };
-  iconColor?: string;
+  iconColor?: string;  // Add an optional iconColor prop
 }
 
 interface StatCardsGridProps {

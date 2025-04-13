@@ -4,7 +4,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { DashboardData, initialDashboardData } from './dashboard/types';
 import { useStatsData } from './dashboard/useStatsData';
-import { useRealtimeUpdates } from './useRealtimeUpdates';
+import { useProductivityTrends } from './dashboard/useProductivityTrends';
+import { useStreakData } from './dashboard/useStreakData';
+import { useInsights } from './dashboard/useInsights';
+import { useProductivityData } from './dashboard/useProductivityData';
+import { useRealtimeUpdates } from './dashboard/useRealtimeUpdates';
 
 export type { DashboardData } from './dashboard/types';
 
@@ -12,8 +16,18 @@ export const useDashboardData = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Initialize stats data hook with React Query
+  // Initialize all data hooks with React Query
   const { stats, isLoading: statsLoading, refetch: refetchStats } = useStatsData(user?.id);
+  const { productivityTrend, isLoading: trendLoading, refetch: refetchTrends } = useProductivityTrends(user?.id);
+  const { streakData, isLoading: streakLoading, refetch: refetchStreak } = useStreakData(user?.id);
+  const { insights, isLoading: insightsLoading, refetch: refetchInsights } = useInsights(user?.id);
+  const { 
+    dailyProductivity, 
+    weeklyProductivity, 
+    monthlyProductivity, 
+    isLoading: productivityLoading,
+    refetch: refetchProductivity 
+  } = useProductivityData(user?.id);
 
   // Set up realtime updates to automatically invalidate queries
   useRealtimeUpdates(user?.id);
@@ -23,15 +37,21 @@ export const useDashboardData = () => {
     try {
       console.log('Manually refreshing dashboard data for user:', user?.id);
       
-      // Refresh stats query
-      await refetchStats();
+      // Refresh all queries in parallel
+      await Promise.all([
+        refetchStats(),
+        refetchTrends(),
+        refetchStreak(),
+        refetchInsights(),
+        refetchProductivity()
+      ]);
       
       toast({
         title: "Dashboard refreshed",
         description: "Latest productivity data has been loaded.",
       });
       
-      console.log('Dashboard data refreshed successfully');
+      console.log('All dashboard data refreshed successfully');
     } catch (error: any) {
       console.error('Error refreshing dashboard data:', error.message);
       toast({
@@ -40,20 +60,28 @@ export const useDashboardData = () => {
         variant: "destructive",
       });
     }
-  }, [user?.id, refetchStats, toast]);
+  }, [
+    user?.id,
+    refetchStats,
+    refetchTrends,
+    refetchStreak,
+    refetchInsights,
+    refetchProductivity,
+    toast
+  ]);
 
   // Determine overall loading state
-  const isLoading = statsLoading;
+  const isLoading = statsLoading || trendLoading || streakLoading || insightsLoading || productivityLoading;
 
-  // Combine data into dashboard data object
+  // Combine all data into dashboard data object
   const dashboardData: DashboardData = {
     stats,
-    productivityTrend: [],
-    streakData: [],
-    insights: [],
-    dailyProductivity: [],
-    weeklyProductivity: [],
-    monthlyProductivity: []
+    productivityTrend,
+    streakData,
+    insights,
+    dailyProductivity,
+    weeklyProductivity,
+    monthlyProductivity
   };
 
   return { 

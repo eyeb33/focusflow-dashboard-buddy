@@ -1,24 +1,22 @@
-
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from "@/components/Layout/Header";
 import MobileNav from "@/components/Layout/MobileNav";
 import DashboardHeader from "@/components/Dashboard/DashboardHeader";
 import StatCardsGrid from "@/components/Dashboard/StatCardsGrid";
-import SessionCounter from "@/components/Dashboard/SessionCounter";
+import ChartsGrid from "@/components/Dashboard/ChartsGrid";
+import ProductivityInsights from "@/components/Dashboard/ProductivityInsights";
+import ProductivityTrendChart from "@/components/Dashboard/ProductivityTrendChart";
+import UserProfileCard from "@/components/Dashboard/UserProfileCard";
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { fetchTodayStats, fetchYesterdayStats } from '@/utils/timerStorage';
 
 const Dashboard = () => {
   const { user, isLoading: authLoading } = useAuth();
   const { dashboardData, isLoading: dataLoading, refreshData } = useDashboardData();
-  const [todayStats, setTodayStats] = React.useState({ completedSessions: 0, totalTimeToday: 0 });
-  const [yesterdayStats, setYesterdayStats] = React.useState({ completedSessions: 0 });
-  const [isLoadingToday, setIsLoadingToday] = React.useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -27,65 +25,18 @@ const Dashboard = () => {
       navigate('/auth', { state: { mode: 'login' } });
     }
   }, [user, authLoading, navigate]);
-  
-  useEffect(() => {
-    if (user) {
-      const getStats = async () => {
-        setIsLoadingToday(true);
-        try {
-          console.log('Fetching today\'s and yesterday\'s stats');
-          const today = await fetchTodayStats(user.id);
-          const yesterday = await fetchYesterdayStats(user.id);
-          
-          console.log('Today\'s stats:', today);
-          console.log('Yesterday\'s stats:', yesterday);
-          
-          setTodayStats(today);
-          setYesterdayStats(yesterday);
-        } catch (error) {
-          console.error("Error fetching stats:", error);
-        } finally {
-          setIsLoadingToday(false);
-        }
-      };
-      
-      getStats();
-    }
-  }, [user]);
 
-  const isLoading = authLoading || dataLoading || isLoadingToday;
+  const isLoading = authLoading || dataLoading;
 
   const handleRefreshData = async () => {
     try {
-      setIsLoadingToday(true);
-      console.log('Refreshing dashboard data');
-      
       await refreshData();
-      
-      if (user) {
-        console.log('Refreshing today\'s and yesterday\'s stats');
-        const today = await fetchTodayStats(user.id);
-        const yesterday = await fetchYesterdayStats(user.id);
-        
-        console.log('Refreshed today\'s stats:', today);
-        console.log('Refreshed yesterday\'s stats:', yesterday);
-        
-        setTodayStats(today);
-        setYesterdayStats(yesterday);
-      }
-      
-      toast({
-        title: "Data refreshed",
-        description: "The latest session data has been loaded.",
-      });
     } catch (error: any) {
       toast({
         title: "Error refreshing data",
         description: error.message,
         variant: "destructive",
       });
-    } finally {
-      setIsLoadingToday(false);
     }
   };
 
@@ -103,11 +54,10 @@ const Dashboard = () => {
 
   const stats = [
     {
-      title: "Total Focus Sessions",
+      title: "Total Sessions",
       value: dashboardData.stats.totalSessions.toString(),
       icon: "Clock",
       iconColor: "#1EAEDB",
-      description: "all time",
       trend: {
         value: dashboardData.stats.weeklyChange.sessions,
         isPositive: dashboardData.stats.weeklyChange.sessions >= 0
@@ -124,25 +74,22 @@ const Dashboard = () => {
       }
     },
     {
-      title: "Current Streak",
-      value: `${dashboardData.stats.currentStreak} days`,
-      icon: "Zap",
-      iconColor: "#F59E0B",
-      trend: {
-        value: 0, // Streaks don't have a weekly change percentage
-        isPositive: true
-      }
-    },
-    {
       title: "Daily Average",
       value: dashboardData.stats.dailyAverage.toString(),
       icon: "Target",
       iconColor: "#F97316",
-      description: "minutes per day",
+      description: "sessions per day",
       trend: {
         value: dashboardData.stats.weeklyChange.dailyAvg,
         isPositive: dashboardData.stats.weeklyChange.dailyAvg >= 0
       }
+    },
+    {
+      title: "Current Streak",
+      value: dashboardData.stats.currentStreak.toString(),
+      icon: "Zap",
+      iconColor: "#FEF7CD",
+      description: "days"
     }
   ];
 
@@ -164,11 +111,7 @@ const Dashboard = () => {
           </Button>
         </div>
         
-        <SessionCounter 
-          todaySessions={todayStats.completedSessions} 
-          yesterdaySessions={yesterdayStats.completedSessions}
-          onRefresh={handleRefreshData}
-        />
+        <UserProfileCard />
         
         <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-6">
           <div className="md:col-span-1">
@@ -176,6 +119,26 @@ const Dashboard = () => {
               stats={stats} 
             />
           </div>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div className="lg:col-span-2">
+            <ChartsGrid 
+              dailyData={dashboardData.dailyProductivity}
+              weeklyData={dashboardData.weeklyProductivity}
+              monthlyData={dashboardData.monthlyProductivity}
+              streakData={dashboardData.streakData}
+              currentStreak={dashboardData.stats.currentStreak}
+              bestStreak={dashboardData.stats.bestStreak || 0}
+            />
+          </div>
+          <div className="lg:col-span-1">
+            <ProductivityInsights insights={dashboardData.insights} />
+          </div>
+        </div>
+        
+        <div className="mb-6">
+          <ProductivityTrendChart data={dashboardData.productivityTrend} />
         </div>
       </div>
       

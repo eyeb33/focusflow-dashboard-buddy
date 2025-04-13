@@ -50,9 +50,9 @@ export const savePartialSession = async (
   if (newFullMinutes > 0) {
     console.log(`Saving partial session with ${newFullMinutes} new complete minutes`);
     
-    // Only save focus sessions for work mode
+    await saveFocusSession(userId, timerMode, newFullMinutes * 60, false);
+    
     if (timerMode === 'work') {
-      await saveFocusSession(userId, timerMode, newFullMinutes * 60, false);
       await updateDailyStats(userId, newFullMinutes);
     }
   }
