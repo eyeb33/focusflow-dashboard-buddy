@@ -28,8 +28,14 @@ export function useSessionPersistence() {
     if (timerMode === 'work') {
       // Save work session and update stats
       const duration = workDurationMinutes || settings.workDuration;
+      
+      // Mark as completed=true for proper counting in dashboard
       await saveFocusSession(userId, timerMode, duration * 60, true);
+      
+      // Update daily stats to increment completed sessions count
       await updateDailyStats(userId, duration);
+      
+      console.log('Successfully saved completed work session');
     } else {
       // Save break session
       const duration = timerMode === 'break' 
@@ -37,6 +43,7 @@ export function useSessionPersistence() {
         : settings.longBreakDuration * 60;
       
       await saveFocusSession(userId, timerMode, duration, true);
+      console.log('Successfully saved completed break session');
     }
   };
   

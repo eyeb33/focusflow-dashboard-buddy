@@ -5,6 +5,7 @@ import Header from "@/components/Layout/Header";
 import MobileNav from "@/components/Layout/MobileNav";
 import DashboardHeader from "@/components/Dashboard/DashboardHeader";
 import StatCardsGrid from "@/components/Dashboard/StatCardsGrid";
+import SessionCounter from "@/components/Dashboard/SessionCounter";
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
@@ -110,6 +111,12 @@ const Dashboard = () => {
             Refresh Data
           </Button>
         </div>
+        
+        {/* Add Session Counter component */}
+        <SessionCounter 
+          sessions={dashboardData.stats.totalSessions} 
+          onRefresh={refreshData}
+        />
         
         <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-6">
           <div className="md:col-span-1">
