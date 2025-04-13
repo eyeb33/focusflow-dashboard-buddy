@@ -19,13 +19,103 @@ export function useTimerLogic(settings: TimerSettings) {
   
   const lastRecordedTimeRef = useRef<number | null>(null);
   const lastRecordedFullMinutesRef = useRef<number>(0);
+  
+  // Load saved timer state on mount
+  useEffect(() => {
+    const savedTimerState = localStorage.getItem('timerState');
+    
+    if (savedTimerState) {
+      try {
+        const state = JSON.parse(savedTimerState);
+        
+        // Verify the state object has the expected structure
+        if (state && state.isRunning && state.timerMode && state.timeRemaining !== undefined) {
+          // Calculate how much time has passed since the timer state was saved
+          const now = Date.now();
+          const lastTickTime = state.lastTickTime || now;
+          const elapsedSeconds = Math.floor((now - lastTickTime) / 1000);
+          
+          // Only restore if we have valid time data
+          if (!isNaN(elapsedSeconds) && elapsedSeconds >= 0) {
+            // Calculate new time remaining
+            const newTimeRemaining = Math.max(0, state.timeRemaining - elapsedSeconds);
+            
+            // If timer has completed while away, handle completion
+            if (newTimeRemaining <= 0) {
+              // We'll handle this completed session
+              if (state.timerMode === 'work') {
+                setCompletedSessions(prev => prev + 1);
+                const workDurationMinutes = settings.workDuration;
+                setTotalTimeToday(prev => prev + workDurationMinutes);
+                
+                if (user) {
+                  saveFocusSession(user.id, state.timerMode, settings.workDuration * 60, true)
+                    .then(() => {
+                      updateDailyStats(user.id, settings.workDuration);
+                    });
+                }
+                
+                // Go to break mode
+                const newCompletedSessions = completedSessions + 1;
+                if (newCompletedSessions % settings.sessionsUntilLongBreak === 0) {
+                  setTimerMode('longBreak');
+                  setTimeRemaining(settings.longBreakDuration * 60);
+                } else {
+                  setTimerMode('break');
+                  setTimeRemaining(settings.breakDuration * 60);
+                }
+                
+                // Show a toast notification
+                toast({
+                  title: "Session completed while you were away!",
+                  description: `You completed a ${settings.workDuration} minute focus session.`,
+                });
+                
+                setIsRunning(false);
+              } else {
+                // Break timer completed
+                if (user) {
+                  const duration = state.timerMode === 'break' ? settings.breakDuration * 60 : settings.longBreakDuration * 60;
+                  saveFocusSession(user.id, state.timerMode, duration, true);
+                }
+                
+                // Go back to work mode
+                setTimerMode('work');
+                setTimeRemaining(settings.workDuration * 60);
+                setIsRunning(false);
+              }
+            } else {
+              // Timer still has time remaining, restore state
+              setTimerMode(state.timerMode);
+              setTimeRemaining(newTimeRemaining);
+              setIsRunning(state.isRunning);
+              lastRecordedFullMinutesRef.current = state.lastRecordedFullMinutes || 0;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error restoring timer state:', error);
+        // Fallback to defaults if restore fails
+        setTimeRemaining(getTotalTime(timerMode, settings));
+      }
+      
+      // Clear the saved state to prevent reloading it on refresh
+      localStorage.removeItem('timerState');
+    } else {
+      // No saved state, initialize with default values
+      setTimeRemaining(getTotalTime(timerMode, settings));
+    }
+  }, []);  // Empty dependency array means this runs once on mount
 
   // Reset timer when mode or settings change
   useEffect(() => {
-    setTimeRemaining(getTotalTime(timerMode, settings));
-    lastRecordedTimeRef.current = getTotalTime(timerMode, settings);
-    lastRecordedFullMinutesRef.current = 0;
-  }, [timerMode, settings]);
+    // Only reset if not running
+    if (!isRunning) {
+      setTimeRemaining(getTotalTime(timerMode, settings));
+      lastRecordedTimeRef.current = getTotalTime(timerMode, settings);
+      lastRecordedFullMinutesRef.current = 0;
+    }
+  }, [timerMode, settings, isRunning]);
 
   // Handle timer completion
   const handleTimerComplete = async () => {

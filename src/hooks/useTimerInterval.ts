@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import { savePartialSession } from '@/utils/timerContextUtils';
@@ -25,22 +25,39 @@ export function useTimerInterval({
 }: UseTimerIntervalProps) {
   const { user } = useAuth();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastTickTimeRef = useRef<number>(Date.now());
   
-  // Timer tick logic
+  // Timer tick logic with time drift compensation
   useEffect(() => {
     if (isRunning) {
+      // Store the start time to calculate elapsed time
+      lastTickTimeRef.current = Date.now();
+      
+      // Set up the timer interval
       timerRef.current = setInterval(() => {
+        const now = Date.now();
+        const elapsedTimeMs = now - lastTickTimeRef.current;
+        lastTickTimeRef.current = now;
+        
+        // Calculate elapsed seconds (we need to round to handle potential 
+        // small timing differences)
+        const elapsedSeconds = Math.round(elapsedTimeMs / 1000);
+        
+        if (elapsedSeconds <= 0) return; // Skip if no meaningful time has passed
+        
         setTimeRemaining(prevTime => {
-          if (prevTime <= 1) {
+          // Handle timer completion
+          if (prevTime <= elapsedSeconds) {
             clearInterval(timerRef.current as ReturnType<typeof setInterval>);
             onTimerComplete();
             return 0;
           }
           
-          const newTime = prevTime - 1;
+          // Calculate new remaining time
+          const newTime = prevTime - elapsedSeconds;
           const totalTime = getTotalTime();
-          const elapsedSeconds = totalTime - newTime;
-          const newFullMinutes = Math.floor(elapsedSeconds / 60);
+          const elapsedTotalSeconds = totalTime - newTime;
+          const newFullMinutes = Math.floor(elapsedTotalSeconds / 60);
           const prevFullMinutes = lastRecordedFullMinutesRef.current;
           
           // Only save partial session data for work modes and when a full minute completes
@@ -69,6 +86,35 @@ export function useTimerInterval({
       }
     };
   }, [isRunning, timerMode, user, getTotalTime, onTimerComplete, setTimeRemaining, lastRecordedFullMinutesRef]);
+  
+  // Save timer state to localStorage when timer changes or tab visibility changes
+  useEffect(() => {
+    const saveTimerState = () => {
+      if (isRunning) {
+        localStorage.setItem('timerState', JSON.stringify({
+          isRunning,
+          timerMode,
+          timeRemaining,
+          lastTickTime: Date.now(),
+          lastRecordedFullMinutes: lastRecordedFullMinutesRef.current
+        }));
+      }
+    };
+
+    // Save timer state when timer is running or when tab is hidden
+    if (isRunning) {
+      saveTimerState();
+      
+      // Set up event listeners for page visibility changes
+      document.addEventListener('visibilitychange', saveTimerState);
+      window.addEventListener('beforeunload', saveTimerState);
+    }
+
+    return () => {
+      document.removeEventListener('visibilitychange', saveTimerState);
+      window.addEventListener('beforeunload', saveTimerState);
+    };
+  }, [isRunning, timerMode, timeRemaining, lastRecordedFullMinutesRef]);
   
   return timerRef;
 }
