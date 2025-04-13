@@ -27,8 +27,8 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   
-  // Rotate the arc to bottom (open part at bottom)
-  const startAngle = Math.PI / 2; // Start at bottom
+  // Start at the top (270 degrees) and go clockwise, leaving a gap at the bottom
+  const startAngle = -Math.PI / 2; // Start at top (270 degrees)
   const endAngle = startAngle + (Math.PI * 1.5); // Go around 3/4 of the circle
   
   // Calculate the path for a 3/4 circle
@@ -39,7 +39,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
     const y2 = size / 2 + r * Math.sin(endAngle);
     const largeArcFlag = 1; // 1 for angles > 180 degrees
     
-    return `M ${x1} ${y1} A ${r} ${r} 0 ${largeArcFlag} 0 ${x2} ${y2}`;
+    return `M ${x1} ${y1} A ${r} ${r} 0 ${largeArcFlag} 1 ${x2} ${y2}`;
   };
   
   // Calculate the progress along the arc
