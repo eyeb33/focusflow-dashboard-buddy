@@ -53,6 +53,7 @@ export function useTimerControls({
         lastRecordedFullMinutesRef.current
       );
     }
+    // No setTimeRemaining call here - this allows the timer to remain at its current value
   };
   
   const handleReset = async () => {
