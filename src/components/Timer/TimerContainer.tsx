@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -6,6 +7,7 @@ import CircularProgress from "@/components/Timer/CircularProgress";
 import TimerControls from "@/components/Timer/TimerControls";
 import TimerSettings from "@/components/Timer/TimerSettings";
 import SessionInfo from "@/components/Timer/SessionInfo";
+import SessionProgress from "@/components/Timer/SessionProgress";
 import { useTimerControls } from "@/hooks/useTimerControls";
 import { useTimerStats } from "@/hooks/useTimerStats";
 import { useTimerSettings } from "@/hooks/useTimerSettings";
@@ -121,6 +123,13 @@ const TimerContainer: React.FC = () => {
           mode={timerMode}
           className="mb-2"
         />
+        
+        <SessionProgress 
+          completedSessions={completedSessions}
+          sessionsUntilLongBreak={sessionsUntilLongBreak}
+          currentMode={timerMode}
+          className="mb-4"
+        />
       </div>
       
       <SessionInfo 
@@ -133,3 +142,4 @@ const TimerContainer: React.FC = () => {
 };
 
 export default TimerContainer;
+

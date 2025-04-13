@@ -39,10 +39,19 @@ export function useTimerLogic(settings: TimerSettings) {
         updateDailyStats(user.id, settings.workDuration);
       }
       
+      // After work session is completed, check if long break is needed
       if (newCompletedSessions % settings.sessionsUntilLongBreak === 0) {
         setTimerMode('longBreak');
+        toast({
+          title: "Time for a long break!",
+          description: `You've completed ${settings.sessionsUntilLongBreak} focus sessions. Take a longer break now.`,
+        });
       } else {
         setTimerMode('break');
+        toast({
+          title: "Session completed!",
+          description: `You completed a ${settings.workDuration} minute focus session.`,
+        });
       }
     } else {
       if (user) {
@@ -53,19 +62,23 @@ export function useTimerLogic(settings: TimerSettings) {
       }
       
       setTimerMode('work');
+      
+      if (timerMode === 'break') {
+        toast({
+          title: "Break finished!",
+          description: "Time to focus again.",
+        });
+      } else if (timerMode === 'longBreak') {
+        toast({
+          title: "Long break finished!",
+          description: "Ready to start a new cycle?",
+        });
+      }
     }
     
     lastRecordedTimeRef.current = null;
     lastRecordedFullMinutesRef.current = 0;
     setIsRunning(false);
-    
-    // Show toast for completed work session
-    if (timerMode === 'work') {
-      toast({
-        title: "Session completed!",
-        description: `You completed a ${settings.workDuration} minute focus session.`,
-      });
-    }
   };
 
   // Get the current total time based on timer mode
