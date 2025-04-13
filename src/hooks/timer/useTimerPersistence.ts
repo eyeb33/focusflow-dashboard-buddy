@@ -137,8 +137,8 @@ export function useTimerPersistence({
               // Timer still has time remaining, restore state
               setTimerMode(state.timerMode);
               setTimeRemaining(newTimeRemaining);
-              // Restore as paused - let the user manually start again
-              setIsRunning(false);
+              // Restore running state as it was when saved
+              setIsRunning(state.isRunning || false);
               lastRecordedFullMinutesRef.current = state.lastRecordedFullMinutes || 0;
             }
           }
@@ -149,8 +149,8 @@ export function useTimerPersistence({
         setTimeRemaining(getTotalTime(timerMode, settings));
       }
       
-      // Clear the saved state to prevent reloading it on refresh
-      localStorage.removeItem('timerState');
+      // Don't clear the saved state so it can be restored if the page is refreshed again
+      // localStorage.removeItem('timerState');
     } else {
       // No saved state, initialize with default values
       setTimeRemaining(getTotalTime(timerMode, settings));

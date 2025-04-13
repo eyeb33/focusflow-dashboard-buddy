@@ -57,6 +57,17 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
     }
   };
   
+  const getTrackColor = () => {
+    switch (mode) {
+      case 'break':
+      case 'longBreak':
+        return 'stroke-green-100 dark:stroke-green-900/30';
+      case 'work':
+      default:
+        return 'stroke-red-100 dark:stroke-red-900/30';
+    }
+  };
+  
   return (
     <div className={cn("relative flex items-center justify-center", className)}>
       <svg width={size} height={size}>
@@ -66,7 +77,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
           fill="none"
           stroke="currentColor"
           strokeWidth={strokeWidth}
-          className="stroke-muted opacity-20"
+          className={cn(getTrackColor())}
           strokeLinecap="round"
         />
         
