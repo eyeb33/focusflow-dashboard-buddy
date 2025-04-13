@@ -11,10 +11,13 @@ import { Loader2, RefreshCw } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { fetchTodayStats } from '@/utils/timerStorage';
 
 const Dashboard = () => {
   const { user, isLoading: authLoading } = useAuth();
   const { dashboardData, isLoading: dataLoading, refreshData } = useDashboardData();
+  const [todayStats, setTodayStats] = React.useState({ completedSessions: 0, totalTimeToday: 0 });
+  const [isLoadingToday, setIsLoadingToday] = React.useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -23,18 +26,44 @@ const Dashboard = () => {
       navigate('/auth', { state: { mode: 'login' } });
     }
   }, [user, authLoading, navigate]);
+  
+  // Fetch today's sessions separately
+  useEffect(() => {
+    if (user) {
+      const getTodayStats = async () => {
+        setIsLoadingToday(true);
+        try {
+          const stats = await fetchTodayStats(user.id);
+          setTodayStats(stats);
+        } catch (error) {
+          console.error("Error fetching today's stats:", error);
+        } finally {
+          setIsLoadingToday(false);
+        }
+      };
+      
+      getTodayStats();
+    }
+  }, [user]);
 
-  const isLoading = authLoading || dataLoading;
+  const isLoading = authLoading || dataLoading || isLoadingToday;
 
   const handleRefreshData = async () => {
     try {
+      setIsLoadingToday(true);
       await refreshData();
+      if (user) {
+        const stats = await fetchTodayStats(user.id);
+        setTodayStats(stats);
+      }
+      setIsLoadingToday(false);
     } catch (error: any) {
       toast({
         title: "Error refreshing data",
         description: error.message,
         variant: "destructive",
       });
+      setIsLoadingToday(false);
     }
   };
 
@@ -112,10 +141,10 @@ const Dashboard = () => {
           </Button>
         </div>
         
-        {/* Add Session Counter component */}
+        {/* Today's Sessions Counter */}
         <SessionCounter 
-          sessions={dashboardData.stats.totalSessions} 
-          onRefresh={refreshData}
+          todaySessions={todayStats.completedSessions} 
+          onRefresh={handleRefreshData}
         />
         
         <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-6">

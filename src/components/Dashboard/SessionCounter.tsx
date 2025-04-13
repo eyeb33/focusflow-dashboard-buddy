@@ -8,11 +8,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { resetUserStats } from '@/utils/resetUserStats';
 
 interface SessionCounterProps {
-  sessions: number;
+  todaySessions: number;
   onRefresh: () => Promise<void>;
 }
 
-const SessionCounter: React.FC<SessionCounterProps> = ({ sessions, onRefresh }) => {
+const SessionCounter: React.FC<SessionCounterProps> = ({ todaySessions, onRefresh }) => {
   const { toast } = useToast();
   const { user } = useAuth();
   
@@ -25,7 +25,7 @@ const SessionCounter: React.FC<SessionCounterProps> = ({ sessions, onRefresh }) 
       if (success) {
         toast({
           title: "Stats Reset",
-          description: "Your session count has been reset to 0 for testing.",
+          description: "Your session counts have been reset to 0 for testing.",
         });
         
         // Refresh the dashboard data
@@ -49,7 +49,7 @@ const SessionCounter: React.FC<SessionCounterProps> = ({ sessions, onRefresh }) 
   return (
     <Card className="mb-6">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <h3 className="text-lg font-medium">Completed Focus Sessions</h3>
+        <h3 className="text-lg font-medium">Today's Focus Sessions</h3>
         <div className="flex gap-2">
           <Button 
             variant="ghost" 
@@ -76,13 +76,13 @@ const SessionCounter: React.FC<SessionCounterProps> = ({ sessions, onRefresh }) 
       <CardContent>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-4xl font-bold">{sessions}</p>
-            <p className="text-sm text-muted-foreground">Total completed focus sessions</p>
+            <p className="text-4xl font-bold">{todaySessions}</p>
+            <p className="text-sm text-muted-foreground">Today's completed focus sessions</p>
           </div>
           <div className="text-right">
             <p className="text-sm text-muted-foreground">
               Completion Rate: <span className="font-medium text-foreground">
-                {sessions > 0 ? '100%' : '0%'}
+                {todaySessions > 0 ? '100%' : '0%'}
               </span>
             </p>
           </div>
