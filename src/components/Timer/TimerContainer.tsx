@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -34,7 +33,6 @@ const TimerContainer: React.FC = () => {
   
   const { settings } = useTimerSettings();
 
-  // Color mapping for different modes
   const modeColors = {
     work: {
       startPauseColor: "bg-red-500",
@@ -120,6 +118,7 @@ const TimerContainer: React.FC = () => {
           onStart={start}
           onPause={pause}
           onReset={reset}
+          mode={timerMode}
           className="mb-2"
         />
       </div>
