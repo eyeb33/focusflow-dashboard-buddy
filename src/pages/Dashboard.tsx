@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from "@/components/Layout/Header";
@@ -27,7 +26,6 @@ const Dashboard = () => {
     }
   }, [user, authLoading, navigate]);
   
-  // Fetch today's sessions separately
   useEffect(() => {
     if (user) {
       const getTodayStats = async () => {
@@ -154,7 +152,6 @@ const Dashboard = () => {
           </Button>
         </div>
         
-        {/* Today's Sessions Counter */}
         <SessionCounter 
           todaySessions={todayStats.completedSessions} 
           onRefresh={handleRefreshData}

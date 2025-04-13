@@ -11,10 +11,17 @@ export const useTimerStats = () => {
     settings
   } = timer;
   
+  // Calculate completed rounds (full cycles)
+  const completedRounds = Math.floor(completedSessions / settings.sessionsUntilLongBreak);
+  
+  // Current position in the cycle
+  const currentCyclePosition = completedSessions % settings.sessionsUntilLongBreak;
+  
   return {
     completedSessions,
     totalTimeToday,
     sessionsUntilLongBreak: settings.sessionsUntilLongBreak,
-    completedRounds: Math.floor(completedSessions / settings.sessionsUntilLongBreak)
+    completedRounds,
+    currentCyclePosition
   };
 };

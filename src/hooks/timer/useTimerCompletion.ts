@@ -34,7 +34,6 @@ export function useTimerCompletion({
 
   const handleTimerComplete = async () => {
     console.log(`Timer completed for mode: ${timerMode}`);
-    setIsRunning(false);
     
     // For work sessions, increment session count and update stats
     if (timerMode === 'work') {
@@ -88,10 +87,8 @@ export function useTimerCompletion({
       completedSessions
     });
     
-    // Auto-start the next timer
-    setTimeout(() => {
-      setIsRunning(true);
-    }, 500);
+    // Always auto-start the next timer to ensure automatic flow between focus and break sessions
+    setIsRunning(true);
   };
 
   return { handleTimerComplete };

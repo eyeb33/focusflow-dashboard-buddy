@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Resets a user's session count and other stats for testing purposes
+ * Resets a user's stats for testing purposes
  * @param userId The ID of the user whose stats to reset
  */
 export async function resetUserStats(userId: string): Promise<boolean> {
@@ -12,12 +12,12 @@ export async function resetUserStats(userId: string): Promise<boolean> {
   }
   
   try {
-    console.log(`Resetting stats for user ${userId}`);
+    console.log(`Resetting ALL stats for user ${userId}`);
     
     // Get today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split('T')[0];
     
-    // Update today's session summary to reset count
+    // 1. Reset today's session summary
     const { error: summaryError } = await supabase
       .from('sessions_summary')
       .upsert({
@@ -26,6 +26,7 @@ export async function resetUserStats(userId: string): Promise<boolean> {
         total_completed_sessions: 0,
         total_focus_time: 0,
         total_sessions: 0,
+        longest_streak: 0,
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id,date' });
       
@@ -34,20 +35,29 @@ export async function resetUserStats(userId: string): Promise<boolean> {
       return false;
     }
     
-    // Delete today's focus sessions for a clean slate
-    const startOfDay = new Date(today);
+    // 2. Delete all focus sessions
     const { error: deleteError } = await supabase
       .from('focus_sessions')
       .delete()
-      .eq('user_id', userId)
-      .gte('created_at', startOfDay.toISOString());
+      .eq('user_id', userId);
       
     if (deleteError) {
       console.error('Error deleting focus sessions:', deleteError);
       return false;
     }
     
-    console.log('Successfully reset user stats for testing');
+    // 3. Reset productivity trends
+    const { error: trendsError } = await supabase
+      .from('productivity_trends')
+      .delete()
+      .eq('user_id', userId);
+      
+    if (trendsError) {
+      console.error('Error resetting productivity trends:', trendsError);
+      return false;
+    }
+    
+    console.log('Successfully reset ALL user stats for testing');
     return true;
   } catch (error) {
     console.error('Exception during user stats reset:', error);
