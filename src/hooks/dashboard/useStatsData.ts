@@ -37,9 +37,9 @@ export const useStatsData = (userId: string | undefined) => {
       // Calculate weekly change data for trends
       const weeklyChanges = await calculateWeeklyChanges(userId);
       
-      // Calculate daily average based only on days with activity
+      // Calculate daily average based on minutes per day
       const dailyAverage = summaryData.activeDaysCount > 0 
-        ? Math.round((summaryData.completedSessions / summaryData.activeDaysCount) * 10) / 10 
+        ? Math.round((summaryData.totalFocusMinutes / summaryData.activeDaysCount) * 10) / 10 
         : 0;
       
       return {

@@ -115,7 +115,7 @@ const Dashboard = () => {
       value: dashboardData.stats.dailyAverage.toString(),
       icon: "Target",
       iconColor: "#F97316",
-      description: "sessions per day",
+      description: "minutes per day",
       trend: {
         value: dashboardData.stats.weeklyChange.dailyAvg,
         isPositive: dashboardData.stats.weeklyChange.dailyAvg >= 0
