@@ -32,7 +32,12 @@ export const useStatsData = (userId: string | undefined) => {
       
       // Fetch summary data
       const summaryData = await fetchSummaryData(userId);
-      if (!summaryData) return null;
+      if (!summaryData) {
+        console.log('No summary data found');
+        return null;
+      }
+      
+      console.log('Summary data received:', summaryData);
       
       // Calculate weekly change data for trends
       const weeklyChanges = await calculateWeeklyChanges(userId);
@@ -60,7 +65,7 @@ export const useStatsData = (userId: string | undefined) => {
     queryKey: ['stats', userId],
     queryFn: fetchTotalStats,
     enabled: !!userId,
-    staleTime: 1 * 60 * 1000, // 1 minute before considering data stale
+    staleTime: 60 * 1000, // 1 minute before considering data stale
   });
 
   return {

@@ -15,11 +15,15 @@ interface SessionCounterProps {
 const SessionCounter: React.FC<SessionCounterProps> = ({ todaySessions, onRefresh }) => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const [isResetting, setIsResetting] = React.useState(false);
   
   const handleReset = async () => {
     if (!user) return;
     
     try {
+      setIsResetting(true);
+      console.log('Resetting user stats for testing');
+      
       const success = await resetUserStats(user.id);
       
       if (success) {
@@ -43,6 +47,8 @@ const SessionCounter: React.FC<SessionCounterProps> = ({ todaySessions, onRefres
         description: error.message || "There was an error resetting your stats.",
         variant: "destructive",
       });
+    } finally {
+      setIsResetting(false);
     }
   };
   
@@ -58,7 +64,7 @@ const SessionCounter: React.FC<SessionCounterProps> = ({ todaySessions, onRefres
             className="h-8 w-8 p-0"
             title="Refresh Sessions"
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className={`h-4 w-4 ${isResetting ? 'animate-spin' : ''}`} />
             <span className="sr-only">Refresh</span>
           </Button>
           <Button 
@@ -67,8 +73,9 @@ const SessionCounter: React.FC<SessionCounterProps> = ({ todaySessions, onRefres
             onClick={handleReset}
             className="h-8 w-8 p-0"
             title="Reset Sessions (Testing)"
+            disabled={isResetting}
           >
-            <RotateCcw className="h-4 w-4" />
+            <RotateCcw className={`h-4 w-4 ${isResetting ? 'animate-spin' : ''}`} />
             <span className="sr-only">Reset</span>
           </Button>
         </div>

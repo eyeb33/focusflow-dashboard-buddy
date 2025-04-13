@@ -20,7 +20,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
   className
 }) => {
   // Keep progress between 0 and 1
-  const normalizedProgress = Math.min(1, Math.max(0, progress));
+  const normalizedProgress = Math.min(1, Math.max(0, progress || 0));
   
   // Calculate circle parameters
   const radius = (size - strokeWidth) / 2;

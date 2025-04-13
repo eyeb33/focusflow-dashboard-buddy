@@ -33,7 +33,9 @@ const Dashboard = () => {
       const getTodayStats = async () => {
         setIsLoadingToday(true);
         try {
+          console.log('Fetching today\'s stats from dashboard component');
           const stats = await fetchTodayStats(user.id);
+          console.log('Today\'s stats received:', stats);
           setTodayStats(stats);
         } catch (error) {
           console.error("Error fetching today's stats:", error);
@@ -51,18 +53,28 @@ const Dashboard = () => {
   const handleRefreshData = async () => {
     try {
       setIsLoadingToday(true);
+      console.log('Refreshing dashboard data');
+      
       await refreshData();
+      
       if (user) {
+        console.log('Refreshing today\'s stats');
         const stats = await fetchTodayStats(user.id);
+        console.log('Refreshed today\'s stats:', stats);
         setTodayStats(stats);
       }
-      setIsLoadingToday(false);
+      
+      toast({
+        title: "Data refreshed",
+        description: "The latest session data has been loaded.",
+      });
     } catch (error: any) {
       toast({
         title: "Error refreshing data",
         description: error.message,
         variant: "destructive",
       });
+    } finally {
       setIsLoadingToday(false);
     }
   };
@@ -85,6 +97,7 @@ const Dashboard = () => {
       value: dashboardData.stats.totalSessions.toString(),
       icon: "Clock",
       iconColor: "#1EAEDB",
+      description: "all time",
       trend: {
         value: dashboardData.stats.weeklyChange.sessions,
         isPositive: dashboardData.stats.weeklyChange.sessions >= 0

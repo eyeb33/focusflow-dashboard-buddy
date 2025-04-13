@@ -10,9 +10,12 @@ export interface FocusSession {
 
 export const saveFocusSession = async (userId: string, sessionType: 'work' | 'break' | 'longBreak', duration: number, completed: boolean = true) => {
   try {
-    if (!userId) return false;
+    if (!userId) {
+      console.error('Cannot save focus session: No user ID provided');
+      return false;
+    }
     
-    console.log('Saving focus session:', { userId, sessionType, duration, completed });
+    console.log(`Saving focus session: userId=${userId}, type=${sessionType}, duration=${duration}s, completed=${completed}`);
     
     const { data, error } = await supabase.from('focus_sessions').insert({
       user_id: userId,
@@ -22,25 +25,28 @@ export const saveFocusSession = async (userId: string, sessionType: 'work' | 'br
     }).select();
     
     if (error) {
-      console.error('Error saving session:', error);
+      console.error('Error saving session to database:', error);
       return false;
     } 
     
-    console.log('Session saved successfully:', data);
+    console.log('Session saved successfully to database:', data);
     return true;
   } catch (error) {
-    console.error('Error saving session:', error);
+    console.error('Exception during session save:', error);
     return false;
   }
 };
 
 export const fetchTodayStats = async (userId: string | undefined) => {
-  if (!userId) return { completedSessions: 0, totalTimeToday: 0 };
+  if (!userId) {
+    console.log('Cannot fetch today stats: No user ID provided');
+    return { completedSessions: 0, totalTimeToday: 0 };
+  }
   
   try {
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
     
-    console.log('Fetching stats for today:', today);
+    console.log(`Fetching stats for today (${today}) for user ${userId}`);
     
     // First try to get today's summary from sessions_summary table
     const { data: summaryData, error: summaryError } = await supabase
@@ -65,7 +71,8 @@ export const fetchTodayStats = async (userId: string | undefined) => {
     }
     
     // If no summary exists, fall back to calculating from individual sessions
-    const startOfDay = new Date(today);
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
     
     // Fetch all work sessions from today, both complete and partial
     const { data, error } = await supabase
@@ -80,6 +87,11 @@ export const fetchTodayStats = async (userId: string | undefined) => {
       throw error;
     }
     
+    if (!data || data.length === 0) {
+      console.log('No focus sessions found for today');
+      return { completedSessions: 0, totalTimeToday: 0 };
+    }
+    
     // Count completed sessions
     const completedSessions = data.filter(session => 
       session.completed && session.session_type === 'work'
@@ -92,7 +104,7 @@ export const fetchTodayStats = async (userId: string | undefined) => {
         return total + Math.floor(session.duration / 60);
       }, 0);
     
-    console.log('Calculated from sessions:', { completedSessions, totalMinutes });
+    console.log(`Calculated from sessions: ${completedSessions} completed sessions, ${totalMinutes} total minutes`);
     
     return {
       completedSessions,

@@ -40,24 +40,29 @@ export function useTimerCompletion({
     if (timerMode === 'work') {
       const newCompletedSessions = completedSessions + 1;
       setCompletedSessions(newCompletedSessions);
+      console.log(`Incremented completed sessions to: ${newCompletedSessions}`);
       
       // Update total focus time in minutes
       const workDurationMinutes = settings.workDuration;
       setTotalTimeToday(prev => prev + workDurationMinutes);
+      console.log(`Updated total time today by adding ${workDurationMinutes} minutes`);
       
       // Save completed session to Supabase
       if (user) {
-        console.log('Saving completed work session');
+        console.log('Saving completed work session to Supabase');
         await saveCompletedSession({
           userId: user.id,
           timerMode,
           settings,
           workDurationMinutes
         });
+      } else {
+        console.warn('No user found, session not saved to database');
       }
       
     } else if (user) {
       // For break sessions
+      console.log(`Completed break session (${timerMode}), saving to database`);
       await saveCompletedSession({
         userId: user.id,
         timerMode,

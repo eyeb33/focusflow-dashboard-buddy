@@ -6,9 +6,14 @@ import { supabase } from '@/integrations/supabase/client';
  * @param userId The ID of the user whose stats to reset
  */
 export async function resetUserStats(userId: string): Promise<boolean> {
-  if (!userId) return false;
+  if (!userId) {
+    console.error('Cannot reset user stats: No user ID provided');
+    return false;
+  }
   
   try {
+    console.log(`Resetting stats for user ${userId}`);
+    
     // Get today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split('T')[0];
     
@@ -20,7 +25,8 @@ export async function resetUserStats(userId: string): Promise<boolean> {
         date: today,
         total_completed_sessions: 0,
         total_focus_time: 0,
-        total_sessions: 0
+        total_sessions: 0,
+        updated_at: new Date().toISOString()
       }, { onConflict: 'user_id,date' });
       
     if (summaryError) {
@@ -44,7 +50,7 @@ export async function resetUserStats(userId: string): Promise<boolean> {
     console.log('Successfully reset user stats for testing');
     return true;
   } catch (error) {
-    console.error('Error resetting user stats:', error);
+    console.error('Exception during user stats reset:', error);
     return false;
   }
 }

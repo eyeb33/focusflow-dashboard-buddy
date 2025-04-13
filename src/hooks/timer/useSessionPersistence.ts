@@ -21,29 +21,52 @@ export function useSessionPersistence() {
     settings,
     workDurationMinutes
   }: SessionPersistenceParams) => {
-    if (!userId) return;
+    if (!userId) {
+      console.error('Cannot save session: No user ID provided');
+      return;
+    }
     
-    console.log('Saving completed session:', { userId, timerMode });
+    console.log(`Saving completed session for user ${userId}, mode: ${timerMode}`);
     
     if (timerMode === 'work') {
       // Save work session and update stats
       const duration = workDurationMinutes || settings.workDuration;
       
-      // Mark as completed=true for proper counting in dashboard
-      await saveFocusSession(userId, timerMode, duration * 60, true);
-      
-      // Update daily stats to increment completed sessions count
-      await updateDailyStats(userId, duration);
-      
-      console.log('Successfully saved completed work session');
+      try {
+        // Mark as completed=true for proper counting in dashboard
+        const sessionSaved = await saveFocusSession(userId, timerMode, duration * 60, true);
+        if (!sessionSaved) {
+          console.error('Failed to save focus session');
+          return;
+        }
+        
+        // Update daily stats to increment completed sessions count
+        const statsUpdated = await updateDailyStats(userId, duration);
+        if (!statsUpdated) {
+          console.error('Failed to update daily stats');
+          return;
+        }
+        
+        console.log(`Successfully saved completed work session (${duration} minutes)`);
+      } catch (error) {
+        console.error('Error saving completed session:', error);
+      }
     } else {
       // Save break session
-      const duration = timerMode === 'break' 
-        ? settings.breakDuration * 60 
-        : settings.longBreakDuration * 60;
-      
-      await saveFocusSession(userId, timerMode, duration, true);
-      console.log('Successfully saved completed break session');
+      try {
+        const duration = timerMode === 'break' 
+          ? settings.breakDuration * 60 
+          : settings.longBreakDuration * 60;
+        
+        const sessionSaved = await saveFocusSession(userId, timerMode, duration, true);
+        if (!sessionSaved) {
+          console.error('Failed to save break session');
+          return;
+        }
+        console.log(`Successfully saved completed ${timerMode} session`);
+      } catch (error) {
+        console.error('Error saving break session:', error);
+      }
     }
   };
   
