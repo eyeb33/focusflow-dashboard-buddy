@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { DashboardData, initialDashboardData } from './dashboard/types';
 import { useStatsData } from './dashboard/useStatsData';
-import { useRealtimeUpdates } from './dashboard/useRealtimeUpdates';
+import { useRealtimeUpdates } from './useRealtimeUpdates';
 
 export type { DashboardData } from './dashboard/types';
 
