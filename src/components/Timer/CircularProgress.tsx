@@ -14,7 +14,7 @@ interface CircularProgressProps {
 const CircularProgress = ({
   progress,
   size = 300,
-  strokeWidth = 18, // Increased from 15 to make it chunkier
+  strokeWidth = 18, // Keeping the chunkier stroke width
   mode = 'work',
   children,
   className
@@ -51,8 +51,8 @@ const CircularProgress = ({
   // Calculate the stroke dash offset - starts empty and fills up from left to right
   const strokeDashoffset = circumference * (1 - normalizedProgress);
   
-  // Calculate start angle (225 degrees in radians) - opening at the bottom
-  const startAngle = 225 * (Math.PI / 180);
+  // Reverting back to the original start angle (135 degrees in radians)
+  const startAngle = 135 * (Math.PI / 180);
   
   // Calculate path for the 3/4 arc
   const getArcPath = (radius: number) => {
@@ -61,7 +61,7 @@ const CircularProgress = ({
       y: size / 2 + radius * Math.sin(startAngle)
     };
     
-    // End angle (225 + 270 = 495 degrees in radians)
+    // End angle (135 + 270 = 405 degrees in radians)
     const endAngle = (startAngle + 270 * (Math.PI / 180));
     
     const end = {
