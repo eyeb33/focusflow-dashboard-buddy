@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import SessionInfo from "@/components/Timer/SessionInfo";
 import { useTimerControls } from "@/hooks/useTimerControls";
 import { useTimerStats } from "@/hooks/useTimerStats";
 import { useTimerSettings } from "@/hooks/useTimerSettings";
+import { cn } from "@/lib/utils";
 
 const TimerContainer: React.FC = () => {
   const {
@@ -41,9 +43,30 @@ const TimerContainer: React.FC = () => {
           className="w-full"
         >
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="work">Focus</TabsTrigger>
-            <TabsTrigger value="break">Break</TabsTrigger>
-            <TabsTrigger value="longBreak">Long Break</TabsTrigger>
+            <TabsTrigger 
+              value="work"
+              className={cn(
+                "data-[state=active]:bg-red-500 data-[state=active]:text-white"
+              )}
+            >
+              Focus
+            </TabsTrigger>
+            <TabsTrigger 
+              value="break"
+              className={cn(
+                "data-[state=active]:bg-green-500 data-[state=active]:text-white"
+              )}
+            >
+              Break
+            </TabsTrigger>
+            <TabsTrigger 
+              value="longBreak"
+              className={cn(
+                "data-[state=active]:bg-blue-500 data-[state=active]:text-white"
+              )}
+            >
+              Long Break
+            </TabsTrigger>
           </TabsList>
         </Tabs>
         

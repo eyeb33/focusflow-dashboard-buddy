@@ -50,7 +50,7 @@ const TimerSettings: React.FC = () => {
               step={5}
               value={[workDuration]}
               onValueChange={(value) => updateWorkDuration(value[0])}
-              className="[&_[role=slider]]:bg-pomodoro-work"
+              className="[&_[role=slider]]:bg-red-500 [&_.SliderRange]:bg-red-500"
             />
           </div>
           
@@ -66,7 +66,7 @@ const TimerSettings: React.FC = () => {
               step={1}
               value={[breakDuration]}
               onValueChange={(value) => updateBreakDuration(value[0])}
-              className="[&_[role=slider]]:bg-green-400"
+              className="[&_[role=slider]]:bg-green-500 [&_.SliderRange]:bg-green-500"
             />
           </div>
           
@@ -82,7 +82,7 @@ const TimerSettings: React.FC = () => {
               step={5}
               value={[longBreakDuration]}
               onValueChange={(value) => updateLongBreakDuration(value[0])}
-              className="[&_[role=slider]]:bg-pomodoro-longBreak"
+              className="[&_[role=slider]]:bg-blue-500 [&_.SliderRange]:bg-blue-500"
             />
           </div>
           
@@ -98,6 +98,7 @@ const TimerSettings: React.FC = () => {
               step={1}
               value={[sessionsUntilLongBreak]}
               onValueChange={(value) => updateSessionsUntilLongBreak(value[0])}
+              className="[&_[role=slider]]:bg-primary [&_.SliderRange]:bg-primary"
             />
           </div>
         </div>
