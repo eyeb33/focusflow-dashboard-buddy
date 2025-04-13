@@ -28,28 +28,35 @@ export function useTimerLogic(settings: TimerSettings) {
   }, [timerMode, settings]);
 
   // Handle timer completion
-  const handleTimerComplete = () => {
+  const handleTimerComplete = async () => {
     if (timerMode === 'work') {
       const newCompletedSessions = completedSessions + 1;
       setCompletedSessions(newCompletedSessions);
-      setTotalTimeToday(prev => prev + settings.workDuration);
       
+      // Update total focus time in minutes
+      const workDurationMinutes = settings.workDuration;
+      setTotalTimeToday(prev => prev + workDurationMinutes);
+      
+      // Save completed session to Supabase
       if (user) {
-        saveFocusSession(user.id, timerMode, settings.workDuration * 60);
-        updateDailyStats(user.id, settings.workDuration);
+        await saveFocusSession(user.id, timerMode, settings.workDuration * 60, true);
+        await updateDailyStats(user.id, settings.workDuration);
       }
       
+      // Determine next break type
       if (newCompletedSessions % settings.sessionsUntilLongBreak === 0) {
         setTimerMode('longBreak');
       } else {
         setTimerMode('break');
       }
     } else {
+      // For break sessions
       if (user) {
         const duration = timerMode === 'break' ? settings.breakDuration * 60 : settings.longBreakDuration * 60;
         const durationMinutes = timerMode === 'break' ? settings.breakDuration : settings.longBreakDuration;
-        saveFocusSession(user.id, timerMode, duration);
-        updateDailyStats(user.id, durationMinutes);
+        await saveFocusSession(user.id, timerMode, duration, true);
+        // We don't count break time in productivity stats, but still track them
+        await updateDailyStats(user.id, 0); // 0 minutes for productivity count
       }
       
       setTimerMode('work');
@@ -93,7 +100,7 @@ export function useTimerLogic(settings: TimerSettings) {
   
   const handlePause = async () => {
     setIsRunning(false);
-    if (user && lastRecordedTimeRef.current) {
+    if (user && lastRecordedTimeRef.current && timerMode === 'work') {
       const totalTime = getTotalTime(timerMode, settings);
       await savePartialSession(
         user.id, 
@@ -107,7 +114,7 @@ export function useTimerLogic(settings: TimerSettings) {
   
   const handleReset = async () => {
     setIsRunning(false);
-    if (user && lastRecordedTimeRef.current) {
+    if (user && lastRecordedTimeRef.current && timerMode === 'work') {
       const totalTime = getTotalTime(timerMode, settings);
       await savePartialSession(
         user.id, 
@@ -118,12 +125,12 @@ export function useTimerLogic(settings: TimerSettings) {
       );
     }
     setTimeRemaining(getTotalTime(timerMode, settings));
-    lastRecordedTimeRef.current = getTotalTime(timerMode, settings);
+    lastRecordedTimeRef.current = null;
     lastRecordedFullMinutesRef.current = 0;
   };
 
   const handleModeChange = async (mode: TimerMode) => {
-    if (isRunning && user && lastRecordedTimeRef.current) {
+    if (isRunning && user && lastRecordedTimeRef.current && timerMode === 'work') {
       const totalTime = getTotalTime(timerMode, settings);
       await savePartialSession(
         user.id, 

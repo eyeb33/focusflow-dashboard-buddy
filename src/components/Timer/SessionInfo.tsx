@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { useTimerStats } from '@/hooks/useTimerStats';
 
 interface SessionInfoProps {
   completedSessions: number;
@@ -13,7 +12,8 @@ const SessionInfo: React.FC<SessionInfoProps> = ({
   totalTimeToday,
   sessionsUntilLongBreak
 }) => {
-  const { completedRounds } = useTimerStats();
+  // Calculate completed rounds (sets of focus sessions before a long break)
+  const completedRounds = Math.floor(completedSessions / sessionsUntilLongBreak);
   
   return (
     <div className="mt-8 pt-4 border-t grid grid-cols-3 gap-4 text-center">

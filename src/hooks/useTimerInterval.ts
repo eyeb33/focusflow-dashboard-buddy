@@ -41,22 +41,21 @@ export function useTimerInterval({
           const totalTime = getTotalTime();
           const elapsedSeconds = totalTime - newTime;
           const newFullMinutes = Math.floor(elapsedSeconds / 60);
-          const prevFullMinutes = Math.floor((totalTime - prevTime) / 60);
+          const prevFullMinutes = lastRecordedFullMinutesRef.current;
           
-          if (user && newFullMinutes > prevFullMinutes) {
+          // Only save partial session data for work modes and when a full minute completes
+          if (user && timerMode === 'work' && newFullMinutes > prevFullMinutes) {
             console.log(`Completed a new minute: ${newFullMinutes} minutes`);
             
-            if (timerMode === 'work') {
-              savePartialSession(
-                user.id, 
-                timerMode, 
-                totalTime, 
-                newTime, 
-                lastRecordedFullMinutesRef.current
-              ).then(({ newFullMinutes }) => {
-                lastRecordedFullMinutesRef.current = newFullMinutes;
-              });
-            }
+            savePartialSession(
+              user.id, 
+              timerMode, 
+              totalTime, 
+              newTime, 
+              lastRecordedFullMinutesRef.current
+            ).then(({ newFullMinutes }) => {
+              lastRecordedFullMinutesRef.current = newFullMinutes;
+            });
           }
           
           return newTime;
