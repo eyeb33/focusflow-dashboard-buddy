@@ -71,6 +71,16 @@ const Dashboard = () => {
       }
     },
     {
+      title: "Current Streak",
+      value: `${dashboardData.stats.currentStreak} days`,
+      icon: "Zap",
+      iconColor: "#F59E0B",
+      trend: {
+        value: 0, // Streaks don't have a weekly change percentage
+        isPositive: true
+      }
+    },
+    {
       title: "Daily Average",
       value: dashboardData.stats.dailyAverage.toString(),
       icon: "Target",

@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { calculateStreak } from '@/utils/streak/calculateStreak';
@@ -56,8 +55,6 @@ export const useStatsData = (userId: string | undefined) => {
 
       if (sessionError || timeError) throw sessionError || timeError;
       
-      console.log('Focus time data count:', focusTimeData?.length);
-
       // Calculate weekly change data
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
@@ -160,29 +157,7 @@ export const useStatsData = (userId: string | undefined) => {
         Math.max(max, day.longest_streak || 0), 0) || 0;
       
       // Calculate daily average
-      // First, include today's sessions if available
-      let todayCompletedSessions = 0;
-      if (todaySummary) {
-        todayCompletedSessions = todaySummary.total_completed_sessions || 0;
-      } else {
-        // If no summary for today, count today's completed sessions from focus_sessions table
-        const startOfDay = new Date(today);
-        startOfDay.setHours(0, 0, 0, 0);
-        
-        const { data: todaySessions, error: todaySessionsError } = await supabase
-          .from('focus_sessions')
-          .select('*')
-          .eq('user_id', userId)
-          .eq('session_type', 'work')
-          .eq('completed', true)
-          .gte('created_at', startOfDay.toISOString());
-          
-        if (!todaySessionsError) {
-          todayCompletedSessions = todaySessions?.length || 0;
-        }
-      }
-      
-      // Calculate daily average including today's sessions
+      const todayCompletedSessions = todaySummary ? todaySummary.total_completed_sessions || 0 : 0;
       const totalDaysWithActivity = (summaryData && summaryData.length > 0) ? summaryData.length : 1;
       const totalCompletedSessions = summaryData?.reduce((acc: number, day: any) => 
         acc + (day.total_completed_sessions || 0), 0) || 0;
@@ -193,7 +168,7 @@ export const useStatsData = (userId: string | undefined) => {
         totalCompletedSessions : 
         totalCompletedSessions + todayCompletedSessions;
         
-      const dailyAverage = Math.round((adjustedTotalSessions / totalDaysWithActivity) * 10) / 10;
+      const dailyAverage = calculateDailyAverage(summaryData, todayCompletedSessions, today);
 
       return {
         totalSessions,
@@ -201,17 +176,69 @@ export const useStatsData = (userId: string | undefined) => {
         dailyAverage,
         currentStreak: Math.max(1, currentStreak), // Ensure streak is at least 1 if we have data for today
         bestStreak: Math.max(bestStreakValue, currentStreak), // Update best streak if current is higher
-        weeklyChange: {
-          sessions: sessionChangePercent,
-          minutes: minutesChangePercent,
-          dailyAvg: avgChangePercent,
-          isPositive: sessionChangePercent >= 0
-        }
+        weeklyChange: calculateWeeklyChanges(currentWeekSessions, prevWeekSessions)
       };
     } catch (error: any) {
       console.error('Error fetching stats:', error.message);
       return null;
     }
+  };
+  
+  // Helper function to calculate daily average
+  const calculateDailyAverage = (summaryData: any[] | null, todayCompletedSessions: number, today: string) => {
+    if (!summaryData || summaryData.length === 0) return 0;
+    
+    const totalDaysWithActivity = summaryData.length;
+    const totalCompletedSessions = summaryData.reduce((acc, day) => 
+      acc + (day.total_completed_sessions || 0), 0);
+    
+    // Ensure we don't double-count today's sessions if it's already in the summary data
+    const hasEntryToday = summaryData.some(day => day.date === today);
+    const adjustedTotalSessions = hasEntryToday ? 
+      totalCompletedSessions : 
+      totalCompletedSessions + todayCompletedSessions;
+      
+    return Math.round((adjustedTotalSessions / totalDaysWithActivity) * 10) / 10;
+  };
+  
+  // Helper function to calculate weekly changes
+  const calculateWeeklyChanges = (currentWeekSessions: any[] | null, prevWeekSessions: any[] | null) => {
+    const currentWeekSessionCount = currentWeekSessions?.length || 0;
+    const prevWeekSessionCount = prevWeekSessions?.length || 0;
+    
+    const currentWeekMinutes = currentWeekSessions?.reduce((acc: number, session: any) => 
+      acc + Math.floor(session.duration / 60), 0) || 0;
+      
+    const prevWeekMinutes = prevWeekSessions?.reduce((acc: number, session: any) => 
+      acc + Math.floor(session.duration / 60), 0) || 0;
+      
+    // Calculate session change percentage
+    let sessionChangePercent = 0;
+    if (prevWeekSessionCount > 0) {
+      sessionChangePercent = Math.round(((currentWeekSessionCount - prevWeekSessionCount) / prevWeekSessionCount) * 100);
+    }
+    
+    // Calculate minutes change percentage
+    let minutesChangePercent = 0;
+    if (prevWeekMinutes > 0) {
+      minutesChangePercent = Math.round(((currentWeekMinutes - prevWeekMinutes) / prevWeekMinutes) * 100);
+    }
+    
+    // Calculate avg sessions per day
+    const currentWeekAvg = currentWeekSessionCount / 7;
+    const prevWeekAvg = prevWeekSessionCount / 7;
+    
+    let avgChangePercent = 0;
+    if (prevWeekAvg > 0) {
+      avgChangePercent = Math.round(((currentWeekAvg - prevWeekAvg) / prevWeekAvg) * 100);
+    }
+    
+    return {
+      sessions: sessionChangePercent,
+      minutes: minutesChangePercent,
+      dailyAvg: avgChangePercent,
+      isPositive: sessionChangePercent >= 0
+    };
   };
 
   const result = useQuery({
