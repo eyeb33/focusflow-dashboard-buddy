@@ -44,7 +44,9 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
     const colors = getColor(mode);
     
     return Array.from({ length: count }).map((_, index) => {
+      // Only mark as active if we're on this position and the timer is running
       const isActive = index === active;
+      // Mark as completed if index < completedSessions
       const isCompleted = index < completed;
       const size = isActive ? 20 : 16;
       
@@ -55,8 +57,7 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
           className={cn(
             isCompleted || isActive ? colors.fill : 'text-transparent',
             'stroke-[2px] transition-all duration-300',
-            colors.stroke,
-            isActive && 'animate-pulse-light'
+            colors.stroke
           )}
         />
       );

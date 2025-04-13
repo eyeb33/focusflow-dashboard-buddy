@@ -26,19 +26,19 @@ const TimerControls: React.FC<TimerControlsProps> = ({
     work: {
       color: "text-red-500",
       bgColor: "bg-red-500",
-      hoverClass: "hover:bg-red-500 hover:text-white",
+      hoverClass: "hover:bg-white hover:text-red-500",
       activeClass: "bg-red-500 text-white"
     },
     break: {
       color: "text-green-500",
       bgColor: "bg-green-500",
-      hoverClass: "hover:bg-green-500 hover:text-white",
+      hoverClass: "hover:bg-white hover:text-green-500",
       activeClass: "bg-green-500 text-white"
     },
     longBreak: {
       color: "text-blue-500",
       bgColor: "bg-blue-500",
-      hoverClass: "hover:bg-blue-500 hover:text-white",
+      hoverClass: "hover:bg-white hover:text-blue-500",
       activeClass: "bg-blue-500 text-white"
     }
   };
