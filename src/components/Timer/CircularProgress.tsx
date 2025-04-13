@@ -14,7 +14,7 @@ interface CircularProgressProps {
 const CircularProgress = ({
   progress,
   size = 300,
-  strokeWidth = 15,
+  strokeWidth = 18, // Increased from 15 to make it chunkier
   mode = 'work',
   children,
   className
@@ -27,19 +27,19 @@ const CircularProgress = ({
     switch (mode) {
       case 'break':
         return {
-          bg: 'rgba(128, 128, 128, 0.2)',
-          fg: 'rgb(242, 252, 226)'
+          bg: 'rgba(220, 245, 220, 0.3)', // Light green background
+          fg: 'rgb(34, 197, 94)' // Green progress
         };
       case 'longBreak':
         return {
-          bg: 'rgba(128, 128, 128, 0.2)',
-          fg: 'rgb(126, 105, 171)'
+          bg: 'rgba(219, 234, 254, 0.3)', // Light blue background
+          fg: 'rgb(59, 130, 246)' // Blue progress
         };
       case 'work':
       default:
         return {
-          bg: 'rgba(128, 128, 128, 0.2)',
-          fg: 'rgb(155, 135, 245)'
+          bg: 'rgba(254, 226, 226, 0.3)', // Light red background
+          fg: 'rgb(239, 68, 68)' // Red progress
         };
     }
   };
@@ -51,8 +51,8 @@ const CircularProgress = ({
   // Calculate the stroke dash offset - starts empty and fills up from left to right
   const strokeDashoffset = circumference * (1 - normalizedProgress);
   
-  // Calculate start angle (135 degrees in radians)
-  const startAngle = 135 * (Math.PI / 180);
+  // Calculate start angle (225 degrees in radians) - opening at the bottom
+  const startAngle = 225 * (Math.PI / 180);
   
   // Calculate path for the 3/4 arc
   const getArcPath = (radius: number) => {
@@ -61,7 +61,7 @@ const CircularProgress = ({
       y: size / 2 + radius * Math.sin(startAngle)
     };
     
-    // End angle (135 + 270 = 405 degrees in radians)
+    // End angle (225 + 270 = 495 degrees in radians)
     const endAngle = (startAngle + 270 * (Math.PI / 180));
     
     const end = {
@@ -89,7 +89,6 @@ const CircularProgress = ({
           d={getArcPath(radius)}
           fill="transparent"
           stroke={colors.bg}
-          className="dark:stroke-gray-700/50"
           strokeWidth={strokeWidth}
           strokeLinecap="round"
         />
@@ -99,7 +98,6 @@ const CircularProgress = ({
           d={getArcPath(radius)}
           fill="transparent"
           stroke={colors.fg}
-          className="dark:stroke-purple-400 transition-all duration-300 ease-in-out"
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
