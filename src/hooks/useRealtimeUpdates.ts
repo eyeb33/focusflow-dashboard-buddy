@@ -51,9 +51,7 @@ export const useRealtimeUpdates = (userId: string | undefined) => {
           queryClient.invalidateQueries({ queryKey: ['productivity', 'weekly', userId] });
         }
       )
-      .subscribe((status) => {
-        console.log('Realtime subscription status:', status);
-      });
+      .subscribe();
 
     // Clean up subscription when component unmounts or userId changes
     return () => {
