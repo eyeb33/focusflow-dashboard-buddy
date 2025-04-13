@@ -48,7 +48,8 @@ export const useStatsData = (userId: string | undefined) => {
         : 0;
       
       return {
-        totalSessions: summaryData.totalSessions,
+        // Use completedSessions instead of totalSessions to show only completed focus sessions
+        totalSessions: summaryData.completedSessions,
         totalMinutes: summaryData.totalFocusMinutes,
         dailyAverage,
         currentStreak: summaryData.currentStreak,
