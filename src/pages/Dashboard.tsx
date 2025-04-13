@@ -1,13 +1,10 @@
+
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from "@/components/Layout/Header";
 import MobileNav from "@/components/Layout/MobileNav";
 import DashboardHeader from "@/components/Dashboard/DashboardHeader";
 import StatCardsGrid from "@/components/Dashboard/StatCardsGrid";
-import ChartsGrid from "@/components/Dashboard/ChartsGrid";
-import ProductivityInsights from "@/components/Dashboard/ProductivityInsights";
-import ProductivityTrendChart from "@/components/Dashboard/ProductivityTrendChart";
-import UserProfileCard from "@/components/Dashboard/UserProfileCard";
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
@@ -83,13 +80,6 @@ const Dashboard = () => {
         value: dashboardData.stats.weeklyChange.dailyAvg,
         isPositive: dashboardData.stats.weeklyChange.dailyAvg >= 0
       }
-    },
-    {
-      title: "Current Streak",
-      value: dashboardData.stats.currentStreak.toString(),
-      icon: "Zap",
-      iconColor: "#FEF7CD",
-      description: "days"
     }
   ];
 
@@ -111,34 +101,12 @@ const Dashboard = () => {
           </Button>
         </div>
         
-        <UserProfileCard />
-        
         <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-6">
           <div className="md:col-span-1">
             <StatCardsGrid 
               stats={stats} 
             />
           </div>
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <div className="lg:col-span-2">
-            <ChartsGrid 
-              dailyData={dashboardData.dailyProductivity}
-              weeklyData={dashboardData.weeklyProductivity}
-              monthlyData={dashboardData.monthlyProductivity}
-              streakData={dashboardData.streakData}
-              currentStreak={dashboardData.stats.currentStreak}
-              bestStreak={dashboardData.stats.bestStreak || 0}
-            />
-          </div>
-          <div className="lg:col-span-1">
-            <ProductivityInsights insights={dashboardData.insights} />
-          </div>
-        </div>
-        
-        <div className="mb-6">
-          <ProductivityTrendChart data={dashboardData.productivityTrend} />
         </div>
       </div>
       

@@ -24,8 +24,6 @@ export const useRealtimeUpdates = (userId: string | undefined) => {
           console.log('Focus session change received:', payload);
           // Invalidate specific queries instead of triggering a full refetch
           queryClient.invalidateQueries({ queryKey: ['stats', userId] });
-          queryClient.invalidateQueries({ queryKey: ['productivity', userId] });
-          queryClient.invalidateQueries({ queryKey: ['streakData', userId] });
         }
       )
       .on(
@@ -34,22 +32,6 @@ export const useRealtimeUpdates = (userId: string | undefined) => {
         (payload) => {
           console.log('Summary change received:', payload);
           queryClient.invalidateQueries({ queryKey: ['stats', userId] });
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'productivity_trends', filter: `user_id=eq.${userId}` },
-        (payload) => {
-          console.log('Trend change received:', payload);
-          queryClient.invalidateQueries({ queryKey: ['productivityTrends', userId] });
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'insights', filter: `user_id=eq.${userId}` },
-        (payload) => {
-          console.log('Insight change received:', payload);
-          queryClient.invalidateQueries({ queryKey: ['insights', userId] });
         }
       )
       .on(
