@@ -1,10 +1,10 @@
 
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { saveFocusSession } from '@/utils/timerStorage';
-import { updateDailyStats } from '@/utils/productivityStats';
 import { TimerSettings } from '@/hooks/useTimerSettings';
 import { TimerMode } from '@/utils/timerContextUtils';
+import { useSessionPersistence } from './useSessionPersistence';
+import { useTimerNotifications } from './useTimerNotifications';
+import { useNextTimerMode } from './useNextTimerMode';
 
 interface TimerCompletionParams {
   timerMode: TimerMode;
@@ -28,12 +28,15 @@ export function useTimerCompletion({
   setIsRunning
 }: TimerCompletionParams) {
   const { user } = useAuth();
-  const { toast } = useToast();
+  const { saveCompletedSession } = useSessionPersistence();
+  const { showCompletionNotification } = useTimerNotifications();
+  const { determineNextMode } = useNextTimerMode();
 
   const handleTimerComplete = async () => {
     console.log(`Timer completed for mode: ${timerMode}`);
     setIsRunning(false);
     
+    // For work sessions, increment session count and update stats
     if (timerMode === 'work') {
       const newCompletedSessions = completedSessions + 1;
       setCompletedSessions(newCompletedSessions);
@@ -45,53 +48,45 @@ export function useTimerCompletion({
       // Save completed session to Supabase
       if (user) {
         console.log('Saving completed work session');
-        await saveFocusSession(user.id, timerMode, settings.workDuration * 60, true);
-        await updateDailyStats(user.id, settings.workDuration);
+        await saveCompletedSession({
+          userId: user.id,
+          timerMode,
+          settings,
+          workDurationMinutes
+        });
       }
       
-      // Determine next break type and automatically transition
-      if (newCompletedSessions % settings.sessionsUntilLongBreak === 0) {
-        setTimerMode('longBreak');
-        setTimeRemaining(settings.longBreakDuration * 60);
-      } else {
-        setTimerMode('break');
-        setTimeRemaining(settings.breakDuration * 60);
-      }
-      
-      // Auto-start the break timer
-      setTimeout(() => {
-        setIsRunning(true);
-      }, 500);
-      
-      // Show toast for completed work session
-      toast({
-        title: "Session completed!",
-        description: `You completed a ${settings.workDuration} minute focus session.`,
-      });
-    } else {
+    } else if (user) {
       // For break sessions
-      if (user) {
-        const duration = timerMode === 'break' ? settings.breakDuration * 60 : settings.longBreakDuration * 60;
-        console.log(`Saving completed ${timerMode} session`);
-        await saveFocusSession(user.id, timerMode, duration, true);
-        // We don't count break time in productivity stats, but still track them
-      }
-      
-      // Automatically transition to work mode
-      setTimerMode('work');
-      setTimeRemaining(settings.workDuration * 60);
-      
-      // Auto-start the next work session
-      setTimeout(() => {
-        setIsRunning(true);
-      }, 500);
-      
-      // Show toast for completed break
-      toast({
-        title: timerMode === 'break' ? "Break completed!" : "Long break completed!",
-        description: "Starting your next focus session.",
+      await saveCompletedSession({
+        userId: user.id,
+        timerMode,
+        settings
       });
     }
+    
+    // Determine next timer mode and duration
+    const { nextMode, nextDuration } = determineNextMode({
+      timerMode,
+      completedSessions: timerMode === 'work' ? completedSessions + 1 : completedSessions,
+      settings
+    });
+    
+    // Set next timer mode and duration
+    setTimerMode(nextMode);
+    setTimeRemaining(nextDuration);
+    
+    // Show notification to user
+    showCompletionNotification({
+      timerMode,
+      settings,
+      completedSessions
+    });
+    
+    // Auto-start the next timer
+    setTimeout(() => {
+      setIsRunning(true);
+    }, 500);
   };
 
   return { handleTimerComplete };
