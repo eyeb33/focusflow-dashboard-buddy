@@ -34,6 +34,27 @@ const TimerContainer: React.FC = () => {
   
   const { settings } = useTimerSettings();
 
+  // Color mapping for different modes
+  const modeColors = {
+    work: {
+      startPauseColor: "bg-red-500",
+      resetColor: "text-red-500",
+      activeClass: "data-[state=active]:bg-red-500 data-[state=active]:text-white"
+    },
+    break: {
+      startPauseColor: "bg-green-500",
+      resetColor: "text-green-500",
+      activeClass: "data-[state=active]:bg-green-500 data-[state=active]:text-white"
+    },
+    longBreak: {
+      startPauseColor: "bg-blue-500",
+      resetColor: "text-blue-500",
+      activeClass: "data-[state=active]:bg-blue-500 data-[state=active]:text-white"
+    }
+  };
+
+  const currentModeColors = modeColors[timerMode];
+
   return (
     <Card className="w-full max-w-md p-6 bg-white/90 dark:bg-black/80 backdrop-blur-sm shadow-md">
       <div className="flex items-center justify-between mb-6">
@@ -46,7 +67,7 @@ const TimerContainer: React.FC = () => {
             <TabsTrigger 
               value="work"
               className={cn(
-                "data-[state=active]:bg-red-500 data-[state=active]:text-white"
+                currentModeColors.activeClass
               )}
             >
               Focus
@@ -54,7 +75,7 @@ const TimerContainer: React.FC = () => {
             <TabsTrigger 
               value="break"
               className={cn(
-                "data-[state=active]:bg-green-500 data-[state=active]:text-white"
+                currentModeColors.activeClass
               )}
             >
               Break
@@ -62,7 +83,7 @@ const TimerContainer: React.FC = () => {
             <TabsTrigger 
               value="longBreak"
               className={cn(
-                "data-[state=active]:bg-blue-500 data-[state=active]:text-white"
+                currentModeColors.activeClass
               )}
             >
               Long Break

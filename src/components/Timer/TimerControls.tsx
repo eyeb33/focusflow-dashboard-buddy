@@ -26,7 +26,9 @@ const TimerControls: React.FC<TimerControlsProps> = ({
         size="lg" 
         className={cn(
           "rounded-full w-14 h-14 flex items-center justify-center shadow-md",
-          isRunning ? "bg-white text-pomodoro-work hover:bg-gray-100" : "bg-pomodoro-work text-white hover:bg-pomodoro-work/90"
+          isRunning 
+            ? "bg-white text-red-500 hover:bg-gray-100" 
+            : "bg-red-500 text-white hover:bg-red-600"
         )}
       >
         {!isRunning ? (
@@ -39,7 +41,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
       <Button 
         onClick={onReset} 
         size="lg"
-        className="rounded-full w-14 h-14 flex items-center justify-center shadow-md bg-white text-pomodoro-work hover:bg-gray-100 border border-slate-200"
+        className="rounded-full w-14 h-14 flex items-center justify-center shadow-md bg-white text-red-500 hover:bg-gray-100 border border-slate-200"
       >
         <RotateCcw className="h-6 w-6" />
       </Button>
@@ -48,4 +50,3 @@ const TimerControls: React.FC<TimerControlsProps> = ({
 };
 
 export default TimerControls;
-
