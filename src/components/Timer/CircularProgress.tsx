@@ -27,19 +27,19 @@ const CircularProgress = ({
     switch (mode) {
       case 'break':
         return {
-          bg: 'rgba(128, 128, 128, 0.2)',
-          fg: 'rgb(242, 252, 226)'
+          bg: 'rgba(243, 115, 22, 0.2)', // Light orange background
+          fg: '#F97316' // Bright orange for break
         };
       case 'longBreak':
         return {
-          bg: 'rgba(128, 128, 128, 0.2)',
-          fg: 'rgb(126, 105, 171)'
+          bg: 'rgba(243, 115, 22, 0.2)', // Light orange background
+          fg: '#F97316' // Bright orange for long break
         };
       case 'work':
       default:
         return {
-          bg: 'rgba(128, 128, 128, 0.2)',
-          fg: 'rgb(155, 135, 245)'
+          bg: 'rgba(234, 56, 76, 0.2)', // Light red background
+          fg: '#ea384c' // Red for focus
         };
     }
   };
@@ -99,7 +99,7 @@ const CircularProgress = ({
           d={getArcPath(radius)}
           fill="transparent"
           stroke={colors.fg}
-          className="dark:stroke-purple-400 transition-all duration-300 ease-in-out"
+          className="dark:stroke-red-400 transition-all duration-300 ease-in-out"
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
