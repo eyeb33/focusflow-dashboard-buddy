@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { useTimer } from '@/contexts/TimerContext';
 
 export const useTimerStats = () => {
