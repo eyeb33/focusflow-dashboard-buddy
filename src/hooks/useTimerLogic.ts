@@ -16,6 +16,7 @@ export function useTimerLogic(settings: TimerSettings) {
   const [timeRemaining, setTimeRemaining] = useState(settings.workDuration * 60);
   const [completedSessions, setCompletedSessions] = useState(0);
   const [totalTimeToday, setTotalTimeToday] = useState(0);
+  const [autoStart, setAutoStart] = useState(false);
   
   const lastRecordedTimeRef = useRef<number | null>(null);
   const lastRecordedFullMinutesRef = useRef<number>(0);
@@ -77,7 +78,9 @@ export function useTimerLogic(settings: TimerSettings) {
                   description: `You completed a ${settings.workDuration} minute focus session.`,
                 });
                 
-                setIsRunning(false);
+                // Auto-start the break timer
+                setIsRunning(true);
+                setAutoStart(true);
               } else {
                 // Break timer completed
                 if (user) {
@@ -88,7 +91,15 @@ export function useTimerLogic(settings: TimerSettings) {
                 // Go back to work mode
                 setTimerMode('work');
                 setTimeRemaining(settings.workDuration * 60);
-                setIsRunning(false);
+                
+                // Auto-start the next work session
+                setIsRunning(true);
+                setAutoStart(true);
+                
+                toast({
+                  title: `${state.timerMode === 'break' ? 'Break' : 'Long Break'} completed!`,
+                  description: "Starting your next focus session.",
+                });
               }
             } else {
               // Timer still has time remaining, restore state
@@ -116,16 +127,22 @@ export function useTimerLogic(settings: TimerSettings) {
   // Reset timer when mode or settings change
   useEffect(() => {
     // Only reset if not running
-    if (!isRunning) {
+    if (!isRunning && !autoStart) {
       setTimeRemaining(getTotalTime(timerMode, settings));
       lastRecordedTimeRef.current = getTotalTime(timerMode, settings);
       lastRecordedFullMinutesRef.current = 0;
     }
-  }, [timerMode, settings, isRunning]);
+    
+    // Clear the autoStart flag after applying it
+    if (autoStart) {
+      setAutoStart(false);
+    }
+  }, [timerMode, settings, isRunning, autoStart]);
 
   // Handle timer completion
   const handleTimerComplete = async () => {
     console.log(`Timer completed for mode: ${timerMode}`);
+    setIsRunning(false);
     
     if (timerMode === 'work') {
       const newCompletedSessions = completedSessions + 1;
@@ -142,12 +159,25 @@ export function useTimerLogic(settings: TimerSettings) {
         await updateDailyStats(user.id, settings.workDuration);
       }
       
-      // Determine next break type
+      // Determine next break type and automatically transition
       if (newCompletedSessions % settings.sessionsUntilLongBreak === 0) {
         setTimerMode('longBreak');
+        setTimeRemaining(settings.longBreakDuration * 60);
       } else {
         setTimerMode('break');
+        setTimeRemaining(settings.breakDuration * 60);
       }
+      
+      // Auto-start the break timer
+      setTimeout(() => {
+        setIsRunning(true);
+      }, 500);
+      
+      // Show toast for completed work session
+      toast({
+        title: "Session completed!",
+        description: `You completed a ${settings.workDuration} minute focus session.`,
+      });
     } else {
       // For break sessions
       if (user) {
@@ -157,20 +187,24 @@ export function useTimerLogic(settings: TimerSettings) {
         // We don't count break time in productivity stats, but still track them
       }
       
+      // Automatically transition to work mode
       setTimerMode('work');
+      setTimeRemaining(settings.workDuration * 60);
+      
+      // Auto-start the next work session
+      setTimeout(() => {
+        setIsRunning(true);
+      }, 500);
+      
+      // Show toast for completed break
+      toast({
+        title: timerMode === 'break' ? "Break completed!" : "Long break completed!",
+        description: "Starting your next focus session.",
+      });
     }
     
     lastRecordedTimeRef.current = null;
     lastRecordedFullMinutesRef.current = 0;
-    setIsRunning(false);
-    
-    // Show toast for completed work session
-    if (timerMode === 'work') {
-      toast({
-        title: "Session completed!",
-        description: `You completed a ${settings.workDuration} minute focus session.`,
-      });
-    }
   };
 
   // Get the current total time based on timer mode
@@ -245,6 +279,7 @@ export function useTimerLogic(settings: TimerSettings) {
     
     setIsRunning(false);
     setTimerMode(mode);
+    setTimeRemaining(getTotalTime(mode, settings));
     lastRecordedTimeRef.current = null;
     lastRecordedFullMinutesRef.current = 0;
   };
