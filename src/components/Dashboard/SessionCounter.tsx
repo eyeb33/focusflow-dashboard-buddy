@@ -2,20 +2,40 @@
 import React from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, RotateCcw } from 'lucide-react';
+import { RefreshCw, RotateCcw, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { resetUserStats } from '@/utils/resetUserStats';
 
 interface SessionCounterProps {
   todaySessions: number;
+  yesterdaySessions: number;
   onRefresh: () => Promise<void>;
 }
 
-const SessionCounter: React.FC<SessionCounterProps> = ({ todaySessions, onRefresh }) => {
+const SessionCounter: React.FC<SessionCounterProps> = ({ 
+  todaySessions, 
+  yesterdaySessions, 
+  onRefresh 
+}) => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [isResetting, setIsResetting] = React.useState(false);
+  
+  // Calculate percentage change from yesterday
+  const calculatePercentChange = () => {
+    if (yesterdaySessions === 0) {
+      return todaySessions > 0 ? { value: 100, isIncrease: true } : { value: 0, isIncrease: true };
+    }
+    
+    const percentChange = ((todaySessions - yesterdaySessions) / yesterdaySessions) * 100;
+    return {
+      value: Math.abs(Math.round(percentChange)),
+      isIncrease: percentChange >= 0
+    };
+  };
+  
+  const change = calculatePercentChange();
   
   const handleReset = async () => {
     if (!user) return;
@@ -84,13 +104,29 @@ const SessionCounter: React.FC<SessionCounterProps> = ({ todaySessions, onRefres
         <div className="flex items-center justify-between">
           <div>
             <p className="text-4xl font-bold">{todaySessions}</p>
-            <p className="text-sm text-muted-foreground">Today's completed focus sessions</p>
           </div>
           <div className="text-right">
-            <p className="text-sm text-muted-foreground">
-              Completion Rate: <span className="font-medium text-foreground">
-                {todaySessions > 0 ? '100%' : '0%'}
-              </span>
+            <div className="flex items-center justify-end">
+              {change.value > 0 ? (
+                <>
+                  {change.isIncrease ? (
+                    <TrendingUp className="h-4 w-4 mr-1 text-green-500" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4 mr-1 text-red-500" />
+                  )}
+                  <span className={`text-sm font-medium ${change.isIncrease ? 'text-green-500' : 'text-red-500'}`}>
+                    {change.value}%
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Minus className="h-4 w-4 mr-1 text-gray-400" />
+                  <span className="text-sm font-medium text-gray-400">0%</span>
+                </>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              vs yesterday ({yesterdaySessions})
             </p>
           </div>
         </div>

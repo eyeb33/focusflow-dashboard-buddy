@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from "@/components/Layout/Header";
@@ -10,12 +11,13 @@ import { Loader2, RefreshCw } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { fetchTodayStats } from '@/utils/timerStorage';
+import { fetchTodayStats, fetchYesterdayStats } from '@/utils/timerStorage';
 
 const Dashboard = () => {
   const { user, isLoading: authLoading } = useAuth();
   const { dashboardData, isLoading: dataLoading, refreshData } = useDashboardData();
   const [todayStats, setTodayStats] = React.useState({ completedSessions: 0, totalTimeToday: 0 });
+  const [yesterdayStats, setYesterdayStats] = React.useState({ completedSessions: 0 });
   const [isLoadingToday, setIsLoadingToday] = React.useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -28,21 +30,26 @@ const Dashboard = () => {
   
   useEffect(() => {
     if (user) {
-      const getTodayStats = async () => {
+      const getStats = async () => {
         setIsLoadingToday(true);
         try {
-          console.log('Fetching today\'s stats from dashboard component');
-          const stats = await fetchTodayStats(user.id);
-          console.log('Today\'s stats received:', stats);
-          setTodayStats(stats);
+          console.log('Fetching today\'s and yesterday\'s stats');
+          const today = await fetchTodayStats(user.id);
+          const yesterday = await fetchYesterdayStats(user.id);
+          
+          console.log('Today\'s stats:', today);
+          console.log('Yesterday\'s stats:', yesterday);
+          
+          setTodayStats(today);
+          setYesterdayStats(yesterday);
         } catch (error) {
-          console.error("Error fetching today's stats:", error);
+          console.error("Error fetching stats:", error);
         } finally {
           setIsLoadingToday(false);
         }
       };
       
-      getTodayStats();
+      getStats();
     }
   }, [user]);
 
@@ -56,10 +63,15 @@ const Dashboard = () => {
       await refreshData();
       
       if (user) {
-        console.log('Refreshing today\'s stats');
-        const stats = await fetchTodayStats(user.id);
-        console.log('Refreshed today\'s stats:', stats);
-        setTodayStats(stats);
+        console.log('Refreshing today\'s and yesterday\'s stats');
+        const today = await fetchTodayStats(user.id);
+        const yesterday = await fetchYesterdayStats(user.id);
+        
+        console.log('Refreshed today\'s stats:', today);
+        console.log('Refreshed yesterday\'s stats:', yesterday);
+        
+        setTodayStats(today);
+        setYesterdayStats(yesterday);
       }
       
       toast({
@@ -91,7 +103,7 @@ const Dashboard = () => {
 
   const stats = [
     {
-      title: "Total Sessions",
+      title: "Total Focus Sessions",
       value: dashboardData.stats.totalSessions.toString(),
       icon: "Clock",
       iconColor: "#1EAEDB",
@@ -154,6 +166,7 @@ const Dashboard = () => {
         
         <SessionCounter 
           todaySessions={todayStats.completedSessions} 
+          yesterdaySessions={yesterdayStats.completedSessions}
           onRefresh={handleRefreshData}
         />
         

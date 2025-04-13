@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface FocusSession {
@@ -113,5 +112,42 @@ export const fetchTodayStats = async (userId: string | undefined) => {
   } catch (error) {
     console.error('Error fetching today\'s stats:', error);
     return { completedSessions: 0, totalTimeToday: 0 };
+  }
+};
+
+export const fetchYesterdayStats = async (userId: string | undefined) => {
+  if (!userId) {
+    console.log('Cannot fetch yesterday stats: No user ID provided');
+    return { completedSessions: 0 };
+  }
+  
+  try {
+    // Calculate yesterday's date
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0]; // YYYY-MM-DD format
+    
+    console.log(`Fetching stats for yesterday (${yesterdayStr}) for user ${userId}`);
+    
+    // Use the database function we created for this purpose
+    const { data, error } = await supabase.rpc(
+      'get_daily_completed_sessions',
+      { 
+        user_id_param: userId, 
+        date_param: yesterdayStr 
+      }
+    );
+      
+    if (error) {
+      console.error('Error fetching yesterday stats:', error);
+      return { completedSessions: 0 };
+    }
+    
+    return {
+      completedSessions: data || 0
+    };
+  } catch (error) {
+    console.error('Error fetching yesterday\'s stats:', error);
+    return { completedSessions: 0 };
   }
 };
