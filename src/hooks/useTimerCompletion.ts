@@ -1,3 +1,4 @@
+
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { saveFocusSession } from '@/utils/timerStorage';
@@ -43,7 +44,7 @@ export function useTimerCompletion({
       
       if (user) {
         saveFocusSession(user.id, timerMode, settings.workDuration * 60);
-        updateDailyStats(user.id, settings.workDuration);
+        updateDailyStats(user.id, settings.workDuration, timerMode);
       }
       
       // Calculate new session index
@@ -75,7 +76,7 @@ export function useTimerCompletion({
         const duration = timerMode === 'break' ? settings.breakDuration * 60 : settings.longBreakDuration * 60;
         const durationMinutes = timerMode === 'break' ? settings.breakDuration : settings.longBreakDuration;
         saveFocusSession(user.id, timerMode, duration);
-        updateDailyStats(user.id, durationMinutes);
+        updateDailyStats(user.id, durationMinutes, timerMode);
       }
       
       // After breaks, go back to work mode

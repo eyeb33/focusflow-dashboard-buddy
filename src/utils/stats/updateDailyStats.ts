@@ -6,9 +6,12 @@ import { updateProductivityScore } from '../productivity/updateProductivityScore
 /**
  * Updates daily statistics for a user's focus sessions
  */
-export const updateDailyStats = async (userId: string, durationMinutes: number) => {
+export const updateDailyStats = async (userId: string, durationMinutes: number, sessionType: 'work' | 'break' | 'longBreak' = 'work') => {
   try {
     if (!userId) return;
+    
+    // Only update stats for work sessions
+    if (sessionType !== 'work') return;
     
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     

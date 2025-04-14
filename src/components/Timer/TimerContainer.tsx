@@ -28,11 +28,7 @@ const TimerContainer: React.FC = () => {
     getModeLabel
   } = useTimerControls();
   
-  const {
-    completedSessions,
-    totalTimeToday,
-    sessionsUntilLongBreak
-  } = useTimerStats();
+  const { sessionsUntilLongBreak } = useTimerStats();
   
   const { settings } = useTimerSettings();
 
@@ -126,7 +122,7 @@ const TimerContainer: React.FC = () => {
         />
         
         <SessionProgress 
-          completedSessions={completedSessions}
+          completedSessions={0}
           sessionsUntilLongBreak={sessionsUntilLongBreak}
           currentMode={timerMode}
           currentSessionIndex={currentSessionIndex}
@@ -135,11 +131,7 @@ const TimerContainer: React.FC = () => {
         />
       </div>
       
-      <SessionInfo 
-        completedSessions={completedSessions}
-        totalTimeToday={totalTimeToday}
-        sessionsUntilLongBreak={sessionsUntilLongBreak}
-      />
+      <SessionInfo />
     </Card>
   );
 };

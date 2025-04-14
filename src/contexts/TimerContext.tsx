@@ -1,6 +1,6 @@
 
-import React, { createContext, useContext } from 'react';
-import { TimerMode } from '@/utils/timerContextUtils';
+import React, { createContext, useContext, useEffect } from 'react';
+import { TimerMode, enableRealtimeForSessionsSummary } from '@/utils/timerContextUtils';
 import { formatTime, getModeLabel } from '@/utils/timerUtils';
 import { useTimerLogic } from '@/hooks/useTimerLogic';
 import { useTimerSettings } from '@/hooks/useTimerSettings';
@@ -49,6 +49,11 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     handleReset,
     handleModeChange
   } = useTimerLogic(settings);
+  
+  // Enable realtime updates for sessions_summary table
+  useEffect(() => {
+    enableRealtimeForSessionsSummary();
+  }, []);
   
   // Calculate progress percentage based on current mode
   const getTotalTime = (): number => {
