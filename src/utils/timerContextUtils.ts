@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export type TimerMode = 'work' | 'break' | 'longBreak';
@@ -74,23 +75,33 @@ export const loadTodayStats = async (userId: string | undefined) => {
 // Add the sessions_summary table to the realtime publication
 export const enableRealtimeForSessionsSummary = async () => {
   try {
-    // This will check if the sessions_summary table is already in the realtime publication
-    // If not, it will add it
-    const { data, error } = await supabase.rpc('supabase_functions.http', {
-      method: 'GET', 
-      url: '/tables/sessions_summary/realtime'
-    }).single();
+    // Instead of using RPC, we'll use the native Supabase realtime functionality
+    // Check if channel can be created for sessions_summary table
+    const channel = supabase
+      .channel('sessions-summary-changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'sessions_summary' 
+        }, 
+        () => console.log('Sessions summary table is now being monitored for realtime updates')
+      );
+      
+    // Subscribe to the channel
+    const subscription = await channel.subscribe();
     
-    // If the table isn't in the realtime publication, add it
-    if (!data?.enabled) {
-      await supabase.rpc('supabase_functions.http', {
-        method: 'POST',
-        url: '/tables/sessions_summary/realtime',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled: true })
-      });
-      console.log('Added sessions_summary to realtime publication');
+    if (subscription === 'SUBSCRIBED') {
+      console.log('Successfully subscribed to realtime updates for sessions_summary');
+    } else {
+      console.log('Failed to subscribe to realtime updates for sessions_summary');
     }
+    
+    // We'll remove the channel after a short delay to avoid multiple subscriptions
+    setTimeout(() => {
+      supabase.removeChannel(channel);
+    }, 5000);
+    
   } catch (error) {
     console.error('Error configuring realtime for sessions_summary:', error);
   }
@@ -109,9 +120,14 @@ export const getTotalTime = (timerMode: TimerMode, settings: any): number => {
   }
 };
 
-export const savePartialSession = async (userId: string, sessionType: 'work' | 'break' | 'longBreak', totalTime: number, timeRemaining: number, lastRecordedFullMinutes: number) => {
+interface PartialSessionResult {
+  newFullMinutes: number;
+  success: boolean;
+}
+
+export const savePartialSession = async (userId: string, sessionType: 'work' | 'break' | 'longBreak', totalTime: number, timeRemaining: number, lastRecordedFullMinutes: number): Promise<PartialSessionResult | boolean> => {
   try {
-    if (!userId) return;
+    if (!userId) return false;
     
     const duration = totalTime - timeRemaining;
     
@@ -131,7 +147,13 @@ export const savePartialSession = async (userId: string, sessionType: 'work' | '
       }
       
       console.log('Partial session saved successfully', { sessionType, duration });
-      return true;
+      
+      // Return an object with the new full minutes
+      const newFullMinutes = Math.floor(duration / 60);
+      return { 
+        success: true, 
+        newFullMinutes 
+      };
     } else {
       console.log('Session duration less than a minute, not saving.');
       return false;

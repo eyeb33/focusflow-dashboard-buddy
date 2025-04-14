@@ -53,8 +53,14 @@ export function useTimerInterval({
                 totalTime, 
                 newTime, 
                 lastRecordedFullMinutesRef.current
-              ).then(({ newFullMinutes }) => {
-                lastRecordedFullMinutesRef.current = newFullMinutes;
+              ).then((result) => {
+                // Fix the type error by checking if result has the property
+                if (result && typeof result === 'object' && 'newFullMinutes' in result) {
+                  lastRecordedFullMinutesRef.current = result.newFullMinutes;
+                } else {
+                  // Just update with current calculation if no explicit value returned
+                  lastRecordedFullMinutesRef.current = newFullMinutes;
+                }
               });
             }
           }

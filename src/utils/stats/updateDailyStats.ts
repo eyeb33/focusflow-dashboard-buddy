@@ -28,14 +28,20 @@ export const updateDailyStats = async (userId: string, durationMinutes: number, 
     
     const { data: recentDays, error: streakError } = await supabase
       .from('sessions_summary')
-      .select('date')
+      .select('date, total_completed_sessions')
       .eq('user_id', userId)
       .gt('total_completed_sessions', 0)
       .order('date', { ascending: false });
       
     if (streakError) throw streakError;
     
-    let currentStreak = calculateStreak(recentDays, today);
+    // Calculate streak with typed data
+    const streakData = recentDays?.map(day => ({
+      date: day.date,
+      sessions: day.total_completed_sessions
+    })) || [];
+    
+    let currentStreak = calculateStreak(streakData, today);
     
     if (existingData) {
       const { error } = await supabase
