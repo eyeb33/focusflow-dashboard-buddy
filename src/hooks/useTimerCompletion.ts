@@ -47,11 +47,8 @@ export function useTimerCompletion({
         updateDailyStats(user.id, settings.workDuration, timerMode);
       }
       
-      // Calculate new session index
-      const newSessionIndex = newCompletedSessions % settings.sessionsUntilLongBreak;
-      
-      // After work session is completed, check if long break is needed
-      if (newSessionIndex === 0) {
+      // Check if we need a long break after completing the focus sessions goal
+      if (newCompletedSessions % settings.sessionsUntilLongBreak === 0) {
         setTimerMode('longBreak');
         setCurrentSessionIndex(0);
         toast({
@@ -60,7 +57,7 @@ export function useTimerCompletion({
         });
       } else {
         setTimerMode('break');
-        setCurrentSessionIndex(newSessionIndex);
+        setCurrentSessionIndex(newCompletedSessions % settings.sessionsUntilLongBreak);
         toast({
           title: "Session completed!",
           description: `You completed a ${settings.workDuration} minute focus session.`,
@@ -81,9 +78,6 @@ export function useTimerCompletion({
       
       // After breaks, go back to work mode
       setTimerMode('work');
-      
-      // After a break, keep the same session index
-      // After a long break, we're already at index 0
       
       if (timerMode === 'break') {
         toast({

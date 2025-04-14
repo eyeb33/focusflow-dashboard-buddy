@@ -48,6 +48,11 @@ export const loadTodayStats = async (userId: string | undefined) => {
       throw error;
     }
     
+    if (!data) {
+      console.log('No focus sessions found for today');
+      return { completedSessions: 0, totalTimeToday: 0 };
+    }
+    
     // Count completed sessions
     const completedSessions = data.filter(session => 
       session.completed && session.session_type === 'work'

@@ -28,7 +28,7 @@ const TimerContainer: React.FC = () => {
     getModeLabel
   } = useTimerControls();
   
-  const { sessionsUntilLongBreak } = useTimerStats();
+  const { sessionsUntilLongBreak, completedSessions } = useTimerStats();
   
   const { settings } = useTimerSettings();
 
@@ -121,14 +121,16 @@ const TimerContainer: React.FC = () => {
           className="mb-2"
         />
         
-        <SessionProgress 
-          completedSessions={0}
-          sessionsUntilLongBreak={sessionsUntilLongBreak}
-          currentMode={timerMode}
-          currentSessionIndex={currentSessionIndex}
-          isRunning={isRunning}
-          className="mb-4"
-        />
+        {timerMode !== 'longBreak' && (
+          <SessionProgress 
+            completedSessions={completedSessions}
+            sessionsUntilLongBreak={sessionsUntilLongBreak}
+            currentMode={timerMode}
+            currentSessionIndex={currentSessionIndex}
+            isRunning={isRunning}
+            className="mb-4"
+          />
+        )}
       </div>
       
       <SessionInfo />

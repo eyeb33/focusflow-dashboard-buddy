@@ -26,7 +26,7 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
   const currentCycle = Math.floor(completedSessions / sessionsUntilLongBreak);
   
   // Calculate position in cycle (0-indexed)
-  const positionInCycle = currentSessionIndex % sessionsUntilLongBreak;
+  const positionInCycle = completedSessions % sessionsUntilLongBreak;
   
   // Get colors based on timer mode
   const getColor = (mode: TimerMode): { fill: string, stroke: string } => {
@@ -42,39 +42,16 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
     }
   };
   
-  // Render indicator circles for the current mode
+  // Render indicator circles for focus sessions only
   const renderIndicators = () => {
     const colors = getColor(currentMode);
     
     return Array.from({ length: sessionsUntilLongBreak }).map((_, index) => {
-      // In work mode: 
-      // - Active is the current position in cycle
-      // - Completed are positions before the active one
+      // Is this position completed?
+      const isCompleted = index < positionInCycle;
       
-      // In break mode:
-      // - Active is the position that just completed a work session
-      // - No completed dots (breaks are interspersed between work sessions)
-      
-      // In long break mode:
-      // - Just show a single active dot
-      
-      let isActive = false;
-      let isCompleted = false;
-      
-      if (currentMode === 'work') {
-        isActive = index === positionInCycle;
-        isCompleted = index < positionInCycle;
-      } 
-      else if (currentMode === 'break') {
-        // In break mode, highlight the position that just completed a work session
-        isActive = index === positionInCycle;
-        isCompleted = false;
-      }
-      else if (currentMode === 'longBreak') {
-        // For long break, just show one active indicator
-        isActive = index === 0;
-        isCompleted = false;
-      }
+      // Is this the active position?
+      const isActive = index === positionInCycle;
       
       // Size the active indicator slightly larger
       const size = isActive ? 20 : 16;

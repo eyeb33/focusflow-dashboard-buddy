@@ -54,7 +54,7 @@ export function useTimerInterval({
                 newTime, 
                 lastRecordedFullMinutesRef.current
               ).then((result) => {
-                // Fix the type error by checking if result has the property
+                // Fix type error by properly type narrowing the result
                 if (result && typeof result === 'object' && 'newFullMinutes' in result) {
                   lastRecordedFullMinutesRef.current = result.newFullMinutes;
                 } else {

@@ -50,7 +50,7 @@ export const updateDailyStats = async (userId: string, durationMinutes: number, 
           total_sessions: existingData.total_sessions + 1,
           total_focus_time: existingData.total_focus_time + durationMinutes,
           total_completed_sessions: existingData.total_completed_sessions + 1,
-          longest_streak: Math.max(existingData.longest_streak, currentStreak),
+          longest_streak: Math.max(existingData.longest_streak || 0, currentStreak),
           updated_at: new Date().toISOString()
         })
         .eq('id', existingData.id);
@@ -65,7 +65,7 @@ export const updateDailyStats = async (userId: string, durationMinutes: number, 
           total_sessions: 1,
           total_focus_time: durationMinutes,
           total_completed_sessions: 1,
-          longest_streak: currentStreak
+          longest_streak: currentStreak || 1
         });
         
       if (error) throw error;
