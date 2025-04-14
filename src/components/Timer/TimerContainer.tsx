@@ -8,6 +8,7 @@ import TimerControls from "@/components/Timer/TimerControls";
 import TimerSettings from "@/components/Timer/TimerSettings";
 import SessionInfo from "@/components/Timer/SessionInfo";
 import SessionProgress from "@/components/Timer/SessionProgress";
+import SessionRings from "@/components/Timer/SessionRings";
 import { useTimerControls } from "@/hooks/useTimerControls";
 import { useTimerStats } from "@/hooks/useTimerStats";
 import { useTimerSettings } from "@/hooks/useTimerSettings";
@@ -51,6 +52,11 @@ const TimerContainer: React.FC = () => {
   };
 
   const currentModeColors = modeColors[timerMode];
+  
+  // Calculate actual focus sessions completed
+  const completedFocusSessions = Math.floor(currentSessionIndex / 2);
+  const totalFocusSessions = sessionsUntilLongBreak;
+  const shouldShowRings = timerMode === "work" || timerMode === "break";
 
   return (
     <Card className="w-full max-w-md p-6 bg-white/90 dark:bg-black/80 backdrop-blur-sm shadow-md">
@@ -118,16 +124,14 @@ const TimerContainer: React.FC = () => {
           onPause={pause}
           onReset={reset}
           mode={timerMode}
-          className="mb-2"
+          className="mb-4"
         />
         
-        {timerMode !== 'longBreak' && (
-          <SessionProgress 
-            completedSessions={completedSessions}
-            sessionsUntilLongBreak={sessionsUntilLongBreak}
-            currentMode={timerMode}
-            currentSessionIndex={currentSessionIndex}
-            isRunning={isRunning}
+        {shouldShowRings && (
+          <SessionRings
+            completedSessions={completedFocusSessions}
+            totalSessions={totalFocusSessions}
+            mode={timerMode}
             className="mb-4"
           />
         )}
