@@ -3,7 +3,7 @@ import { ProductivityDataPoint } from './useProductivityData';
 import { StreakDay } from './useStreakData';
 import { TrendData } from './useProductivityTrends';
 import { InsightData } from './useInsights';
-import { StatsData } from './useStatsData';
+import { StatsData } from './stats/statsTypes';
 
 export interface DashboardData {
   stats: StatsData;
