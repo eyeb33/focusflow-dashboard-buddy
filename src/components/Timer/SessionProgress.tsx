@@ -24,11 +24,11 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
 }) => {
   // Calculate current cycle progress
   const currentCycle = Math.floor(completedSessions / sessionsUntilLongBreak);
+  
+  // Calculate position in cycle (for both work and break sessions)
   const currentPositionInCycle = completedSessions % sessionsUntilLongBreak;
   
-  // The active position is determined by the current session index
-  const activePosition = currentSessionIndex;
-  
+  // Get colors based on timer mode
   const getColor = (mode: TimerMode): { fill: string, stroke: string } => {
     switch (mode) {
       case 'work':
@@ -42,14 +42,29 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
     }
   };
   
-  const renderIndicators = (mode: TimerMode, count: number, completed: number, active: number) => {
+  // Render indicator circles for the current mode
+  const renderIndicators = (mode: TimerMode, count: number, completedCount: number, activeIndex: number) => {
     const colors = getColor(mode);
     
     return Array.from({ length: count }).map((_, index) => {
-      // Only mark as active if we're on this position
-      const isActive = index === active;
-      // Mark as completed if index < completedSessions
-      const isCompleted = index < completed;
+      let isActive = false;
+      let isCompleted = false;
+      
+      // Mark as active if this is the current position in the cycle
+      if (mode === 'work') {
+        isActive = index === activeIndex;
+        isCompleted = index < completedCount;
+      } 
+      else if (mode === 'break') {
+        isActive = index === activeIndex;
+        isCompleted = index < completedCount;
+      }
+      else if (mode === 'longBreak') {
+        isActive = true;
+        isCompleted = false;
+      }
+      
+      // Size the active indicator slightly larger
       const size = isActive ? 20 : 16;
       
       return (
@@ -57,9 +72,10 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
           key={`${mode}-${index}`}
           size={size}
           className={cn(
-            isCompleted || isActive ? colors.fill : 'text-transparent',
-            'stroke-[2px] transition-all duration-300',
-            colors.stroke
+            isCompleted ? colors.fill : 'text-transparent',
+            isActive && !isCompleted ? 'stroke-[2.5px]' : 'stroke-[2px]',
+            isActive ? colors.fill : colors.stroke,
+            'transition-all duration-300'
           )}
         />
       );
@@ -74,13 +90,13 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
     <div className={cn("flex justify-center items-center gap-2 py-3", className)}>
       {currentMode === 'work' && (
         <div className="flex space-x-1.5 items-center">
-          {renderIndicators('work', sessionsUntilLongBreak, currentPositionInCycle, activePosition)}
+          {renderIndicators('work', sessionsUntilLongBreak, currentPositionInCycle, currentSessionIndex)}
         </div>
       )}
       
       {currentMode === 'break' && (
         <div className="flex space-x-1.5 items-center">
-          {renderIndicators('break', sessionsUntilLongBreak, currentPositionInCycle, activePosition)}
+          {renderIndicators('break', sessionsUntilLongBreak, currentPositionInCycle, currentSessionIndex)}
         </div>
       )}
       

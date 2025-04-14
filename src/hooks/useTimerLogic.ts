@@ -7,6 +7,7 @@ import { updateDailyStats } from '@/utils/productivityStats';
 import { getTotalTime, savePartialSession, TimerMode } from '@/utils/timerContextUtils';
 import { TimerSettings } from '@/hooks/useTimerSettings';
 import { useTimerInterval } from './useTimerInterval';
+import { playTimerCompletionSound, initAudioContext } from '@/utils/audioUtils';
 
 export function useTimerLogic(settings: TimerSettings) {
   const { user } = useAuth();
@@ -21,6 +22,24 @@ export function useTimerLogic(settings: TimerSettings) {
   const lastRecordedTimeRef = useRef<number | null>(null);
   const lastRecordedFullMinutesRef = useRef<number>(0);
 
+  // Initialize audio context on first user interaction
+  useEffect(() => {
+    const initAudioOnInteraction = () => {
+      initAudioContext();
+      // Remove event listeners after initialization
+      document.removeEventListener('click', initAudioOnInteraction);
+      document.removeEventListener('keydown', initAudioOnInteraction);
+    };
+
+    document.addEventListener('click', initAudioOnInteraction);
+    document.addEventListener('keydown', initAudioOnInteraction);
+
+    return () => {
+      document.removeEventListener('click', initAudioOnInteraction);
+      document.removeEventListener('keydown', initAudioOnInteraction);
+    };
+  }, []);
+
   // Reset timer when mode or settings change
   useEffect(() => {
     setTimeRemaining(getTotalTime(timerMode, settings));
@@ -30,6 +49,9 @@ export function useTimerLogic(settings: TimerSettings) {
 
   // Handle timer completion
   const handleTimerComplete = () => {
+    // Play sound when timer completes
+    playTimerCompletionSound();
+
     if (timerMode === 'work') {
       const newCompletedSessions = completedSessions + 1;
       setCompletedSessions(newCompletedSessions);
