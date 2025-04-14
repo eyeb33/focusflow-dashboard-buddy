@@ -1,5 +1,5 @@
 
-import { useTimer } from '@/contexts/TimerContext';
+import { useState } from 'react';
 
 export interface TimerSettings {
   workDuration: number;
@@ -8,14 +8,15 @@ export interface TimerSettings {
   sessionsUntilLongBreak: number;
 }
 
+const defaultSettings: TimerSettings = {
+  workDuration: 25,
+  breakDuration: 5,
+  longBreakDuration: 15,
+  sessionsUntilLongBreak: 4
+};
+
 export const useTimerSettings = () => {
-  const timer = useTimer();
-  
-  // Extract only the settings
-  const {
-    settings,
-    updateSettings
-  } = timer;
+  const [settings, setSettings] = useState<TimerSettings>(defaultSettings);
   
   // Add helper functions for specific setting updates
   const updateWorkDuration = (minutes: number) => {
@@ -32,6 +33,11 @@ export const useTimerSettings = () => {
   
   const updateSessionsUntilLongBreak = (count: number) => {
     updateSettings({ sessionsUntilLongBreak: count });
+  };
+  
+  // Settings update function
+  const updateSettings = (newSettings: Partial<TimerSettings>) => {
+    setSettings(prev => ({ ...prev, ...newSettings }));
   };
   
   return {

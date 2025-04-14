@@ -1,16 +1,9 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { createContext, useContext } from 'react';
+import { TimerMode } from '@/utils/timerContextUtils';
 import { formatTime, getModeLabel } from '@/utils/timerUtils';
-import { loadTodayStats, TimerMode } from '@/utils/timerContextUtils';
 import { useTimerLogic } from '@/hooks/useTimerLogic';
-
-interface TimerSettings {
-  workDuration: number;
-  breakDuration: number;
-  longBreakDuration: number;
-  sessionsUntilLongBreak: number;
-}
+import { useTimerSettings } from '@/hooks/useTimerSettings';
 
 interface TimerContextType {
   timerMode: TimerMode;
@@ -19,7 +12,7 @@ interface TimerContextType {
   completedSessions: number;
   totalTimeToday: number;
   currentSessionIndex: number;
-  settings: TimerSettings;
+  settings: ReturnType<typeof useTimerSettings>['settings'];
   progress: number;
   formatTime: (seconds: number) => string;
   handleStart: () => void;
@@ -27,10 +20,10 @@ interface TimerContextType {
   handleReset: () => void;
   handleModeChange: (mode: TimerMode) => void;
   getModeLabel: () => string;
-  updateSettings: (newSettings: Partial<TimerSettings>) => void;
+  updateSettings: (newSettings: Partial<ReturnType<typeof useTimerSettings>['settings']>) => void;
 }
 
-const defaultSettings: TimerSettings = {
+const defaultSettings = {
   workDuration: 25,
   breakDuration: 5,
   longBreakDuration: 15,
@@ -40,9 +33,10 @@ const defaultSettings: TimerSettings = {
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
 
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
-  const [settings, setSettings] = useState<TimerSettings>(defaultSettings);
+  // Use the settings hook
+  const { settings, updateSettings } = useTimerSettings();
   
+  // Use the timer logic hook which contains all the core functionality
   const {
     timerMode,
     isRunning,
@@ -50,30 +44,13 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     completedSessions,
     totalTimeToday,
     currentSessionIndex,
-    setCompletedSessions,
-    setTotalTimeToday,
     handleStart,
     handlePause,
     handleReset,
     handleModeChange
   } = useTimerLogic(settings);
   
-  // Load user's stats when logged in
-  useEffect(() => {
-    if (user) {
-      loadTodayStats(user.id).then(stats => {
-        setCompletedSessions(stats.completedSessions);
-        setTotalTimeToday(stats.totalTimeToday);
-      });
-    }
-  }, [user]);
-
-  // Settings update function
-  const updateSettings = (newSettings: Partial<TimerSettings>) => {
-    setSettings(prev => ({ ...prev, ...newSettings }));
-  };
-
-  // Calculate progress percentage
+  // Calculate progress percentage based on current mode
   const getTotalTime = (): number => {
     switch (timerMode) {
       case 'break':
