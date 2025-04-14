@@ -9,16 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Settings } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { useTimerSettings } from "@/hooks/useTimerSettings";
+import { useTimer } from "@/contexts/TimerContext";
 
 const TimerSettings: React.FC = () => {
   const {
     settings,
-    updateWorkDuration,
-    updateBreakDuration,
-    updateLongBreakDuration,
-    updateSessionsUntilLongBreak
-  } = useTimerSettings();
+    updateSettings
+  } = useTimer();
 
   const { 
     workDuration, 
@@ -26,6 +23,22 @@ const TimerSettings: React.FC = () => {
     longBreakDuration, 
     sessionsUntilLongBreak 
   } = settings;
+
+  const updateWorkDuration = (minutes: number) => {
+    updateSettings({ workDuration: minutes });
+  };
+  
+  const updateBreakDuration = (minutes: number) => {
+    updateSettings({ breakDuration: minutes });
+  };
+  
+  const updateLongBreakDuration = (minutes: number) => {
+    updateSettings({ longBreakDuration: minutes });
+  };
+  
+  const updateSessionsUntilLongBreak = (count: number) => {
+    updateSettings({ sessionsUntilLongBreak: count });
+  };
 
   return (
     <Popover>
