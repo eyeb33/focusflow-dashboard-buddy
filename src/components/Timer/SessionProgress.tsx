@@ -22,11 +22,11 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
   isRunning,
   className
 }) => {
-  // Calculate current cycle progress
+  // Calculate current cycle (0-indexed)
   const currentCycle = Math.floor(completedSessions / sessionsUntilLongBreak);
   
-  // Calculate position in cycle (for both work and break sessions)
-  const currentPositionInCycle = completedSessions % sessionsUntilLongBreak;
+  // Calculate position in cycle (0-indexed)
+  const positionInCycle = currentSessionIndex % sessionsUntilLongBreak;
   
   // Get colors based on timer mode
   const getColor = (mode: TimerMode): { fill: string, stroke: string } => {
@@ -43,24 +43,36 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
   };
   
   // Render indicator circles for the current mode
-  const renderIndicators = (mode: TimerMode, count: number, completedCount: number, activeIndex: number) => {
-    const colors = getColor(mode);
+  const renderIndicators = () => {
+    const colors = getColor(currentMode);
     
-    return Array.from({ length: count }).map((_, index) => {
+    return Array.from({ length: sessionsUntilLongBreak }).map((_, index) => {
+      // In work mode: 
+      // - Active is the current position in cycle
+      // - Completed are positions before the active one
+      
+      // In break mode:
+      // - Active is the position that just completed a work session
+      // - No completed dots (breaks are interspersed between work sessions)
+      
+      // In long break mode:
+      // - Just show a single active dot
+      
       let isActive = false;
       let isCompleted = false;
       
-      // Mark as active if this is the current position in the cycle
-      if (mode === 'work') {
-        isActive = index === activeIndex;
-        isCompleted = index < completedCount;
+      if (currentMode === 'work') {
+        isActive = index === positionInCycle;
+        isCompleted = index < positionInCycle;
       } 
-      else if (mode === 'break') {
-        isActive = index === activeIndex;
-        isCompleted = index < completedCount;
+      else if (currentMode === 'break') {
+        // In break mode, highlight the position that just completed a work session
+        isActive = index === positionInCycle;
+        isCompleted = false;
       }
-      else if (mode === 'longBreak') {
-        isActive = true;
+      else if (currentMode === 'longBreak') {
+        // For long break, just show one active indicator
+        isActive = index === 0;
         isCompleted = false;
       }
       
@@ -69,7 +81,7 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
       
       return (
         <Circle
-          key={`${mode}-${index}`}
+          key={`${currentMode}-${index}`}
           size={size}
           className={cn(
             isCompleted ? colors.fill : 'text-transparent',
@@ -88,23 +100,9 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
   
   return (
     <div className={cn("flex justify-center items-center gap-2 py-3", className)}>
-      {currentMode === 'work' && (
-        <div className="flex space-x-1.5 items-center">
-          {renderIndicators('work', sessionsUntilLongBreak, currentPositionInCycle, currentSessionIndex)}
-        </div>
-      )}
-      
-      {currentMode === 'break' && (
-        <div className="flex space-x-1.5 items-center">
-          {renderIndicators('break', sessionsUntilLongBreak, currentPositionInCycle, currentSessionIndex)}
-        </div>
-      )}
-      
-      {currentMode === 'longBreak' && (
-        <div className="flex space-x-1.5 items-center">
-          {renderIndicators('longBreak', 1, 0, 0)}
-        </div>
-      )}
+      <div className="flex space-x-1.5 items-center">
+        {renderIndicators()}
+      </div>
     </div>
   );
 };

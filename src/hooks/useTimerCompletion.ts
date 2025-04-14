@@ -1,4 +1,3 @@
-
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { saveFocusSession } from '@/utils/timerStorage';
@@ -47,32 +46,30 @@ export function useTimerCompletion({
         updateDailyStats(user.id, settings.workDuration);
       }
       
+      // Calculate new session index
+      const newSessionIndex = newCompletedSessions % settings.sessionsUntilLongBreak;
+      
       // After work session is completed, check if long break is needed
-      if (newCompletedSessions % settings.sessionsUntilLongBreak === 0) {
+      if (newSessionIndex === 0) {
         setTimerMode('longBreak');
-        // Update the current session index to match the completed session
-        setCurrentSessionIndex(newCompletedSessions % settings.sessionsUntilLongBreak);
+        setCurrentSessionIndex(0);
         toast({
           title: "Time for a long break!",
           description: `You've completed ${settings.sessionsUntilLongBreak} focus sessions. Take a longer break now.`,
         });
-        // Automatically start the long break timer
-        setTimeout(() => {
-          setIsRunning(true);
-        }, 50);
       } else {
         setTimerMode('break');
-        // Update the current session index to match the completed session
-        setCurrentSessionIndex(newCompletedSessions % settings.sessionsUntilLongBreak);
+        setCurrentSessionIndex(newSessionIndex);
         toast({
           title: "Session completed!",
           description: `You completed a ${settings.workDuration} minute focus session.`,
         });
-        // Automatically start the break timer
-        setTimeout(() => {
-          setIsRunning(true);
-        }, 50);
       }
+      
+      // Automatically start the break timer
+      setTimeout(() => {
+        setIsRunning(true);
+      }, 50);
     } else {
       if (user) {
         const duration = timerMode === 'break' ? settings.breakDuration * 60 : settings.longBreakDuration * 60;
@@ -84,8 +81,9 @@ export function useTimerCompletion({
       // After breaks, go back to work mode
       setTimerMode('work');
       
-      // After a break, we should advance to the next focus session
-      // ONLY if we just completed a break (not a long break)
+      // After a break, keep the same session index
+      // After a long break, we're already at index 0
+      
       if (timerMode === 'break') {
         toast({
           title: "Break finished!",
@@ -100,8 +98,7 @@ export function useTimerCompletion({
           title: "Long break finished!",
           description: "Ready to start a new cycle?",
         });
-        // After a long break, reset the current session index to start a new cycle
-        setCurrentSessionIndex(0);
+        // After a long break, we're already at index 0
         // Do NOT automatically start after a long break - it's the end of a complete cycle
       }
     }
