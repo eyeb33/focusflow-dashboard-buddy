@@ -16,6 +16,7 @@ export function useTimerLogic(settings: TimerSettings) {
   const [timeRemaining, setTimeRemaining] = useState(settings.workDuration * 60);
   const [completedSessions, setCompletedSessions] = useState(0);
   const [totalTimeToday, setTotalTimeToday] = useState(0);
+  const [currentSessionIndex, setCurrentSessionIndex] = useState(0);
   
   const lastRecordedTimeRef = useRef<number | null>(null);
   const lastRecordedFullMinutesRef = useRef<number>(0);
@@ -42,16 +43,28 @@ export function useTimerLogic(settings: TimerSettings) {
       // After work session is completed, check if long break is needed
       if (newCompletedSessions % settings.sessionsUntilLongBreak === 0) {
         setTimerMode('longBreak');
+        // Update the current session index to match the completed session
+        setCurrentSessionIndex(newCompletedSessions % settings.sessionsUntilLongBreak);
         toast({
           title: "Time for a long break!",
           description: `You've completed ${settings.sessionsUntilLongBreak} focus sessions. Take a longer break now.`,
         });
+        // Automatically start the long break timer
+        setTimeout(() => {
+          setIsRunning(true);
+        }, 50);
       } else {
         setTimerMode('break');
+        // Update the current session index to match the completed session
+        setCurrentSessionIndex(newCompletedSessions % settings.sessionsUntilLongBreak);
         toast({
           title: "Session completed!",
           description: `You completed a ${settings.workDuration} minute focus session.`,
         });
+        // Automatically start the break timer
+        setTimeout(() => {
+          setIsRunning(true);
+        }, 50);
       }
     } else {
       if (user) {
@@ -61,18 +74,28 @@ export function useTimerLogic(settings: TimerSettings) {
         updateDailyStats(user.id, durationMinutes);
       }
       
+      // After breaks, go back to work mode
       setTimerMode('work');
       
+      // After a break, we should advance to the next focus session
+      // ONLY if we just completed a break (not a long break)
       if (timerMode === 'break') {
         toast({
           title: "Break finished!",
           description: "Time to focus again.",
         });
+        // Automatically start the next focus timer
+        setTimeout(() => {
+          setIsRunning(true);
+        }, 50);
       } else if (timerMode === 'longBreak') {
         toast({
           title: "Long break finished!",
           description: "Ready to start a new cycle?",
         });
+        // After a long break, reset the current session index to start a new cycle
+        setCurrentSessionIndex(0);
+        // Do NOT automatically start after a long break - it's the end of a complete cycle
       }
     }
     
@@ -133,6 +156,11 @@ export function useTimerLogic(settings: TimerSettings) {
     setTimeRemaining(getTotalTime(timerMode, settings));
     lastRecordedTimeRef.current = getTotalTime(timerMode, settings);
     lastRecordedFullMinutesRef.current = 0;
+    
+    // Reset the current session index when timer is reset
+    if (timerMode === 'work') {
+      setCurrentSessionIndex(0);
+    }
   };
 
   const handleModeChange = async (mode: TimerMode) => {
@@ -151,6 +179,11 @@ export function useTimerLogic(settings: TimerSettings) {
     setTimerMode(mode);
     lastRecordedTimeRef.current = null;
     lastRecordedFullMinutesRef.current = 0;
+    
+    // Reset the current session index when manually changing modes
+    if (mode === 'work') {
+      setCurrentSessionIndex(0);
+    }
   };
 
   return {
@@ -159,6 +192,7 @@ export function useTimerLogic(settings: TimerSettings) {
     timeRemaining,
     completedSessions,
     totalTimeToday,
+    currentSessionIndex,
     setCompletedSessions,
     setTotalTimeToday,
     handleStart,

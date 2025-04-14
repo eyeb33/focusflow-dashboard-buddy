@@ -19,6 +19,7 @@ const TimerContainer: React.FC = () => {
     timerMode,
     timeRemaining,
     progress,
+    currentSessionIndex,
     formatTime,
     start,
     pause,
@@ -128,6 +129,7 @@ const TimerContainer: React.FC = () => {
           completedSessions={completedSessions}
           sessionsUntilLongBreak={sessionsUntilLongBreak}
           currentMode={timerMode}
+          currentSessionIndex={currentSessionIndex}
           isRunning={isRunning}
           className="mb-4"
         />

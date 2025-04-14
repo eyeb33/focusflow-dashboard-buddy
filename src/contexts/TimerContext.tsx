@@ -18,6 +18,7 @@ interface TimerContextType {
   timeRemaining: number;
   completedSessions: number;
   totalTimeToday: number;
+  currentSessionIndex: number;
   settings: TimerSettings;
   progress: number;
   formatTime: (seconds: number) => string;
@@ -48,6 +49,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     timeRemaining,
     completedSessions,
     totalTimeToday,
+    currentSessionIndex,
     setCompletedSessions,
     setTotalTimeToday,
     handleStart,
@@ -94,6 +96,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     timeRemaining,
     completedSessions,
     totalTimeToday,
+    currentSessionIndex,
     settings,
     progress,
     formatTime,

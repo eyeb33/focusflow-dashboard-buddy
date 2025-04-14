@@ -15,7 +15,8 @@ export const useTimerControls = () => {
     getModeLabel,
     formatTime,
     timeRemaining,
-    progress
+    progress,
+    currentSessionIndex
   } = timer;
   
   return {
@@ -23,6 +24,7 @@ export const useTimerControls = () => {
     timerMode,
     timeRemaining,
     progress,
+    currentSessionIndex,
     formatTime,
     start: handleStart,
     pause: handlePause,

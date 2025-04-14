@@ -9,6 +9,7 @@ interface SessionProgressProps {
   completedSessions: number;
   sessionsUntilLongBreak: number;
   currentMode: TimerMode;
+  currentSessionIndex: number;
   isRunning: boolean;
   className?: string;
 }
@@ -17,6 +18,7 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
   completedSessions,
   sessionsUntilLongBreak,
   currentMode,
+  currentSessionIndex,
   isRunning,
   className
 }) => {
@@ -24,8 +26,8 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
   const currentCycle = Math.floor(completedSessions / sessionsUntilLongBreak);
   const currentPositionInCycle = completedSessions % sessionsUntilLongBreak;
   
-  // If the timer is running, we should show the current session as active
-  const activePosition = isRunning ? currentPositionInCycle : -1;
+  // The active position is determined by the current session index
+  const activePosition = currentSessionIndex;
   
   const getColor = (mode: TimerMode): { fill: string, stroke: string } => {
     switch (mode) {
@@ -44,7 +46,7 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
     const colors = getColor(mode);
     
     return Array.from({ length: count }).map((_, index) => {
-      // Only mark as active if we're on this position and the timer is running
+      // Only mark as active if we're on this position
       const isActive = index === active;
       // Mark as completed if index < completedSessions
       const isCompleted = index < completed;

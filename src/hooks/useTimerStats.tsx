@@ -9,12 +9,14 @@ export const useTimerStats = () => {
   const {
     completedSessions,
     totalTimeToday,
-    settings
+    settings,
+    currentSessionIndex
   } = timer;
   
   return {
     completedSessions,
     totalTimeToday,
+    currentSessionIndex,
     sessionsUntilLongBreak: settings.sessionsUntilLongBreak,
     completedRounds: Math.floor(completedSessions / settings.sessionsUntilLongBreak)
   };
