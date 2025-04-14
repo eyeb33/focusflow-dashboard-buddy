@@ -1,13 +1,7 @@
-
 import React from 'react';
 import ProductivityChart from "@/components/Dashboard/ProductivityChart";
 import StreakCalendar from "@/components/Dashboard/StreakCalendar";
-
-interface ChartDataType {
-  name: string;
-  sessions: number;
-  minutes: number;
-}
+import { ProductivityDataPoint } from '@/hooks/dashboard/productivity/types';
 
 interface StreakDataType {
   date: string;
@@ -15,9 +9,9 @@ interface StreakDataType {
 }
 
 interface ChartsGridProps {
-  dailyData: ChartDataType[];
-  weeklyData: ChartDataType[];
-  monthlyData: ChartDataType[];
+  dailyData: ProductivityDataPoint[];
+  weeklyData: ProductivityDataPoint[];
+  monthlyData: ProductivityDataPoint[];
   streakData: StreakDataType[];
   currentStreak: number;
   bestStreak: number;

@@ -1,5 +1,5 @@
 
-import { ProductivityDataPoint } from './useProductivityData';
+import { ProductivityDataPoint } from './productivity/types';
 import { StreakDay } from './useStreakData';
 import { TrendData } from './useProductivityTrends';
 import { InsightData } from './useInsights';

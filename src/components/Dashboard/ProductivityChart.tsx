@@ -1,19 +1,13 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-interface ProductivityData {
-  name: string;
-  sessions: number;
-  minutes: number;
-}
+import { ProductivityDataPoint } from '@/hooks/dashboard/productivity/types';
 
 interface ProductivityChartProps {
-  dailyData: ProductivityData[];
-  weeklyData: ProductivityData[];
-  monthlyData: ProductivityData[];
+  dailyData: ProductivityDataPoint[];
+  weeklyData: ProductivityDataPoint[];
+  monthlyData: ProductivityDataPoint[];
   bestHour?: string;
 }
 
