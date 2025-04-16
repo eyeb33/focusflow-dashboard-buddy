@@ -57,6 +57,11 @@ const TimerContainer: React.FC = () => {
   const completedFocusSessions = Math.floor(currentSessionIndex / 2);
   const totalFocusSessions = sessionsUntilLongBreak;
   const shouldShowRings = timerMode === "work" || timerMode === "break";
+  
+  // Calculate current position within the cycle
+  const currentPositionInCycle = timerMode === "work" 
+    ? Math.floor(currentSessionIndex / 2) // Current focus session
+    : Math.floor((currentSessionIndex - 1) / 2); // Current break after a focus session
 
   return (
     <Card className="w-full max-w-md p-6 bg-white/90 dark:bg-black/80 backdrop-blur-sm shadow-md">
@@ -132,6 +137,7 @@ const TimerContainer: React.FC = () => {
             completedSessions={completedFocusSessions}
             totalSessions={totalFocusSessions}
             mode={timerMode}
+            currentPosition={timerMode === "work" ? completedFocusSessions : currentPositionInCycle}
             className="mb-4"
           />
         )}

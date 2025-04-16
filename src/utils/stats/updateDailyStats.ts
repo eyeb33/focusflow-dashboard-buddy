@@ -5,6 +5,9 @@ import { updateProductivityScore } from '../productivity/updateProductivityScore
 
 /**
  * Updates daily statistics for a user's focus sessions
+ * @param userId The user ID
+ * @param durationMinutes The duration in minutes
+ * @param sessionType The type of session (work, break, longBreak)
  */
 export const updateDailyStats = async (userId: string, durationMinutes: number, sessionType: 'work' | 'break' | 'longBreak' = 'work') => {
   try {
@@ -20,7 +23,7 @@ export const updateDailyStats = async (userId: string, durationMinutes: number, 
       .select('*')
       .eq('user_id', userId)
       .eq('date', today)
-      .single();
+      .maybeSingle();
       
     if (queryError && queryError.code !== 'PGRST116') { // PGRST116 means no rows returned
       throw queryError;

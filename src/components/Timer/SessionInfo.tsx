@@ -1,6 +1,5 @@
 
 import React, { useEffect, useState } from 'react';
-import { useTimerStats } from '@/hooks/useTimerStats';
 import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,7 +41,7 @@ const SessionInfo: React.FC = () => {
         const todayDateString = today.toISOString().split('T')[0];
         const yesterdayDateString = yesterday.toISOString().split('T')[0];
         
-        // Fetch today's stats
+        // Fetch today's stats from sessions_summary table
         const { data: todayData, error: todayError } = await supabase
           .from('sessions_summary')
           .select('total_completed_sessions, total_focus_time')
@@ -54,7 +53,7 @@ const SessionInfo: React.FC = () => {
           console.error('Error fetching today stats:', todayError);
         }
         
-        // Fetch yesterday's stats
+        // Fetch yesterday's stats from sessions_summary table
         const { data: yesterdayData, error: yesterdayError } = await supabase
           .from('sessions_summary')
           .select('total_completed_sessions, total_focus_time')

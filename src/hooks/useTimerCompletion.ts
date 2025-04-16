@@ -38,26 +38,33 @@ export function useTimerCompletion({
     playTimerCompletionSound();
 
     if (timerMode === 'work') {
+      // Completed a work session
       const newCompletedSessions = completedSessions + 1;
       setCompletedSessions(newCompletedSessions);
       setTotalTimeToday(prev => prev + settings.workDuration);
       
+      // Save completed work session to database
       if (user) {
+        // Convert minutes to seconds for the database
         saveFocusSession(user.id, timerMode, settings.workDuration * 60);
         updateDailyStats(user.id, settings.workDuration, timerMode);
       }
       
+      // Update the current session index
+      const newSessionIndex = (timerMode === 'work') ? 
+        Math.min(settings.sessionsUntilLongBreak * 2, completedSessions * 2 + 1) : 
+        completedSessions * 2;
+      setCurrentSessionIndex(newSessionIndex);
+      
       // Check if we need a long break after completing the focus sessions goal
       if (newCompletedSessions % settings.sessionsUntilLongBreak === 0) {
         setTimerMode('longBreak');
-        setCurrentSessionIndex(0);
         toast({
           title: "Time for a long break!",
           description: `You've completed ${settings.sessionsUntilLongBreak} focus sessions. Take a longer break now.`,
         });
       } else {
         setTimerMode('break');
-        setCurrentSessionIndex(newCompletedSessions % settings.sessionsUntilLongBreak);
         toast({
           title: "Session completed!",
           description: `You completed a ${settings.workDuration} minute focus session.`,
@@ -69,11 +76,21 @@ export function useTimerCompletion({
         setIsRunning(true);
       }, 50);
     } else {
+      // Completed a break or long break session
       if (user) {
         const duration = timerMode === 'break' ? settings.breakDuration * 60 : settings.longBreakDuration * 60;
         const durationMinutes = timerMode === 'break' ? settings.breakDuration : settings.longBreakDuration;
         saveFocusSession(user.id, timerMode, duration);
         updateDailyStats(user.id, durationMinutes, timerMode);
+      }
+      
+      // Update session index when completing a break
+      if (timerMode === 'break') {
+        const newSessionIndex = completedSessions * 2;
+        setCurrentSessionIndex(newSessionIndex);
+      } else {
+        // After a long break, reset session index
+        setCurrentSessionIndex(0);
       }
       
       // After breaks, go back to work mode

@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface FocusSession {
   user_id: string;
   session_type: 'work' | 'break' | 'longBreak';
-  duration: number;
+  duration: number;  // Always stored in seconds in the database
   completed: boolean;
 }
 
@@ -15,7 +15,7 @@ export const saveFocusSession = async (userId: string, sessionType: 'work' | 'br
     const { error } = await supabase.from('focus_sessions').insert({
       user_id: userId,
       session_type: sessionType,
-      duration: duration,
+      duration: duration,  // Already in seconds
       completed: completed
     });
     
@@ -46,13 +46,13 @@ export const fetchTodayStats = async (userId: string | undefined) => {
       .select('total_completed_sessions, total_focus_time')
       .eq('user_id', userId)
       .eq('date', today)
-      .single();
+      .maybeSingle();
       
     if (summaryData) {
       console.log('Found summary data for today:', summaryData);
       return {
         completedSessions: summaryData.total_completed_sessions || 0,
-        totalTimeToday: summaryData.total_focus_time || 0
+        totalTimeToday: summaryData.total_focus_time || 0  // Already in minutes in the summary table
       };
     } else {
       console.log('No summary data found for today, calculating from focus_sessions');
@@ -70,6 +70,7 @@ export const fetchTodayStats = async (userId: string | undefined) => {
       .from('focus_sessions')
       .select('*')
       .eq('user_id', userId)
+      .eq('session_type', 'work')
       .gte('created_at', startOfDay.toISOString());
       
     if (error) {
@@ -77,17 +78,19 @@ export const fetchTodayStats = async (userId: string | undefined) => {
       throw error;
     }
     
+    if (!data || data.length === 0) {
+      console.log('No focus sessions found for today');
+      return { completedSessions: 0, totalTimeToday: 0 };
+    }
+    
     // Count completed sessions
-    const completedSessions = data.filter(session => 
-      session.completed && session.session_type === 'work'
-    ).length;
+    const completedSessions = data.filter(session => session.completed).length;
     
     // Calculate total minutes from all work sessions (completed or partial)
-    const totalMinutes = data
-      .filter(session => session.session_type === 'work')
-      .reduce((total, session) => {
-        return total + Math.floor(session.duration / 60);
-      }, 0);
+    // Convert from seconds to minutes
+    const totalMinutes = data.reduce((total, session) => {
+      return total + Math.floor(session.duration / 60);
+    }, 0);
     
     console.log('Calculated from sessions:', { completedSessions, totalMinutes });
     
