@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,62 +22,67 @@ const SessionInfo: React.FC = () => {
   });
   
   const [isLoading, setIsLoading] = useState(true);
+  const currentDateRef = useRef<string>(new Date().toISOString().split('T')[0]);
   
-  useEffect(() => {
-    const fetchTodayStats = async () => {
-      if (!user) {
-        setIsLoading(false);
-        return;
+  const fetchTodayStats = async () => {
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      
+      // Get today's date and yesterday's date in YYYY-MM-DD format
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      const todayDateString = today.toISOString().split('T')[0];
+      const yesterdayDateString = yesterday.toISOString().split('T')[0];
+      
+      // Update current date reference
+      currentDateRef.current = todayDateString;
+      
+      // Fetch today's stats from sessions_summary table
+      const { data: todayData, error: todayError } = await supabase
+        .from('sessions_summary')
+        .select('total_completed_sessions, total_focus_time')
+        .eq('user_id', user.id)
+        .eq('date', todayDateString)
+        .maybeSingle();
+        
+      if (todayError) {
+        console.error('Error fetching today stats:', todayError);
       }
       
-      try {
-        setIsLoading(true);
+      // Fetch yesterday's stats from sessions_summary table
+      const { data: yesterdayData, error: yesterdayError } = await supabase
+        .from('sessions_summary')
+        .select('total_completed_sessions, total_focus_time')
+        .eq('user_id', user.id)
+        .eq('date', yesterdayDateString)
+        .maybeSingle();
         
-        // Get today's date and yesterday's date in YYYY-MM-DD format
-        const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        
-        const todayDateString = today.toISOString().split('T')[0];
-        const yesterdayDateString = yesterday.toISOString().split('T')[0];
-        
-        // Fetch today's stats from sessions_summary table
-        const { data: todayData, error: todayError } = await supabase
-          .from('sessions_summary')
-          .select('total_completed_sessions, total_focus_time')
-          .eq('user_id', user.id)
-          .eq('date', todayDateString)
-          .maybeSingle();
-          
-        if (todayError) {
-          console.error('Error fetching today stats:', todayError);
-        }
-        
-        // Fetch yesterday's stats from sessions_summary table
-        const { data: yesterdayData, error: yesterdayError } = await supabase
-          .from('sessions_summary')
-          .select('total_completed_sessions, total_focus_time')
-          .eq('user_id', user.id)
-          .eq('date', yesterdayDateString)
-          .maybeSingle();
-          
-        if (yesterdayError) {
-          console.error('Error fetching yesterday stats:', yesterdayError);
-        }
-        
-        setStats({
-          focusSessions: todayData?.total_completed_sessions || 0,
-          focusMinutes: todayData?.total_focus_time || 0,
-          yesterdayFocusSessions: yesterdayData?.total_completed_sessions || null,
-          yesterdayFocusMinutes: yesterdayData?.total_focus_time || null
-        });
-      } catch (error) {
-        console.error('Error in stats fetch:', error);
-      } finally {
-        setIsLoading(false);
+      if (yesterdayError) {
+        console.error('Error fetching yesterday stats:', yesterdayError);
       }
-    };
-    
+      
+      setStats({
+        focusSessions: todayData?.total_completed_sessions || 0,
+        focusMinutes: todayData?.total_focus_time || 0,
+        yesterdayFocusSessions: yesterdayData?.total_completed_sessions || null,
+        yesterdayFocusMinutes: yesterdayData?.total_focus_time || null
+      });
+    } catch (error) {
+      console.error('Error in stats fetch:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Initial load of stats
+  useEffect(() => {
     fetchTodayStats();
     
     // Set up realtime subscription to update stats
@@ -102,6 +107,20 @@ const SessionInfo: React.FC = () => {
         supabase.removeChannel(channel);
       };
     }
+  }, [user]);
+  
+  // Check for date changes periodically
+  useEffect(() => {
+    // Check for date changes every minute
+    const intervalId = setInterval(() => {
+      const currentDate = new Date().toISOString().split('T')[0];
+      if (currentDate !== currentDateRef.current) {
+        console.log('Date changed from', currentDateRef.current, 'to', currentDate, '- refreshing stats');
+        fetchTodayStats();
+      }
+    }, 60000); // Check every minute
+
+    return () => clearInterval(intervalId);
   }, [user]);
   
   // Calculate percentage differences

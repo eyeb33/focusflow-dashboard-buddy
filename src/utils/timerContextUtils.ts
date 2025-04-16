@@ -17,7 +17,7 @@ export const loadTodayStats = async (userId: string | undefined) => {
       .select('total_completed_sessions, total_focus_time')
       .eq('user_id', userId)
       .eq('date', today)
-      .single();
+      .maybeSingle();
       
     if (summaryData) {
       console.log('Found summary data for today:', summaryData);
@@ -26,7 +26,7 @@ export const loadTodayStats = async (userId: string | undefined) => {
         totalTimeToday: summaryData.total_focus_time || 0
       };
     } else {
-      console.log('No summary data found for today, calculating from focus_sessions');
+      console.log('No summary data found for today, checking for individual sessions');
       
       if (summaryError && summaryError.code !== 'PGRST116') {
         console.error('Error fetching summary data:', summaryError);
@@ -35,20 +35,24 @@ export const loadTodayStats = async (userId: string | undefined) => {
     
     // If no summary exists, fall back to calculating from individual sessions
     const startOfDay = new Date(today);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(today);
+    endOfDay.setHours(23, 59, 59, 999);
     
     // Fetch all work sessions from today, both complete and partial
     const { data, error } = await supabase
       .from('focus_sessions')
       .select('*')
       .eq('user_id', userId)
-      .gte('created_at', startOfDay.toISOString());
+      .gte('created_at', startOfDay.toISOString())
+      .lte('created_at', endOfDay.toISOString());
       
     if (error) {
       console.error('Error fetching focus sessions:', error);
       throw error;
     }
     
-    if (!data) {
+    if (!data || data.length === 0) {
       console.log('No focus sessions found for today');
       return { completedSessions: 0, totalTimeToday: 0 };
     }

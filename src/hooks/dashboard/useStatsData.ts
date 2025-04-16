@@ -1,5 +1,6 @@
 
 import { useQuery } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
 import { StatsData, initialStatsData } from './stats/statsTypes';
 import { fetchWeeklyChangeData } from './stats/useWeeklyChangeData';
 import { fetchStreakData } from './stats/useStreakData';
@@ -9,6 +10,8 @@ import { fetchTotalMetrics } from './stats/useTotalMetrics';
 export type { StatsData } from './stats/statsTypes';
 
 export const useStatsData = (userId: string | undefined) => {
+  const currentDateRef = useRef<string>(new Date().toISOString().split('T')[0]);
+
   const fetchTotalStats = async (): Promise<StatsData | null> => {
     try {
       if (!userId) {
@@ -19,6 +22,7 @@ export const useStatsData = (userId: string | undefined) => {
       console.log('Fetching total stats for user:', userId);
       
       const today = new Date().toISOString().split('T')[0];
+      currentDateRef.current = today;
       
       // Fetch all data concurrently for better performance
       const [
@@ -53,11 +57,27 @@ export const useStatsData = (userId: string | undefined) => {
   };
 
   const result = useQuery({
-    queryKey: ['stats', userId],
+    queryKey: ['stats', userId, currentDateRef.current],
     queryFn: fetchTotalStats,
     enabled: !!userId,
     staleTime: 5 * 60 * 1000, // 5 minutes before considering data stale
   });
+
+  // Check for date changes periodically
+  useEffect(() => {
+    if (!userId) return;
+
+    // Check for date changes every minute
+    const intervalId = setInterval(() => {
+      const currentDate = new Date().toISOString().split('T')[0];
+      if (currentDate !== currentDateRef.current) {
+        console.log('Date changed from', currentDateRef.current, 'to', currentDate, '- refreshing dashboard stats');
+        result.refetch();
+      }
+    }, 60000); // Check every minute
+
+    return () => clearInterval(intervalId);
+  }, [userId, result.refetch]);
 
   return {
     stats: result.data ?? initialStatsData,

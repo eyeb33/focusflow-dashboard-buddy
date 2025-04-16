@@ -13,40 +13,50 @@ export const fetchTotalMetrics = async (userId: string, today: string): Promise<
     .select('total_completed_sessions, total_focus_time')
     .eq('user_id', userId)
     .eq('date', today)
-    .single();
+    .maybeSingle();
     
   if (todaySummaryError && todaySummaryError.code !== 'PGRST116') {
     console.error('Error fetching today summary:', todaySummaryError);
   }
   
-  // Fetch completed sessions count
-  const { data: sessionCount, error: sessionError } = await supabase
+  // If we found summary data for today, use that
+  if (todaySummary) {
+    console.log('Found today summary:', todaySummary, 'for date:', today);
+    return { 
+      totalSessions: todaySummary.total_completed_sessions || 0, 
+      totalMinutes: todaySummary.total_focus_time || 0 
+    };
+  }
+  
+  // If no summary for today, we need to calculate from individual sessions
+  console.log('No summary data for today, checking for individual sessions for date:', today);
+  const startOfDay = new Date(today);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(today);
+  endOfDay.setHours(23, 59, 59, 999);
+  
+  // Fetch completed sessions count for today
+  const { data: todaySessions, error: sessionError } = await supabase
     .from('focus_sessions')
-    .select('count')
+    .select('*')
     .eq('user_id', userId)
     .eq('completed', true)
-    .eq('session_type', 'work');
+    .eq('session_type', 'work')
+    .gte('created_at', startOfDay.toISOString())
+    .lte('created_at', endOfDay.toISOString());
 
-  // Fetch total focus time
-  const { data: focusTimeData, error: timeError } = await supabase
-    .from('focus_sessions')
-    .select('duration, session_type')
-    .eq('user_id', userId)
-    .eq('session_type', 'work');
-
-  if (sessionError || timeError) {
-    console.error('Error fetching sessions or time:', sessionError || timeError);
+  if (sessionError) {
+    console.error('Error fetching today sessions:', sessionError);
     return { totalSessions: 0, totalMinutes: 0 };
   }
 
-  // Calculate total focus minutes (only from work sessions)
-  const totalMinutesFromSessions = focusTimeData?.reduce((acc: number, session: any) => 
+  // Calculate total minutes from all work sessions today
+  const totalMinutesFromSessions = todaySessions?.reduce((acc: number, session: any) => 
     acc + (session.session_type === 'work' ? Math.floor(session.duration / 60) : 0), 0) || 0;
     
-  // If we have today's summary, use that value for total minutes
-  const totalMinutes = todaySummary ? todaySummary.total_focus_time : totalMinutesFromSessions;
+  const totalSessions = todaySessions?.length || 0;
   
-  const totalSessions = sessionCount?.[0]?.count || 0;
+  console.log('Calculated from today sessions:', { totalSessions, totalMinutesFromSessions });
 
-  return { totalSessions, totalMinutes };
+  return { totalSessions, totalMinutes: totalMinutesFromSessions };
 };
