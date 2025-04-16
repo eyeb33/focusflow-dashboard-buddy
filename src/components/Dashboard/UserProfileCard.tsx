@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -14,16 +15,16 @@ const UserProfileCard: React.FC = () => {
   useEffect(() => {
     if (!user) return;
     
-    // Get display name from user metadata
-    if (user.user_metadata?.name) {
-      const firstName = user.user_metadata.name.split(' ')[0];
-      console.log('Setting display name from user_metadata:', firstName);
+    // First try to get username from profile
+    if (profile?.username) {
+      const firstName = profile.username.split(' ')[0];
+      console.log('Setting display name from profile username:', firstName);
       setDisplayName(firstName);
     } 
-    // If no name in metadata, try profile
-    else if (profile?.username) {
-      const firstName = profile.username.split(' ')[0];
-      console.log('Setting display name from profile:', firstName);
+    // If no username in profile, try metadata
+    else if (user.user_metadata?.name) {
+      const firstName = user.user_metadata.name.split(' ')[0];
+      console.log('Setting display name from user_metadata:', firstName);
       setDisplayName(firstName);
     } 
     // Last resort, use email

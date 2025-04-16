@@ -23,6 +23,7 @@ export const useUserProfile = () => {
         return null;
       }
 
+      // First check if profile exists
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -30,7 +31,24 @@ export const useUserProfile = () => {
         .single();
 
       if (error) {
-        throw error;
+        // If no profile found, create one with username from metadata
+        if (error.code === 'PGRST116') {
+          const username = user.user_metadata?.name || null;
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert({
+              id: user.id,
+              username: username,
+              updated_at: new Date().toISOString()
+            })
+            .select('*')
+            .single();
+            
+          if (createError) throw createError;
+          return newProfile as UserProfile;
+        } else {
+          throw error;
+        }
       }
 
       return data as UserProfile;

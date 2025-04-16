@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -72,7 +73,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       console.log('Signing up with name:', name);
-      const { error } = await supabase.auth.signUp({ 
+      
+      // First, create the user with auth
+      const { error, data } = await supabase.auth.signUp({ 
         email, 
         password,
         options: {
@@ -81,7 +84,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       });
+      
       if (error) throw error;
+      
+      // If sign up was successful and we have a user, update the profile username
+      if (data?.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: data.user.id,
+            username: name,
+            updated_at: new Date().toISOString()
+          });
+          
+        if (profileError) {
+          console.error('Error updating profile after signup:', profileError);
+          // We don't throw here as the user was still created successfully
+        }
+      }
+      
       toast({
         title: "Account created!",
         description: "Welcome to FocusFlow.",
