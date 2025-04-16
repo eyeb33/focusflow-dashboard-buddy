@@ -7,9 +7,10 @@ export const loadTodayStats = async (userId: string | undefined) => {
   if (!userId) return { completedSessions: 0, totalTimeToday: 0 };
   
   try {
+    // Ensure we're always using the current date
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
     
-    console.log('Fetching stats for today:', today);
+    console.log('loadTodayStats: Fetching stats for today:', today);
     
     // First try to get today's summary from sessions_summary table
     const { data: summaryData, error: summaryError } = await supabase

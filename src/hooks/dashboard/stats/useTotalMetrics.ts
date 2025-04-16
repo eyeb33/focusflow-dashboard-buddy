@@ -7,6 +7,15 @@ interface TotalMetrics {
 }
 
 export const fetchTotalMetrics = async (userId: string, today: string): Promise<TotalMetrics> => {
+  console.log(`Fetching total metrics for user ${userId} and date ${today}`);
+  
+  // First check if the date is valid
+  if (!today || !today.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    console.error('Invalid date format:', today);
+    today = new Date().toISOString().split('T')[0];
+    console.log('Using current date instead:', today);
+  }
+  
   // First check the sessions_summary table for today's data
   const { data: todaySummary, error: todaySummaryError } = await supabase
     .from('sessions_summary')
@@ -56,7 +65,7 @@ export const fetchTotalMetrics = async (userId: string, today: string): Promise<
     
   const totalSessions = todaySessions?.length || 0;
   
-  console.log('Calculated from today sessions:', { totalSessions, totalMinutesFromSessions });
+  console.log('Calculated from today sessions:', { totalSessions, totalMinutesFromSessions }, 'for date:', today);
 
   return { totalSessions, totalMinutes: totalMinutesFromSessions };
 };

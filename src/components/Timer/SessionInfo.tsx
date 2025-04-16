@@ -27,6 +27,12 @@ const SessionInfo: React.FC = () => {
   const fetchTodayStats = async () => {
     if (!user) {
       setIsLoading(false);
+      setStats({
+        focusSessions: 0,
+        focusMinutes: 0,
+        yesterdayFocusSessions: null,
+        yesterdayFocusMinutes: null
+      });
       return;
     }
     
@@ -44,6 +50,8 @@ const SessionInfo: React.FC = () => {
       // Update current date reference
       currentDateRef.current = todayDateString;
       
+      console.log('SessionInfo: Fetching stats for date:', todayDateString);
+      
       // Fetch today's stats from sessions_summary table
       const { data: todayData, error: todayError } = await supabase
         .from('sessions_summary')
@@ -52,7 +60,7 @@ const SessionInfo: React.FC = () => {
         .eq('date', todayDateString)
         .maybeSingle();
         
-      if (todayError) {
+      if (todayError && todayError.code !== 'PGRST116') {
         console.error('Error fetching today stats:', todayError);
       }
       
@@ -64,10 +72,12 @@ const SessionInfo: React.FC = () => {
         .eq('date', yesterdayDateString)
         .maybeSingle();
         
-      if (yesterdayError) {
+      if (yesterdayError && yesterdayError.code !== 'PGRST116') {
         console.error('Error fetching yesterday stats:', yesterdayError);
       }
       
+      // If no data is found for today, make sure we set zeros
+      // This is crucial for date changes when no new data has been created yet
       setStats({
         focusSessions: todayData?.total_completed_sessions || 0,
         focusMinutes: todayData?.total_focus_time || 0,
@@ -109,13 +119,12 @@ const SessionInfo: React.FC = () => {
     }
   }, [user]);
   
-  // Check for date changes periodically
+  // Check for date changes every minute
   useEffect(() => {
-    // Check for date changes every minute
     const intervalId = setInterval(() => {
       const currentDate = new Date().toISOString().split('T')[0];
       if (currentDate !== currentDateRef.current) {
-        console.log('Date changed from', currentDateRef.current, 'to', currentDate, '- refreshing stats');
+        console.log('SessionInfo: Date changed from', currentDateRef.current, 'to', currentDate, '- refreshing stats');
         fetchTodayStats();
       }
     }, 60000); // Check every minute

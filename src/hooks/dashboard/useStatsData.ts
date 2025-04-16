@@ -63,7 +63,7 @@ export const useStatsData = (userId: string | undefined) => {
     staleTime: 5 * 60 * 1000, // 5 minutes before considering data stale
   });
 
-  // Check for date changes periodically
+  // Check for date changes periodically and force refetch
   useEffect(() => {
     if (!userId) return;
 
@@ -71,12 +71,22 @@ export const useStatsData = (userId: string | undefined) => {
     const intervalId = setInterval(() => {
       const currentDate = new Date().toISOString().split('T')[0];
       if (currentDate !== currentDateRef.current) {
-        console.log('Date changed from', currentDateRef.current, 'to', currentDate, '- refreshing dashboard stats');
+        console.log('Date changed from', currentDateRef.current, 'to', currentDate, '- invalidating and refetching dashboard stats');
+        currentDateRef.current = currentDate;
         result.refetch();
       }
     }, 60000); // Check every minute
 
-    return () => clearInterval(intervalId);
+    // Also add a periodic refetch every hour to ensure data freshness
+    const refreshInterval = setInterval(() => {
+      console.log('Periodic refresh of dashboard stats');
+      result.refetch();
+    }, 30 * 60 * 1000); // Every 30 minutes
+
+    return () => {
+      clearInterval(intervalId);
+      clearInterval(refreshInterval);
+    };
   }, [userId, result.refetch]);
 
   return {
