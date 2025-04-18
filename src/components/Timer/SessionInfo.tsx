@@ -4,6 +4,7 @@ import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { fetchTotalMetrics } from '@/hooks/dashboard/stats/useTotalMetrics';
 
 interface DailyStats {
   focusSessions: number;
@@ -39,7 +40,7 @@ const SessionInfo: React.FC = () => {
     try {
       setIsLoading(true);
       
-      // Get today's date and yesterday's date in YYYY-MM-DD format
+      // Always use fresh date objects for today and yesterday
       const today = new Date();
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
@@ -52,38 +53,23 @@ const SessionInfo: React.FC = () => {
       
       console.log('SessionInfo: Fetching stats for date:', todayDateString);
       
-      // Fetch today's stats from sessions_summary table
-      const { data: todayData, error: todayError } = await supabase
-        .from('sessions_summary')
-        .select('total_completed_sessions, total_focus_time')
-        .eq('user_id', user.id)
-        .eq('date', todayDateString)
-        .maybeSingle();
-        
-      if (todayError && todayError.code !== 'PGRST116') {
-        console.error('Error fetching today stats:', todayError);
-      }
+      // Use the fetchTotalMetrics function to get today's metrics
+      const todayMetrics = await fetchTotalMetrics(user.id, todayDateString);
+      const yesterdayMetrics = await fetchTotalMetrics(user.id, yesterdayDateString);
       
-      // Fetch yesterday's stats from sessions_summary table
-      const { data: yesterdayData, error: yesterdayError } = await supabase
-        .from('sessions_summary')
-        .select('total_completed_sessions, total_focus_time')
-        .eq('user_id', user.id)
-        .eq('date', yesterdayDateString)
-        .maybeSingle();
-        
-      if (yesterdayError && yesterdayError.code !== 'PGRST116') {
-        console.error('Error fetching yesterday stats:', yesterdayError);
-      }
-      
-      // If no data is found for today, make sure we set zeros
-      // This is crucial for date changes when no new data has been created yet
+      // Set today's stats from the metrics
       setStats({
-        focusSessions: todayData?.total_completed_sessions || 0,
-        focusMinutes: todayData?.total_focus_time || 0,
-        yesterdayFocusSessions: yesterdayData?.total_completed_sessions || null,
-        yesterdayFocusMinutes: yesterdayData?.total_focus_time || null
+        focusSessions: todayMetrics.totalSessions || 0,
+        focusMinutes: todayMetrics.totalMinutes || 0,
+        yesterdayFocusSessions: yesterdayMetrics.totalSessions || null,
+        yesterdayFocusMinutes: yesterdayMetrics.totalMinutes || null
       });
+      
+      console.log('SessionInfo updated with metrics:', {
+        today: { sessions: todayMetrics.totalSessions, minutes: todayMetrics.totalMinutes },
+        yesterday: { sessions: yesterdayMetrics.totalSessions, minutes: yesterdayMetrics.totalMinutes }
+      });
+      
     } catch (error) {
       console.error('Error in stats fetch:', error);
     } finally {
@@ -95,7 +81,16 @@ const SessionInfo: React.FC = () => {
   useEffect(() => {
     fetchTodayStats();
     
-    // Set up realtime subscription to update stats
+    // Set up a refresh interval
+    const intervalId = setInterval(() => {
+      fetchTodayStats();
+    }, 3 * 60 * 1000); // Refresh every 3 minutes
+    
+    return () => clearInterval(intervalId);
+  }, [user]);
+  
+  // Set up realtime subscription to update stats
+  useEffect(() => {
     if (user) {
       const channel = supabase
         .channel('sessions-summary-changes')
@@ -106,8 +101,8 @@ const SessionInfo: React.FC = () => {
             table: 'sessions_summary',
             filter: `user_id=eq.${user.id}`
           }, 
-          () => {
-            // Refresh stats on any changes
+          (payload) => {
+            console.log('Session summary changed:', payload);
             fetchTodayStats();
           }
         )
@@ -121,7 +116,7 @@ const SessionInfo: React.FC = () => {
   
   // Check for date changes every minute
   useEffect(() => {
-    const intervalId = setInterval(() => {
+    const dateCheckIntervalId = setInterval(() => {
       const currentDate = new Date().toISOString().split('T')[0];
       if (currentDate !== currentDateRef.current) {
         console.log('SessionInfo: Date changed from', currentDateRef.current, 'to', currentDate, '- refreshing stats');
@@ -129,7 +124,7 @@ const SessionInfo: React.FC = () => {
       }
     }, 60000); // Check every minute
 
-    return () => clearInterval(intervalId);
+    return () => clearInterval(dateCheckIntervalId);
   }, [user]);
   
   // Calculate percentage differences

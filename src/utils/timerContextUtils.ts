@@ -85,8 +85,7 @@ export const loadTodayStats = async (userId: string | undefined) => {
 // Add the sessions_summary table to the realtime publication
 export const enableRealtimeForSessionsSummary = async () => {
   try {
-    // Instead of using RPC, we'll use the native Supabase realtime functionality
-    // Check if channel can be created for sessions_summary table
+    // Create a channel to monitor the sessions_summary table
     const channel = supabase
       .channel('sessions-summary-changes')
       .on('postgres_changes', 
@@ -96,21 +95,15 @@ export const enableRealtimeForSessionsSummary = async () => {
           table: 'sessions_summary' 
         }, 
         () => console.log('Sessions summary table is now being monitored for realtime updates')
-      );
+      )
+      .subscribe();
       
-    // Subscribe to the channel
-    const subscription = await channel.subscribe();
+    console.log('Enabled realtime updates for sessions_summary table');
     
-    // Fix the type error by checking the subscription status differently
-    console.log('Subscription status:', subscription);
-    
-    // We'll remove the channel after a short delay to avoid multiple subscriptions
-    setTimeout(() => {
-      supabase.removeChannel(channel);
-    }, 5000);
-    
+    return channel;
   } catch (error) {
     console.error('Error configuring realtime for sessions_summary:', error);
+    return null;
   }
 };
 

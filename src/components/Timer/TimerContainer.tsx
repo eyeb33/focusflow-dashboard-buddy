@@ -7,7 +7,6 @@ import CircularProgress from "@/components/Timer/CircularProgress";
 import TimerControls from "@/components/Timer/TimerControls";
 import TimerSettings from "@/components/Timer/TimerSettings";
 import SessionInfo from "@/components/Timer/SessionInfo";
-import SessionProgress from "@/components/Timer/SessionProgress";
 import SessionRings from "@/components/Timer/SessionRings";
 import { useTimerControls } from "@/hooks/useTimerControls";
 import { useTimerStats } from "@/hooks/useTimerStats";
@@ -29,7 +28,7 @@ const TimerContainer: React.FC = () => {
     getModeLabel
   } = useTimerControls();
   
-  const { sessionsUntilLongBreak, completedSessions } = useTimerStats();
+  const { completedSessions, sessionsUntilLongBreak } = useTimerStats();
   
   const { settings } = useTimerSettings();
 
@@ -53,16 +52,11 @@ const TimerContainer: React.FC = () => {
 
   const currentModeColors = modeColors[timerMode];
   
-  // Calculate actual focus sessions completed
-  const completedFocusSessions = Math.floor(currentSessionIndex / 2);
-  const totalFocusSessions = sessionsUntilLongBreak;
-  const shouldShowRings = timerMode === "work" || timerMode === "break";
+  // Calculate position in the sequence based on currentSessionIndex
+  // Work session = even numbers (0, 2, 4...)
+  // Break session = odd numbers (1, 3, 5...)
+  // Long break = last in the sequence (sessionsUntilLongBreak * 2 - 1)
   
-  // Calculate current position within the cycle
-  const currentPositionInCycle = timerMode === "work" 
-    ? Math.floor(currentSessionIndex / 2) // Current focus session
-    : Math.floor((currentSessionIndex - 1) / 2); // Current break after a focus session
-
   return (
     <Card className="w-full max-w-md p-6 bg-white/90 dark:bg-black/80 backdrop-blur-sm shadow-md">
       <div className="flex items-center justify-between mb-6">
@@ -132,15 +126,13 @@ const TimerContainer: React.FC = () => {
           className="mb-4"
         />
         
-        {shouldShowRings && (
-          <SessionRings
-            completedSessions={completedFocusSessions}
-            totalSessions={totalFocusSessions}
-            mode={timerMode}
-            currentPosition={timerMode === "work" ? completedFocusSessions : currentPositionInCycle}
-            className="mb-4"
-          />
-        )}
+        <SessionRings
+          completedSessions={completedSessions}
+          totalSessions={sessionsUntilLongBreak}
+          mode={timerMode}
+          currentPosition={currentSessionIndex}
+          className="mb-4"
+        />
       </div>
       
       <SessionInfo />

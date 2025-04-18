@@ -37,6 +37,9 @@ export function useTimerCompletion({
     // Play sound when timer completes
     playTimerCompletionSound();
 
+    // Calculate the total sessions in a full cycle (work + break for each, then replace last break with long break)
+    const totalSessionsInCycle = settings.sessionsUntilLongBreak * 2;
+    
     if (timerMode === 'work') {
       // Completed a work session
       const newCompletedSessions = completedSessions + 1;
@@ -50,14 +53,16 @@ export function useTimerCompletion({
         updateDailyStats(user.id, settings.workDuration, timerMode);
       }
       
-      // Update the current session index
-      const newSessionIndex = (timerMode === 'work') ? 
-        Math.min(settings.sessionsUntilLongBreak * 2, completedSessions * 2 + 1) : 
-        completedSessions * 2;
-      setCurrentSessionIndex(newSessionIndex);
+      // Work sessions are even positions in the sequence (0, 2, 4, etc.)
+      // Find the next position, which is current + 1 (to move to the break)
+      const currentPos = currentSessionIndex === undefined ? 0 : currentSessionIndex;
+      const nextPos = currentPos + 1;
       
-      // Check if we need a long break after completing the focus sessions goal
-      if (newCompletedSessions % settings.sessionsUntilLongBreak === 0) {
+      // Update the current session index
+      setCurrentSessionIndex(nextPos);
+      
+      // Check if the next position is the last one in the cycle (which would be a long break)
+      if (nextPos === totalSessionsInCycle - 1) {
         setTimerMode('longBreak');
         toast({
           title: "Time for a long break!",
@@ -84,12 +89,13 @@ export function useTimerCompletion({
         updateDailyStats(user.id, durationMinutes, timerMode);
       }
       
-      // Update session index when completing a break
       if (timerMode === 'break') {
-        const newSessionIndex = completedSessions * 2;
-        setCurrentSessionIndex(newSessionIndex);
+        // After a short break, move to the next work session
+        // Breaks are odd positions (1, 3, 5, etc.)
+        const nextPos = currentSessionIndex + 1;
+        setCurrentSessionIndex(nextPos);
       } else {
-        // After a long break, reset session index
+        // After a long break, reset to position 0 (start of new cycle)
         setCurrentSessionIndex(0);
       }
       

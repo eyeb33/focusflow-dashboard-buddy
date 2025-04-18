@@ -14,30 +14,44 @@ export function useTimerStatsLogic() {
   // Function to refresh stats
   const refreshStats = async () => {
     console.log('Refreshing timer stats with current date:', new Date().toISOString().split('T')[0]);
+    
+    // Always use the current date, not the stored one
+    const currentDate = new Date().toISOString().split('T')[0];
+    
     if (user) {
       // Get fresh stats from the database
       const stats = await loadTodayStats(user.id);
       setCompletedSessions(stats.completedSessions);
       setTotalTimeToday(stats.totalTimeToday);
+      
       // Update the current date reference
-      currentDateRef.current = new Date().toISOString().split('T')[0];
+      currentDateRef.current = currentDate;
       setLastCheckTime(Date.now());
     } else {
       // Reset stats for non-authenticated users
       setCompletedSessions(0);
       setTotalTimeToday(0);
+      currentDateRef.current = currentDate;
     }
   };
 
   // Load user's stats when logged in
   useEffect(() => {
     refreshStats();
+    
+    // Set up a periodic refresh every 3 minutes to ensure data freshness
+    const refreshIntervalId = setInterval(() => {
+      refreshStats();
+    }, 3 * 60 * 1000); // Every 3 minutes
+    
+    return () => clearInterval(refreshIntervalId);
   }, [user]);
 
   // Check for date change every minute
   useEffect(() => {
     const intervalId = setInterval(() => {
       const currentDate = new Date().toISOString().split('T')[0];
+      
       if (currentDate !== currentDateRef.current) {
         console.log('Date changed from', currentDateRef.current, 'to', currentDate, '- refreshing timer stats');
         refreshStats();
@@ -46,19 +60,6 @@ export function useTimerStatsLogic() {
 
     return () => clearInterval(intervalId);
   }, [user]);
-
-  // Force refresh every 30 minutes to ensure data freshness
-  useEffect(() => {
-    const hourlyRefreshInterval = setInterval(() => {
-      // Refresh if last check was more than 30 minutes ago
-      if (Date.now() - lastCheckTime > 30 * 60 * 1000) {
-        console.log('Periodic refresh of timer stats');
-        refreshStats();
-      }
-    }, 30 * 60 * 1000); // Check every 30 minutes
-
-    return () => clearInterval(hourlyRefreshInterval);
-  }, [lastCheckTime, user]);
 
   return {
     completedSessions,
