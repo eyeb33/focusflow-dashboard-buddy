@@ -38,6 +38,7 @@ export function useTimerLogic(settings: TimerSettings) {
     timerMode,
     settings,
     completedSessions,
+    currentSessionIndex, // Pass currentSessionIndex here
     setCompletedSessions,
     setTimerMode,
     setIsRunning,

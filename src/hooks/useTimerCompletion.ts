@@ -11,6 +11,7 @@ interface UseTimerCompletionProps {
   timerMode: TimerMode;
   settings: TimerSettings;
   completedSessions: number;
+  currentSessionIndex: number; // Added this parameter
   setCompletedSessions: (sessions: number) => void;
   setTimerMode: (mode: TimerMode) => void;
   setIsRunning: (isRunning: boolean) => void;
@@ -23,6 +24,7 @@ export function useTimerCompletion({
   timerMode,
   settings,
   completedSessions,
+  currentSessionIndex, // Added this parameter
   setCompletedSessions,
   setTimerMode,
   setIsRunning,
@@ -55,7 +57,7 @@ export function useTimerCompletion({
       
       // Work sessions are even positions in the sequence (0, 2, 4, etc.)
       // Find the next position, which is current + 1 (to move to the break)
-      const currentPos = currentSessionIndex === undefined ? 0 : currentSessionIndex;
+      const currentPos = currentSessionIndex;
       const nextPos = currentPos + 1;
       
       // Update the current session index
