@@ -38,20 +38,20 @@ export const fetchTotalMetrics = async (userId: string, today: string): Promise<
       };
     }
     
-    // If no summary for today, we need to calculate from individual sessions
+    // If no summary for today, calculate from individual sessions
     console.log('No summary data for today, checking for individual sessions for date:', today);
     const startOfDay = new Date(today);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(today);
     endOfDay.setHours(23, 59, 59, 999);
     
-    // Fetch completed sessions count for today - ONLY work/focus sessions
+    // Fetch only work/focus sessions for the total minutes calculation
     const { data: todaySessions, error: sessionError } = await supabase
       .from('focus_sessions')
       .select('*')
       .eq('user_id', userId)
       .eq('completed', true)
-      .eq('session_type', 'work')
+      .eq('session_type', 'work') // Only count work sessions
       .gte('created_at', startOfDay.toISOString())
       .lte('created_at', endOfDay.toISOString());
 
@@ -60,9 +60,9 @@ export const fetchTotalMetrics = async (userId: string, today: string): Promise<
       return { totalSessions: 0, totalMinutes: 0 };
     }
 
-    // Calculate total minutes from all work sessions today
-    const totalMinutesFromSessions = todaySessions?.reduce((acc: number, session: any) => 
-      acc + (session.session_type === 'work' ? Math.floor(session.duration / 60) : 0), 0) || 0;
+    // Calculate total minutes from work sessions only
+    const totalMinutesFromSessions = todaySessions?.reduce((acc, session) => 
+      acc + Math.floor(session.duration / 60), 0) || 0;
       
     const totalSessions = todaySessions?.length || 0;
     
