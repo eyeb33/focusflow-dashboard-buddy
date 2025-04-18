@@ -34,9 +34,8 @@ export function useTimerStatsLogic() {
     refreshStats();
   }, [user]);
 
-  // Check for date change periodically (every minute)
+  // Check for date change every minute
   useEffect(() => {
-    // Check for date changes every minute
     const intervalId = setInterval(() => {
       const currentDate = new Date().toISOString().split('T')[0];
       if (currentDate !== currentDateRef.current) {
@@ -48,7 +47,7 @@ export function useTimerStatsLogic() {
     return () => clearInterval(intervalId);
   }, [user]);
 
-  // Force refresh every hour to ensure data freshness
+  // Force refresh every 30 minutes to ensure data freshness
   useEffect(() => {
     const hourlyRefreshInterval = setInterval(() => {
       // Refresh if last check was more than 30 minutes ago

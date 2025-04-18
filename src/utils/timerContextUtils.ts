@@ -58,7 +58,7 @@ export const loadTodayStats = async (userId: string | undefined) => {
       return { completedSessions: 0, totalTimeToday: 0 };
     }
     
-    // Count completed sessions
+    // Count completed sessions - ONLY work sessions
     const completedSessions = data.filter(session => 
       session.completed && session.session_type === 'work'
     ).length;

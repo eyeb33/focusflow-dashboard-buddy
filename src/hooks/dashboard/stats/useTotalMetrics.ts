@@ -44,7 +44,7 @@ export const fetchTotalMetrics = async (userId: string, today: string): Promise<
   const endOfDay = new Date(today);
   endOfDay.setHours(23, 59, 59, 999);
   
-  // Fetch completed sessions count for today
+  // Fetch completed sessions count for today - ONLY work/focus sessions
   const { data: todaySessions, error: sessionError } = await supabase
     .from('focus_sessions')
     .select('*')
