@@ -1,7 +1,9 @@
+
 import React from 'react';
-import ProductivityChart from "@/components/Dashboard/ProductivityChart";
-import StreakCalendar from "@/components/Dashboard/StreakCalendar";
+import ProductivityChart from "./ProductivityChart";
+import StreakCalendar from "./StreakCalendar";
 import { ProductivityDataPoint } from '@/hooks/dashboard/productivity/types';
+import { TimePeriod } from './TimeToggle';
 
 interface StreakDataType {
   date: string;
@@ -15,6 +17,7 @@ interface ChartsGridProps {
   streakData: StreakDataType[];
   currentStreak: number;
   bestStreak: number;
+  selectedPeriod: TimePeriod;
 }
 
 const ChartsGrid: React.FC<ChartsGridProps> = ({ 
@@ -23,23 +26,29 @@ const ChartsGrid: React.FC<ChartsGridProps> = ({
   monthlyData, 
   streakData,
   currentStreak,
-  bestStreak
+  bestStreak,
+  selectedPeriod
 }) => {
+  const getActiveData = () => {
+    switch (selectedPeriod) {
+      case 'today':
+        return dailyData;
+      case 'week':
+        return weeklyData;
+      case 'month':
+        return monthlyData;
+      default:
+        return dailyData;
+    }
+  };
+
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
-      <div className="lg:col-span-2">
+    <div className="grid gap-6 mb-8">
+      <div className="w-full">
         <ProductivityChart 
-          dailyData={dailyData}
-          weeklyData={weeklyData}
-          monthlyData={monthlyData}
-          bestHour="2:00 PM - 4:00 PM"
-        />
-      </div>
-      <div>
-        <StreakCalendar 
-          data={streakData}
-          currentStreak={currentStreak}
-          bestStreak={bestStreak}
+          data={getActiveData()}
+          period={selectedPeriod}
+          bestHour={selectedPeriod === 'today' ? "2:00 PM - 4:00 PM" : undefined}
         />
       </div>
     </div>

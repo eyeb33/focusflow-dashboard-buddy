@@ -14,7 +14,8 @@ interface StatCardProps {
     isPositive: boolean;
   };
   className?: string;
-  iconColor?: string;  // Add an optional iconColor prop
+  iconColor?: string;
+  compact?: boolean;
 }
 
 const StatCard: React.FC<StatCardProps> = ({
@@ -24,27 +25,40 @@ const StatCard: React.FC<StatCardProps> = ({
   description,
   trend,
   className,
-  iconColor  // Destructure the new iconColor prop
+  iconColor,
+  compact = false
 }) => {
   return (
     <Card className={cn("h-full", className)}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <span className="text-sm font-medium">{title}</span>
+      <CardHeader className={cn(
+        "flex flex-row items-center justify-between space-y-0",
+        compact ? "pb-2" : "pb-2"
+      )}>
+        <span className={cn(
+          "font-medium",
+          compact ? "text-sm" : "text-sm"
+        )}>{title}</span>
         <div 
           className={cn(
-            "h-8 w-8 rounded-full bg-muted flex items-center justify-center",
-            // Apply the iconColor if provided, otherwise use default muted background
+            "rounded-full flex items-center justify-center",
+            compact ? "h-7 w-7" : "h-8 w-8",
             iconColor && `bg-[${iconColor}] bg-opacity-20`
           )}
         >
           {React.cloneElement(icon as React.ReactElement, { 
-            color: iconColor 
+            color: iconColor,
+            size: compact ? 16 : 18
           })}
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        {description && <p className="text-xs text-muted-foreground">{description}</p>}
+        <div className={cn(
+          "font-bold",
+          compact ? "text-xl" : "text-2xl"
+        )}>{value}</div>
+        {description && (
+          <p className="text-xs text-muted-foreground">{description}</p>
+        )}
         
         <div className="flex items-center mt-2 text-xs">
           {trend ? (
@@ -59,17 +73,9 @@ const StatCard: React.FC<StatCardProps> = ({
                  <Minus className="h-3 w-3 mr-0.5" />}
                 {Math.abs(trend.value)}%
               </span>
-              <span className="text-muted-foreground">from last week</span>
+              <span className="text-muted-foreground">from previous period</span>
             </>
-          ) : (
-            <>
-              <span className="mr-1 flex items-center text-muted-foreground">
-                <Minus className="h-3 w-3 mr-0.5" />
-                0%
-              </span>
-              <span className="text-muted-foreground">change from last week</span>
-            </>
-          )}
+          ) : null}
         </div>
       </CardContent>
     </Card>

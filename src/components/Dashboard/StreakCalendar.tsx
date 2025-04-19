@@ -1,6 +1,6 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Zap } from '@/components/ui/icons';
 
 interface StreakDay {
   date: string;
@@ -45,14 +45,14 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ data, currentStreak, be
     weeks.push(calendarDays.slice(i * 7, (i + 1) * 7));
   }
   
-  // Get intensity class based on number of pomodoros
+  // Update the intensity class based on number of pomodoros with red shades
   const getIntensityClass = (completed: number) => {
     if (completed === 0) return 'bg-gray-100';
-    if (completed < 2) return 'bg-pomodoro-work/20';
-    if (completed < 4) return 'bg-pomodoro-work/40';
-    if (completed < 6) return 'bg-pomodoro-work/60';
-    if (completed < 8) return 'bg-pomodoro-work/80';
-    return 'bg-pomodoro-work';
+    if (completed < 2) return 'bg-red-100';
+    if (completed < 4) return 'bg-red-200';
+    if (completed < 6) return 'bg-red-300';
+    if (completed < 8) return 'bg-red-400';
+    return 'bg-red-500';
   };
   
   return (
@@ -64,11 +64,18 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ data, currentStreak, be
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
             <p className="text-sm text-muted-foreground">Current Streak</p>
-            <p className="text-2xl font-bold">{currentStreak} {currentStreak === 1 ? 'day' : 'days'}</p>
+            <div className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-yellow-400 fill-yellow-400" />
+              <p className="text-2xl font-bold">
+                {currentStreak} {currentStreak === 1 ? 'day' : 'days'}
+              </p>
+            </div>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Best Streak</p>
-            <p className="text-2xl font-bold">{bestStreak} {bestStreak === 1 ? 'day' : 'days'}</p>
+            <p className="text-2xl font-bold">
+              {bestStreak} {bestStreak === 1 ? 'day' : 'days'}
+            </p>
           </div>
         </div>
         

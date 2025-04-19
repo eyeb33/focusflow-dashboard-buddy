@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from "@/components/Layout/Header";
 import MobileNav from "@/components/Layout/MobileNav";
@@ -6,10 +7,10 @@ import DashboardHeader from "@/components/Dashboard/DashboardHeader";
 import StatCardsGrid from "@/components/Dashboard/StatCardsGrid";
 import ChartsGrid from "@/components/Dashboard/ChartsGrid";
 import ProductivityInsights from "@/components/Dashboard/ProductivityInsights";
-import ProductivityTrendChart from "@/components/Dashboard/ProductivityTrendChart";
-import UserProfileCard from "@/components/Dashboard/UserProfileCard";
+import StreakCalendar from "@/components/Dashboard/StreakCalendar";
+import TimeToggle, { TimePeriod } from "@/components/Dashboard/TimeToggle";
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Loader2, RefreshCw, Clock, Flame, Target, Zap } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -19,6 +20,11 @@ const Dashboard = () => {
   const { dashboardData, isLoading: dataLoading, refreshData } = useDashboardData();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('today');
+
+  const handlePeriodChange = (period: TimePeriod) => {
+    setSelectedPeriod(period);
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -27,18 +33,6 @@ const Dashboard = () => {
   }, [user, authLoading, navigate]);
 
   const isLoading = authLoading || dataLoading;
-
-  const handleRefreshData = async () => {
-    try {
-      await refreshData();
-    } catch (error: any) {
-      toast({
-        title: "Error refreshing data",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
 
   if (isLoading) {
     return (
@@ -49,49 +43,62 @@ const Dashboard = () => {
   }
 
   if (!user) {
-    return null; // This prevents a flash of content before the redirect
+    return null;
   }
 
-  const stats = [
-    {
-      title: "Total Sessions",
-      value: dashboardData.stats.totalSessions.toString(),
-      icon: "Clock",
-      iconColor: "#1EAEDB",
-      trend: {
-        value: dashboardData.stats.weeklyChange.sessions,
-        isPositive: dashboardData.stats.weeklyChange.sessions >= 0
-      }
-    },
-    {
-      title: "Focus Minutes",
-      value: dashboardData.stats.totalMinutes.toString(),
-      icon: "Flame",
-      iconColor: "#ea384c",
-      trend: {
-        value: dashboardData.stats.weeklyChange.minutes,
-        isPositive: dashboardData.stats.weeklyChange.minutes >= 0
-      }
-    },
-    {
-      title: "Daily Average",
-      value: dashboardData.stats.dailyAverage.toString(),
-      icon: "Target",
-      iconColor: "#F97316",
-      description: "sessions per day",
-      trend: {
-        value: dashboardData.stats.weeklyChange.dailyAvg,
-        isPositive: dashboardData.stats.weeklyChange.dailyAvg >= 0
-      }
-    },
-    {
-      title: "Current Streak",
-      value: dashboardData.stats.currentStreak.toString(),
-      icon: "Zap",
-      iconColor: "#FEF7CD",
-      description: "days"
+  const getPeriodStats = () => {
+    const stats = dashboardData.stats;
+    
+    switch (selectedPeriod) {
+      case 'today':
+        return [
+          {
+            title: "Total Sessions",
+            value: stats.totalSessions,
+            icon: "Clock",
+            iconColor: "#1EAEDB"
+          },
+          {
+            title: "Focus Minutes",
+            value: stats.totalMinutes,
+            icon: "Flame",
+            iconColor: "#ea384c"
+          }
+        ];
+      case 'week':
+        return [
+          {
+            title: "Weekly Sessions",
+            value: stats.weeklyStats?.totalSessions || 0,
+            icon: "Clock",
+            iconColor: "#1EAEDB"
+          },
+          {
+            title: "Weekly Focus",
+            value: stats.weeklyStats?.totalMinutes || 0,
+            icon: "Flame",
+            iconColor: "#ea384c"
+          }
+        ];
+      case 'month':
+        return [
+          {
+            title: "Monthly Sessions",
+            value: stats.monthlyStats?.totalSessions || 0,
+            icon: "Clock",
+            iconColor: "#1EAEDB"
+          },
+          {
+            title: "Monthly Focus",
+            value: stats.monthlyStats?.totalMinutes || 0,
+            icon: "Flame",
+            iconColor: "#ea384c"
+          }
+        ];
+      default:
+        return [];
     }
-  ];
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -101,7 +108,7 @@ const Dashboard = () => {
         <div className="flex justify-between items-center mb-6">
           <DashboardHeader />
           <Button 
-            onClick={handleRefreshData} 
+            onClick={refreshData} 
             variant="ghost" 
             size="sm"
             className="flex items-center gap-2"
@@ -111,34 +118,45 @@ const Dashboard = () => {
           </Button>
         </div>
         
-        <UserProfileCard />
-        
-        <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-6">
-          <div className="md:col-span-1">
-            <StatCardsGrid 
-              stats={stats} 
-            />
+        <div className="space-y-6">
+          {/* Time Period Toggle */}
+          <TimeToggle 
+            selectedPeriod={selectedPeriod}
+            onChange={handlePeriodChange}
+            className="mx-auto mb-6"
+          />
+          
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <StatCardsGrid stats={getPeriodStats()} />
           </div>
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <div className="lg:col-span-2">
-            <ChartsGrid 
-              dailyData={dashboardData.dailyProductivity}
-              weeklyData={dashboardData.weeklyProductivity}
-              monthlyData={dashboardData.monthlyProductivity}
-              streakData={dashboardData.streakData}
+
+          {/* Charts and Insights */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <ChartsGrid 
+                dailyData={dashboardData.dailyProductivity}
+                weeklyData={dashboardData.weeklyProductivity}
+                monthlyData={dashboardData.monthlyProductivity}
+                streakData={dashboardData.streakData}
+                currentStreak={dashboardData.stats.currentStreak}
+                bestStreak={dashboardData.stats.bestStreak}
+                selectedPeriod={selectedPeriod}
+              />
+            </div>
+            <div className="lg:col-span-1">
+              <ProductivityInsights insights={dashboardData.insights} />
+            </div>
+          </div>
+
+          {/* Streak Calendar */}
+          <div className="mt-6">
+            <StreakCalendar 
+              data={dashboardData.streakData}
               currentStreak={dashboardData.stats.currentStreak}
-              bestStreak={dashboardData.stats.bestStreak || 0}
+              bestStreak={dashboardData.stats.bestStreak}
             />
           </div>
-          <div className="lg:col-span-1">
-            <ProductivityInsights insights={dashboardData.insights} />
-          </div>
-        </div>
-        
-        <div className="mb-6">
-          <ProductivityTrendChart data={dashboardData.productivityTrend} />
         </div>
       </div>
       
