@@ -10,15 +10,12 @@ import ProductivityInsights from "@/components/Dashboard/ProductivityInsights";
 import StreakCalendar from "@/components/Dashboard/StreakCalendar";
 import TimeToggle, { TimePeriod } from "@/components/Dashboard/TimeToggle";
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, RefreshCw, Clock, Flame, Target, Zap } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
 
 const Dashboard = () => {
   const { user, isLoading: authLoading } = useAuth();
-  const { dashboardData, isLoading: dataLoading, refreshData } = useDashboardData();
-  const { toast } = useToast();
+  const { dashboardData, isLoading: dataLoading } = useDashboardData();
   const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('today');
 
@@ -53,13 +50,13 @@ const Dashboard = () => {
       case 'today':
         return [
           {
-            title: "Total Sessions",
+            title: "Today's Sessions",
             value: stats.totalSessions,
             icon: "Clock",
             iconColor: "#1EAEDB"
           },
           {
-            title: "Focus Minutes",
+            title: "Today's Focus",
             value: stats.totalMinutes,
             icon: "Flame",
             iconColor: "#ea384c"
@@ -69,13 +66,13 @@ const Dashboard = () => {
         return [
           {
             title: "Weekly Sessions",
-            value: stats.totalSessions,
+            value: stats.weeklyStats?.totalSessions || 0,
             icon: "Clock",
             iconColor: "#1EAEDB"
           },
           {
             title: "Weekly Focus",
-            value: stats.totalMinutes,
+            value: stats.weeklyStats?.totalMinutes || 0,
             icon: "Flame",
             iconColor: "#ea384c"
           }
@@ -84,13 +81,13 @@ const Dashboard = () => {
         return [
           {
             title: "Monthly Sessions",
-            value: stats.totalSessions,
+            value: stats.monthlyStats?.totalSessions || 0,
             icon: "Clock",
             iconColor: "#1EAEDB"
           },
           {
             title: "Monthly Focus",
-            value: stats.totalMinutes,
+            value: stats.monthlyStats?.totalMinutes || 0,
             icon: "Flame",
             iconColor: "#ea384c"
           }
@@ -107,40 +104,25 @@ const Dashboard = () => {
       <div className="flex-1 container max-w-7xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <DashboardHeader />
-          <Button 
-            onClick={refreshData} 
-            variant="ghost" 
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Refresh Data
-          </Button>
         </div>
         
         <div className="space-y-6">
-          {/* Time Period Toggle */}
           <TimeToggle 
             selectedPeriod={selectedPeriod}
             onChange={handlePeriodChange}
             className="mx-auto mb-6"
           />
           
-          {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <StatCardsGrid stats={getPeriodStats()} />
           </div>
 
-          {/* Charts and Insights */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               <ChartsGrid 
                 dailyData={dashboardData.dailyProductivity}
                 weeklyData={dashboardData.weeklyProductivity}
                 monthlyData={dashboardData.monthlyProductivity}
-                streakData={dashboardData.streakData}
-                currentStreak={dashboardData.stats.currentStreak}
-                bestStreak={dashboardData.stats.bestStreak}
                 selectedPeriod={selectedPeriod}
               />
             </div>
@@ -149,7 +131,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Streak Calendar */}
           <div className="mt-6">
             <StreakCalendar 
               data={dashboardData.streakData}

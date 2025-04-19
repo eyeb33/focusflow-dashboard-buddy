@@ -8,13 +8,11 @@ import { TimePeriod } from './TimeToggle';
 interface ProductivityChartProps {
   data: ProductivityDataPoint[];
   period: TimePeriod;
-  bestHour?: string;
 }
 
 const ProductivityChart: React.FC<ProductivityChartProps> = ({
   data,
-  period,
-  bestHour
+  period
 }) => {
   const getChartTitle = () => {
     switch (period) {
@@ -28,6 +26,27 @@ const ProductivityChart: React.FC<ProductivityChartProps> = ({
         return 'Productivity';
     }
   };
+
+  const getMostProductiveTime = () => {
+    if (!data.length) return null;
+
+    const maxEntry = data.reduce((max, current) => 
+      current.minutes > max.minutes ? current : max
+    , data[0]);
+
+    switch (period) {
+      case 'today':
+        return `${maxEntry.name} - ${parseInt(maxEntry.name) + 1}:00`;
+      case 'week':
+        return maxEntry.name;
+      case 'month':
+        return `Day ${maxEntry.name}`;
+      default:
+        return null;
+    }
+  };
+
+  const mostProductiveTime = getMostProductiveTime();
 
   return (
     <Card className="h-full">
@@ -49,9 +68,10 @@ const ProductivityChart: React.FC<ProductivityChartProps> = ({
             </BarChart>
           </ResponsiveContainer>
         </div>
-        {bestHour && (
+        {mostProductiveTime && (
           <div className="mt-4 text-sm">
-            <span className="font-medium">Most productive time:</span> {bestHour}
+            <span className="font-medium">Most productive time:</span>
+            {' '}{mostProductiveTime}
           </div>
         )}
       </CardContent>
