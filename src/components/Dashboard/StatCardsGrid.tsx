@@ -3,16 +3,16 @@ import React from 'react';
 import StatCard from "@/components/Dashboard/StatCard";
 import { Clock, Flame, Target, Zap } from "lucide-react";
 
-interface StatItem {
+export interface StatItem {
   title: string;
-  value: string;
+  value: string | number; // Update the value type to accept both string and number
   icon: string;
   description?: string;
   trend?: {
     value: number;
     isPositive: boolean;
   };
-  iconColor?: string;  // Add an optional iconColor prop
+  iconColor?: string;
 }
 
 interface StatCardsGridProps {

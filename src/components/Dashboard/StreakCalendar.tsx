@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Zap } from 'lucide-react';
+import { Zap } from 'lucide-react'; // Updated import from lucide-react instead of components/ui/icons
 
 interface StreakDay {
   date: string;
