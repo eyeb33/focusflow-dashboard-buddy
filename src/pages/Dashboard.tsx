@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from "@/components/Layout/Header";
 import MobileNav from "@/components/Layout/MobileNav";
@@ -69,13 +69,13 @@ const Dashboard = () => {
         return [
           {
             title: "Weekly Sessions",
-            value: stats.weeklyStats?.totalSessions || 0,
+            value: stats.totalSessions,
             icon: "Clock",
             iconColor: "#1EAEDB"
           },
           {
             title: "Weekly Focus",
-            value: stats.weeklyStats?.totalMinutes || 0,
+            value: stats.totalMinutes,
             icon: "Flame",
             iconColor: "#ea384c"
           }
@@ -84,13 +84,13 @@ const Dashboard = () => {
         return [
           {
             title: "Monthly Sessions",
-            value: stats.monthlyStats?.totalSessions || 0,
+            value: stats.totalSessions,
             icon: "Clock",
             iconColor: "#1EAEDB"
           },
           {
             title: "Monthly Focus",
-            value: stats.monthlyStats?.totalMinutes || 0,
+            value: stats.totalMinutes,
             icon: "Flame",
             iconColor: "#ea384c"
           }

@@ -1,16 +1,26 @@
 
+export interface WeeklyMonthlyStats {
+  totalSessions: number;
+  totalMinutes: number;
+  dailyAverage?: number;
+}
+
+export interface WeeklyChange {
+  sessions: number;
+  minutes: number;
+  dailyAvg: number;
+  isPositive: boolean;
+}
+
 export interface StatsData {
   totalSessions: number;
   totalMinutes: number;
   dailyAverage: number;
   currentStreak: number;
   bestStreak: number;
-  weeklyChange: {
-    sessions: number;
-    minutes: number;
-    dailyAvg: number;
-    isPositive: boolean;
-  };
+  weeklyChange: WeeklyChange;
+  weeklyStats?: WeeklyMonthlyStats;
+  monthlyStats?: WeeklyMonthlyStats;
 }
 
 export const initialStatsData: StatsData = {
@@ -24,5 +34,15 @@ export const initialStatsData: StatsData = {
     minutes: 0,
     dailyAvg: 0,
     isPositive: true
+  },
+  weeklyStats: {
+    totalSessions: 0,
+    totalMinutes: 0,
+    dailyAverage: 0
+  },
+  monthlyStats: {
+    totalSessions: 0,
+    totalMinutes: 0,
+    dailyAverage: 0
   }
 };

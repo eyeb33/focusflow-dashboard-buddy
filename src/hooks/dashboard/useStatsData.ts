@@ -1,16 +1,73 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
-import { StatsData, initialStatsData } from './stats/statsTypes';
+import { StatsData, initialStatsData, WeeklyMonthlyStats } from './stats/statsTypes';
 import { fetchWeeklyChangeData } from './stats/useWeeklyChangeData';
 import { fetchStreakData } from './stats/useStreakData';
 import { fetchDailyAverageData } from './stats/useDailyAverageData';
 import { fetchTotalMetrics } from './stats/useTotalMetrics';
+import { supabase } from '@/integrations/supabase/client';
 
 export type { StatsData } from './stats/statsTypes';
 
 export const useStatsData = (userId: string | undefined) => {
   const currentDateRef = useRef<string>(new Date().toISOString().split('T')[0]);
+
+  const fetchWeeklyStats = async (userId: string): Promise<WeeklyMonthlyStats> => {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const oneWeekAgoStr = oneWeekAgo.toISOString();
+  
+    const { data, error } = await supabase
+      .from('focus_sessions')
+      .select('duration')
+      .eq('user_id', userId)
+      .eq('session_type', 'work')
+      .eq('completed', true)
+      .gte('created_at', oneWeekAgoStr);
+    
+    if (error) {
+      console.error('Error fetching weekly stats:', error);
+      return { totalSessions: 0, totalMinutes: 0 };
+    }
+    
+    const totalSessions = data.length;
+    const totalMinutes = data.reduce((acc, session) => acc + Math.floor(session.duration / 60), 0);
+    
+    return {
+      totalSessions,
+      totalMinutes,
+      dailyAverage: totalSessions > 0 ? Math.round(totalSessions / 7 * 10) / 10 : 0
+    };
+  };
+  
+  const fetchMonthlyStats = async (userId: string): Promise<WeeklyMonthlyStats> => {
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    const oneMonthAgoStr = oneMonthAgo.toISOString();
+  
+    const { data, error } = await supabase
+      .from('focus_sessions')
+      .select('duration')
+      .eq('user_id', userId)
+      .eq('session_type', 'work')
+      .eq('completed', true)
+      .gte('created_at', oneMonthAgoStr);
+    
+    if (error) {
+      console.error('Error fetching monthly stats:', error);
+      return { totalSessions: 0, totalMinutes: 0 };
+    }
+    
+    const totalSessions = data.length;
+    const totalMinutes = data.reduce((acc, session) => acc + Math.floor(session.duration / 60), 0);
+    
+    return {
+      totalSessions,
+      totalMinutes,
+      dailyAverage: totalSessions > 0 ? Math.round(totalSessions / 30 * 10) / 10 : 0
+    };
+  };
 
   const fetchTotalStats = async (): Promise<StatsData | null> => {
     try {
@@ -29,12 +86,16 @@ export const useStatsData = (userId: string | undefined) => {
         totalMetrics,
         dailyAverage,
         streakData,
-        weeklyChangeData
+        weeklyChangeData,
+        weeklyStats,
+        monthlyStats
       ] = await Promise.all([
         fetchTotalMetrics(userId, today),
         fetchDailyAverageData(userId, today),
         fetchStreakData(userId, today),
-        fetchWeeklyChangeData(userId)
+        fetchWeeklyChangeData(userId),
+        fetchWeeklyStats(userId),
+        fetchMonthlyStats(userId)
       ]);
       
       return {
@@ -48,7 +109,9 @@ export const useStatsData = (userId: string | undefined) => {
           minutes: weeklyChangeData.minutesChange,
           dailyAvg: weeklyChangeData.dailyAvgChange,
           isPositive: weeklyChangeData.isPositive
-        }
+        },
+        weeklyStats,
+        monthlyStats
       };
     } catch (error: any) {
       console.error('Error fetching stats:', error.message);
