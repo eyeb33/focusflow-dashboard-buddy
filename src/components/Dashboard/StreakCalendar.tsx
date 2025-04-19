@@ -1,10 +1,12 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Zap } from 'lucide-react'; // Updated import from lucide-react instead of components/ui/icons
+import { Zap } from 'lucide-react';
+import { format, startOfMonth, eachDayOfInterval, endOfMonth, getDay, startOfWeek, endOfWeek } from 'date-fns';
 
 interface StreakDay {
   date: string;
-  completed: number; // Number of pomodoros completed
+  completed: number;
 }
 
 interface StreakCalendarProps {
@@ -14,38 +16,41 @@ interface StreakCalendarProps {
 }
 
 const StreakCalendar: React.FC<StreakCalendarProps> = ({ data, currentStreak, bestStreak }) => {
-  // Generate last 4 weeks of dates for the calendar
-  const generateCalendarDays = () => {
-    const today = new Date();
-    const days = [];
+  // Generate calendar days for the current month
+  const today = new Date();
+  const monthStart = startOfMonth(today);
+  const monthEnd = endOfMonth(today);
+  const startDate = startOfWeek(monthStart);
+  const endDate = endOfWeek(monthEnd);
+
+  const calendarDays = eachDayOfInterval({ start: startDate, end: endDate }).map(date => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const dayData = data.find(d => d.date === dateStr);
     
-    for (let i = 27; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      
-      // Find matching data or use default
-      const dayData = data.find(d => d.date === dateStr) || { date: dateStr, completed: 0 };
-      
-      days.push({
-        ...dayData,
-        dayOfWeek: date.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0),
-        isToday: i === 0
-      });
+    return {
+      date,
+      completed: dayData?.completed || 0,
+      isCurrentMonth: date.getMonth() === today.getMonth(),
+      isToday: format(date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
+    };
+  });
+
+  // Group days by weeks
+  const weeks: typeof calendarDays[] = [];
+  let currentWeek: typeof calendarDays = [];
+
+  calendarDays.forEach(day => {
+    if (currentWeek.length === 7) {
+      weeks.push(currentWeek);
+      currentWeek = [];
     }
-    
-    return days;
-  };
-  
-  const calendarDays = generateCalendarDays();
-  
-  // Group days by week
-  const weeks = [];
-  for (let i = 0; i < 4; i++) {
-    weeks.push(calendarDays.slice(i * 7, (i + 1) * 7));
+    currentWeek.push(day);
+  });
+  if (currentWeek.length > 0) {
+    weeks.push(currentWeek);
   }
-  
-  // Update the intensity class based on number of pomodoros with red shades
+
+  // Update the intensity class based on number of completed sessions
   const getIntensityClass = (completed: number) => {
     if (completed === 0) return 'bg-gray-100';
     if (completed < 2) return 'bg-red-100';
@@ -54,7 +59,7 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ data, currentStreak, be
     if (completed < 8) return 'bg-red-400';
     return 'bg-red-500';
   };
-  
+
   return (
     <Card>
       <CardHeader>
@@ -78,16 +83,16 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ data, currentStreak, be
             </p>
           </div>
         </div>
-        
+
         <div className="mt-6">
           <div className="grid grid-cols-7 gap-1 mb-1">
-            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
+            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
               <div key={i} className="text-xs font-medium text-center text-muted-foreground">
                 {day}
               </div>
             ))}
           </div>
-          
+
           {weeks.map((week, weekIndex) => (
             <div key={weekIndex} className="grid grid-cols-7 gap-1 mb-1">
               {week.map((day, dayIndex) => (
@@ -96,9 +101,10 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ data, currentStreak, be
                   className={`
                     h-6 rounded-sm flex items-center justify-center text-xs
                     ${getIntensityClass(day.completed)}
+                    ${!day.isCurrentMonth ? 'opacity-25' : ''}
                     ${day.isToday ? 'ring-2 ring-pomodoro-work' : ''}
                   `}
-                  title={`${day.date}: ${day.completed} sessions`}
+                  title={`${format(day.date, 'MMM d')}: ${day.completed} sessions`}
                 >
                   {day.completed > 0 && (
                     <span className={`font-medium ${day.completed >= 4 ? 'text-white' : ''}`}>

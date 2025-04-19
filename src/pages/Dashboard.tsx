@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from "@/components/Layout/Header";
 import MobileNav from "@/components/Layout/MobileNav";
@@ -127,16 +126,16 @@ const Dashboard = () => {
               />
             </div>
             <div className="lg:col-span-1">
-              <ProductivityInsights insights={dashboardData.insights} />
+              <StreakCalendar 
+                data={dashboardData.streakData}
+                currentStreak={dashboardData.stats.currentStreak}
+                bestStreak={dashboardData.stats.bestStreak}
+              />
             </div>
           </div>
 
           <div className="mt-6">
-            <StreakCalendar 
-              data={dashboardData.streakData}
-              currentStreak={dashboardData.stats.currentStreak}
-              bestStreak={dashboardData.stats.bestStreak}
-            />
+            <ProductivityInsights insights={dashboardData.insights} />
           </div>
         </div>
       </div>
