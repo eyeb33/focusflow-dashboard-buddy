@@ -11,6 +11,7 @@ export function useTimerStatsLogic() {
   const [currentSessionIndex, setCurrentSessionIndex] = useState(0);
   const currentDateRef = useRef<string>(new Date().toISOString().split('T')[0]);
   const [lastCheckTime, setLastCheckTime] = useState<number>(Date.now());
+  const hasShownResetToastRef = useRef<boolean>(false);
 
   // Function to refresh stats
   const refreshStats = async (forceMidnightReset = false) => {
@@ -27,9 +28,15 @@ export function useTimerStatsLogic() {
       setTotalTimeToday(0);
       setCurrentSessionIndex(0);
       
-      // Show toast notification for date change
-      if (currentDateRef.current && (forceMidnightReset || currentDateRef.current !== newDate)) {
+      // Show toast notification for date change - only once per day
+      if (currentDateRef.current && (forceMidnightReset || currentDateRef.current !== newDate) && !hasShownResetToastRef.current) {
         toast.info("It's a new day! Your daily stats have been reset.");
+        hasShownResetToastRef.current = true;
+        
+        // Reset the toast flag after a delay to prevent multiple identical toasts
+        setTimeout(() => {
+          hasShownResetToastRef.current = false;
+        }, 5000);
       }
       
       // Update the current date reference

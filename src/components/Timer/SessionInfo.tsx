@@ -24,8 +24,9 @@ const SessionInfo: React.FC = () => {
   
   const [isLoading, setIsLoading] = useState(true);
   const currentDateRef = useRef<string>(new Date().toISOString().split('T')[0]);
+  const hasResetTodayRef = useRef<boolean>(false);
   
-  const fetchTodayStats = async () => {
+  const fetchTodayStats = async (forceMidnightReset = false) => {
     if (!user) {
       setIsLoading(false);
       setStats({
@@ -47,6 +48,21 @@ const SessionInfo: React.FC = () => {
       
       const todayDateString = today.toISOString().split('T')[0];
       const yesterdayDateString = yesterday.toISOString().split('T')[0];
+      
+      // Check for date change
+      if (forceMidnightReset || todayDateString !== currentDateRef.current) {
+        // Reset stats if date has changed
+        if (!hasResetTodayRef.current) {
+          console.log('SessionInfo: Date changed - resetting stats');
+          setStats({
+            focusSessions: 0,
+            focusMinutes: 0,
+            yesterdayFocusSessions: null,
+            yesterdayFocusMinutes: null
+          });
+          hasResetTodayRef.current = true;
+        }
+      }
       
       // Update current date reference
       currentDateRef.current = todayDateString;
@@ -77,9 +93,19 @@ const SessionInfo: React.FC = () => {
     }
   };
   
+  // Reset hasResetToday flag at regular intervals to ensure it can reset again if needed
+  useEffect(() => {
+    const resetIntervalId = setInterval(() => {
+      // Reset the flag after 5 minutes to allow for possible resets later
+      hasResetTodayRef.current = false;
+    }, 5 * 60 * 1000);
+    
+    return () => clearInterval(resetIntervalId);
+  }, []);
+  
   // Initial load of stats
   useEffect(() => {
-    fetchTodayStats();
+    fetchTodayStats(true); // Force reset on initial load
     
     // Set up a refresh interval
     const intervalId = setInterval(() => {
@@ -138,7 +164,7 @@ const SessionInfo: React.FC = () => {
       const currentDate = new Date().toISOString().split('T')[0];
       if (currentDate !== currentDateRef.current) {
         console.log('SessionInfo: Date changed from', currentDateRef.current, 'to', currentDate, '- refreshing stats');
-        fetchTodayStats();
+        fetchTodayStats(true);
       }
     }, 60000); // Check every minute
 
