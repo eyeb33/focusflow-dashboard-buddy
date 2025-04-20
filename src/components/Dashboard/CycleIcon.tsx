@@ -21,7 +21,7 @@ const CycleIcon: React.FC<{ size?: number }> = ({ size = 24 }) => (
       strokeLinecap="round"
       fill="none"
     />
-    {/* Green arc - updated to a more visible green */}
+    {/* Green arc */}
     <path
       d="M6 20a14.96 14.96 0 0 0 6.14 10.74"
       stroke="#4ade80"

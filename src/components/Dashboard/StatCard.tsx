@@ -42,8 +42,9 @@ const StatCard: React.FC<StatCardProps> = ({
           className={cn(
             "rounded-full flex items-center justify-center",
             compact ? "h-7 w-7" : "h-8 w-8",
-            iconColor && `bg-[${iconColor}] bg-opacity-20`
+            iconColor ? `bg-opacity-20` : ""
           )}
+          style={iconColor ? { backgroundColor: `${iconColor}20` } : {}}
         >
           {React.cloneElement(icon as React.ReactElement, {
             color: iconColor,

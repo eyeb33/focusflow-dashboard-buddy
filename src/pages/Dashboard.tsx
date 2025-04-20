@@ -43,30 +43,49 @@ const Dashboard = () => {
     return null;
   }
 
+  // Get the correct data based on selected period
   const getPeriodStats = () => {
     const stats = dashboardData.stats;
+    
+    // For daily productivity, derive sessions based on productivity data
+    const deriveDailySessionsAndMinutes = () => {
+      // Use chart data to calculate total values
+      const dailyData = dashboardData.dailyProductivity;
+      const totalMinutes = dailyData.reduce((sum, point) => sum + point.minutes, 0);
+      const totalSessions = dailyData.reduce((sum, point) => sum + point.sessions, 0);
+      
+      // Calculate cycles based on sessions and the standard 4 sessions per cycle
+      const completedCycles = Math.floor(totalSessions / 4);
+      
+      return { totalMinutes, totalSessions, completedCycles };
+    };
+    
     switch (selectedPeriod) {
-      case 'today':
+      case 'today': {
+        // Use the derived data from chart for today instead of the stats object
+        const { totalMinutes, totalSessions, completedCycles } = deriveDailySessionsAndMinutes();
+        
         return [
           {
             title: "Focus Minutes",
-            value: stats.totalMinutes,
+            value: totalMinutes,
             icon: "Flame",
             iconColor: "#ea384c"
           },
           {
             title: "Focus Sessions",
-            value: stats.totalSessions,
+            value: totalSessions,
             icon: "Clock",
             iconColor: "#1EAEDB"
           },
           {
-            title: "Cycles",
-            value: stats.completedCycles ?? 0,
+            title: "Completed Cycles",
+            value: completedCycles,
             icon: "Cycle",
             iconColor: "#6DD5ED"
           },
         ];
+      }
       case 'week':
         return [
           {
@@ -82,7 +101,7 @@ const Dashboard = () => {
             iconColor: "#1EAEDB"
           },
           {
-            title: "Weekly Cycles",
+            title: "Weekly Completed Cycles",
             value: stats.weeklyStats?.completedCycles || 0,
             icon: "Cycle",
             iconColor: "#6DD5ED"
@@ -103,7 +122,7 @@ const Dashboard = () => {
             iconColor: "#1EAEDB"
           },
           {
-            title: "Monthly Cycles",
+            title: "Monthly Completed Cycles",
             value: stats.monthlyStats?.completedCycles || 0,
             icon: "Cycle",
             iconColor: "#6DD5ED"
@@ -127,9 +146,7 @@ const Dashboard = () => {
             onChange={handlePeriodChange}
             className="mx-auto mb-6"
           />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCardsGrid stats={getPeriodStats()} />
-          </div>
+          <StatCardsGrid stats={getPeriodStats()} />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               <ChartsGrid

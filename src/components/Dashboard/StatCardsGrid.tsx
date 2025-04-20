@@ -1,7 +1,7 @@
 
 import React from 'react';
 import StatCard from "@/components/Dashboard/StatCard";
-import { Clock, Flame } from "lucide-react";
+import { Clock, Flame, Activity } from "lucide-react";
 import CycleIcon from "@/components/Dashboard/CycleIcon";
 
 export interface StatItem {
@@ -30,15 +30,17 @@ const StatCardsGrid: React.FC<StatCardsGridProps> = ({ stats }) => {
         return <Flame className="h-5 w-5" color={iconColor} />;
       case 'Cycle':
         return <CycleIcon size={28} />;
+      case 'Activity':
+        return <Activity className="h-5 w-5" color={iconColor} />;
       default:
         return <Clock className="h-5 w-5" />;
     }
   };
 
   return (
-    <div className="flex gap-6 mb-8 w-full max-w-full">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 w-full">
       {stats.map((stat, index) => (
-        <div key={index} className="flex-1 min-w-[220px] max-w-[33%]">
+        <div key={index} className="w-full">
           <StatCard
             title={stat.title}
             value={stat.value}
@@ -55,4 +57,3 @@ const StatCardsGrid: React.FC<StatCardsGridProps> = ({ stats }) => {
 };
 
 export default StatCardsGrid;
-
