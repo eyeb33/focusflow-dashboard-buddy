@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { getTotalTime } from '@/utils/timerContextUtils';
 import { saveFocusSession } from '@/utils/timerStorage';
-import { playCompletionSound } from '@/utils/audioUtils';
+import { playTimerCompletionSound } from '@/utils/audioUtils'; // Fixed import name
 import { updateDailyStats } from '@/utils/productivityStats';
 import { TimerSettings } from './useTimerSettings';
 
@@ -38,7 +38,7 @@ export function useTimerCompletion({
   const handleTimerComplete = async () => {
     try {
       // Play completion sound
-      playCompletionSound();
+      await playTimerCompletionSound();
       
       // Get total time for this timer mode in seconds
       const totalTime = getTotalTime(timerMode, settings);

@@ -1,3 +1,4 @@
+
 import { saveFocusSession } from './timerStorage';
 import { updateDailyStats } from './productivityStats';
 import { supabase } from '@/integrations/supabase/client';
@@ -69,12 +70,13 @@ const fetchTodayStatsFromDatabase = async (userId: string) => {
     // If no summary exists, fall back to calculating from individual sessions
     const startOfDay = new Date(today);
     
-    // Fetch all work sessions from today, both complete and partial
+    // Fetch all work sessions from today with completed=true only (to avoid counting partial sessions)
     const { data, error } = await supabase
       .from('focus_sessions')
       .select('*')
       .eq('user_id', userId)
       .eq('session_type', 'work')
+      .eq('completed', true)
       .gte('created_at', startOfDay.toISOString());
       
     if (error) {
@@ -87,9 +89,9 @@ const fetchTodayStatsFromDatabase = async (userId: string) => {
     }
     
     // Count completed sessions
-    const completedSessions = data.filter(session => session.completed).length;
+    const completedSessions = data.length; // All sessions fetched are completed
     
-    // Calculate total minutes from all work sessions (completed or partial)
+    // Calculate total minutes only for completed work sessions to match completedSessions
     const totalMinutes = data.reduce((total, session) => {
       return total + Math.floor(session.duration / 60);
     }, 0);
