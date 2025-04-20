@@ -55,7 +55,10 @@ const Dashboard = () => {
       const totalSessions = dailyData.reduce((sum, point) => sum + point.sessions, 0);
       
       // Calculate cycles based on sessions and the standard 4 sessions per cycle
+      // A completed cycle is ONLY counted when all 4 sessions AND the long break are completed
       const completedCycles = Math.floor(totalSessions / 4);
+      
+      console.log(`Daily data - minutes: ${totalMinutes}, sessions: ${totalSessions}, calculated cycles: ${completedCycles}`);
       
       return { totalMinutes, totalSessions, completedCycles };
     };

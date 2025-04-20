@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { getTotalTime } from '@/utils/timerContextUtils';
 import { saveFocusSession } from '@/utils/timerStorage';
-import { playTimerCompletionSound } from '@/utils/audioUtils'; // Fixed import name
+import { playTimerCompletionSound } from '@/utils/audioUtils'; 
 import { updateDailyStats } from '@/utils/productivityStats';
 import { TimerSettings } from './useTimerSettings';
 
@@ -61,6 +61,8 @@ export function useTimerCompletion({
         
         // Update daily stats (explicitly passing minutes)
         await updateDailyStats(user.id, minutes, timerMode);
+        
+        console.log(`After completion: completed sessions=${completedSessions+1}, currentSessionIndex=${currentSessionIndex}`);
       }
       
       // Reset timer mode based on current state and settings
@@ -73,8 +75,13 @@ export function useTimerCompletion({
         setCurrentSessionIndex(newCurrentSessionIndex);
         
         newMode = newCurrentSessionIndex === 0 ? 'longBreak' : 'break';
+        console.log(`Work session completed. New mode: ${newMode}, new index: ${newCurrentSessionIndex}`);
+      } else if (timerMode === 'longBreak') {
+        // After long break, we've completed a full cycle!
+        console.log('Long break completed - this completes a full cycle!');
+        newMode = 'work';
       } else {
-        // After any break, switch back to work
+        // After regular break, switch back to work
         newMode = 'work';
       }
       
