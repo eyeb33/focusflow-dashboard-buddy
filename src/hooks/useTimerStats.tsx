@@ -4,7 +4,7 @@ import { useTimer } from '@/contexts/TimerContext';
 
 export const useTimerStats = () => {
   const timer = useTimer();
-  
+
   // Extract only the stats
   const {
     completedSessions,
@@ -12,12 +12,13 @@ export const useTimerStats = () => {
     settings,
     currentSessionIndex
   } = timer;
-  
+
+  // Provide sessionsUntilLongBreak directly (can customize per user later)
   return {
     completedSessions,
     totalTimeToday,
     currentSessionIndex,
-    sessionsUntilLongBreak: settings.sessionsUntilLongBreak,
-    completedRounds: Math.floor(completedSessions / settings.sessionsUntilLongBreak)
+    sessionsUntilLongBreak: settings?.sessionsUntilLongBreak ?? 4,
+    completedRounds: Math.floor(completedSessions / (settings?.sessionsUntilLongBreak ?? 4))
   };
 };

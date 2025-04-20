@@ -3,6 +3,7 @@ export interface WeeklyMonthlyStats {
   totalSessions: number;
   totalMinutes: number;
   dailyAverage?: number;
+  completedCycles?: number; // <--- for completed cycles in the period
 }
 
 export interface WeeklyChange {
@@ -15,6 +16,7 @@ export interface WeeklyChange {
 export interface StatsData {
   totalSessions: number;
   totalMinutes: number;
+  completedCycles: number; // <--- added per period for the dashboard
   dailyAverage: number;
   currentStreak: number;
   bestStreak: number;
@@ -26,6 +28,7 @@ export interface StatsData {
 export const initialStatsData: StatsData = {
   totalSessions: 0,
   totalMinutes: 0,
+  completedCycles: 0,
   dailyAverage: 0,
   currentStreak: 0,
   bestStreak: 0,
@@ -38,11 +41,14 @@ export const initialStatsData: StatsData = {
   weeklyStats: {
     totalSessions: 0,
     totalMinutes: 0,
-    dailyAverage: 0
+    dailyAverage: 0,
+    completedCycles: 0,
   },
   monthlyStats: {
     totalSessions: 0,
     totalMinutes: 0,
-    dailyAverage: 0
+    dailyAverage: 0,
+    completedCycles: 0,
   }
 };
+

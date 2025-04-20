@@ -44,52 +44,69 @@ const Dashboard = () => {
 
   const getPeriodStats = () => {
     const stats = dashboardData.stats;
-    
     switch (selectedPeriod) {
       case 'today':
         return [
           {
-            title: "Today's Sessions",
+            title: "Focus Minutes",
+            value: stats.totalMinutes,
+            icon: "Flame",
+            iconColor: "#ea384c"
+          },
+          {
+            title: "Focus Sessions",
             value: stats.totalSessions,
             icon: "Clock",
             iconColor: "#1EAEDB"
           },
           {
-            title: "Today's Focus",
-            value: stats.totalMinutes,
-            icon: "Flame",
-            iconColor: "#ea384c"
-          }
+            title: "Cycles",
+            value: stats.completedCycles ?? 0,
+            icon: "Waves",
+            iconColor: "#6DD5ED"
+          },
         ];
       case 'week':
         return [
           {
-            title: "Weekly Sessions",
+            title: "Weekly Focus Minutes",
+            value: stats.weeklyStats?.totalMinutes || 0,
+            icon: "Flame",
+            iconColor: "#ea384c"
+          },
+          {
+            title: "Weekly Focus Sessions",
             value: stats.weeklyStats?.totalSessions || 0,
             icon: "Clock",
             iconColor: "#1EAEDB"
           },
           {
-            title: "Weekly Focus",
-            value: stats.weeklyStats?.totalMinutes || 0,
-            icon: "Flame",
-            iconColor: "#ea384c"
-          }
+            title: "Weekly Cycles",
+            value: stats.weeklyStats?.completedCycles || 0,
+            icon: "Waves",
+            iconColor: "#6DD5ED"
+          },
         ];
       case 'month':
         return [
           {
-            title: "Monthly Sessions",
+            title: "Monthly Focus Minutes",
+            value: stats.monthlyStats?.totalMinutes || 0,
+            icon: "Flame",
+            iconColor: "#ea384c"
+          },
+          {
+            title: "Monthly Focus Sessions",
             value: stats.monthlyStats?.totalSessions || 0,
             icon: "Clock",
             iconColor: "#1EAEDB"
           },
           {
-            title: "Monthly Focus",
-            value: stats.monthlyStats?.totalMinutes || 0,
-            icon: "Flame",
-            iconColor: "#ea384c"
-          }
+            title: "Monthly Cycles",
+            value: stats.monthlyStats?.completedCycles || 0,
+            icon: "Waves",
+            iconColor: "#6DD5ED"
+          },
         ];
       default:
         return [];
@@ -99,26 +116,22 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      
       <div className="flex-1 container max-w-7xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <DashboardHeader />
         </div>
-        
         <div className="space-y-6">
-          <TimeToggle 
+          <TimeToggle
             selectedPeriod={selectedPeriod}
             onChange={handlePeriodChange}
             className="mx-auto mb-6"
           />
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <StatCardsGrid stats={getPeriodStats()} />
           </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <ChartsGrid 
+              <ChartsGrid
                 dailyData={dashboardData.dailyProductivity}
                 weeklyData={dashboardData.weeklyProductivity}
                 monthlyData={dashboardData.monthlyProductivity}
@@ -126,20 +139,18 @@ const Dashboard = () => {
               />
             </div>
             <div className="lg:col-span-1">
-              <StreakCalendar 
+              <StreakCalendar
                 data={dashboardData.streakData}
                 currentStreak={dashboardData.stats.currentStreak}
                 bestStreak={dashboardData.stats.bestStreak}
               />
             </div>
           </div>
-
           <div className="mt-6">
             <ProductivityInsights insights={dashboardData.insights} />
           </div>
         </div>
       </div>
-      
       <MobileNav />
     </div>
   );

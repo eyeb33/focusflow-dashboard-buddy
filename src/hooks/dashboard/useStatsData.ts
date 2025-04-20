@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { StatsData, initialStatsData, WeeklyMonthlyStats } from './stats/statsTypes';
@@ -13,11 +12,29 @@ export type { StatsData } from './stats/statsTypes';
 export const useStatsData = (userId: string | undefined) => {
   const currentDateRef = useRef<string>(new Date().toISOString().split('T')[0]);
 
+  const fetchCompletedCycles = async (userId: string, periodStart: Date, periodEnd: Date, sessionsUntilLongBreak: number) => {
+    const { data, error } = await supabase
+      .from('sessions_summary')
+      .select('total_completed_sessions, date')
+      .eq('user_id', userId)
+      .gte('date', periodStart.toISOString().split('T')[0])
+      .lte('date', periodEnd.toISOString().split('T')[0]);
+
+    if (error) {
+      console.error("Error fetching sessions_summary for cycles:", error);
+      return 0;
+    }
+
+    const totalSessions = data?.reduce((sum, day) => sum + (day.total_completed_sessions || 0), 0) || 0;
+    return Math.floor(totalSessions / sessionsUntilLongBreak);
+  };
+
   const fetchWeeklyStats = async (userId: string): Promise<WeeklyMonthlyStats> => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     const oneWeekAgoStr = oneWeekAgo.toISOString();
-  
+    const today = new Date();
+
     const { data, error } = await supabase
       .from('focus_sessions')
       .select('duration')
@@ -25,27 +42,31 @@ export const useStatsData = (userId: string | undefined) => {
       .eq('session_type', 'work')
       .eq('completed', true)
       .gte('created_at', oneWeekAgoStr);
-    
-    if (error) {
-      console.error('Error fetching weekly stats:', error);
-      return { totalSessions: 0, totalMinutes: 0 };
+
+    let totalSessions = 0;
+    let totalMinutes = 0;
+    if (!error && Array.isArray(data)) {
+      totalSessions = data.length;
+      totalMinutes = data.reduce((acc, session) => acc + Math.min(Math.floor((session.duration || 0) / 60), 60), 0);
     }
-    
-    const totalSessions = data.length;
-    const totalMinutes = data.reduce((acc, session) => acc + Math.floor(session.duration / 60), 0);
-    
+
+    const sessionsUntilLongBreak = 4;
+    const completedCycles = await fetchCompletedCycles(userId, oneWeekAgo, today, sessionsUntilLongBreak);
+
     return {
       totalSessions,
       totalMinutes,
-      dailyAverage: totalSessions > 0 ? Math.round(totalSessions / 7 * 10) / 10 : 0
+      dailyAverage: totalSessions > 0 ? Math.round(totalSessions / 7 * 10) / 10 : 0,
+      completedCycles,
     };
   };
-  
+
   const fetchMonthlyStats = async (userId: string): Promise<WeeklyMonthlyStats> => {
     const oneMonthAgo = new Date();
     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
     const oneMonthAgoStr = oneMonthAgo.toISOString();
-  
+    const today = new Date();
+
     const { data, error } = await supabase
       .from('focus_sessions')
       .select('duration')
@@ -53,19 +74,22 @@ export const useStatsData = (userId: string | undefined) => {
       .eq('session_type', 'work')
       .eq('completed', true)
       .gte('created_at', oneMonthAgoStr);
-    
-    if (error) {
-      console.error('Error fetching monthly stats:', error);
-      return { totalSessions: 0, totalMinutes: 0 };
+
+    let totalSessions = 0;
+    let totalMinutes = 0;
+    if (!error && Array.isArray(data)) {
+      totalSessions = data.length;
+      totalMinutes = data.reduce((acc, session) => acc + Math.min(Math.floor((session.duration || 0) / 60), 60), 0);
     }
-    
-    const totalSessions = data.length;
-    const totalMinutes = data.reduce((acc, session) => acc + Math.floor(session.duration / 60), 0);
-    
+
+    const sessionsUntilLongBreak = 4;
+    const completedCycles = await fetchCompletedCycles(userId, oneMonthAgo, today, sessionsUntilLongBreak);
+
     return {
       totalSessions,
       totalMinutes,
-      dailyAverage: totalSessions > 0 ? Math.round(totalSessions / 30 * 10) / 10 : 0
+      dailyAverage: totalSessions > 0 ? Math.round(totalSessions / 30 * 10) / 10 : 0,
+      completedCycles,
     };
   };
 
@@ -75,13 +99,10 @@ export const useStatsData = (userId: string | undefined) => {
         console.error('No user ID available for fetching stats');
         return null;
       }
-      
-      console.log('Fetching total stats for user:', userId);
-      
+
       const today = new Date().toISOString().split('T')[0];
       currentDateRef.current = today;
-      
-      // Fetch all data concurrently for better performance
+
       const [
         totalMetrics,
         dailyAverage,
@@ -97,10 +118,15 @@ export const useStatsData = (userId: string | undefined) => {
         fetchWeeklyStats(userId),
         fetchMonthlyStats(userId)
       ]);
-      
+
+      const { totalSessions } = totalMetrics;
+      const sessionsUntilLongBreak = 4;
+      const completedCycles = Math.floor(totalSessions / sessionsUntilLongBreak);
+
       return {
         totalSessions: totalMetrics.totalSessions,
         totalMinutes: totalMetrics.totalMinutes,
+        completedCycles,
         dailyAverage,
         currentStreak: streakData.currentStreak,
         bestStreak: streakData.bestStreak,
@@ -110,8 +136,12 @@ export const useStatsData = (userId: string | undefined) => {
           dailyAvg: weeklyChangeData.dailyAvgChange,
           isPositive: weeklyChangeData.isPositive
         },
-        weeklyStats,
-        monthlyStats
+        weeklyStats: {
+          ...weeklyStats,
+        },
+        monthlyStats: {
+          ...monthlyStats,
+        }
       };
     } catch (error: any) {
       console.error('Error fetching stats:', error.message);
@@ -123,14 +153,11 @@ export const useStatsData = (userId: string | undefined) => {
     queryKey: ['stats', userId, currentDateRef.current],
     queryFn: fetchTotalStats,
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000, // 5 minutes before considering data stale
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Check for date changes periodically and force refetch
   useEffect(() => {
     if (!userId) return;
-
-    // Check for date changes every minute
     const intervalId = setInterval(() => {
       const currentDate = new Date().toISOString().split('T')[0];
       if (currentDate !== currentDateRef.current) {
@@ -140,7 +167,6 @@ export const useStatsData = (userId: string | undefined) => {
       }
     }, 60000); // Check every minute
 
-    // Also add a periodic refetch every hour to ensure data freshness
     const refreshInterval = setInterval(() => {
       console.log('Periodic refresh of dashboard stats');
       result.refetch();

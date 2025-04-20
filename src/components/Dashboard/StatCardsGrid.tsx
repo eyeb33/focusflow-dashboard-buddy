@@ -1,11 +1,11 @@
 
 import React from 'react';
 import StatCard from "@/components/Dashboard/StatCard";
-import { Clock, Flame, Target, Zap } from "lucide-react";
+import { Clock, Flame, Target, Zap, Waves } from "lucide-react";
 
 export interface StatItem {
   title: string;
-  value: string | number; // Update the value type to accept both string and number
+  value: string | number;
   icon: string;
   description?: string;
   trend?: {
@@ -30,13 +30,15 @@ const StatCardsGrid: React.FC<StatCardsGridProps> = ({ stats }) => {
         return <Target className="h-4 w-4" color={iconColor} />;
       case 'Zap':
         return <Zap className="h-4 w-4" color={iconColor} />;
+      case 'Waves':
+        return <Waves className="h-4 w-4" color={iconColor} />;
       default:
         return <Clock className="h-4 w-4" />;
     }
   };
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+    <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-3 mb-8">{/* Now 3 cols */}
       {stats.map((stat, index) => (
         <StatCard
           key={index}
