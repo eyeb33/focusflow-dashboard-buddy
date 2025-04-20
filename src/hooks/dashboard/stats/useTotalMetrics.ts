@@ -29,9 +29,50 @@ export const fetchTotalMetrics = async (userId: string, today: string): Promise<
       console.error('Error fetching today summary:', todaySummaryError);
     }
     
-    // If we found summary data for today, use that
+    // If we found summary data for today, check if we should use the actual focus sessions data instead
     if (todaySummary) {
       console.log('Found today summary:', todaySummary, 'for date:', today);
+      
+      // Get the daily focus sessions data to verify
+      const startOfDay = new Date(today);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(today);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      const { data: todaySessions, error: sessionError } = await supabase
+        .from('focus_sessions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('completed', true)
+        .eq('session_type', 'work') // Only count work sessions
+        .gte('created_at', startOfDay.toISOString())
+        .lte('created_at', endOfDay.toISOString());
+
+      if (sessionError) {
+        console.error('Error fetching today sessions:', sessionError);
+        return { 
+          totalSessions: todaySummary.total_completed_sessions || 0, 
+          totalMinutes: todaySummary.total_focus_time || 0 
+        };
+      }
+
+      // If we have actual session data, use that for the minute calculation
+      if (todaySessions && todaySessions.length > 0) {
+        // Count the number of sessions
+        const totalSessions = todaySessions.length;
+        
+        // Calculate total minutes directly from individual sessions
+        // This is more accurate than using the potentially corrupted summary data
+        const totalMinutes = todaySessions.reduce((sum, session) => 
+          sum + Math.min(Math.floor((session.duration || 0) / 60), 60), 0);
+
+        console.log(`Using actual sessions data: ${totalSessions} sessions, ${totalMinutes} minutes`);
+        
+        return { 
+          totalSessions, 
+          totalMinutes 
+        };
+      }
       
       // Apply a sanity check on the values - cap minutes based on sessions
       // Assuming max 60 minutes per session as a reasonable upper bound
@@ -80,13 +121,13 @@ export const fetchTotalMetrics = async (userId: string, today: string): Promise<
     // Count the number of sessions
     const totalSessions = todaySessions.length;
     
-    // Calculate total minutes based on standard pomodoro duration (25 minutes per session)
-    // This is more reliable than using the raw duration which might be corrupted
-    const totalMinutesFromSessions = totalSessions * 25;
+    // Calculate total minutes directly from individual sessions
+    const totalMinutes = todaySessions.reduce((sum, session) => 
+      sum + Math.min(Math.floor((session.duration || 0) / 60), 60), 0);
     
-    console.log('Calculated from today sessions:', { totalSessions, totalMinutesFromSessions }, 'for date:', today);
+    console.log('Calculated from today sessions:', { totalSessions, totalMinutes }, 'for date:', today);
 
-    return { totalSessions, totalMinutes: totalMinutesFromSessions };
+    return { totalSessions, totalMinutes };
   } catch (error) {
     console.error('Error in fetchTotalMetrics:', error);
     return { totalSessions: 0, totalMinutes: 0 };

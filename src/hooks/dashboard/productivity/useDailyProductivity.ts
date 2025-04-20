@@ -45,6 +45,8 @@ export const useDailyProductivity = (userId: string | undefined) => {
       sessions?.forEach(session => {
         const sessionDate = new Date(session.created_at);
         const hour = sessionDate.getHours().toString();
+        
+        // Cap the minutes per session at 60 to prevent unreasonable values
         const minutesInSession = Math.min(Math.floor((session.duration || 0) / 60), 60);
         
         hoursMap[hour].minutes += minutesInSession;

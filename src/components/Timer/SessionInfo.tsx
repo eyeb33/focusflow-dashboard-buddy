@@ -57,20 +57,16 @@ const SessionInfo: React.FC = () => {
       const todayMetrics = await fetchTotalMetrics(user.id, todayDateString);
       const yesterdayMetrics = await fetchTotalMetrics(user.id, yesterdayDateString);
       
-      // Calculate reasonable metrics based on session count
-      const focusSessions = todayMetrics.totalSessions || 0;
-      const focusMinutes = todayMetrics.totalMinutes || 0;
-      
-      // Set today's stats from the metrics
+      // Set today's stats from the metrics - use the actual values without capping
       setStats({
-        focusSessions,
-        focusMinutes,
+        focusSessions: todayMetrics.totalSessions || 0,
+        focusMinutes: todayMetrics.totalMinutes || 0,
         yesterdayFocusSessions: yesterdayMetrics.totalSessions || null,
         yesterdayFocusMinutes: yesterdayMetrics.totalMinutes || null
       });
       
       console.log('SessionInfo updated with metrics:', {
-        today: { sessions: focusSessions, minutes: focusMinutes },
+        today: { sessions: todayMetrics.totalSessions, minutes: todayMetrics.totalMinutes },
         yesterday: { sessions: yesterdayMetrics.totalSessions, minutes: yesterdayMetrics.totalMinutes }
       });
       
@@ -112,8 +108,26 @@ const SessionInfo: React.FC = () => {
         )
         .subscribe();
         
+      // Also subscribe to changes in the focus_sessions table
+      const sessionChannel = supabase
+        .channel('focus-sessions-changes')
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'focus_sessions',
+            filter: `user_id=eq.${user.id}`
+          }, 
+          (payload) => {
+            console.log('Focus session changed:', payload);
+            fetchTodayStats();
+          }
+        )
+        .subscribe();
+        
       return () => {
         supabase.removeChannel(channel);
+        supabase.removeChannel(sessionChannel);
       };
     }
   }, [user]);

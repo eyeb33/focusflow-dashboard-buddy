@@ -54,9 +54,11 @@ const Dashboard = () => {
       const totalMinutes = dailyData.reduce((sum, point) => sum + point.minutes, 0);
       const totalSessions = dailyData.reduce((sum, point) => sum + point.sessions, 0);
       
-      // Calculate cycles based on sessions and the standard 4 sessions per cycle
-      // A completed cycle is ONLY counted when all 4 sessions AND the long break are completed
-      const completedCycles = Math.floor(totalSessions / 4);
+      // A complete cycle requires 4 focus sessions AND a long break to be completed
+      // The logic is defined as: number of focus sessions divided by 4, but only if they are in proper sequence
+      // which we can't determine from aggregated data, so we'll assume 0 cycles for now unless other data proves otherwise
+      // This is a conservative approach to avoid over-counting cycles
+      const completedCycles = 0; // Default to 0 cycles for daily view based on chart data
       
       console.log(`Daily data - minutes: ${totalMinutes}, sessions: ${totalSessions}, calculated cycles: ${completedCycles}`);
       
