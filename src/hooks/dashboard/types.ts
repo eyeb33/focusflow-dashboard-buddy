@@ -19,6 +19,7 @@ export const initialDashboardData: DashboardData = {
   stats: {
     totalSessions: 0,
     totalMinutes: 0,
+    completedCycles: 0,
     dailyAverage: 0,
     currentStreak: 0,
     bestStreak: 0,
@@ -27,6 +28,18 @@ export const initialDashboardData: DashboardData = {
       minutes: 0,
       dailyAvg: 0,
       isPositive: true
+    },
+    weeklyStats: {
+      totalSessions: 0,
+      totalMinutes: 0,
+      dailyAverage: 0,
+      completedCycles: 0,
+    },
+    monthlyStats: {
+      totalSessions: 0,
+      totalMinutes: 0,
+      dailyAverage: 0,
+      completedCycles: 0,
     }
   },
   productivityTrend: [],
