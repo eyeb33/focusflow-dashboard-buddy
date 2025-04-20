@@ -76,13 +76,16 @@ export function useTimerCompletion({
         
         newMode = newCurrentSessionIndex === 0 ? 'longBreak' : 'break';
         console.log(`Work session completed. New mode: ${newMode}, new index: ${newCurrentSessionIndex}`);
+      } else if (timerMode === 'break') {
+        // After regular break, switch back to work
+        newMode = 'work';
       } else if (timerMode === 'longBreak') {
         // After long break, we've completed a full cycle!
         console.log('Long break completed - this completes a full cycle!');
         newMode = 'work';
-      } else {
-        // After regular break, switch back to work
-        newMode = 'work';
+        // Reset the index at the end of a full cycle
+        newCurrentSessionIndex = 0;
+        setCurrentSessionIndex(0);
       }
       
       // Stop the timer and set the new mode

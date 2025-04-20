@@ -15,55 +15,104 @@ const SessionRings: React.FC<SessionRingsProps> = ({
   totalSessions,
   mode,
   className,
-  currentPosition
+  currentPosition = 0
 }) => {
-  // Generate pairs of circles for the sequence
-  const renderSequence = () => {
-    const pairs = [];
+  // Calculate current cycle (0-indexed)
+  const currentCycle = Math.floor(completedSessions / totalSessions);
+  
+  // Calculate position in current cycle (0-indexed)
+  const positionInCycle = currentPosition || (completedSessions % totalSessions);
+  
+  // Render work session circles (first row)
+  const renderWorkCircles = () => {
+    const circles = [];
     
-    // Create pairs for each work+break sequence
     for (let i = 0; i < totalSessions; i++) {
-      const pairIndex = i * 2; // Each pair has 2 positions (work + break)
+      // Is this position completed or active?
+      const isActive = mode === 'work' && positionInCycle === i;
+      const isCompleted = i < positionInCycle && mode === 'work' || 
+                         (mode !== 'work' && i <= positionInCycle);
       
-      // Create a pair container
-      pairs.push(
-        <div key={i} className="flex flex-col gap-1">
-          {/* Work session circle */}
-          <div
-            className={cn(
-              "rounded-full transition-colors duration-300",
-              currentPosition === pairIndex ? "w-4 h-4" : "w-3 h-3",
-              currentPosition === pairIndex && !isCompleted(pairIndex) ? "border-2 border-red-500" : "",
-              isCompleted(pairIndex) ? "bg-red-500" : "border-2 border-red-500"
-            )}
-          />
-          {/* Break session circle (last one is long break) */}
-          <div
-            className={cn(
-              "rounded-full transition-colors duration-300",
-              currentPosition === pairIndex + 1 ? "w-4 h-4" : "w-3 h-3",
-              currentPosition === pairIndex + 1 && !isCompleted(pairIndex + 1) ? "border-2" : "",
-              i === totalSessions - 1 ? (
-                isCompleted(pairIndex + 1) ? "bg-blue-500" : "border-2 border-blue-500"
-              ) : (
-                isCompleted(pairIndex + 1) ? "bg-green-500" : "border-2 border-green-500"
-              )
-            )}
-          />
-        </div>
+      // Size the active indicator slightly larger
+      const size = isActive ? 'w-4 h-4' : 'w-3 h-3';
+      
+      circles.push(
+        <div
+          key={`work-${i}`}
+          className={cn(
+            "rounded-full transition-colors duration-300",
+            size,
+            isActive ? "border-2 border-red-500" : "",
+            isCompleted ? "bg-red-500" : "border-2 border-red-500"
+          )}
+        />
       );
     }
     
-    return pairs;
+    return circles;
   };
   
-  const isCompleted = (position: number) => {
-    return currentPosition !== undefined && position < currentPosition;
+  // Render break session circles (second row)
+  const renderBreakCircles = () => {
+    const circles = [];
+    
+    for (let i = 0; i < totalSessions - 1; i++) { // One less because last is long break
+      const isActive = mode === 'break' && positionInCycle === i;
+      const isCompleted = mode === 'longBreak' || 
+                        (mode === 'break' && i < positionInCycle) || 
+                        (i < positionInCycle - 1 && mode === 'work');
+      
+      const size = isActive ? 'w-4 h-4' : 'w-3 h-3';
+      
+      circles.push(
+        <div
+          key={`break-${i}`}
+          className={cn(
+            "rounded-full transition-colors duration-300",
+            size,
+            isActive ? "border-2 border-green-500" : "",
+            isCompleted ? "bg-green-500" : "border-2 border-green-500"
+          )}
+        />
+      );
+    }
+    
+    return circles;
+  };
+  
+  // Render long break circle (third row - just one)
+  const renderLongBreakCircle = () => {
+    const isActive = mode === 'longBreak';
+    const isCompleted = false; // Only filled if completed full cycle
+    
+    return (
+      <div
+        className={cn(
+          "rounded-full transition-colors duration-300",
+          isActive ? "w-4 h-4" : "w-3 h-3",
+          isActive ? "border-2 border-blue-500" : "",
+          isCompleted ? "bg-blue-500" : "border-2 border-blue-500"
+        )}
+      />
+    );
   };
 
   return (
-    <div className={cn("flex justify-center gap-4", className)}>
-      {renderSequence()}
+    <div className={cn("flex flex-col items-center gap-2", className)}>
+      {/* Work sessions row (red) */}
+      <div className="flex justify-center gap-2">
+        {renderWorkCircles()}
+      </div>
+      
+      {/* Break sessions row (green) */}
+      <div className="flex justify-center gap-2">
+        {renderBreakCircles()}
+      </div>
+      
+      {/* Long break row (blue) - single circle */}
+      <div className="flex justify-center">
+        {renderLongBreakCircle()}
+      </div>
     </div>
   );
 };

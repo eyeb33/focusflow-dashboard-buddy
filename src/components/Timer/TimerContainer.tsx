@@ -52,11 +52,6 @@ const TimerContainer: React.FC = () => {
 
   const currentModeColors = modeColors[timerMode];
   
-  // Calculate position in the sequence based on currentSessionIndex
-  // Work session = even numbers (0, 2, 4...)
-  // Break session = odd numbers (1, 3, 5...)
-  // Long break = last in the sequence (sessionsUntilLongBreak * 2 - 1)
-  
   return (
     <Card className="w-full max-w-md p-6 bg-white/90 dark:bg-black/80 backdrop-blur-sm shadow-md">
       <div className="flex items-center justify-between mb-6">
