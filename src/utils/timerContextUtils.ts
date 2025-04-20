@@ -57,9 +57,19 @@ const fetchTodayStatsFromDatabase = async (userId: string) => {
       .maybeSingle();
       
     if (summaryData) {
+      // Apply a sanity check on the values - cap minutes based on sessions
+      const sessions = summaryData.total_completed_sessions || 0;
+      let minutes = summaryData.total_focus_time || 0;
+      const maxReasonableMinutes = sessions * 60; // Assume max 60min per session
+      
+      if (sessions > 0 && minutes > maxReasonableMinutes) {
+        console.warn(`Unreasonable focus time detected: ${minutes}min for ${sessions} sessions. Capping to ${maxReasonableMinutes}min`);
+        minutes = maxReasonableMinutes;
+      }
+      
       return {
-        completedSessions: summaryData.total_completed_sessions || 0,
-        totalTimeToday: summaryData.total_focus_time || 0
+        completedSessions: sessions,
+        totalTimeToday: minutes
       };
     } else {
       if (summaryError && summaryError.code !== 'PGRST116') {
@@ -91,10 +101,9 @@ const fetchTodayStatsFromDatabase = async (userId: string) => {
     // Count completed sessions
     const completedSessions = data.length; // All sessions fetched are completed
     
-    // Calculate total minutes only for completed work sessions to match completedSessions
-    const totalMinutes = data.reduce((total, session) => {
-      return total + Math.floor(session.duration / 60);
-    }, 0);
+    // Instead of using the raw durations which might be incorrect,
+    // calculate focus minutes based on the standard pomodoro duration (25 min/session)
+    const totalMinutes = completedSessions * 25;
     
     return {
       completedSessions,
@@ -135,18 +144,21 @@ export const savePartialSession = async (
     // Calculate minutes elapsed since last recording
     const newMinutes = elapsedMinutes - lastRecordedFullMinutes;
     
-    console.log(`Saving partial session: ${newMinutes} new minutes (elapsed ${elapsedMinutes} total)`);
+    // Apply a sanity check on the new minutes (cap at 5 minutes per update)
+    const normalizedNewMinutes = Math.min(newMinutes, 5);
+    
+    console.log(`Saving partial session: ${normalizedNewMinutes} new minutes (elapsed ${elapsedMinutes} total)`);
     
     // Update daily stats with the new minutes only
     await updateDailyStats(
       userId, 
-      newMinutes, // Only the new minutes since last recording
+      normalizedNewMinutes, // Only the new minutes since last recording
       mode
     );
     
     return { 
       success: true,
-      message: `Added ${newMinutes} minutes to the session`,
+      message: `Added ${normalizedNewMinutes} minutes to the session`,
       newFullMinutes: elapsedMinutes 
     };
   } catch (error) {

@@ -16,6 +16,10 @@ export const updateDailyStats = async (userId: string, durationMinutes: number, 
     // Only update stats for work sessions
     if (sessionType !== 'work') return;
     
+    // Ensure durationMinutes is a reasonable value (cap at 60 minutes per session as a safety check)
+    const normalizedDuration = Math.min(durationMinutes, 60);
+    console.log(`Updating daily stats with normalized duration: ${normalizedDuration} minutes`);
+    
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     
     const { data: existingData, error: queryError } = await supabase
@@ -51,7 +55,7 @@ export const updateDailyStats = async (userId: string, durationMinutes: number, 
         .from('sessions_summary')
         .update({
           total_sessions: existingData.total_sessions + 1,
-          total_focus_time: existingData.total_focus_time + durationMinutes,
+          total_focus_time: existingData.total_focus_time + normalizedDuration,
           total_completed_sessions: existingData.total_completed_sessions + 1,
           longest_streak: Math.max(existingData.longest_streak || 0, currentStreak),
           updated_at: new Date().toISOString()
@@ -66,7 +70,7 @@ export const updateDailyStats = async (userId: string, durationMinutes: number, 
           user_id: userId,
           date: today,
           total_sessions: 1,
-          total_focus_time: durationMinutes,
+          total_focus_time: normalizedDuration,
           total_completed_sessions: 1,
           longest_streak: currentStreak || 1
         });

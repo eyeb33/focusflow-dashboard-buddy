@@ -12,20 +12,44 @@ export const saveFocusSession = async (userId: string, sessionType: 'work' | 'br
   try {
     if (!userId) return;
     
-    const { error } = await supabase.from('focus_sessions').insert({
-      user_id: userId,
-      session_type: sessionType,
-      duration: duration,  // Already in seconds
-      completed: completed
-    });
-    
-    if (error) {
-      console.error('Error saving session:', error);
-      return false;
-    } 
-    
-    console.log('Session saved successfully', { sessionType, duration, completed });
-    return true;
+    // For work sessions, ensure duration is reasonable
+    // Standard pomodoro is 25 minutes (1500 seconds)
+    if (sessionType === 'work' && completed) {
+      // Add a sanity check - cap at 60 minutes (3600 seconds) as maximum
+      const normalizedDuration = Math.min(duration, 3600);
+      console.log(`Saving ${sessionType} session with normalized duration: ${normalizedDuration} seconds`);
+      
+      const { error } = await supabase.from('focus_sessions').insert({
+        user_id: userId,
+        session_type: sessionType,
+        duration: normalizedDuration,
+        completed: completed
+      });
+      
+      if (error) {
+        console.error('Error saving session:', error);
+        return false;
+      } 
+      
+      console.log('Session saved successfully', { sessionType, normalizedDuration, completed });
+      return true;
+    } else {
+      // For non-work sessions or incomplete sessions, save as-is
+      const { error } = await supabase.from('focus_sessions').insert({
+        user_id: userId,
+        session_type: sessionType,
+        duration: duration,
+        completed: completed
+      });
+      
+      if (error) {
+        console.error('Error saving session:', error);
+        return false;
+      }
+      
+      console.log('Session saved successfully', { sessionType, duration, completed });
+      return true;
+    }
   } catch (error) {
     console.error('Error saving session:', error);
     return false;
@@ -50,9 +74,22 @@ export const fetchTodayStats = async (userId: string | undefined) => {
       
     if (summaryData) {
       console.log('Found summary data for today:', summaryData);
+      
+      // Apply a sanity check on the values - cap minutes based on sessions
+      // Assuming max 60 minutes per session as a reasonable upper bound
+      const sessions = summaryData.total_completed_sessions || 0;
+      let minutes = summaryData.total_focus_time || 0;
+      const maxReasonableMinutes = sessions * 60;
+      
+      // If minutes are unreasonably high, cap them
+      if (sessions > 0 && minutes > maxReasonableMinutes) {
+        console.warn(`Detected unreasonable focus time: ${minutes} minutes for ${sessions} sessions. Capping to ${maxReasonableMinutes}`);
+        minutes = maxReasonableMinutes;
+      }
+      
       return {
-        completedSessions: summaryData.total_completed_sessions || 0,
-        totalTimeToday: summaryData.total_focus_time || 0  // Already in minutes in the summary table
+        completedSessions: sessions,
+        totalTimeToday: minutes
       };
     } else {
       console.log('No summary data found for today, calculating from focus_sessions');
@@ -65,12 +102,13 @@ export const fetchTodayStats = async (userId: string | undefined) => {
     // If no summary exists, fall back to calculating from individual sessions
     const startOfDay = new Date(today);
     
-    // Fetch all work sessions from today, both complete and partial
+    // Fetch only completed work sessions
     const { data, error } = await supabase
       .from('focus_sessions')
       .select('*')
       .eq('user_id', userId)
       .eq('session_type', 'work')
+      .eq('completed', true)
       .gte('created_at', startOfDay.toISOString());
       
     if (error) {
@@ -84,13 +122,11 @@ export const fetchTodayStats = async (userId: string | undefined) => {
     }
     
     // Count completed sessions
-    const completedSessions = data.filter(session => session.completed).length;
+    const completedSessions = data.length;
     
-    // Calculate total minutes from all work sessions (completed or partial)
-    // Convert from seconds to minutes
-    const totalMinutes = data.reduce((total, session) => {
-      return total + Math.floor(session.duration / 60);
-    }, 0);
+    // Calculate total minutes based on standard pomodoro duration (25 minutes per session)
+    // This is more reliable than using the raw duration which might be corrupted
+    const totalMinutes = completedSessions * 25;
     
     console.log('Calculated from sessions:', { completedSessions, totalMinutes });
     

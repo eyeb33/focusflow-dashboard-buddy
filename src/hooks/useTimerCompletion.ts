@@ -45,17 +45,21 @@ export function useTimerCompletion({
       
       // Record the completed session
       if (user && timerMode === 'work') {
-        // Save the completed session in the database
+        // Calculate minutes explicitly from settings (standard pomodoro time)
+        const minutes = settings.workDuration; // This is already in minutes (typically 25)
+        
+        console.log(`Timer completed with ${minutes} minutes for work session`);
+        
+        // Save the completed session in the database with accurate duration
         await saveFocusSession(user.id, timerMode, totalTime, true);
         
         // Update local state
         setCompletedSessions(prev => prev + 1);
         
-        // Add the time to today's total (convert seconds to minutes)
-        const minutes = Math.floor(totalTime / 60);
+        // Add the time to today's total (using settings time rather than arbitrary calculation)
         setTotalTimeToday(prev => prev + minutes);
         
-        // Update daily stats (minutes)
+        // Update daily stats (explicitly passing minutes)
         await updateDailyStats(user.id, minutes, timerMode);
       }
       

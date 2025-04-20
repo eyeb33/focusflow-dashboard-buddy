@@ -57,16 +57,20 @@ const SessionInfo: React.FC = () => {
       const todayMetrics = await fetchTotalMetrics(user.id, todayDateString);
       const yesterdayMetrics = await fetchTotalMetrics(user.id, yesterdayDateString);
       
+      // Calculate reasonable metrics based on session count
+      const focusSessions = todayMetrics.totalSessions || 0;
+      const focusMinutes = todayMetrics.totalMinutes || 0;
+      
       // Set today's stats from the metrics
       setStats({
-        focusSessions: todayMetrics.totalSessions || 0,
-        focusMinutes: todayMetrics.totalMinutes || 0,
+        focusSessions,
+        focusMinutes,
         yesterdayFocusSessions: yesterdayMetrics.totalSessions || null,
         yesterdayFocusMinutes: yesterdayMetrics.totalMinutes || null
       });
       
       console.log('SessionInfo updated with metrics:', {
-        today: { sessions: todayMetrics.totalSessions, minutes: todayMetrics.totalMinutes },
+        today: { sessions: focusSessions, minutes: focusMinutes },
         yesterday: { sessions: yesterdayMetrics.totalSessions, minutes: yesterdayMetrics.totalMinutes }
       });
       

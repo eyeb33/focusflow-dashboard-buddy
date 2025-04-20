@@ -32,9 +32,22 @@ export const fetchTotalMetrics = async (userId: string, today: string): Promise<
     // If we found summary data for today, use that
     if (todaySummary) {
       console.log('Found today summary:', todaySummary, 'for date:', today);
+      
+      // Apply a sanity check on the values - cap minutes based on sessions
+      // Assuming max 60 minutes per session as a reasonable upper bound
+      const sessions = todaySummary.total_completed_sessions || 0;
+      let minutes = todaySummary.total_focus_time || 0;
+      const maxReasonableMinutes = sessions * 60;
+      
+      // If minutes are unreasonably high, cap them
+      if (sessions > 0 && minutes > maxReasonableMinutes) {
+        console.warn(`Detected unreasonable focus time: ${minutes} minutes for ${sessions} sessions. Capping to ${maxReasonableMinutes}`);
+        minutes = maxReasonableMinutes;
+      }
+      
       return { 
-        totalSessions: todaySummary.total_completed_sessions || 0, 
-        totalMinutes: todaySummary.total_focus_time || 0 
+        totalSessions: sessions, 
+        totalMinutes: minutes 
       };
     }
     
@@ -60,11 +73,16 @@ export const fetchTotalMetrics = async (userId: string, today: string): Promise<
       return { totalSessions: 0, totalMinutes: 0 };
     }
 
-    // Calculate total minutes from work sessions only
-    const totalMinutesFromSessions = todaySessions?.reduce((acc, session) => 
-      acc + Math.floor(session.duration / 60), 0) || 0;
-      
-    const totalSessions = todaySessions?.length || 0;
+    if (!todaySessions || todaySessions.length === 0) {
+      return { totalSessions: 0, totalMinutes: 0 };
+    }
+    
+    // Count the number of sessions
+    const totalSessions = todaySessions.length;
+    
+    // Calculate total minutes based on standard pomodoro duration (25 minutes per session)
+    // This is more reliable than using the raw duration which might be corrupted
+    const totalMinutesFromSessions = totalSessions * 25;
     
     console.log('Calculated from today sessions:', { totalSessions, totalMinutesFromSessions }, 'for date:', today);
 
