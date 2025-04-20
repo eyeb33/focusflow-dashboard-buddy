@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { loadTodayStats } from '@/utils/timerContextUtils';
+import { toast } from 'sonner';
 
 export function useTimerStatsLogic() {
   const { user } = useAuth();
@@ -12,32 +13,47 @@ export function useTimerStatsLogic() {
   const [lastCheckTime, setLastCheckTime] = useState<number>(Date.now());
 
   // Function to refresh stats
-  const refreshStats = async () => {
-    console.log('Refreshing timer stats with current date:', new Date().toISOString().split('T')[0]);
+  const refreshStats = async (forceMidnightReset = false) => {
+    const newDate = new Date().toISOString().split('T')[0];
+    console.log('Refreshing timer stats with current date:', newDate);
+    
+    if (forceMidnightReset || newDate !== currentDateRef.current) {
+      console.log('Date changed from', currentDateRef.current, 'to', newDate, '- resetting stats');
+      // Reset all stats on date change
+      setCompletedSessions(0);
+      setTotalTimeToday(0);
+      setCurrentSessionIndex(0);
+      
+      // Show toast notification for date change
+      if (forceMidnightReset || (currentDateRef.current && currentDateRef.current !== newDate)) {
+        toast.info("It's a new day! Your daily stats have been reset.");
+      }
+    }
     
     // Always use the current date, not the stored one
-    const currentDate = new Date().toISOString().split('T')[0];
-    
     if (user) {
       // Get fresh stats from the database
       const stats = await loadTodayStats(user.id);
-      setCompletedSessions(stats.completedSessions);
-      setTotalTimeToday(stats.totalTimeToday);
+      
+      // Only update if we got valid stats and they're for today's date
+      if (stats && newDate === new Date().toISOString().split('T')[0]) {
+        setCompletedSessions(stats.completedSessions);
+        setTotalTimeToday(stats.totalTimeToday);
+      }
       
       // Update the current date reference
-      currentDateRef.current = currentDate;
+      currentDateRef.current = newDate;
       setLastCheckTime(Date.now());
     } else {
       // Reset stats for non-authenticated users
-      setCompletedSessions(0);
-      setTotalTimeToday(0);
-      currentDateRef.current = currentDate;
+      currentDateRef.current = newDate;
     }
   };
 
   // Load user's stats when logged in
   useEffect(() => {
-    refreshStats();
+    // Force refresh on initial load to ensure proper day
+    refreshStats(true);
     
     // Set up a periodic refresh every 3 minutes to ensure data freshness
     const refreshIntervalId = setInterval(() => {
@@ -47,14 +63,14 @@ export function useTimerStatsLogic() {
     return () => clearInterval(refreshIntervalId);
   }, [user]);
 
-  // Check for date change every minute
+  // Check for date change more frequently (every minute)
   useEffect(() => {
     const intervalId = setInterval(() => {
       const currentDate = new Date().toISOString().split('T')[0];
       
       if (currentDate !== currentDateRef.current) {
         console.log('Date changed from', currentDateRef.current, 'to', currentDate, '- refreshing timer stats');
-        refreshStats();
+        refreshStats(true); // Force midnight reset
       }
     }, 60000); // Check every minute
 

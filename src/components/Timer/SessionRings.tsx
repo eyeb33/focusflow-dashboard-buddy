@@ -15,23 +15,24 @@ const SessionRings: React.FC<SessionRingsProps> = ({
   totalSessions,
   mode,
   className,
-  currentPosition = 0
+  currentPosition
 }) => {
   // Calculate current cycle (0-indexed)
   const currentCycle = Math.floor(completedSessions / totalSessions);
   
-  // Calculate position in current cycle (0-indexed)
-  const positionInCycle = currentPosition || (completedSessions % totalSessions);
+  // Use the explicitly passed position or calculate from completed sessions
+  const positionInCycle = currentPosition !== undefined ? 
+    currentPosition : (completedSessions % totalSessions);
   
   // Render work session circles (first row)
   const renderWorkCircles = () => {
     const circles = [];
     
     for (let i = 0; i < totalSessions; i++) {
-      // Is this position completed or active?
+      // Is this position active or completed?
       const isActive = mode === 'work' && positionInCycle === i;
-      const isCompleted = i < positionInCycle && mode === 'work' || 
-                         (mode !== 'work' && i <= positionInCycle);
+      const isCompleted = i < positionInCycle || 
+                         (i === positionInCycle && mode !== 'work');
       
       // Size the active indicator slightly larger
       const size = isActive ? 'w-4 h-4' : 'w-3 h-3';
@@ -58,9 +59,7 @@ const SessionRings: React.FC<SessionRingsProps> = ({
     
     for (let i = 0; i < totalSessions - 1; i++) { // One less because last is long break
       const isActive = mode === 'break' && positionInCycle === i;
-      const isCompleted = mode === 'longBreak' || 
-                        (mode === 'break' && i < positionInCycle) || 
-                        (i < positionInCycle - 1 && mode === 'work');
+      const isCompleted = i < positionInCycle && mode !== 'work';
       
       const size = isActive ? 'w-4 h-4' : 'w-3 h-3';
       
@@ -98,7 +97,7 @@ const SessionRings: React.FC<SessionRingsProps> = ({
   };
 
   return (
-    <div className={cn("flex flex-col items-center gap-2", className)}>
+    <div className={cn("flex flex-col items-center gap-3", className)}>
       {/* Work sessions row (red) */}
       <div className="flex justify-center gap-2">
         {renderWorkCircles()}

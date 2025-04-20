@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -14,6 +13,7 @@ import { useTimerSettings } from "@/hooks/useTimerSettings";
 import { cn } from "@/lib/utils";
 
 const TimerContainer: React.FC = () => {
+  
   const {
     isRunning,
     timerMode,
