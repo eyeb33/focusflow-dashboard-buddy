@@ -1,12 +1,13 @@
 
 import React from 'react';
 import StatCard from "@/components/Dashboard/StatCard";
-import { Clock, Flame, Target, Zap, Waves } from "lucide-react";
+import { Clock, Flame } from "lucide-react";
+import CycleIcon from "@/components/Dashboard/CycleIcon";
 
 export interface StatItem {
   title: string;
   value: string | number;
-  icon: string;
+  icon: string | React.ReactNode;
   description?: string;
   trend?: {
     value: number;
@@ -20,25 +21,23 @@ interface StatCardsGridProps {
 }
 
 const StatCardsGrid: React.FC<StatCardsGridProps> = ({ stats }) => {
-  const getIconComponent = (iconName: string, iconColor?: string) => {
-    switch (iconName) {
+  const getIconComponent = (iconNameOrNode: string | React.ReactNode, iconColor?: string) => {
+    if (React.isValidElement(iconNameOrNode)) return iconNameOrNode;
+    switch (iconNameOrNode) {
       case 'Clock':
-        return <Clock className="h-4 w-4" color={iconColor} />;
+        return <Clock className="h-5 w-5" color={iconColor} />;
       case 'Flame':
-        return <Flame className="h-4 w-4" color={iconColor} />;
-      case 'Target':
-        return <Target className="h-4 w-4" color={iconColor} />;
-      case 'Zap':
-        return <Zap className="h-4 w-4" color={iconColor} />;
-      case 'Waves':
-        return <Waves className="h-4 w-4" color={iconColor} />;
+        return <Flame className="h-5 w-5" color={iconColor} />;
+      case 'Cycle':
+        // Render new custom cycle icon
+        return <CycleIcon size={28} />;
       default:
-        return <Clock className="h-4 w-4" />;
+        return <Clock className="h-5 w-5" />;
     }
   };
 
   return (
-    <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-3 mb-8">{/* Now 3 cols */}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
       {stats.map((stat, index) => (
         <StatCard
           key={index}
@@ -48,6 +47,7 @@ const StatCardsGrid: React.FC<StatCardsGridProps> = ({ stats }) => {
           description={stat.description}
           trend={stat.trend}
           iconColor={stat.iconColor}
+          className="min-h-[120px] flex-1"
         />
       ))}
     </div>
