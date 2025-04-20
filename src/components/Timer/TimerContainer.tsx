@@ -6,7 +6,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CircularProgress from "@/components/Timer/CircularProgress";
 import TimerControls from "@/components/Timer/TimerControls";
 import TimerSettings from "@/components/Timer/TimerSettings";
-import SessionInfo from "@/components/Timer/SessionInfo";
+import SessionInfo from "@/components/Timer/SessionInfo/SessionInfo";
 import SessionRings from "@/components/Timer/SessionRings";
 import { useTimerControls } from "@/hooks/useTimerControls";
 import { useTimerStats } from "@/hooks/useTimerStats";
