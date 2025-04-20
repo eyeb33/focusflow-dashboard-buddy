@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 interface SessionRingsProps {
@@ -17,22 +17,43 @@ const SessionRings: React.FC<SessionRingsProps> = ({
   className,
   currentPosition
 }) => {
-  // Calculate current cycle (0-indexed)
-  const currentCycle = Math.floor(completedSessions / totalSessions);
-  
   // Use the explicitly passed position or calculate from completed sessions
   const positionInCycle = currentPosition !== undefined ? 
     currentPosition : (completedSessions % totalSessions);
   
-  // Render work session circles (first row)
+  // State for pulsing animation on long break
+  const [isPulsing, setIsPulsing] = useState(false);
+  
+  // Enable pulsing animation for the last 10 seconds of longBreak
+  useEffect(() => {
+    if (mode === 'longBreak') {
+      // Check if there's a timer in the global context
+      const checkRemainingTime = () => {
+        const timer = window.timerContext?.timeRemaining;
+        if (timer !== undefined && timer <= 10) {
+          setIsPulsing(true);
+        } else {
+          setIsPulsing(false);
+        }
+      };
+      
+      const intervalId = setInterval(checkRemainingTime, 500);
+      return () => clearInterval(intervalId);
+    } else {
+      setIsPulsing(false);
+    }
+  }, [mode]);
+  
+  // Render work session circles (only shown in work mode)
   const renderWorkCircles = () => {
+    if (mode !== 'work') return null;
+    
     const circles = [];
     
     for (let i = 0; i < totalSessions; i++) {
       // Is this position active or completed?
-      const isActive = mode === 'work' && positionInCycle === i;
-      const isCompleted = i < positionInCycle || 
-                         (i === positionInCycle && mode !== 'work');
+      const isActive = positionInCycle === i;
+      const isCompleted = i < positionInCycle;
       
       // Size the active indicator slightly larger
       const size = isActive ? 'w-4 h-4' : 'w-3 h-3';
@@ -41,25 +62,31 @@ const SessionRings: React.FC<SessionRingsProps> = ({
         <div
           key={`work-${i}`}
           className={cn(
-            "rounded-full transition-colors duration-300",
+            "rounded-full transition-colors duration-300 flex-shrink-0",
             size,
-            isActive ? "border-2 border-red-500" : "",
+            isActive ? "border-2 border-red-500 flex items-center justify-center" : "",
             isCompleted ? "bg-red-500" : "border-2 border-red-500"
           )}
         />
       );
     }
     
-    return circles;
+    return (
+      <div className="flex justify-center items-center gap-2">
+        {circles}
+      </div>
+    );
   };
   
-  // Render break session circles (second row)
+  // Render break session circles (only shown in break mode)
   const renderBreakCircles = () => {
+    if (mode !== 'break') return null;
+    
     const circles = [];
     
     for (let i = 0; i < totalSessions - 1; i++) { // One less because last is long break
-      const isActive = mode === 'break' && positionInCycle === i;
-      const isCompleted = i < positionInCycle && mode !== 'work';
+      const isActive = positionInCycle === i;
+      const isCompleted = i < positionInCycle;
       
       const size = isActive ? 'w-4 h-4' : 'w-3 h-3';
       
@@ -67,51 +94,44 @@ const SessionRings: React.FC<SessionRingsProps> = ({
         <div
           key={`break-${i}`}
           className={cn(
-            "rounded-full transition-colors duration-300",
+            "rounded-full transition-colors duration-300 flex-shrink-0",
             size,
-            isActive ? "border-2 border-green-500" : "",
+            isActive ? "border-2 border-green-500 flex items-center justify-center" : "",
             isCompleted ? "bg-green-500" : "border-2 border-green-500"
           )}
         />
       );
     }
     
-    return circles;
+    return (
+      <div className="flex justify-center items-center gap-2">
+        {circles}
+      </div>
+    );
   };
   
-  // Render long break circle (third row - just one)
+  // Render long break circle (only shown in longBreak mode)
   const renderLongBreakCircle = () => {
-    const isActive = mode === 'longBreak';
-    const isCompleted = false; // Only filled if completed full cycle
+    if (mode !== 'longBreak') return null;
     
     return (
-      <div
-        className={cn(
-          "rounded-full transition-colors duration-300",
-          isActive ? "w-4 h-4" : "w-3 h-3",
-          isActive ? "border-2 border-blue-500" : "",
-          isCompleted ? "bg-blue-500" : "border-2 border-blue-500"
-        )}
-      />
+      <div className="flex justify-center items-center">
+        <div
+          className={cn(
+            "rounded-full transition-colors duration-300",
+            isPulsing ? "w-5 h-5 animate-pulse-light" : "w-4 h-4",
+            "border-2 border-blue-500 flex items-center justify-center"
+          )}
+        />
+      </div>
     );
   };
 
   return (
-    <div className={cn("flex flex-col items-center gap-3", className)}>
-      {/* Work sessions row (red) */}
-      <div className="flex justify-center gap-2">
-        {renderWorkCircles()}
-      </div>
-      
-      {/* Break sessions row (green) */}
-      <div className="flex justify-center gap-2">
-        {renderBreakCircles()}
-      </div>
-      
-      {/* Long break row (blue) - single circle */}
-      <div className="flex justify-center">
-        {renderLongBreakCircle()}
-      </div>
+    <div className={cn("flex items-center justify-center", className)}>
+      {renderWorkCircles()}
+      {renderBreakCircles()}
+      {renderLongBreakCircle()}
     </div>
   );
 };
