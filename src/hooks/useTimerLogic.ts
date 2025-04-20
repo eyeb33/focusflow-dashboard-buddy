@@ -10,6 +10,7 @@ import { useTimerAudio } from './useTimerAudio';
 
 export function useTimerLogic(settings: TimerSettings) {
   const [timerMode, setTimerMode] = useState<TimerMode>('work');
+  const [autoStart, setAutoStart] = useState<boolean>(false);
 
   // Use the smaller hooks
   const {
@@ -38,7 +39,7 @@ export function useTimerLogic(settings: TimerSettings) {
     timerMode,
     settings,
     completedSessions,
-    currentSessionIndex, // Pass currentSessionIndex here
+    currentSessionIndex,
     setCompletedSessions,
     setTimerMode,
     setIsRunning,
@@ -53,7 +54,15 @@ export function useTimerLogic(settings: TimerSettings) {
   // Reset timer when mode or settings change
   useEffect(() => {
     setTimeRemaining(getTotalTime(timerMode, settings));
-  }, [timerMode, settings]);
+  }, [timerMode, settings, setTimeRemaining]);
+  
+  // Auto-start feature
+  useEffect(() => {
+    if (autoStart && !isRunning) {
+      baseHandleStart(timerMode);
+      setAutoStart(false);
+    }
+  }, [autoStart, isRunning, baseHandleStart, timerMode]);
 
   // Create wrappers for the control handlers
   const handleStart = () => baseHandleStart(timerMode);
@@ -93,6 +102,7 @@ export function useTimerLogic(settings: TimerSettings) {
     handleStart,
     handlePause,
     handleReset,
-    handleModeChange
+    handleModeChange,
+    setAutoStart
   };
 }

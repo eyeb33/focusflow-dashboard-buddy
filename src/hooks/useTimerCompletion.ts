@@ -86,9 +86,13 @@ export function useTimerCompletion({
       }
       
       // Stop the timer and set the new mode
-      setIsRunning(false);
       setTimerMode(newMode);
       resetTimerState();
+      
+      // Automatically start the next timer
+      setTimeout(() => {
+        setIsRunning(true);
+      }, 1000); // Small delay before starting the next timer
     } catch (error) {
       console.error('Error handling timer completion:', error);
       // Set a safe mode if something went wrong

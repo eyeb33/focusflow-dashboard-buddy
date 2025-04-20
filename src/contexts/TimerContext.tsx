@@ -21,6 +21,7 @@ interface TimerContextType {
   handleModeChange: (mode: TimerMode) => void;
   getModeLabel: () => string;
   updateSettings: (newSettings: Partial<ReturnType<typeof useTimerSettings>['settings']>) => void;
+  setAutoStart: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const defaultSettings = {
@@ -47,7 +48,8 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     handleStart,
     handlePause,
     handleReset,
-    handleModeChange
+    handleModeChange,
+    setAutoStart
   } = useTimerLogic(settings);
   
   // Enable realtime updates for sessions_summary table
@@ -87,7 +89,8 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     handleReset,
     handleModeChange,
     getModeLabel: getTimerModeLabel,
-    updateSettings
+    updateSettings,
+    setAutoStart
   };
 
   return (
