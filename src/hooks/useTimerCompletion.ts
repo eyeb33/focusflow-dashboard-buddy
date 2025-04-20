@@ -1,22 +1,22 @@
 
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { saveFocusSession } from '@/utils/timerStorage';
-import { updateDailyStats } from '@/utils/productivityStats';
-import { playTimerCompletionSound } from '@/utils/audioUtils';
 import { TimerMode } from '@/utils/timerContextUtils';
+import { getTotalTime } from '@/utils/timerContextUtils';
+import { saveFocusSession } from '@/utils/timerStorage';
+import { playCompletionSound } from '@/utils/audioUtils';
+import { updateDailyStats } from '@/utils/productivityStats';
 import { TimerSettings } from './useTimerSettings';
 
 interface UseTimerCompletionProps {
   timerMode: TimerMode;
   settings: TimerSettings;
   completedSessions: number;
-  currentSessionIndex: number; // Added this parameter
-  setCompletedSessions: (sessions: number) => void;
-  setTimerMode: (mode: TimerMode) => void;
-  setIsRunning: (isRunning: boolean) => void;
-  setTotalTimeToday: (callback: (prev: number) => number) => void;
-  setCurrentSessionIndex: (index: number) => void;
+  currentSessionIndex: number;
+  setCompletedSessions: React.Dispatch<React.SetStateAction<number>>;
+  setTimerMode: React.Dispatch<React.SetStateAction<TimerMode>>;
+  setIsRunning: React.Dispatch<React.SetStateAction<boolean>>;
+  setTotalTimeToday: React.Dispatch<React.SetStateAction<number>>;
+  setCurrentSessionIndex: React.Dispatch<React.SetStateAction<number>>;
   resetTimerState: () => void;
 }
 
@@ -24,7 +24,7 @@ export function useTimerCompletion({
   timerMode,
   settings,
   completedSessions,
-  currentSessionIndex, // Added this parameter
+  currentSessionIndex,
   setCompletedSessions,
   setTimerMode,
   setIsRunning,
@@ -33,98 +33,58 @@ export function useTimerCompletion({
   resetTimerState
 }: UseTimerCompletionProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
-
-  const handleTimerComplete = () => {
-    // Play sound when timer completes
-    playTimerCompletionSound();
-
-    // Calculate the total sessions in a full cycle (work + break for each, then replace last break with long break)
-    const totalSessionsInCycle = settings.sessionsUntilLongBreak * 2;
-    
-    if (timerMode === 'work') {
-      // Completed a work session
-      const newCompletedSessions = completedSessions + 1;
-      setCompletedSessions(newCompletedSessions);
-      setTotalTimeToday(prev => prev + settings.workDuration);
+  
+  // Handle timer completion
+  const handleTimerComplete = async () => {
+    try {
+      // Play completion sound
+      playCompletionSound();
       
-      // Save completed work session to database
-      if (user) {
-        // Convert minutes to seconds for the database
-        saveFocusSession(user.id, timerMode, settings.workDuration * 60);
-        updateDailyStats(user.id, settings.workDuration, timerMode);
+      // Get total time for this timer mode in seconds
+      const totalTime = getTotalTime(timerMode, settings);
+      
+      // Record the completed session
+      if (user && timerMode === 'work') {
+        // Save the completed session in the database
+        await saveFocusSession(user.id, timerMode, totalTime, true);
+        
+        // Update local state
+        setCompletedSessions(prev => prev + 1);
+        
+        // Add the time to today's total (convert seconds to minutes)
+        const minutes = Math.floor(totalTime / 60);
+        setTotalTimeToday(prev => prev + minutes);
+        
+        // Update daily stats (minutes)
+        await updateDailyStats(user.id, minutes, timerMode);
       }
       
-      // Work sessions are even positions in the sequence (0, 2, 4, etc.)
-      // Find the next position, which is current + 1 (to move to the break)
-      const currentPos = currentSessionIndex;
-      const nextPos = currentPos + 1;
+      // Reset timer mode based on current state and settings
+      let newMode: TimerMode = 'work';
+      let newCurrentSessionIndex = currentSessionIndex;
       
-      // Update the current session index
-      setCurrentSessionIndex(nextPos);
-      
-      // Check if the next position is the last one in the cycle (which would be a long break)
-      if (nextPos === totalSessionsInCycle - 1) {
-        setTimerMode('longBreak');
-        toast({
-          title: "Time for a long break!",
-          description: `You've completed ${settings.sessionsUntilLongBreak} focus sessions. Take a longer break now.`,
-        });
+      if (timerMode === 'work') {
+        // After work session, switch to break or long break
+        newCurrentSessionIndex = (currentSessionIndex + 1) % settings.sessionsUntilLongBreak;
+        setCurrentSessionIndex(newCurrentSessionIndex);
+        
+        newMode = newCurrentSessionIndex === 0 ? 'longBreak' : 'break';
       } else {
-        setTimerMode('break');
-        toast({
-          title: "Session completed!",
-          description: `You completed a ${settings.workDuration} minute focus session.`,
-        });
+        // After any break, switch back to work
+        newMode = 'work';
       }
       
-      // Automatically start the break timer
-      setTimeout(() => {
-        setIsRunning(true);
-      }, 50);
-    } else {
-      // Completed a break or long break session
-      if (user) {
-        const duration = timerMode === 'break' ? settings.breakDuration * 60 : settings.longBreakDuration * 60;
-        const durationMinutes = timerMode === 'break' ? settings.breakDuration : settings.longBreakDuration;
-        saveFocusSession(user.id, timerMode, duration);
-        updateDailyStats(user.id, durationMinutes, timerMode);
-      }
-      
-      if (timerMode === 'break') {
-        // After a short break, move to the next work session
-        // Breaks are odd positions (1, 3, 5, etc.)
-        const nextPos = currentSessionIndex + 1;
-        setCurrentSessionIndex(nextPos);
-      } else {
-        // After a long break, reset to position 0 (start of new cycle)
-        setCurrentSessionIndex(0);
-      }
-      
-      // After breaks, go back to work mode
+      // Stop the timer and set the new mode
+      setIsRunning(false);
+      setTimerMode(newMode);
+      resetTimerState();
+    } catch (error) {
+      console.error('Error handling timer completion:', error);
+      // Set a safe mode if something went wrong
       setTimerMode('work');
-      
-      if (timerMode === 'break') {
-        toast({
-          title: "Break finished!",
-          description: "Time to focus again.",
-        });
-        // Automatically start the next focus timer
-        setTimeout(() => {
-          setIsRunning(true);
-        }, 50);
-      } else if (timerMode === 'longBreak') {
-        toast({
-          title: "Long break finished!",
-          description: "Ready to start a new cycle?",
-        });
-        // After a long break, we're already at index 0
-        // Do NOT automatically start after a long break - it's the end of a complete cycle
-      }
+      setIsRunning(false);
+      resetTimerState();
     }
-    
-    resetTimerState();
-    setIsRunning(false);
   };
 
   return { handleTimerComplete };
