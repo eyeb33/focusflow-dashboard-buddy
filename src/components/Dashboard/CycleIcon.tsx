@@ -21,10 +21,10 @@ const CycleIcon: React.FC<{ size?: number }> = ({ size = 24 }) => (
       strokeLinecap="round"
       fill="none"
     />
-    {/* Green arc */}
+    {/* Green arc - updated to a more visible green */}
     <path
       d="M6 20a14.96 14.96 0 0 0 6.14 10.74"
-      stroke="#F2FCE2"
+      stroke="#4ade80"
       strokeWidth="3"
       strokeLinecap="round"
       fill="none"
@@ -39,7 +39,7 @@ const CycleIcon: React.FC<{ size?: number }> = ({ size = 24 }) => (
     />
     {/* Arrows - for cycle effect */}
     <polygon points="11,9 8,7 8,11" fill="#ea384c" />
-    <polygon points="6,21 3,19 6,17" fill="#F2FCE2" />
+    <polygon points="6,21 3,19 6,17" fill="#4ade80" />
     <polygon points="29,32 25,31 28,29" fill="#1EAEDB" />
   </svg>
 );

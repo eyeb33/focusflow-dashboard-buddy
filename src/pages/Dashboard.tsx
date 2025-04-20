@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from "@/components/Layout/Header";
@@ -62,7 +63,7 @@ const Dashboard = () => {
           {
             title: "Cycles",
             value: stats.completedCycles ?? 0,
-            icon: "Waves",
+            icon: "Cycle",
             iconColor: "#6DD5ED"
           },
         ];
@@ -83,7 +84,7 @@ const Dashboard = () => {
           {
             title: "Weekly Cycles",
             value: stats.weeklyStats?.completedCycles || 0,
-            icon: "Waves",
+            icon: "Cycle",
             iconColor: "#6DD5ED"
           },
         ];
@@ -104,7 +105,7 @@ const Dashboard = () => {
           {
             title: "Monthly Cycles",
             value: stats.monthlyStats?.completedCycles || 0,
-            icon: "Waves",
+            icon: "Cycle",
             iconColor: "#6DD5ED"
           },
         ];
