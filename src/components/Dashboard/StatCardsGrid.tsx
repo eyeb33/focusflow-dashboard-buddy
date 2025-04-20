@@ -29,7 +29,6 @@ const StatCardsGrid: React.FC<StatCardsGridProps> = ({ stats }) => {
       case 'Flame':
         return <Flame className="h-5 w-5" color={iconColor} />;
       case 'Cycle':
-        // Render new custom cycle icon
         return <CycleIcon size={28} />;
       default:
         return <Clock className="h-5 w-5" />;
@@ -37,21 +36,23 @@ const StatCardsGrid: React.FC<StatCardsGridProps> = ({ stats }) => {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+    <div className="flex gap-6 mb-8 w-full max-w-full">
       {stats.map((stat, index) => (
-        <StatCard
-          key={index}
-          title={stat.title}
-          value={stat.value}
-          icon={getIconComponent(stat.icon, stat.iconColor)}
-          description={stat.description}
-          trend={stat.trend}
-          iconColor={stat.iconColor}
-          className="min-h-[120px] flex-1"
-        />
+        <div key={index} className="flex-1 min-w-[220px] max-w-[33%]">
+          <StatCard
+            title={stat.title}
+            value={stat.value}
+            icon={getIconComponent(stat.icon, stat.iconColor)}
+            description={stat.description}
+            trend={stat.trend}
+            iconColor={stat.iconColor}
+            className="min-h-[120px] w-full"
+          />
+        </div>
       ))}
     </div>
   );
 };
 
 export default StatCardsGrid;
+
