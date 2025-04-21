@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -59,7 +60,7 @@ const TimerContainer: React.FC = () => {
   const currentModeColors = modeColors[timerMode];
   
   return (
-    <Card className="w-full max-w-md p-6 bg-black dark:bg-black backdrop-blur-sm shadow-md">
+    <Card className="w-full max-w-md p-6 bg-white dark:bg-black backdrop-blur-sm shadow-md">
       <div className="flex items-center justify-between mb-6">
         <Tabs 
           value={timerMode} 
