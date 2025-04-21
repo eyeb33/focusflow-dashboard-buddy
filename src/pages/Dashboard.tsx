@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from "@/components/Layout/Header";
 import MobileNav from "@/components/Layout/MobileNav";
@@ -15,13 +15,32 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 
 const Dashboard = () => {
   const { user, isLoading: authLoading } = useAuth();
-  const { dashboardData, isLoading: dataLoading } = useDashboardData();
+  const { dashboardData, isLoading: dataLoading, refetch } = useDashboardData();
   const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('today');
+  const visibilityChangedRef = useRef(false);
 
   const handlePeriodChange = (period: TimePeriod) => {
     setSelectedPeriod(period);
   };
+
+  // Handle tab visibility
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        visibilityChangedRef.current = true;
+      } else if (visibilityChangedRef.current) {
+        // Only refetch if we're returning to the page after being hidden
+        refetch();
+        visibilityChangedRef.current = false;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [refetch]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -54,13 +73,8 @@ const Dashboard = () => {
       const totalMinutes = dailyData.reduce((sum, point) => sum + point.minutes, 0);
       const totalSessions = dailyData.reduce((sum, point) => sum + point.sessions, 0);
       
-      // A complete cycle requires 4 focus sessions AND a long break to be completed
-      // The logic is defined as: number of focus sessions divided by 4, but only if they are in proper sequence
-      // which we can't determine from aggregated data, so we'll assume 0 cycles for now unless other data proves otherwise
-      // This is a conservative approach to avoid over-counting cycles
-      const completedCycles = 0; // Default to 0 cycles for daily view based on chart data
-      
-      console.log(`Daily data - minutes: ${totalMinutes}, sessions: ${totalSessions}, calculated cycles: ${completedCycles}`);
+      // Calculate completed cycles (4 sessions = 1 cycle)
+      const completedCycles = Math.floor(totalSessions / 4);
       
       return { totalMinutes, totalSessions, completedCycles };
     };

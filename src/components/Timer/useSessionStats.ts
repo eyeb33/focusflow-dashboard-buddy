@@ -23,6 +23,7 @@ export function useSessionStats() {
 
   const currentDateRef = useRef<string>(new Date().toISOString().split('T')[0]);
   const hasResetTodayRef = useRef<boolean>(false);
+  const documentHiddenTime = useRef<number | null>(null);
 
   const fetchTodayStats = async (forceMidnightReset = false) => {
     if (!user) {
@@ -74,22 +75,50 @@ export function useSessionStats() {
     }
   };
 
-  // Reset hasResetToday flag at regular intervals
+  // Reset hasResetToday flag less frequently
   useEffect(() => {
     const resetIntervalId = setInterval(() => {
       hasResetTodayRef.current = false;
-    }, 5 * 60 * 1000);
+    }, 60 * 60 * 1000); // Check every hour instead of every 5 minutes
     return () => clearInterval(resetIntervalId);
   }, []);
 
+  // Initial fetch and periodic updates
   useEffect(() => {
     fetchTodayStats(true);
+    
     const intervalId = setInterval(() => {
-      fetchTodayStats();
-    }, 3 * 60 * 1000);
+      // Only refresh if document is visible
+      if (!document.hidden) {
+        fetchTodayStats();
+      }
+    }, 3 * 60 * 1000); // Every 3 minutes
+    
     return () => clearInterval(intervalId);
   }, [user]);
 
+  // Track visibility changes
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Store the time when the document became hidden
+        documentHiddenTime.current = Date.now();
+      } else {
+        // Only refresh if hidden for more than 30 seconds
+        if (documentHiddenTime.current && (Date.now() - documentHiddenTime.current > 30000)) {
+          fetchTodayStats();
+        }
+        documentHiddenTime.current = null;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user]);
+
+  // Listen to real-time database changes
   useEffect(() => {
     if (user) {
       const channel = supabase
@@ -125,13 +154,17 @@ export function useSessionStats() {
     }
   }, [user]);
 
+  // Less frequent date check
   useEffect(() => {
     const dateCheckIntervalId = setInterval(() => {
-      const currentDate = new Date().toISOString().split('T')[0];
-      if (currentDate !== currentDateRef.current) {
-        fetchTodayStats(true);
+      if (!document.hidden) {
+        const currentDate = new Date().toISOString().split('T')[0];
+        if (currentDate !== currentDateRef.current) {
+          fetchTodayStats(true);
+        }
       }
-    }, 60000);
+    }, 60000); // Every minute
+    
     return () => clearInterval(dateCheckIntervalId);
   }, [user]);
 

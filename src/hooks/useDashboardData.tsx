@@ -1,92 +1,78 @@
 
-import { useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { DashboardData, initialDashboardData } from './dashboard/types';
-import { useStatsData } from './dashboard/useStatsData';
-import { useProductivityTrends } from './dashboard/useProductivityTrends';
-import { useStreakData } from './dashboard/useStreakData';
-import { useInsights } from './dashboard/useInsights';
-import { useProductivityData } from './dashboard/useProductivityData';
-import { useRealtimeUpdates } from './dashboard/useRealtimeUpdates';
-
-export type { DashboardData } from './dashboard/types';
+import { useStatsData } from "@/hooks/dashboard/useStatsData";
+import { useProductivityData } from "@/hooks/dashboard/useProductivityData";
+import { useInsights } from "@/hooks/dashboard/useInsights";
+import { useStreakData } from "@/hooks/dashboard/useStreakData";
+import { useProductivityTrends } from "@/hooks/dashboard/useProductivityTrends";
+import { useRealtimeUpdates } from "@/hooks/dashboard/useRealtimeUpdates";
 
 export const useDashboardData = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
-
-  // Initialize all data hooks with React Query
-  const { stats, isLoading: statsLoading, refetch: refetchStats } = useStatsData(user?.id);
-  const { productivityTrend, isLoading: trendLoading, refetch: refetchTrends } = useProductivityTrends(user?.id);
-  const { streakData, isLoading: streakLoading, refetch: refetchStreak } = useStreakData(user?.id);
-  const { insights, isLoading: insightsLoading, refetch: refetchInsights } = useInsights(user?.id);
+  const userId = user?.id;
+  
+  // Track tab visibility changes
+  const wasDocumentHidden = useRef(false);
+  
+  // Set up hooks for data fetching
+  const { stats, isLoading: statsLoading, refetch: refetchStats } = useStatsData(userId);
   const { 
     dailyProductivity, 
     weeklyProductivity, 
     monthlyProductivity, 
     isLoading: productivityLoading,
-    refetch: refetchProductivity 
-  } = useProductivityData(user?.id);
+    refetch: refetchProductivity
+  } = useProductivityData(userId);
+  const { insights, isLoading: insightsLoading } = useInsights(userId);
+  const { streakData, isLoading: streakLoading, refetch: refetchStreak } = useStreakData(userId);
+  const { trends, isLoading: trendsLoading } = useProductivityTrends(userId);
+  
+  // Set up realtime updates
+  useRealtimeUpdates(userId);
 
-  // Set up realtime updates to automatically invalidate queries
-  useRealtimeUpdates(user?.id);
+  // Handle visibility changes to ensure data consistency
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        wasDocumentHidden.current = true;
+      } else if (wasDocumentHidden.current) {
+        // Refetch data when returning to the page to ensure everything is in sync
+        refetchData();
+        wasDocumentHidden.current = false;
+      }
+    };
 
-  // Define a function to manually refresh all data
-  const fetchDashboardData = useCallback(async () => {
-    try {
-      console.log('Manually refreshing dashboard data for user:', user?.id);
-      
-      // Refresh all queries in parallel
-      await Promise.all([
-        refetchStats(),
-        refetchTrends(),
-        refetchStreak(),
-        refetchInsights(),
-        refetchProductivity()
-      ]);
-      
-      toast({
-        title: "Dashboard refreshed",
-        description: "Latest productivity data has been loaded.",
-      });
-      
-      console.log('All dashboard data refreshed successfully');
-    } catch (error: any) {
-      console.error('Error refreshing dashboard data:', error.message);
-      toast({
-        title: "Error loading dashboard data",
-        description: "There was a problem fetching your productivity data.",
-        variant: "destructive",
-      });
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [userId]);
+
+  const refetchData = () => {
+    if (userId) {
+      refetchStats();
+      refetchProductivity();
+      refetchStreak();
     }
-  }, [
-    user?.id,
-    refetchStats,
-    refetchTrends,
-    refetchStreak,
-    refetchInsights,
-    refetchProductivity,
-    toast
-  ]);
-
-  // Determine overall loading state
-  const isLoading = statsLoading || trendLoading || streakLoading || insightsLoading || productivityLoading;
-
-  // Combine all data into dashboard data object
-  const dashboardData: DashboardData = {
+  };
+  
+  // Combined data
+  const dashboardData = {
     stats,
-    productivityTrend,
-    streakData,
-    insights,
     dailyProductivity,
     weeklyProductivity,
-    monthlyProductivity
+    monthlyProductivity,
+    insights,
+    streakData,
+    trends
   };
+  
+  const isLoading = statsLoading || productivityLoading || insightsLoading || streakLoading || trendsLoading;
 
-  return { 
-    dashboardData: isLoading ? initialDashboardData : dashboardData, 
-    isLoading, 
-    refreshData: fetchDashboardData 
+  return {
+    dashboardData,
+    isLoading,
+    refetch: refetchData
   };
 };
