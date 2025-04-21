@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Header from "@/components/Layout/Header";
@@ -8,29 +7,31 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
 import TimerContainer from "@/components/Timer/TimerContainer";
 import AuthPrompt from "@/components/Auth/AuthPrompt";
-
 const Index = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const [activeTab, setActiveTab] = useState('timer');
-  
   const handleLoginClick = () => {
-    navigate('/auth', { state: { mode: 'login' } });
+    navigate('/auth', {
+      state: {
+        mode: 'login'
+      }
+    });
   };
-  
   const handleSignupClick = () => {
-    navigate('/auth', { state: { mode: 'signup' } });
+    navigate('/auth', {
+      state: {
+        mode: 'signup'
+      }
+    });
   };
-
-  return (
-    <div className="min-h-screen flex flex-col">
-      <Header 
-        onLoginClick={handleLoginClick} 
-        onSignupClick={handleSignupClick}
-      />
+  return <div className="min-h-screen flex flex-col">
+      <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
       
       <main className="flex-1 flex flex-col">
-        <div className="relative flex flex-col items-center justify-center flex-1 px-4 py-8 md:py-16 timer-gradient">
+        <div className="relative flex flex-col items-center justify-center flex-1 px-4 py-8 md:py-16 timer-gradient bg-zinc-950">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-md">
             <TabsList className="grid w-full grid-cols-2 mb-4">
               <TabsTrigger value="timer">Timer</TabsTrigger>
@@ -53,8 +54,6 @@ const Index = () => {
       </main>
       
       <MobileNav />
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
