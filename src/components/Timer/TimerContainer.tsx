@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -6,7 +5,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CircularProgress from "@/components/Timer/CircularProgress";
 import TimerControls from "@/components/Timer/TimerControls";
 import TimerSettings from "@/components/Timer/TimerSettings";
-import SessionInfo from "@/components/Timer/SessionInfo/SessionInfo";
 import SessionRings from "@/components/Timer/SessionRings";
 import { useTimerControls } from "@/hooks/useTimerControls";
 import { useTimerStats } from "@/hooks/useTimerStats";
@@ -34,11 +32,9 @@ const TimerContainer: React.FC = () => {
   
   const { settings } = useTimerSettings();
 
-  // Expose timer data globally for other components to access
   const timerContext = useTimer();
   
   useEffect(() => {
-    // Make timer data available to other components (for animation timing)
     window.timerContext = timerContext;
   }, [timerContext]);
 
@@ -136,16 +132,13 @@ const TimerContainer: React.FC = () => {
           totalSessions={sessionsUntilLongBreak}
           mode={timerMode}
           currentPosition={currentSessionIndex}
-          className="mt-2 mb-4"
+          className="mt-2"
         />
       </div>
-      
-      <SessionInfo />
     </Card>
   );
 };
 
-// Add the TypeScript declaration for window.timerContext
 declare global {
   interface Window {
     timerContext?: {
