@@ -1,4 +1,3 @@
-
 import { useAuth } from '@/contexts/AuthContext';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { getTotalTime } from '@/utils/timerContextUtils';
@@ -62,7 +61,7 @@ export function useTimerCompletion({
         // Update daily stats (explicitly passing minutes)
         await updateDailyStats(user.id, minutes, timerMode);
         
-        console.log(`After completion: completed sessions=${completedSessions+1}, currentSessionIndex=${currentSessionIndex}`);
+        console.log(`After completion: completed sessions=${completedSessions+1}, currentSessionIndex=${currentSessionIndex+1 >= settings.sessionsUntilLongBreak ? 0 : currentSessionIndex+1}`);
       }
       
       // Reset timer mode based on current state and settings
@@ -70,19 +69,23 @@ export function useTimerCompletion({
       let newCurrentSessionIndex = currentSessionIndex;
       
       if (timerMode === 'work') {
-        // After work session, switch to break or long break
+        // After work session, increment the session index
         newCurrentSessionIndex = (currentSessionIndex + 1) % settings.sessionsUntilLongBreak;
         setCurrentSessionIndex(newCurrentSessionIndex);
         
+        // If we've reached the end of the work sessions, go to long break
+        // Otherwise, go to a regular break
         newMode = newCurrentSessionIndex === 0 ? 'longBreak' : 'break';
         console.log(`Work session completed. New mode: ${newMode}, new index: ${newCurrentSessionIndex}`);
       } else if (timerMode === 'break') {
-        // After regular break, switch back to work
+        // After regular break, switch back to work but keep the same session index
+        // because we're still in the same position in the cycle
         newMode = 'work';
       } else if (timerMode === 'longBreak') {
-        // After long break, we've completed a full cycle!
+        // After long break, start a new cycle!
         console.log('Long break completed - this completes a full cycle!');
         newMode = 'work';
+        
         // Reset the index at the end of a full cycle
         newCurrentSessionIndex = 0;
         setCurrentSessionIndex(0);

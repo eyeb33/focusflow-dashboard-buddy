@@ -38,7 +38,7 @@ const SessionRings: React.FC<SessionRingsProps> = ({
     
     const intervalId = setInterval(checkRemainingTime, 500);
     return () => clearInterval(intervalId);
-  }, [mode]);
+  }, []);
   
   // Render work session circles (only shown in work mode)
   const renderWorkCircles = () => {
@@ -64,7 +64,9 @@ const SessionRings: React.FC<SessionRingsProps> = ({
             isActive ? "border-2 border-red-500 flex items-center justify-center" : "",
             isCompleted ? "bg-red-500" : "border-2 border-red-500"
           )}
-        />
+        >
+          {/* Explicitly empty div to maintain consistent layout */}
+        </div>
       );
     }
     
@@ -80,8 +82,10 @@ const SessionRings: React.FC<SessionRingsProps> = ({
     if (mode !== 'break') return null;
     
     const circles = [];
+    // Breaking cycles are always total-1 because the last one is a long break
+    const breakCount = totalSessions - 1;
     
-    for (let i = 0; i < totalSessions - 1; i++) { // One less because last is long break
+    for (let i = 0; i < breakCount; i++) {
       const isActive = positionInCycle === i;
       const isCompleted = i < positionInCycle;
       
@@ -97,7 +101,9 @@ const SessionRings: React.FC<SessionRingsProps> = ({
             isActive ? "border-2 border-green-500 flex items-center justify-center" : "",
             isCompleted ? "bg-green-500" : "border-2 border-green-500"
           )}
-        />
+        >
+          {/* Explicitly empty div to maintain consistent layout */}
+        </div>
       );
     }
     
@@ -111,7 +117,8 @@ const SessionRings: React.FC<SessionRingsProps> = ({
   // Render long break circle (only shown in longBreak mode)
   const renderLongBreakCircle = () => {
     if (mode !== 'longBreak') return null;
-    
+
+    // For long break, we just show one circle that represents the long break itself
     return (
       <div className="flex justify-center items-center">
         <div
@@ -120,7 +127,9 @@ const SessionRings: React.FC<SessionRingsProps> = ({
             isPulsing ? "w-5 h-5 animate-pulse-light" : "w-4 h-4",
             "border-2 border-blue-500 flex items-center justify-center"
           )}
-        />
+        >
+          {/* Explicitly empty div to maintain consistent layout */}
+        </div>
       </div>
     );
   };
