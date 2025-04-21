@@ -52,12 +52,12 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ data, currentStreak, be
 
   // Update the intensity class based on number of completed sessions
   const getIntensityClass = (completed: number) => {
-    if (completed === 0) return 'bg-gray-100';
-    if (completed < 2) return 'bg-red-100';
-    if (completed < 4) return 'bg-red-200';
-    if (completed < 6) return 'bg-red-300';
-    if (completed < 8) return 'bg-red-400';
-    return 'bg-red-500';
+    if (completed === 0) return 'bg-gray-100 dark:bg-gray-800';
+    if (completed < 2) return 'bg-red-100 dark:bg-red-900';
+    if (completed < 4) return 'bg-red-200 dark:bg-red-800';
+    if (completed < 6) return 'bg-red-300 dark:bg-red-700';
+    if (completed < 8) return 'bg-red-400 dark:bg-red-600';
+    return 'bg-red-500 dark:bg-red-500';
   };
 
   // Day names starting from Monday

@@ -42,6 +42,22 @@ export const fetchStreakData = async (userId: string, today: string): Promise<St
   // Find best streak (maximum longest_streak value)
   const bestStreakValue = summaryData?.reduce((max: number, day: any) => 
     Math.max(max, day.longest_streak || 0), 0) || 0;
+  
+  // Update longest streak in database if current streak is higher
+  if (currentStreak > bestStreakValue && userId) {
+    const today = new Date().toISOString().split('T')[0];
+    const { error: updateError } = await supabase
+      .from('sessions_summary')
+      .upsert({
+        user_id: userId,
+        date: today,
+        longest_streak: currentStreak
+      }, { onConflict: 'user_id,date' });
+      
+    if (updateError) {
+      console.error('Error updating longest streak:', updateError);
+    }
+  }
 
   return {
     currentStreak: currentStreak || 0, // Ensure streak is at least 0

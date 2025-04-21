@@ -30,65 +30,64 @@ export const useStreakData = (userId: string | undefined) => {
         throw summaryError;
       }
       
-      if (summaryData && summaryData.length > 0) {
-        // Convert to StreakDay format
-        const processedData = summaryData.map(day => ({
-          date: day.date,
-          completed: day.total_completed_sessions || 0
-        }));
-        
-        // Generate all days in the last 28 days
-        const result: StreakDay[] = [];
-        for (let i = 28; i >= 0; i--) {
-          const date = new Date();
-          date.setDate(date.getDate() - i);
-          const dateStr = date.toISOString().split('T')[0];
-          
-          // Find if we have data for this day
-          const dayData = processedData.find(d => d.date === dateStr);
-          
-          result.push({
-            date: dateStr,
-            completed: dayData ? dayData.completed : 0
-          });
+      // For today's data, always get the latest directly from focus_sessions
+      // to ensure we have the most up-to-date count
+      const today = new Date().toISOString().split('T')[0];
+      const { data: todaySessions, error: todayError } = await supabase
+        .from('focus_sessions')
+        .select('id, created_at')
+        .eq('user_id', userId)
+        .eq('session_type', 'work')
+        .eq('completed', true)
+        .gte('created_at', `${today}T00:00:00`)
+        .lt('created_at', `${today}T23:59:59.999`);
+
+      if (todayError) {
+        console.error("Error fetching today's sessions:", todayError);
+      }
+      
+      // Convert to StreakDay format, with special handling for today
+      const processedData = summaryData?.map(day => {
+        // For today, use the direct focus_sessions count
+        if (day.date === today && todaySessions) {
+          return {
+            date: day.date,
+            completed: todaySessions.length
+          };
         }
         
-        return result;
-      } 
+        return {
+          date: day.date,
+          completed: day.total_completed_sessions || 0
+        };
+      }) || [];
       
-      // Fallback to calculating from individual sessions
-      const { data, error } = await supabase
-        .from('focus_sessions')
-        .select('created_at, duration, completed')
-        .eq('user_id', userId)
-        .gte('created_at', thirtyDaysAgo.toISOString())
-        .eq('session_type', 'work')
-        .eq('completed', true);
-
-      if (error) throw error;
-
-      // Process sessions into days with completion counts
-      const sessionsByDay: Record<string, number> = {};
+      // Check if today is missing
+      const hasToday = processedData.some(day => day.date === today);
+      if (!hasToday && todaySessions) {
+        processedData.push({
+          date: today,
+          completed: todaySessions.length
+        });
+      }
       
-      data?.forEach(session => {
-        const date = new Date(session.created_at).toISOString().split('T')[0];
-        sessionsByDay[date] = (sessionsByDay[date] || 0) + 1;
-      });
-
-      // Generate last 28 days, filling in zeros for days with no data
+      // Generate all days in the last 28 days
       const result: StreakDay[] = [];
       for (let i = 28; i >= 0; i--) {
         const date = new Date();
         date.setDate(date.getDate() - i);
         const dateStr = date.toISOString().split('T')[0];
         
+        // Find if we have data for this day
+        const dayData = processedData.find(d => d.date === dateStr);
+        
         result.push({
           date: dateStr,
-          completed: sessionsByDay[dateStr] || 0
+          completed: dayData ? dayData.completed : 0
         });
       }
-
-      return result;
+      
+      return result;  
     } catch (error: any) {
       console.error('Error fetching streak data:', error.message);
       return [];
@@ -99,7 +98,7 @@ export const useStreakData = (userId: string | undefined) => {
     queryKey: ['streakData', userId],
     queryFn: fetchStreakData,
     enabled: !!userId,
-    staleTime: 60 * 1000, // 1 minute - reduced for more up-to-date data
+    staleTime: 30 * 1000, // 30 seconds - reduced for more up-to-date data
     refetchOnWindowFocus: true // Refetch when window focus changes
   });
 

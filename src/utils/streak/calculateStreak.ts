@@ -18,15 +18,22 @@ export const calculateStreak = (recentDays: any[] | null, today: string) => {
   
   console.log('Calculating streak with today as:', today);
   
-  // Sort dates in descending order (newest first)
-  const sortedDates = [...recentDays]
-    .filter(day => day.sessions > 0) // Only include days with sessions
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  // Filter only days with at least one session completed
+  const activeDays = recentDays
+    .filter(day => day.sessions > 0) 
     .map(day => day.date);
   
-  // Check if today is already in the dates array
-  const todayIndex = sortedDates.indexOf(today);
-  const hasSessionsToday = todayIndex !== -1;
+  if (activeDays.length === 0) {
+    return 0; // No streak if no active days
+  }
+  
+  // Check if today has sessions
+  const hasSessionsToday = activeDays.includes(today);
+  
+  // Sort dates in descending order (newest first)
+  const sortedDates = [...activeDays].sort((a, b) => 
+    new Date(b).getTime() - new Date(a).getTime()
+  );
   
   // If no sessions today, we need to check if yesterday had sessions
   // to determine if the streak is still active
@@ -42,36 +49,34 @@ export const calculateStreak = (recentDays: any[] | null, today: string) => {
       console.log('Yesterday not found in dates, streak broken');
       return 0;
     }
-    
-    // Start counting from yesterday since it's the most recent day with activity
-    sortedDates.unshift(yesterdayStr);
-  } else {
-    // Today has sessions, so we start from today
-    sortedDates.unshift(today);
   }
   
+  // Start counting streak
   let currentStreak = hasSessionsToday ? 1 : 0;
+  
+  // Get the starting date for streak calculation
+  let currentDate = hasSessionsToday ? today : sortedDates[0];
   
   // Log the dates we're working with
   console.log('Sorted dates for streak calculation:', sortedDates);
+  console.log('Starting streak calculation from date:', currentDate);
   
-  // Loop through dates to find consecutive days
-  for (let i = 0; i < sortedDates.length - 1; i++) {
-    const currentDate = new Date(sortedDates[i]);
-    const nextDate = new Date(sortedDates[i + 1]);
+  // Loop through previous days to count consecutive days
+  for (let i = 0; i < 366; i++) { // Limit to a year
+    // Get previous day
+    const prevDate = new Date(currentDate);
+    prevDate.setDate(prevDate.getDate() - 1);
+    const prevDateStr = prevDate.toISOString().split('T')[0];
     
-    // Calculate the difference in days
-    const diffTime = currentDate.getTime() - nextDate.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
-    console.log(`Comparing ${sortedDates[i]} and ${sortedDates[i+1]}, diff: ${diffDays} days`);
-    
-    // If the days are consecutive (1 day apart), increment the streak
-    if (diffDays === 1) {
+    // If previous day is in the active days list, increment streak
+    if (sortedDates.includes(prevDateStr)) {
       currentStreak++;
+      currentDate = prevDateStr;
+      console.log(`Found consecutive day: ${prevDateStr}, streak now: ${currentStreak}`);
     } else {
-      console.log(`Break in streak at ${sortedDates[i+1]}, diff was ${diffDays} days`);
-      break; // Break the streak if days are not consecutive
+      // Break when we find a gap
+      console.log(`Streak break: ${prevDateStr} not found in active days`);
+      break;
     }
   }
   
