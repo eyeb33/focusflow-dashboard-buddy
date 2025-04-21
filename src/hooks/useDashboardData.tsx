@@ -26,7 +26,7 @@ export const useDashboardData = () => {
   } = useProductivityData(userId);
   const { insights, isLoading: insightsLoading } = useInsights(userId);
   const { streakData, isLoading: streakLoading, refetch: refetchStreak } = useStreakData(userId);
-  const { trends, isLoading: trendsLoading } = useProductivityTrends(userId);
+  const { productivityTrend, isLoading: trendsLoading } = useProductivityTrends(userId);
   
   // Set up realtime updates
   useRealtimeUpdates(userId);
@@ -65,7 +65,7 @@ export const useDashboardData = () => {
     monthlyProductivity,
     insights,
     streakData,
-    trends
+    trends: productivityTrend // Fix: Using productivityTrend instead of trends
   };
   
   const isLoading = statsLoading || productivityLoading || insightsLoading || streakLoading || trendsLoading;
