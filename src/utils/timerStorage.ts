@@ -19,11 +19,15 @@ export const saveFocusSession = async (userId: string, sessionType: 'work' | 'br
       const normalizedDuration = Math.min(duration, 3600);
       console.log(`Saving ${sessionType} session with normalized duration: ${normalizedDuration} seconds`);
       
+      // Use current timestamp as the creation time (ensures sessions are counted for the current day)
+      const now = new Date();
+      
       const { error } = await supabase.from('focus_sessions').insert({
         user_id: userId,
         session_type: sessionType,
         duration: normalizedDuration,
-        completed: completed
+        completed: completed,
+        created_at: now.toISOString() // Explicitly set to now to ensure it's counted for today
       });
       
       if (error) {
@@ -31,15 +35,18 @@ export const saveFocusSession = async (userId: string, sessionType: 'work' | 'br
         return false;
       } 
       
-      console.log('Session saved successfully', { sessionType, normalizedDuration, completed });
+      console.log('Session saved successfully', { sessionType, normalizedDuration, completed, created_at: now.toISOString() });
       return true;
     } else {
       // For non-work sessions or incomplete sessions, save as-is
+      const now = new Date();
+      
       const { error } = await supabase.from('focus_sessions').insert({
         user_id: userId,
         session_type: sessionType,
         duration: duration,
-        completed: completed
+        completed: completed,
+        created_at: now.toISOString() // Explicitly set to now
       });
       
       if (error) {
@@ -47,7 +54,7 @@ export const saveFocusSession = async (userId: string, sessionType: 'work' | 'br
         return false;
       }
       
-      console.log('Session saved successfully', { sessionType, duration, completed });
+      console.log('Session saved successfully', { sessionType, duration, completed, created_at: now.toISOString() });
       return true;
     }
   } catch (error) {
@@ -102,7 +109,7 @@ export const fetchTodayStats = async (userId: string | undefined) => {
     // If no summary exists, fall back to calculating from individual sessions
     const startOfDay = new Date(today);
     
-    // Fetch only completed work sessions
+    // Fetch only completed work sessions from today
     const { data, error } = await supabase
       .from('focus_sessions')
       .select('*')
@@ -124,9 +131,12 @@ export const fetchTodayStats = async (userId: string | undefined) => {
     // Count completed sessions
     const completedSessions = data.length;
     
-    // Calculate total minutes based on standard pomodoro duration (25 minutes per session)
-    // This is more reliable than using the raw duration which might be corrupted
-    const totalMinutes = completedSessions * 25;
+    // Calculate total minutes from work sessions
+    const totalMinutes = data.reduce((total, session) => {
+      // Convert seconds to minutes (rounded down) and limit to 60 minutes per session
+      const sessionMinutes = Math.min(Math.floor(session.duration / 60), 60);
+      return total + sessionMinutes;
+    }, 0);
     
     console.log('Calculated from sessions:', { completedSessions, totalMinutes });
     

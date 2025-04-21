@@ -86,13 +86,18 @@ export function useTimerCompletion({
         // Reset the index at the end of a full cycle
         newCurrentSessionIndex = 0;
         setCurrentSessionIndex(0);
+        
+        // Don't auto-start the next timer after completing a full cycle
+        setTimerMode(newMode);
+        resetTimerState();
+        return; // Exit the function early to prevent auto-start
       }
       
       // Stop the timer and set the new mode
       setTimerMode(newMode);
       resetTimerState();
       
-      // Automatically start the next timer
+      // Automatically start the next timer (except after a full cycle)
       setTimeout(() => {
         setIsRunning(true);
       }, 1000); // Small delay before starting the next timer

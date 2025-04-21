@@ -24,17 +24,25 @@ const Dashboard = () => {
     setSelectedPeriod(period);
   };
 
-  // Handle tab visibility
+  // Handle tab visibility with reduced frequency of refreshes
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
         visibilityChangedRef.current = true;
       } else if (visibilityChangedRef.current) {
-        // Only refetch if we're returning to the page after being hidden
-        refetch();
+        // Only refetch if we're returning to the page after being hidden for more than 30 seconds
+        const lastActiveTime = localStorage.getItem('lastActiveTime');
+        const now = Date.now();
+        if (lastActiveTime && (now - parseInt(lastActiveTime)) > 30000) {
+          refetch();
+        }
         visibilityChangedRef.current = false;
+        localStorage.setItem('lastActiveTime', now.toString());
       }
     };
+
+    // Set initial active time
+    localStorage.setItem('lastActiveTime', Date.now().toString());
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
@@ -66,7 +74,7 @@ const Dashboard = () => {
   const getPeriodStats = () => {
     const stats = dashboardData.stats;
     
-    // For daily productivity, derive sessions based on productivity data
+    // For daily productivity, use chart data directly to ensure consistency
     const deriveDailySessionsAndMinutes = () => {
       // Use chart data to calculate total values
       const dailyData = dashboardData.dailyProductivity;

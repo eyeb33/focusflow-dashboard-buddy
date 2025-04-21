@@ -14,6 +14,18 @@ export const useRealtimeUpdates = (userId: string | undefined) => {
     
     console.log('Setting up real-time updates for user:', userId);
     
+    // Throttle function to prevent excessive refreshes
+    let lastRefreshTime = 0;
+    const throttleTime = 5000; // 5 seconds
+    
+    const throttledInvalidate = (queryKey: string[]) => {
+      const now = Date.now();
+      if (now - lastRefreshTime > throttleTime) {
+        lastRefreshTime = now;
+        queryClient.invalidateQueries({ queryKey });
+      }
+    };
+    
     const channel = supabase
       .channel('dashboard-updates')
       .on(
@@ -22,9 +34,9 @@ export const useRealtimeUpdates = (userId: string | undefined) => {
         (payload) => {
           console.log('Focus session change received:', payload);
           // Invalidate all relevant queries to ensure consistent data
-          queryClient.invalidateQueries({ queryKey: ['stats'] });
-          queryClient.invalidateQueries({ queryKey: ['productivity'] });
-          queryClient.invalidateQueries({ queryKey: ['streakData'] });
+          throttledInvalidate(['stats']);
+          throttledInvalidate(['productivity']);
+          throttledInvalidate(['streakData']);
         }
       )
       .on(
@@ -32,9 +44,9 @@ export const useRealtimeUpdates = (userId: string | undefined) => {
         { event: '*', schema: 'public', table: 'sessions_summary', filter: `user_id=eq.${userId}` },
         (payload) => {
           console.log('Summary change received:', payload);
-          queryClient.invalidateQueries({ queryKey: ['stats'] });
-          queryClient.invalidateQueries({ queryKey: ['productivity'] });
-          queryClient.invalidateQueries({ queryKey: ['streakData'] });
+          throttledInvalidate(['stats']);
+          throttledInvalidate(['productivity']);
+          throttledInvalidate(['streakData']);
         }
       )
       .on(
@@ -42,8 +54,8 @@ export const useRealtimeUpdates = (userId: string | undefined) => {
         { event: '*', schema: 'public', table: 'productivity_trends', filter: `user_id=eq.${userId}` },
         (payload) => {
           console.log('Trend change received:', payload);
-          queryClient.invalidateQueries({ queryKey: ['productivityTrends'] });
-          queryClient.invalidateQueries({ queryKey: ['productivity'] });
+          throttledInvalidate(['productivityTrends']);
+          throttledInvalidate(['productivity']);
         }
       )
       .on(
@@ -51,7 +63,7 @@ export const useRealtimeUpdates = (userId: string | undefined) => {
         { event: '*', schema: 'public', table: 'insights', filter: `user_id=eq.${userId}` },
         (payload) => {
           console.log('Insight change received:', payload);
-          queryClient.invalidateQueries({ queryKey: ['insights'] });
+          throttledInvalidate(['insights']);
         }
       )
       .subscribe();

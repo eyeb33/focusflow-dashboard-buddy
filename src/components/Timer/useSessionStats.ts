@@ -22,7 +22,6 @@ export function useSessionStats() {
   const [isLoading, setIsLoading] = useState(true);
 
   const currentDateRef = useRef<string>(new Date().toISOString().split('T')[0]);
-  const hasResetTodayRef = useRef<boolean>(false);
   const documentHiddenTime = useRef<number | null>(null);
 
   const fetchTodayStats = async (forceMidnightReset = false) => {
@@ -47,15 +46,12 @@ export function useSessionStats() {
 
       // Check for date change
       if (forceMidnightReset || todayDateString !== currentDateRef.current) {
-        if (!hasResetTodayRef.current) {
-          setStats({
-            focusSessions: 0,
-            focusMinutes: 0,
-            yesterdayFocusSessions: null,
-            yesterdayFocusMinutes: null
-          });
-          hasResetTodayRef.current = true;
-        }
+        setStats({
+          focusSessions: 0,
+          focusMinutes: 0,
+          yesterdayFocusSessions: null,
+          yesterdayFocusMinutes: null
+        });
       }
       currentDateRef.current = todayDateString;
 
@@ -74,14 +70,6 @@ export function useSessionStats() {
       setIsLoading(false);
     }
   };
-
-  // Reset hasResetToday flag less frequently
-  useEffect(() => {
-    const resetIntervalId = setInterval(() => {
-      hasResetTodayRef.current = false;
-    }, 60 * 60 * 1000); // Check every hour instead of every 5 minutes
-    return () => clearInterval(resetIntervalId);
-  }, []);
 
   // Initial fetch and periodic updates
   useEffect(() => {

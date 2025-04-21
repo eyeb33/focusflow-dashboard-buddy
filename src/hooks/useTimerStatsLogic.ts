@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { loadTodayStats } from '@/utils/timerContextUtils';
-import { toast } from 'sonner';
 
 export function useTimerStatsLogic() {
   const { user } = useAuth();
@@ -10,8 +9,9 @@ export function useTimerStatsLogic() {
   const [totalTimeToday, setTotalTimeToday] = useState(0);
   const [currentSessionIndex, setCurrentSessionIndex] = useState(0);
   const currentDateRef = useRef<string>(new Date().toISOString().split('T')[0]);
-  const hasShownResetToastRef = useRef<boolean>(false);
   const documentHiddenTime = useRef<number | null>(null);
+  
+  // Remove toast ref as we're removing that functionality
 
   // Function to refresh stats
   const refreshStats = async (forceMidnightReset = false) => {
@@ -26,17 +26,6 @@ export function useTimerStatsLogic() {
       setCompletedSessions(0);
       setTotalTimeToday(0);
       setCurrentSessionIndex(0);
-      
-      // Show toast notification for date change - only once per day
-      if (currentDateRef.current && (forceMidnightReset || currentDateRef.current !== newDate) && !hasShownResetToastRef.current) {
-        toast.info("It's a new day! Your daily stats have been reset.");
-        hasShownResetToastRef.current = true;
-        
-        // Reset the toast flag after a delay to prevent multiple identical toasts
-        setTimeout(() => {
-          hasShownResetToastRef.current = false;
-        }, 3600000); // Reset after an hour instead of 5 seconds
-      }
       
       // Update the current date reference
       currentDateRef.current = newDate;
