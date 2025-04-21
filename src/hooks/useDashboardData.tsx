@@ -13,9 +13,12 @@ export const useDashboardData = () => {
   const userId = user?.id;
   
   // Track tab visibility changes
-  const wasDocumentHidden = useRef(false);
+  const wasDocumentHidden = useRef<boolean>(false);
   const lastRefreshTime = useRef<number>(Date.now());
-  const refreshInterval = 60 * 1000; // 1 minute
+  const refreshInterval = 30 * 1000; // 30 seconds - more frequent updates
+  
+  // Use current date for consistency
+  const today = new Date().toISOString().split('T')[0];
   
   // Set up hooks for data fetching
   const { stats, isLoading: statsLoading, refetch: refetchStats } = useStatsData(userId);
@@ -39,12 +42,9 @@ export const useDashboardData = () => {
       if (document.hidden) {
         wasDocumentHidden.current = true;
       } else if (wasDocumentHidden.current) {
-        // Refetch data when returning to the page if it's been more than 30 seconds
-        const now = Date.now();
-        if (now - lastRefreshTime.current > 30000) {
-          refetchData();
-          lastRefreshTime.current = now;
-        }
+        // Always refetch data when returning to the page for consistency
+        refetchData();
+        lastRefreshTime.current = Date.now();
         wasDocumentHidden.current = false;
       }
     };
@@ -59,22 +59,27 @@ export const useDashboardData = () => {
   useEffect(() => {
     if (!userId) return;
     
-    // Refresh data every minute when the dashboard is visible
+    // Initial data fetch
+    refetchData();
+    
+    // Refresh data more frequently when the dashboard is visible
     const intervalId = setInterval(() => {
       if (!document.hidden) {
         const now = Date.now();
         if (now - lastRefreshTime.current >= refreshInterval) {
+          console.log('Periodic dashboard refresh triggered');
           refetchData();
           lastRefreshTime.current = now;
         }
       }
-    }, 10000); // Check every 10 seconds, but only refresh after the interval
+    }, 5000); // Check every 5 seconds, refresh after the interval
     
     return () => clearInterval(intervalId);
   }, [userId]);
 
   const refetchData = () => {
     if (userId) {
+      console.log('Refreshing all dashboard data');
       refetchStats();
       refetchProductivity();
       refetchStreak();

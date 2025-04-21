@@ -46,15 +46,20 @@ export function useTimerInterval({
   // Store timer state in localStorage for persistence
   useEffect(() => {
     if (isRunning) {
-      localStorage.setItem('timerState', JSON.stringify({
+      const timerState = {
         isRunning,
         timerMode,
         timeRemaining,
         totalTime: getTotalTime(),
         timestamp: Date.now()
-      }));
-    } else {
-      localStorage.removeItem('timerState');
+      };
+      localStorage.setItem('timerState', JSON.stringify(timerState));
+    } else if (!isRunning && localStorage.getItem('timerState')) {
+      // Only remove if timer was explicitly stopped by user
+      // but keep it if just the component unmounted
+      if (document.visibilityState === 'visible') {
+        localStorage.removeItem('timerState');
+      }
     }
   }, [isRunning, timerMode, timeRemaining, getTotalTime]);
   
@@ -180,13 +185,14 @@ export function useTimerInterval({
           }
           
           // Update localStorage with new timer state
-          localStorage.setItem('timerState', JSON.stringify({
+          const timerState = {
             isRunning: true,
             timerMode,
             timeRemaining: newTime,
             totalTime: getTotalTime(),
             timestamp: now
-          }));
+          };
+          localStorage.setItem('timerState', JSON.stringify(timerState));
           
           // If timer should have completed
           if (newTime <= 0) {
@@ -202,9 +208,9 @@ export function useTimerInterval({
         });
       }, 1000);
     } else if (timerRef.current) {
-      // If timer is stopped, clear the interval and localStorage
+      // If timer is stopped, clear the interval but don't remove localStorage
+      // to avoid flicker when component remounts
       clearInterval(timerRef.current);
-      localStorage.removeItem('timerState');
     }
     
     return () => {
