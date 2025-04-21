@@ -14,6 +14,8 @@ export const useDashboardData = () => {
   
   // Track tab visibility changes
   const wasDocumentHidden = useRef(false);
+  const lastRefreshTime = useRef<number>(Date.now());
+  const refreshInterval = 60 * 1000; // 1 minute
   
   // Set up hooks for data fetching
   const { stats, isLoading: statsLoading, refetch: refetchStats } = useStatsData(userId);
@@ -37,8 +39,12 @@ export const useDashboardData = () => {
       if (document.hidden) {
         wasDocumentHidden.current = true;
       } else if (wasDocumentHidden.current) {
-        // Refetch data when returning to the page to ensure everything is in sync
-        refetchData();
+        // Refetch data when returning to the page if it's been more than 30 seconds
+        const now = Date.now();
+        if (now - lastRefreshTime.current > 30000) {
+          refetchData();
+          lastRefreshTime.current = now;
+        }
         wasDocumentHidden.current = false;
       }
     };
@@ -47,6 +53,24 @@ export const useDashboardData = () => {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
+  }, [userId]);
+
+  // Set up periodic data refresh
+  useEffect(() => {
+    if (!userId) return;
+    
+    // Refresh data every minute when the dashboard is visible
+    const intervalId = setInterval(() => {
+      if (!document.hidden) {
+        const now = Date.now();
+        if (now - lastRefreshTime.current >= refreshInterval) {
+          refetchData();
+          lastRefreshTime.current = now;
+        }
+      }
+    }, 10000); // Check every 10 seconds, but only refresh after the interval
+    
+    return () => clearInterval(intervalId);
   }, [userId]);
 
   const refetchData = () => {
@@ -65,7 +89,7 @@ export const useDashboardData = () => {
     monthlyProductivity,
     insights,
     streakData,
-    trends: productivityTrend // Fix: Using productivityTrend instead of trends
+    trends: productivityTrend
   };
   
   const isLoading = statsLoading || productivityLoading || insightsLoading || streakLoading || trendsLoading;

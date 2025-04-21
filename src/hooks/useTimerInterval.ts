@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,6 +26,65 @@ export function useTimerInterval({
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastTickTimeRef = useRef<number>(Date.now());
   const visibilityChangeRef = useRef<boolean>(false);
+  const timerStateRef = useRef({
+    isRunning,
+    timerMode,
+    timeRemaining,
+    totalTime: getTotalTime()
+  });
+  
+  // Keep a reference to the current timer state
+  useEffect(() => {
+    timerStateRef.current = {
+      isRunning,
+      timerMode,
+      timeRemaining,
+      totalTime: getTotalTime()
+    };
+  }, [isRunning, timerMode, timeRemaining, getTotalTime]);
+  
+  // Store timer state in localStorage for persistence
+  useEffect(() => {
+    if (isRunning) {
+      localStorage.setItem('timerState', JSON.stringify({
+        isRunning,
+        timerMode,
+        timeRemaining,
+        totalTime: getTotalTime(),
+        timestamp: Date.now()
+      }));
+    } else {
+      localStorage.removeItem('timerState');
+    }
+  }, [isRunning, timerMode, timeRemaining, getTotalTime]);
+  
+  // Restore timer state when the component mounts
+  useEffect(() => {
+    const storedStateStr = localStorage.getItem('timerState');
+    if (storedStateStr) {
+      try {
+        const storedState = JSON.parse(storedStateStr);
+        const elapsedMs = Date.now() - storedState.timestamp;
+        const elapsedSeconds = Math.floor(elapsedMs / 1000);
+        
+        // Only restore if timer was running and less time has passed than remaining
+        if (storedState.isRunning && elapsedSeconds < storedState.timeRemaining) {
+          const newTimeRemaining = Math.max(0, storedState.timeRemaining - elapsedSeconds);
+          setTimeRemaining(newTimeRemaining);
+          
+          // Update last tick time
+          lastTickTimeRef.current = Date.now();
+        } else if (storedState.isRunning && elapsedSeconds >= storedState.timeRemaining) {
+          // Timer should have completed while away
+          setTimeout(() => onTimerComplete(), 0);
+          localStorage.removeItem('timerState');
+        }
+      } catch (error) {
+        console.error('Error restoring timer state:', error);
+        localStorage.removeItem('timerState');
+      }
+    }
+  }, []);
   
   // Handle page visibility changes
   useEffect(() => {
@@ -35,7 +93,7 @@ export function useTimerInterval({
         // Page is hidden, save last tick time
         lastTickTimeRef.current = Date.now();
         visibilityChangeRef.current = true;
-      } else if (visibilityChangeRef.current && isRunning) {
+      } else if (visibilityChangeRef.current && timerStateRef.current.isRunning) {
         // Page is visible again and timer was running
         const now = Date.now();
         const elapsedMs = now - lastTickTimeRef.current;
@@ -67,7 +125,7 @@ export function useTimerInterval({
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isRunning, onTimerComplete, setTimeRemaining]);
+  }, [onTimerComplete, setTimeRemaining]);
   
   // Timer tick logic
   useEffect(() => {
@@ -121,10 +179,20 @@ export function useTimerInterval({
             });
           }
           
+          // Update localStorage with new timer state
+          localStorage.setItem('timerState', JSON.stringify({
+            isRunning: true,
+            timerMode,
+            timeRemaining: newTime,
+            totalTime: getTotalTime(),
+            timestamp: now
+          }));
+          
           // If timer should have completed
           if (newTime <= 0) {
             clearInterval(timerRef.current as ReturnType<typeof setInterval>);
             setTimeout(() => onTimerComplete(), 0);
+            localStorage.removeItem('timerState');
             return 0;
           }
           
@@ -133,6 +201,10 @@ export function useTimerInterval({
           return newTime;
         });
       }, 1000);
+    } else if (timerRef.current) {
+      // If timer is stopped, clear the interval and localStorage
+      clearInterval(timerRef.current);
+      localStorage.removeItem('timerState');
     }
     
     return () => {

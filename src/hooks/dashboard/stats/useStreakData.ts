@@ -24,14 +24,13 @@ export const fetchStreakData = async (userId: string, today: string): Promise<St
   // Calculate current streak
   let currentStreak = 0;
   if (summaryData && summaryData.length > 0) {
-    // Check if there's data for recent days
-    const hasEntryToday = summaryData.some(day => day.date === today);
-    
-    // Calculate streak based on recent days data
-    const recentDays = summaryData.map(day => ({
-      date: day.date,
-      sessions: day.total_completed_sessions
-    }));
+    // Filter days with at least 1 completed session
+    const recentDays = summaryData
+      .filter(day => day.total_completed_sessions > 0)
+      .map(day => ({
+        date: day.date,
+        sessions: day.total_completed_sessions
+      }));
     
     currentStreak = calculateStreak(recentDays, today);
   }
@@ -41,7 +40,7 @@ export const fetchStreakData = async (userId: string, today: string): Promise<St
     Math.max(max, day.longest_streak || 0), 0) || 0;
 
   return {
-    currentStreak: Math.max(1, currentStreak), // Ensure streak is at least 1 if we have data for today
+    currentStreak: currentStreak || 0, // Ensure streak is at least 0
     bestStreak: Math.max(bestStreakValue, currentStreak) // Update best streak if current is higher
   };
 };

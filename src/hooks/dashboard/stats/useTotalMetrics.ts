@@ -29,53 +29,51 @@ export const fetchTotalMetrics = async (userId: string, today: string): Promise<
       console.error('Error fetching today summary:', todaySummaryError);
     }
     
-    // If we found summary data for today, check if we should use the actual focus sessions data instead
-    if (todaySummary) {
-      console.log('Found today summary:', todaySummary, 'for date:', today);
-      
-      // Get the daily focus sessions data to verify
-      const startOfDay = new Date(today);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(today);
-      endOfDay.setHours(23, 59, 59, 999);
-      
-      const { data: todaySessions, error: sessionError } = await supabase
-        .from('focus_sessions')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('completed', true)
-        .eq('session_type', 'work') // Only count work sessions
-        .gte('created_at', startOfDay.toISOString())
-        .lte('created_at', endOfDay.toISOString());
+    // Always fetch the actual sessions data to ensure accuracy
+    const startOfDay = new Date(today);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(today);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    const { data: todaySessions, error: sessionError } = await supabase
+      .from('focus_sessions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('completed', true)
+      .eq('session_type', 'work') // Only count work sessions
+      .gte('created_at', startOfDay.toISOString())
+      .lte('created_at', endOfDay.toISOString());
 
-      if (sessionError) {
-        console.error('Error fetching today sessions:', sessionError);
+    if (sessionError) {
+      console.error('Error fetching today sessions:', sessionError);
+      // If we have summary data, use it as a fallback
+      if (todaySummary) {
         return { 
           totalSessions: todaySummary.total_completed_sessions || 0, 
           totalMinutes: todaySummary.total_focus_time || 0 
         };
       }
+      return { totalSessions: 0, totalMinutes: 0 };
+    }
 
-      // If we have actual session data, use that for the minute calculation
-      if (todaySessions && todaySessions.length > 0) {
-        // Count the number of sessions
-        const totalSessions = todaySessions.length;
-        
-        // Calculate total minutes directly from individual sessions
-        // This is more accurate than using the potentially corrupted summary data
-        const totalMinutes = todaySessions.reduce((sum, session) => 
-          sum + Math.min(Math.floor((session.duration || 0) / 60), 60), 0);
-
-        console.log(`Using actual sessions data: ${totalSessions} sessions, ${totalMinutes} minutes`);
-        
-        return { 
-          totalSessions, 
-          totalMinutes 
-        };
-      }
+    // If we have actual session data, use that for the calculation
+    if (todaySessions && todaySessions.length > 0) {
+      // Count the number of sessions
+      const totalSessions = todaySessions.length;
       
-      // Apply a sanity check on the values - cap minutes based on sessions
-      // Assuming max 60 minutes per session as a reasonable upper bound
+      // Calculate total minutes directly from individual sessions
+      const totalMinutes = todaySessions.reduce((sum, session) => 
+        sum + Math.min(Math.floor((session.duration || 0) / 60), 60), 0);
+
+      console.log(`Daily totals - sessions: ${totalSessions}, minutes: ${totalMinutes}`);
+      
+      return { 
+        totalSessions, 
+        totalMinutes 
+      };
+    } else if (todaySummary) {
+      // If no session data but we have summary data, use it
+      // Apply a sanity check on the values
       const sessions = todaySummary.total_completed_sessions || 0;
       let minutes = todaySummary.total_focus_time || 0;
       const maxReasonableMinutes = sessions * 60;
@@ -92,42 +90,8 @@ export const fetchTotalMetrics = async (userId: string, today: string): Promise<
       };
     }
     
-    // If no summary for today, calculate from individual sessions
-    console.log('No summary data for today, checking for individual sessions for date:', today);
-    const startOfDay = new Date(today);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(today);
-    endOfDay.setHours(23, 59, 59, 999);
-    
-    // Fetch only work/focus sessions for the total minutes calculation
-    const { data: todaySessions, error: sessionError } = await supabase
-      .from('focus_sessions')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('completed', true)
-      .eq('session_type', 'work') // Only count work sessions
-      .gte('created_at', startOfDay.toISOString())
-      .lte('created_at', endOfDay.toISOString());
-
-    if (sessionError) {
-      console.error('Error fetching today sessions:', sessionError);
-      return { totalSessions: 0, totalMinutes: 0 };
-    }
-
-    if (!todaySessions || todaySessions.length === 0) {
-      return { totalSessions: 0, totalMinutes: 0 };
-    }
-    
-    // Count the number of sessions
-    const totalSessions = todaySessions.length;
-    
-    // Calculate total minutes directly from individual sessions
-    const totalMinutes = todaySessions.reduce((sum, session) => 
-      sum + Math.min(Math.floor((session.duration || 0) / 60), 60), 0);
-    
-    console.log('Calculated from today sessions:', { totalSessions, totalMinutes }, 'for date:', today);
-
-    return { totalSessions, totalMinutes };
+    // No data found
+    return { totalSessions: 0, totalMinutes: 0 };
   } catch (error) {
     console.error('Error in fetchTotalMetrics:', error);
     return { totalSessions: 0, totalMinutes: 0 };

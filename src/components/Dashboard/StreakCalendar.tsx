@@ -20,8 +20,8 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ data, currentStreak, be
   const today = new Date();
   const monthStart = startOfMonth(today);
   const monthEnd = endOfMonth(today);
-  const startDate = startOfWeek(monthStart);
-  const endDate = endOfWeek(monthEnd);
+  const startDate = startOfWeek(monthStart, { weekStartsOn: 1 }); // Start week on Monday
+  const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 }); // End week on Sunday
 
   const calendarDays = eachDayOfInterval({ start: startDate, end: endDate }).map(date => {
     const dateStr = format(date, 'yyyy-MM-dd');
@@ -60,6 +60,9 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ data, currentStreak, be
     return 'bg-red-500';
   };
 
+  // Day names starting from Monday
+  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
   return (
     <Card>
       <CardHeader>
@@ -86,7 +89,7 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ data, currentStreak, be
 
         <div className="mt-6">
           <div className="grid grid-cols-7 gap-1 mb-1">
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
+            {dayNames.map((day, i) => (
               <div key={i} className="text-xs font-medium text-center text-muted-foreground">
                 {day}
               </div>
