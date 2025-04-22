@@ -58,6 +58,11 @@ const TimerContainer: React.FC = () => {
   };
 
   const currentModeColors = modeColors[timerMode];
+
+  // Debug logging for developers to verify session tracking
+  useEffect(() => {
+    console.log(`Current state: mode=${timerMode}, index=${currentSessionIndex}, completedSessions=${completedSessions}`);
+  }, [timerMode, currentSessionIndex, completedSessions]);
   
   return (
     <Card className="w-full max-w-md p-6 bg-white dark:bg-black backdrop-blur-sm shadow-md">

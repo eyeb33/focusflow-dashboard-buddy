@@ -49,6 +49,7 @@ const SessionRings: React.FC<SessionRingsProps> = ({
     for (let i = 0; i < totalSessions; i++) {
       // Is this position active or completed?
       const isActive = positionInCycle === i;
+      // A work session is completed if its index is strictly less than the current position
       const isCompleted = i < positionInCycle;
       
       // Size the active indicator larger
