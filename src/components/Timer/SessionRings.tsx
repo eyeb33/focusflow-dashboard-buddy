@@ -17,9 +17,8 @@ const SessionRings: React.FC<SessionRingsProps> = ({
   className,
   currentPosition
 }) => {
-  // Use the explicitly passed position or calculate from completed sessions
-  const positionInCycle = currentPosition !== undefined ? 
-    currentPosition : (completedSessions % totalSessions);
+  // Use the explicitly passed position for tracking where we are in the cycle
+  const positionInCycle = currentPosition !== undefined ? currentPosition : 0;
   
   // State for pulsing animation
   const [isPulsing, setIsPulsing] = useState(false);
@@ -47,9 +46,10 @@ const SessionRings: React.FC<SessionRingsProps> = ({
     const circles = [];
     
     for (let i = 0; i < totalSessions; i++) {
-      // Is this position active or completed?
-      const isActive = positionInCycle === i;
-      // A work session is completed if its index is strictly less than the current position
+      // In work mode:
+      // - A position is "active" if it's the current position
+      // - A position is "completed" if its index is strictly less than the current position
+      const isActive = i === positionInCycle;
       const isCompleted = i < positionInCycle;
       
       // Size the active indicator larger
@@ -61,7 +61,7 @@ const SessionRings: React.FC<SessionRingsProps> = ({
           className={cn(
             "rounded-full transition-colors duration-300 flex-shrink-0",
             size,
-            isActive && isPulsing ? "animate-pulse-light" : "",
+            isActive && isPulsing ? "animate-pulse" : "",
             isActive ? "border-2 border-red-500 flex items-center justify-center" : "",
             isCompleted ? "bg-red-500" : "border-2 border-red-500"
           )}
@@ -87,14 +87,11 @@ const SessionRings: React.FC<SessionRingsProps> = ({
     const breakCount = totalSessions - 1;
     
     for (let i = 0; i < breakCount; i++) {
-      // For breaks, the active session is the current position, but completed are prior positions
-      // Important: For the FIRST break session after a work session, no breaks are yet completed!
-      const isActive = positionInCycle === i;
-      
-      // We need to correctly track which break sessions are completed
-      // Break sessions are NOT completed at the same index as work sessions
-      // A break session is completed if its index is strictly less than the current position
-      const isCompleted = i < positionInCycle && positionInCycle > 0;
+      // In break mode:
+      // - A position is "active" if it's the current position
+      // - A position is "completed" if its index is strictly less than the current position
+      const isActive = i === positionInCycle;
+      const isCompleted = i < positionInCycle;
       
       const size = isActive ? 'w-4 h-4' : 'w-3 h-3';
       
@@ -104,7 +101,7 @@ const SessionRings: React.FC<SessionRingsProps> = ({
           className={cn(
             "rounded-full transition-colors duration-300 flex-shrink-0",
             size,
-            isActive && isPulsing ? "animate-pulse-light" : "",
+            isActive && isPulsing ? "animate-pulse" : "",
             isActive ? "border-2 border-green-500 flex items-center justify-center" : "",
             isCompleted ? "bg-green-500" : "border-2 border-green-500"
           )}
@@ -131,7 +128,7 @@ const SessionRings: React.FC<SessionRingsProps> = ({
         <div
           className={cn(
             "rounded-full transition-colors duration-300",
-            isPulsing ? "w-5 h-5 animate-pulse-light" : "w-4 h-4",
+            isPulsing ? "w-5 h-5 animate-pulse" : "w-4 h-4",
             "border-2 border-blue-500 flex items-center justify-center"
           )}
         >

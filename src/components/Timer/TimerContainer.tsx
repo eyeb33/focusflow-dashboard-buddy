@@ -61,8 +61,8 @@ const TimerContainer: React.FC = () => {
 
   // Debug logging for developers to verify session tracking
   useEffect(() => {
-    console.log(`Current state: mode=${timerMode}, index=${currentSessionIndex}, completedSessions=${completedSessions}`);
-  }, [timerMode, currentSessionIndex, completedSessions]);
+    console.log(`Current state: mode=${timerMode}, index=${currentSessionIndex}, completedSessions=${completedSessions}, sessionsUntilLongBreak=${sessionsUntilLongBreak}`);
+  }, [timerMode, currentSessionIndex, completedSessions, sessionsUntilLongBreak]);
   
   return (
     <Card className="w-full max-w-md p-6 bg-white dark:bg-black backdrop-blur-sm shadow-md">
