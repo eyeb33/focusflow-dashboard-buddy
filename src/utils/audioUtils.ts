@@ -2,8 +2,15 @@
  * Audio utilities for the timer application
  */
 
-// Cache for preloaded audio
-let zenBellAudio: HTMLAudioElement | null = null;
+// File paths for custom MP3 chimes mapped to timer modes
+const modeToMp3: Record<'work' | 'break' | 'longBreak', string> = {
+  work: '/sounds/01_zen_chime.mp3',
+  break: '/sounds/02_zen_chime.mp3',
+  longBreak: '/sounds/03_gong.mp3',
+};
+
+// Optionally cache HTMLAudioElements for instant playback
+const audioCache: Partial<Record<'work' | 'break' | 'longBreak', HTMLAudioElement>> = {};
 
 /**
  * Initialize audio elements and preload sounds
@@ -16,68 +23,52 @@ export const initAudioContext = (): void => {
 };
 
 /**
- * Play a completion sound based on the timer mode
+ * Play a completion sound based on the timer mode using an MP3 file.
  */
 export const playTimerCompletionSound = async (mode: 'work' | 'break' | 'longBreak'): Promise<void> => {
+  const src = modeToMp3[mode];
+  if (!src) return;
+
   try {
-    // Create audio context
+    let audio = audioCache[mode];
+    if (!audio) {
+      audio = new Audio(src);
+      audio.preload = 'auto';
+      audioCache[mode] = audio;
+    } else {
+      // If audio element has been used before, reset it
+      audio.pause();
+      audio.currentTime = 0;
+    }
+    await audio.play();
+  } catch (error) {
+    console.error(`[audioUtils] Failed to play sound for mode "${mode}":`, error);
+
+    // If there's an error, fall back to synthesized chime as before
+    // (Restore the oscillator-based code as a fallback if desired)
+    /*
     const audioContext = new AudioContext();
-    
-    // Define frequencies for different modes
     const frequencies = {
-      work: 440, // A4 note - lowest
-      break: 554.37, // C#5 note - middle
-      longBreak: 659.25 // E5 note - highest
+      work: 440,
+      break: 554.37,
+      longBreak: 659.25
     };
-    
     const frequency = frequencies[mode];
-    
-    // Create a simple bell-like sound using oscillators
     const bellOscillator = audioContext.createOscillator();
     bellOscillator.type = 'sine';
     bellOscillator.frequency.value = frequency;
-    
-    // Create a gain node for volume control and envelope
     const gainNode = audioContext.createGain();
     gainNode.gain.value = 0;
-    
-    // Connect nodes: oscillator -> gain -> output
     bellOscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
-    
-    // Start the oscillator
     const now = audioContext.currentTime;
     bellOscillator.start(now);
-    
-    // Create a bell-like envelope
     gainNode.gain.setValueAtTime(0, now);
-    gainNode.gain.linearRampToValueAtTime(0.6, now + 0.02); // Quick attack
-    gainNode.gain.exponentialRampToValueAtTime(0.2, now + 1.5); // Long decay
-    gainNode.gain.exponentialRampToValueAtTime(0.001, now + 3); // Fade out
-    
-    // Stop the oscillator after the sound is done
+    gainNode.gain.linearRampToValueAtTime(0.6, now + 0.02);
+    gainNode.gain.exponentialRampToValueAtTime(0.2, now + 1.5);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + 3);
     bellOscillator.stop(now + 3.1);
-    
-    // Create a second oscillator for harmonic richness
-    const harmonicOscillator = audioContext.createOscillator();
-    harmonicOscillator.type = 'sine';
-    harmonicOscillator.frequency.value = frequency * 2; // One octave higher
-    
-    const harmonicGain = audioContext.createGain();
-    harmonicGain.gain.value = 0;
-    
-    harmonicOscillator.connect(harmonicGain);
-    harmonicGain.connect(audioContext.destination);
-    
-    harmonicOscillator.start(now);
-    harmonicGain.gain.setValueAtTime(0, now);
-    harmonicGain.gain.linearRampToValueAtTime(0.3, now + 0.02);
-    harmonicGain.gain.exponentialRampToValueAtTime(0.1, now + 0.8);
-    harmonicGain.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
-    
-    harmonicOscillator.stop(now + 3.1);
-  } catch (error) {
-    console.error('Failed to play timer completion sound:', error);
+    */
   }
 };
 
