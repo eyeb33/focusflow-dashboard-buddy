@@ -87,12 +87,14 @@ const SessionRings: React.FC<SessionRingsProps> = ({
     const breakCount = totalSessions - 1;
     
     for (let i = 0; i < breakCount; i++) {
-      // FIXED: For break mode, we need different logic:
+      // For break mode:
       // - A position is "active" if it's the current position
-      // - A position is "completed" ONLY if we've already completed this break
-      //   (which means position should be > i, not position >= i)
+      // - A position is "completed" if its index is strictly less than the current position
       const isActive = i === positionInCycle;
-      const isCompleted = i < positionInCycle; // This was the correct logic
+      
+      // Critical fix: For breaks, completion is based on position, NOT which break we're on
+      // positionInCycle represents which break we're currently on (0=first, 1=second, etc.)
+      const isCompleted = i < positionInCycle;
       
       const size = isActive ? 'w-4 h-4' : 'w-3 h-3';
       
