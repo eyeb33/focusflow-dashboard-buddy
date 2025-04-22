@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -100,7 +99,7 @@ const TimerContainer: React.FC = () => {
           </TabsList>
         </Tabs>
         
-        <TimerSettings />
+        <TimerSettings className="ml-2.5" />
       </div>
       
       <div className="flex flex-col items-center">
