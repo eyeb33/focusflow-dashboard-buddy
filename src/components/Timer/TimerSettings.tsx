@@ -10,8 +10,13 @@ import { Slider } from "@/components/ui/slider";
 import { Settings } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { useTimer } from "@/contexts/TimerContext";
+import { cn } from "@/lib/utils";
 
-const TimerSettings: React.FC = () => {
+interface TimerSettingsProps {
+  className?: string;
+}
+
+const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
   const {
     settings,
     updateSettings
@@ -43,7 +48,7 @@ const TimerSettings: React.FC = () => {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" className="rounded-full h-8 w-8 p-0">
+        <Button variant="ghost" size="sm" className={cn("rounded-full h-8 w-8 p-0", className)}>
           <Settings className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
