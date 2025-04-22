@@ -1,4 +1,3 @@
-
 /**
  * Audio utilities for the timer application
  */
@@ -17,24 +16,26 @@ export const initAudioContext = (): void => {
 };
 
 /**
- * Play a zen bell sound when the timer ends
+ * Play a completion sound based on the timer mode
  */
-export const playTimerCompletionSound = async (): Promise<void> => {
+export const playTimerCompletionSound = async (mode: 'work' | 'break' | 'longBreak'): Promise<void> => {
   try {
-    // Try to use the preloaded audio file first
-    if (zenBellAudio) {
-      zenBellAudio.currentTime = 0;
-      await zenBellAudio.play();
-      return;
-    }
-    
-    // Fallback: generate a bell sound using Web Audio API
+    // Create audio context
     const audioContext = new AudioContext();
+    
+    // Define frequencies for different modes
+    const frequencies = {
+      work: 440, // A4 note - lowest
+      break: 554.37, // C#5 note - middle
+      longBreak: 659.25 // E5 note - highest
+    };
+    
+    const frequency = frequencies[mode];
     
     // Create a simple bell-like sound using oscillators
     const bellOscillator = audioContext.createOscillator();
     bellOscillator.type = 'sine';
-    bellOscillator.frequency.value = 440; // A4 note
+    bellOscillator.frequency.value = frequency;
     
     // Create a gain node for volume control and envelope
     const gainNode = audioContext.createGain();
@@ -60,7 +61,7 @@ export const playTimerCompletionSound = async (): Promise<void> => {
     // Create a second oscillator for harmonic richness
     const harmonicOscillator = audioContext.createOscillator();
     harmonicOscillator.type = 'sine';
-    harmonicOscillator.frequency.value = 880; // One octave higher
+    harmonicOscillator.frequency.value = frequency * 2; // One octave higher
     
     const harmonicGain = audioContext.createGain();
     harmonicGain.gain.value = 0;

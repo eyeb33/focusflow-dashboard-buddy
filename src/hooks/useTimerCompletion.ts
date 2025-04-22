@@ -36,8 +36,8 @@ export function useTimerCompletion({
   // Handle timer completion
   const handleTimerComplete = async () => {
     try {
-      // Play completion sound
-      await playTimerCompletionSound();
+      // Play completion sound with the current mode
+      await playTimerCompletionSound(timerMode);
       
       // Get total time for this timer mode in seconds
       const totalTime = getTotalTime(timerMode, settings);
@@ -116,7 +116,6 @@ export function useTimerCompletion({
       }, 1000); // Small delay before starting the next timer
     } catch (error) {
       console.error('Error handling timer completion:', error);
-      // Set a safe mode if something went wrong
       setTimerMode('work');
       setIsRunning(false);
       resetTimerState();
