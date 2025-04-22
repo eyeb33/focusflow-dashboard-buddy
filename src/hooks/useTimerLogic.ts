@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getTotalTime, TimerMode } from '@/utils/timerContextUtils';
 import { TimerSettings } from '@/hooks/useTimerSettings';
 import { useTimerInterval } from './useTimerInterval';
@@ -11,6 +11,7 @@ import { useTimerAudio } from './useTimerAudio';
 export function useTimerLogic(settings: TimerSettings) {
   const [timerMode, setTimerMode] = useState<TimerMode>('work');
   const [autoStart, setAutoStart] = useState<boolean>(false);
+  const sessionStartTimeRef = useRef<string | null>(null);
 
   // Use the smaller hooks
   const {
@@ -51,10 +52,23 @@ export function useTimerLogic(settings: TimerSettings) {
   // Initialize audio
   useTimerAudio();
 
+  // Store session start time when a session begins
+  useEffect(() => {
+    if (isRunning && !sessionStartTimeRef.current) {
+      sessionStartTimeRef.current = new Date().toISOString();
+      console.log(`Session started at: ${sessionStartTimeRef.current}`);
+    }
+  }, [isRunning]);
+
   // Reset timer when mode or settings change
   useEffect(() => {
     setTimeRemaining(getTotalTime(timerMode, settings));
-  }, [timerMode, settings, setTimeRemaining]);
+    
+    // Reset session start time when mode changes
+    if (!isRunning) {
+      sessionStartTimeRef.current = null;
+    }
+  }, [timerMode, settings, setTimeRemaining, isRunning]);
   
   // Auto-start feature
   useEffect(() => {
@@ -65,13 +79,25 @@ export function useTimerLogic(settings: TimerSettings) {
   }, [autoStart, isRunning, baseHandleStart, timerMode]);
 
   // Create wrappers for the control handlers
-  const handleStart = () => baseHandleStart(timerMode);
+  const handleStart = () => {
+    // Record the session start time
+    sessionStartTimeRef.current = new Date().toISOString();
+    baseHandleStart(timerMode);
+  };
   
-  const handlePause = () => baseHandlePause(timerMode);
+  const handlePause = () => {
+    baseHandlePause(timerMode);
+  };
   
-  const handleReset = () => baseHandleReset(timerMode, setCurrentSessionIndex);
+  const handleReset = () => {
+    // Clear the session start time on reset
+    sessionStartTimeRef.current = null;
+    baseHandleReset(timerMode, setCurrentSessionIndex);
+  };
 
   const handleModeChange = (mode: TimerMode) => {
+    // Clear the session start time on mode change
+    sessionStartTimeRef.current = null;
     baseHandleModeChange(timerMode, mode, setCurrentSessionIndex);
     setTimerMode(mode);
   };
@@ -87,7 +113,8 @@ export function useTimerLogic(settings: TimerSettings) {
     setTimeRemaining,
     getTotalTime: getCurrentTotalTime,
     onTimerComplete: handleTimerComplete,
-    lastRecordedFullMinutesRef
+    lastRecordedFullMinutesRef,
+    sessionStartTimeRef
   });
 
   return {
@@ -103,6 +130,7 @@ export function useTimerLogic(settings: TimerSettings) {
     handlePause,
     handleReset,
     handleModeChange,
-    setAutoStart
+    setAutoStart,
+    sessionStartTimeRef
   };
 }

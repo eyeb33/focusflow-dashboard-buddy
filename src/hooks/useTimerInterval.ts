@@ -11,6 +11,7 @@ interface UseTimerIntervalProps {
   getTotalTime: () => number;
   onTimerComplete: () => void;
   lastRecordedFullMinutesRef: React.MutableRefObject<number>;
+  sessionStartTimeRef: React.MutableRefObject<string | null>;
 }
 
 export function useTimerInterval({
@@ -20,7 +21,8 @@ export function useTimerInterval({
   setTimeRemaining,
   getTotalTime,
   onTimerComplete,
-  lastRecordedFullMinutesRef
+  lastRecordedFullMinutesRef,
+  sessionStartTimeRef
 }: UseTimerIntervalProps) {
   const { user } = useAuth();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -51,7 +53,8 @@ export function useTimerInterval({
         timerMode,
         timeRemaining,
         totalTime: getTotalTime(),
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        sessionStartTime: sessionStartTimeRef.current
       };
       localStorage.setItem('timerState', JSON.stringify(timerState));
     } else if (!isRunning && localStorage.getItem('timerState')) {
@@ -61,7 +64,7 @@ export function useTimerInterval({
         localStorage.removeItem('timerState');
       }
     }
-  }, [isRunning, timerMode, timeRemaining, getTotalTime]);
+  }, [isRunning, timerMode, timeRemaining, getTotalTime, sessionStartTimeRef]);
   
   // Restore timer state when the component mounts
   useEffect(() => {
@@ -79,8 +82,19 @@ export function useTimerInterval({
           
           // Update last tick time
           lastTickTimeRef.current = Date.now();
+          
+          // Also restore the session start time
+          if (storedState.sessionStartTime) {
+            sessionStartTimeRef.current = storedState.sessionStartTime;
+          }
         } else if (storedState.isRunning && elapsedSeconds >= storedState.timeRemaining) {
           // Timer should have completed while away
+          
+          // Make sure to restore the session start time before completing
+          if (storedState.sessionStartTime) {
+            sessionStartTimeRef.current = storedState.sessionStartTime;
+          }
+          
           setTimeout(() => onTimerComplete(), 0);
           localStorage.removeItem('timerState');
         }
@@ -106,6 +120,15 @@ export function useTimerInterval({
         
         if (elapsedSeconds >= 1) {
           console.log(`Tab was hidden for ${elapsedSeconds} seconds`);
+          
+          // Check if we crossed midnight while away
+          const beforeHiddenDate = new Date(lastTickTimeRef.current).toDateString();
+          const afterHiddenDate = new Date(now).toDateString();
+          
+          if (beforeHiddenDate !== afterHiddenDate) {
+            console.log('Date changed while tab was hidden, from', beforeHiddenDate, 'to', afterHiddenDate);
+            // We don't reset the timer though - we keep the session attribution to its start date
+          }
           
           // Adjust the timer
           setTimeRemaining(prevTime => {
@@ -167,12 +190,18 @@ export function useTimerInterval({
           if (user && timerMode === 'work' && newFullMinutes > prevFullMinutes) {
             console.log(`Completed a new minute: ${newFullMinutes} minutes`);
             
+            // Check if session crosses midnight
+            const startDate = sessionStartTimeRef.current 
+              ? new Date(sessionStartTimeRef.current).toISOString().split('T')[0]
+              : new Date().toISOString().split('T')[0];
+              
             savePartialSession(
               user.id, 
               timerMode, 
               totalTime, 
               newTime, 
-              lastRecordedFullMinutesRef.current
+              lastRecordedFullMinutesRef.current,
+              startDate
             ).then((result) => {
               // Fix type error by properly type narrowing the result
               if (result && typeof result === 'object' && 'newFullMinutes' in result) {
@@ -190,7 +219,8 @@ export function useTimerInterval({
             timerMode,
             timeRemaining: newTime,
             totalTime: getTotalTime(),
-            timestamp: now
+            timestamp: now,
+            sessionStartTime: sessionStartTimeRef.current
           };
           localStorage.setItem('timerState', JSON.stringify(timerState));
           
@@ -218,7 +248,7 @@ export function useTimerInterval({
         clearInterval(timerRef.current);
       }
     };
-  }, [isRunning, timerMode, user, getTotalTime, onTimerComplete, setTimeRemaining, lastRecordedFullMinutesRef]);
+  }, [isRunning, timerMode, user, getTotalTime, onTimerComplete, setTimeRemaining, lastRecordedFullMinutesRef, sessionStartTimeRef]);
   
   return timerRef;
 }

@@ -122,13 +122,15 @@ const fetchTodayStatsFromDatabase = async (userId: string) => {
  * @param totalTime The total time in seconds for the session
  * @param remainingTime The remaining time in seconds
  * @param lastRecordedFullMinutes The last recorded full minutes for this session
+ * @param startDate The date the session was started on (YYYY-MM-DD format)
  */
 export const savePartialSession = async (
   userId: string, 
   mode: TimerMode, 
   totalTime: number, 
   remainingTime: number,
-  lastRecordedFullMinutes: number
+  lastRecordedFullMinutes: number,
+  startDate?: string
 ) => {
   try {
     if (!userId || mode !== 'work') return null;
@@ -149,11 +151,16 @@ export const savePartialSession = async (
     
     console.log(`Saving partial session: ${normalizedNewMinutes} new minutes (elapsed ${elapsedMinutes} total)`);
     
-    // Update daily stats with the new minutes only
+    // Get the date to attribute this session to (default to today if not specified)
+    const sessionDate = startDate || new Date().toISOString().split('T')[0];
+    console.log(`Attributing partial session to date: ${sessionDate}`);
+    
+    // Update daily stats with the new minutes only, using the original start date
     await updateDailyStats(
       userId, 
       normalizedNewMinutes, // Only the new minutes since last recording
-      mode
+      mode,
+      sessionDate // The date to attribute this session to
     );
     
     return { 

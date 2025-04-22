@@ -8,8 +8,14 @@ import { updateProductivityScore } from '../productivity/updateProductivityScore
  * @param userId The user ID
  * @param durationMinutes The duration in minutes
  * @param sessionType The type of session (work, break, longBreak)
+ * @param sessionDate The date to attribute the session to (YYYY-MM-DD)
  */
-export const updateDailyStats = async (userId: string, durationMinutes: number, sessionType: 'work' | 'break' | 'longBreak' = 'work') => {
+export const updateDailyStats = async (
+  userId: string, 
+  durationMinutes: number, 
+  sessionType: 'work' | 'break' | 'longBreak' = 'work',
+  sessionDate?: string
+) => {
   try {
     if (!userId) return;
     
@@ -20,7 +26,9 @@ export const updateDailyStats = async (userId: string, durationMinutes: number, 
     const normalizedDuration = Math.min(durationMinutes, 60);
     console.log(`Updating daily stats with normalized duration: ${normalizedDuration} minutes`);
     
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    // Use the provided date or today's date
+    const today = sessionDate || new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    console.log(`Attribution date for session stats: ${today}`);
     
     const { data: existingData, error: queryError } = await supabase
       .from('sessions_summary')

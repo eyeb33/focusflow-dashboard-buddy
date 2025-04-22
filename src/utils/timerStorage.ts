@@ -6,11 +6,21 @@ export interface FocusSession {
   session_type: 'work' | 'break' | 'longBreak';
   duration: number;  // Always stored in seconds in the database
   completed: boolean;
+  start_time?: string; // Track when the session was started
 }
 
-export const saveFocusSession = async (userId: string, sessionType: 'work' | 'break' | 'longBreak', duration: number, completed: boolean = true) => {
+export const saveFocusSession = async (
+  userId: string, 
+  sessionType: 'work' | 'break' | 'longBreak', 
+  duration: number, 
+  completed: boolean = true,
+  startTime?: string // Optional parameter for start time
+) => {
   try {
     if (!userId) return;
+    
+    // Use provided start time or current timestamp
+    const sessionStartTime = startTime || new Date().toISOString();
     
     // For work sessions, ensure duration is reasonable
     // Standard pomodoro is 25 minutes (1500 seconds)
@@ -19,15 +29,12 @@ export const saveFocusSession = async (userId: string, sessionType: 'work' | 'br
       const normalizedDuration = Math.min(duration, 3600);
       console.log(`Saving ${sessionType} session with normalized duration: ${normalizedDuration} seconds`);
       
-      // Use current timestamp as the creation time (ensures sessions are counted for the current day)
-      const now = new Date();
-      
       const { error } = await supabase.from('focus_sessions').insert({
         user_id: userId,
         session_type: sessionType,
         duration: normalizedDuration,
         completed: completed,
-        created_at: now.toISOString() // Explicitly set to now to ensure it's counted for today
+        created_at: sessionStartTime // Use the start time for attribution purposes
       });
       
       if (error) {
@@ -35,18 +42,16 @@ export const saveFocusSession = async (userId: string, sessionType: 'work' | 'br
         return false;
       } 
       
-      console.log('Session saved successfully', { sessionType, normalizedDuration, completed, created_at: now.toISOString() });
+      console.log('Session saved successfully', { sessionType, normalizedDuration, completed, created_at: sessionStartTime });
       return true;
     } else {
       // For non-work sessions or incomplete sessions, save as-is
-      const now = new Date();
-      
       const { error } = await supabase.from('focus_sessions').insert({
         user_id: userId,
         session_type: sessionType,
         duration: duration,
         completed: completed,
-        created_at: now.toISOString() // Explicitly set to now
+        created_at: sessionStartTime // Use the start time for attribution purposes
       });
       
       if (error) {
@@ -54,7 +59,7 @@ export const saveFocusSession = async (userId: string, sessionType: 'work' | 'br
         return false;
       }
       
-      console.log('Session saved successfully', { sessionType, duration, completed, created_at: now.toISOString() });
+      console.log('Session saved successfully', { sessionType, duration, completed, created_at: sessionStartTime });
       return true;
     }
   } catch (error) {
