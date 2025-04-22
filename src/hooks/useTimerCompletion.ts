@@ -86,7 +86,8 @@ export function useTimerCompletion({
           await saveFocusSession(user.id, timerMode, totalTime, true);
         }
         
-        // After break, go back to work mode but keep the same currentSessionIndex
+        // IMPORTANT: After break, go back to work mode but keep the same currentSessionIndex
+        // This is critical for correct display of indicator circles
         console.log(`Break session completed. Keeping session index at ${currentSessionIndex}`);
         setTimerMode('work');
       } 
