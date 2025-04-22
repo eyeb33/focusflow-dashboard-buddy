@@ -86,8 +86,14 @@ const SessionRings: React.FC<SessionRingsProps> = ({
     const breakCount = totalSessions - 1;
     
     for (let i = 0; i < breakCount; i++) {
+      // For breaks, the active session is the current position, but completed are prior positions
+      // Important: For the FIRST break session after a work session, no breaks are yet completed!
       const isActive = positionInCycle === i;
-      const isCompleted = i < positionInCycle;
+      
+      // We need to correctly track which break sessions are completed
+      // Break sessions are NOT completed at the same index as work sessions
+      // A break session is completed if its index is strictly less than the current position
+      const isCompleted = i < positionInCycle && positionInCycle > 0;
       
       const size = isActive ? 'w-4 h-4' : 'w-3 h-3';
       
