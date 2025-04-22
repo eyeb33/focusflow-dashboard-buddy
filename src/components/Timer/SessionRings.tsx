@@ -93,6 +93,9 @@ const SessionRings: React.FC<SessionRingsProps> = ({
       const isActive = i === positionInCycle;
       const isCompleted = i < positionInCycle;
       
+      // For break mode, we need to ensure we don't incorrectly mark the first position as completed
+      // when we're actually on the first position
+      
       const size = isActive ? 'w-4 h-4' : 'w-3 h-3';
       
       circles.push(
