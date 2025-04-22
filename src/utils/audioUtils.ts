@@ -1,3 +1,4 @@
+
 /**
  * Audio utilities for the timer application
  */
@@ -11,6 +12,9 @@ const modeToMp3: Record<'work' | 'break' | 'longBreak', string> = {
 
 // Optionally cache HTMLAudioElements for instant playback
 const audioCache: Partial<Record<'work' | 'break' | 'longBreak', HTMLAudioElement>> = {};
+
+// Cache for preloaded general bell audio
+let zenBellAudio: HTMLAudioElement | null = null;
 
 /**
  * Initialize audio elements and preload sounds
