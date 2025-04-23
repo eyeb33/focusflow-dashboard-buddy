@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+
+import React, { useEffect, useRef } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,10 +34,31 @@ const TimerContainer: React.FC = () => {
   const { settings } = useTimerSettings();
 
   const timerContext = useTimer();
+  const timerDisplayRef = useRef<HTMLDivElement>(null);
   
+  // Set up the global timerContext reference
   useEffect(() => {
-    window.timerContext = timerContext;
-  }, [timerContext]);
+    window.timerContext = {
+      ...timerContext,
+      updateDisplay: (newTime: number) => {
+        if (timerDisplayRef.current) {
+          timerDisplayRef.current.textContent = formatTime(newTime);
+        }
+      }
+    };
+    
+    // Clean up on unmount
+    return () => {
+      window.timerContext = undefined;
+    };
+  }, [timerContext, formatTime]);
+
+  // Force UI update when timeRemaining changes
+  useEffect(() => {
+    if (timerDisplayRef.current) {
+      timerDisplayRef.current.textContent = formatTime(timeRemaining);
+    }
+  }, [timeRemaining, formatTime]);
 
   const modeColors = {
     work: {
@@ -114,7 +136,10 @@ const TimerContainer: React.FC = () => {
           className="mb-6"
         >
           <div className="text-center">
-            <div className="text-5xl font-bold tracking-tighter font-mono w-[180px] flex justify-center">
+            <div 
+              ref={timerDisplayRef}
+              className="text-5xl font-bold tracking-tighter font-mono w-[180px] flex justify-center"
+            >
               {formatTime(timeRemaining)}
             </div>
             <div className="text-sm text-muted-foreground mt-2">
@@ -148,6 +173,7 @@ declare global {
   interface Window {
     timerContext?: {
       timeRemaining: number;
+      updateDisplay?: (newTime: number) => void;
       [key: string]: any;
     };
   }

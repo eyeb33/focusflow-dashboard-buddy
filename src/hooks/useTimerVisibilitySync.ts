@@ -35,9 +35,15 @@ export function useTimerVisibilitySync({
         if (elapsedSeconds >= 1) {
           console.log(`Tab was hidden for ${elapsedSeconds} seconds`);
 
-          // Date change logic (crossing midnight) for advanced users, possibly extend
           setTimeRemaining(prevTime => {
             const newTime = Math.max(0, prevTime - elapsedSeconds);
+            
+            // Force UI update immediately after visibility change
+            setTimeout(() => {
+              if (window.timerContext && window.timerContext.updateDisplay) {
+                window.timerContext.updateDisplay(newTime);
+              }
+            }, 0);
 
             if (newTime <= 0) {
               setTimeout(() => onTimerComplete(), 0);

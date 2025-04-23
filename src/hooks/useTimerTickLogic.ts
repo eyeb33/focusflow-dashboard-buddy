@@ -26,6 +26,26 @@ export function useTimerTickLogic({
 }: UseTimerTickLogicProps) {
   const { user } = useAuth();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const requestAnimationFrameRef = useRef<number | null>(null);
+
+  // Function to update the timer display
+  const updateTimerDisplay = (newTime: number) => {
+    // Update React state for the timer display
+    setTimeRemaining(newTime);
+    
+    // Update the global window context for debugging
+    if (window.timerContext) {
+      window.timerContext.timeRemaining = newTime;
+    }
+
+    // For animation frame loop
+    if (isRunning) {
+      requestAnimationFrameRef.current = requestAnimationFrame(() => {
+        // This ensures the browser repaints the timer even if tab is inactive
+        document.title = `Timer: ${Math.floor(newTime / 60)}:${String(newTime % 60).padStart(2, '0')}`;
+      });
+    }
+  };
 
   useEffect(() => {
     if (isRunning) {
@@ -37,9 +57,14 @@ export function useTimerTickLogic({
         const actualElapsed = now - lastTickTimeRef.current;
         const adjustment = Math.max(0, Math.floor((actualElapsed - expectedElapsed) / 1000));
 
+        const totalTime = getTotalTime();
+        
         setTimeRemaining(prevTime => {
           if (prevTime <= 1) {
             clearInterval(timerRef.current as ReturnType<typeof setInterval>);
+            if (requestAnimationFrameRef.current) {
+              cancelAnimationFrame(requestAnimationFrameRef.current);
+            }
             onTimerComplete();
             return 0;
           }
@@ -47,7 +72,6 @@ export function useTimerTickLogic({
           const secondsToSubtract = 1 + adjustment;
           const newTime = Math.max(0, prevTime - secondsToSubtract);
 
-          const totalTime = getTotalTime();
           const elapsedSeconds = totalTime - newTime;
           const newFullMinutes = Math.floor(elapsedSeconds / 60);
           const prevFullMinutes = lastRecordedFullMinutesRef.current;
@@ -84,8 +108,14 @@ export function useTimerTickLogic({
           };
           localStorage.setItem('timerState', JSON.stringify(timerState));
 
+          // Force UI update with requestAnimationFrame
+          updateTimerDisplay(newTime);
+
           if (newTime <= 0) {
             clearInterval(timerRef.current as ReturnType<typeof setInterval>);
+            if (requestAnimationFrameRef.current) {
+              cancelAnimationFrame(requestAnimationFrameRef.current);
+            }
             setTimeout(() => onTimerComplete(), 0);
             localStorage.removeItem('timerState');
             return 0;
@@ -97,11 +127,19 @@ export function useTimerTickLogic({
       }, 1000);
     } else if (timerRef.current) {
       clearInterval(timerRef.current);
+      if (requestAnimationFrameRef.current) {
+        cancelAnimationFrame(requestAnimationFrameRef.current);
+        requestAnimationFrameRef.current = null;
+      }
     }
 
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
+      }
+      if (requestAnimationFrameRef.current) {
+        cancelAnimationFrame(requestAnimationFrameRef.current);
+        requestAnimationFrameRef.current = null;
       }
     };
   }, [
