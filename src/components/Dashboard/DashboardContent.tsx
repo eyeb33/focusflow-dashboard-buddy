@@ -1,3 +1,4 @@
+
 import React from 'react';
 import TimeToggle from "@/components/Dashboard/TimeToggle";
 import StatCardsGrid from "@/components/Dashboard/StatCardsGrid";
@@ -151,6 +152,8 @@ const DashboardContent = () => {
       </div>
       <div className="mt-6">
         <ProductivityInsights insights={dashboardData.insights} />
+      </div>
+      <div className="mt-6">
         <ExperimentalRadialChart dailyData={dashboardData.dailyProductivity} />
       </div>
     </div>
