@@ -27,6 +27,15 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
   // Animation state for countdown
   const [isPulsing, setIsPulsing] = useState(false);
   
+  // Debug log to see what values are being provided
+  console.log('SessionProgress props:', { 
+    completedSessions, 
+    sessionsUntilLongBreak, 
+    currentMode, 
+    currentSessionIndex, 
+    isRunning 
+  });
+  
   // Check if we're in the last 10 seconds
   useEffect(() => {
     if (timeRemaining <= 10 && timeRemaining > 0 && isRunning) {
@@ -55,10 +64,13 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
     const colors = getColor(currentMode);
     
     return Array.from({ length: sessionsUntilLongBreak }).map((_, index) => {
-      // IMPORTANT FIX: Only mark as completed if:
-      // 1. The session is actually completed (index < completedSessions)
-      // 2. Current session should never be marked completed
-      // 3. In non-work modes, circles represent where we'll return to, not current progress
+      // CRITICAL FIX: Ensure proper session display logic
+      // A session should only be filled if:
+      // 1. It's a completed session (index < completedSessions)
+      // 2. It's not the current active session
+      // 3. We must account for the session cycle properly
+      
+      // Calculate if this position has been completed
       const isCompleted = index < completedSessions && index !== currentSessionIndex;
       
       // Is this the active position?
@@ -72,11 +84,13 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
           key={`${currentMode}-${index}`}
           size={size}
           className={cn(
-            // IMPORTANT: Fill only if completed - never fill the active circle 
-            isCompleted ? colors.fill : 'text-transparent',
+            // Always use transparent fill as the default
+            'text-transparent',
+            // Only apply fill if definitely completed
+            isCompleted ? colors.fill : '',
             // Thicker stroke for active indicator
             isActive ? 'stroke-[2.5px]' : 'stroke-[2px]',
-            // Stroke color based on mode
+            // Use the appropriate stroke color
             isActive ? colors.fill : colors.stroke,
             // Add slow pulsing animation for the last 10 seconds
             isPulsing && isActive ? 'animate-pulse-slow' : '',
