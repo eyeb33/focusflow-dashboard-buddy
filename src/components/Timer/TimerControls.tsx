@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Play, Pause, RotateCcw } from "lucide-react";
@@ -44,7 +45,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
 
   const currentModeColors = modeColors[mode];
   
-  // Handle play/pause button click - CRITICAL: Keep this very simple
+  // Critical fix: Handle play/pause button click properly
   const handlePlayPauseClick = () => {
     console.log("Play/Pause button clicked - current isRunning state:", isRunning);
     

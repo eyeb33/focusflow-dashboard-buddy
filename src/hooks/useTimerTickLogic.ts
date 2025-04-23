@@ -43,10 +43,10 @@ export function useTimerTickLogic({
       console.log("Starting timer tick with mode:", timerMode);
       lastTickTimeRef.current = Date.now();
 
-      // Save current time before starting
+      // When starting or resuming, get the current state but don't modify it
       setTimeRemaining(prevTime => {
         currentTimeRef.current = prevTime;
-        return prevTime;
+        return prevTime; // Return unchanged to preserve the time
       });
 
       timerRef.current = setInterval(() => {
@@ -122,14 +122,17 @@ export function useTimerTickLogic({
           return newTime;
         });
       }, 1000);
-    } else if (currentTimeRef.current !== null) {
-      // CRITICAL FIX: When pausing, PRESERVE the exact current time from our reference
-      console.log("Timer paused - Preserving exact time:", currentTimeRef.current);
+    } else if (isRunning === false) {
+      // CRITICAL FIX: When pausing, do not modify the timeRemaining state at all
+      console.log("Timer paused - Preserving exact current time");
+      
+      // Get the current time from our ref or state
+      const pausedTime = currentTimeRef.current !== null ? currentTimeRef.current : timeRemaining;
       
       const timerState = {
         isRunning: false,
         timerMode,
-        timeRemaining: currentTimeRef.current,
+        timeRemaining: pausedTime,
         totalTime: getTotalTime(),
         timestamp: Date.now(),
         sessionStartTime: sessionStartTimeRef.current
