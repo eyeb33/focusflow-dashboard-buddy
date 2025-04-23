@@ -39,6 +39,10 @@ export function useRestoreTimerState({
           console.log("Restoring timer mode:", storedState.timerMode);
           setTimerMode(storedState.timerMode);
           defaultToWorkMode = false;
+        } else {
+          // If no timer mode is stored, explicitly set to work mode
+          console.log("No timer mode found in stored state, defaulting to work mode");
+          setTimerMode('work');
         }
 
         // Restore time remaining but NEVER auto-start
@@ -79,7 +83,7 @@ export function useRestoreTimerState({
       }
     }
     
-    // If no valid state was restored, default to work mode
+    // If no valid state was restored or there was an error, default to work mode
     if (defaultToWorkMode) {
       console.log("Defaulting to work mode");
       setTimerMode('work');

@@ -11,11 +11,13 @@ import { useTimerSettings } from './useTimerSettings';
 export const useTimer = () => {
   const timerContext = useTimerContext();
   
-  // Log timer context for debugging
+  // Enhanced logging for better debugging of timer functionality
   console.log("Timer context:", {
     mode: timerContext.timerMode,
     isRunning: timerContext.isRunning,
-    timeRemaining: timerContext.timeRemaining
+    timeRemaining: timerContext.timeRemaining,
+    // Add timeFormatted to help with debugging
+    timeFormatted: timerContext.formatTime(timerContext.timeRemaining)
   });
   
   return timerContext;

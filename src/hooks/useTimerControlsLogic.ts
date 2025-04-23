@@ -26,7 +26,7 @@ export function useTimerControlsLogic(settings: TimerSettings) {
   };
   
   const handlePause = async (timerMode: TimerMode) => {
-    // IMPORTANT: Only change the running state to false, don't modify the time
+    // CRITICAL FIX: Only change the running state to false, don't modify the time
     setIsRunning(false);
     console.log("Timer paused at:", timeRemaining, "seconds");
     
