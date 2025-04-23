@@ -55,8 +55,11 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
     const colors = getColor(currentMode);
     
     return Array.from({ length: sessionsUntilLongBreak }).map((_, index) => {
-      // Only mark as completed if the session is actually completed
-      const isCompleted = index < completedSessions;
+      // IMPORTANT FIX: Only mark as completed if:
+      // 1. The session is actually completed (index < completedSessions)
+      // 2. Current session should never be marked completed
+      // 3. In non-work modes, circles represent where we'll return to, not current progress
+      const isCompleted = index < completedSessions && index !== currentSessionIndex;
       
       // Is this the active position?
       const isActive = index === currentSessionIndex;
@@ -69,7 +72,7 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
           key={`${currentMode}-${index}`}
           size={size}
           className={cn(
-            // Fill only if completed
+            // IMPORTANT: Fill only if completed - never fill the active circle 
             isCompleted ? colors.fill : 'text-transparent',
             // Thicker stroke for active indicator
             isActive ? 'stroke-[2.5px]' : 'stroke-[2px]',
