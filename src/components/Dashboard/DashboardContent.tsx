@@ -5,6 +5,7 @@ import ProductivityInsights from "@/components/Dashboard/ProductivityInsights";
 import StreakCalendar from "@/components/Dashboard/StreakCalendar";
 import { TimePeriod } from "@/components/Dashboard/TimeToggle";
 import { mockDashboardData } from "@/data/mockDashboardData";
+import ProductivityTrendChart from "@/components/Dashboard/ProductivityTrendChart";
 
 interface DashboardContentProps {
   dashboardData: typeof mockDashboardData;
@@ -33,6 +34,13 @@ const DashboardContent: React.FC<DashboardContentProps> = ({
         />
       </div>
     </div>
+    
+    {dashboardData.productivityTrend && dashboardData.productivityTrend.length > 0 && (
+      <div className="mt-6">
+        <ProductivityTrendChart data={dashboardData.productivityTrend} />
+      </div>
+    )}
+    
     <div className="mt-6">
       <ProductivityInsights insights={dashboardData.insights} />
     </div>

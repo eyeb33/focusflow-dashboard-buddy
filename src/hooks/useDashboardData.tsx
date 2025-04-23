@@ -7,6 +7,7 @@ import { useInsights } from "@/hooks/dashboard/useInsights";
 import { useStreakData } from "@/hooks/dashboard/useStreakData";
 import { useProductivityTrends } from "@/hooks/dashboard/useProductivityTrends";
 import { useRealtimeUpdates } from "@/hooks/dashboard/useRealtimeUpdates";
+import { DashboardData, initialDashboardData } from '@/hooks/dashboard/types';
 
 export const useDashboardData = () => {
   const { user } = useAuth();
@@ -86,7 +87,7 @@ export const useDashboardData = () => {
     }
   };
   
-  // Combined data
+  // Combined data - use both the original trends field and productivityTrend for backwards compatibility
   const dashboardData = {
     stats,
     dailyProductivity,
@@ -94,7 +95,8 @@ export const useDashboardData = () => {
     monthlyProductivity,
     insights,
     streakData,
-    trends: productivityTrend
+    productivityTrend,
+    trends: productivityTrend // Keep the original field name for backwards compatibility
   };
   
   const isLoading = statsLoading || productivityLoading || insightsLoading || streakLoading || trendsLoading;

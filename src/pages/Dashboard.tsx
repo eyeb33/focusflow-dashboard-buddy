@@ -54,7 +54,13 @@ const Dashboard = () => {
   }, [user, authLoading, navigate, demoMode]);
 
   const isLoading = (!demoMode && (authLoading || dataLoading));
-  const effectiveDashboardData = demoMode ? mockDashboardData : dashboardData;
+  
+  // Create a properly formatted dashboard data object whether we're using demo or real data
+  const effectiveDashboardData = demoMode ? mockDashboardData : {
+    ...dashboardData,
+    // Map trends to productivityTrend for consistency with mockDashboardData
+    productivityTrend: dashboardData.trends || []
+  };
 
   const statsCards = usePeriodStats({
     dashboardData: effectiveDashboardData,
