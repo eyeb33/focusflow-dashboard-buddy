@@ -108,15 +108,15 @@ export function useTimerCompletion({
       
       resetTimerState();
       
-      // Don't automatically start after long break
-      if (timerMode === 'longBreak') {
-        // We won't auto-start after a long break
-        setIsRunning(false);
-      } else {
+      // Handle auto-start based on timer mode using string comparison
+      if (timerMode === 'work' || timerMode === 'break') {
         // Auto-start for work and short break sessions
         setTimeout(() => {
           setIsRunning(true);
         }, 1000);
+      } else {
+        // Don't auto-start after long break
+        setIsRunning(false);
       }
     } catch (error) {
       console.error('Error handling timer completion:', error);

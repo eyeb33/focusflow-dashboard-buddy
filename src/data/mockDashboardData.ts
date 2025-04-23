@@ -1,5 +1,6 @@
 
 // Mock data for demonstration purposes
+import { StatsData } from '@/hooks/dashboard/stats/statsTypes';
 
 export const mockStreakData = Array.from({ length: 28 }, (_, i) => ({
   date: new Date(Date.now() - (27 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -48,13 +49,33 @@ export const mockInsights = [
   }
 ];
 
-// Mock stats data
-export const mockStats = [
-  { title: "Today's Focus", value: "125 min", icon: "Clock", trend: { value: 15, isPositive: true } },
-  { title: "Current Streak", value: "7 days", icon: "Flame", trend: { value: 40, isPositive: true } },
-  { title: "Completion Rate", value: "85%", icon: "Target", trend: { value: 5, isPositive: false } },
-  { title: "Weekly Sessions", value: "32", icon: "Zap", description: "Total focus sessions this week" }
-];
+// Create properly structured mock stats data matching StatsData type
+const mockStatsData: StatsData = {
+  totalSessions: 35,
+  totalMinutes: 875,
+  completedCycles: 8,
+  dailyAverage: 5,
+  currentStreak: 7,
+  bestStreak: 10,
+  weeklyChange: {
+    sessions: 15,
+    minutes: 40,
+    dailyAvg: 20,
+    isPositive: true
+  },
+  weeklyStats: {
+    totalSessions: 35,
+    totalMinutes: 875,
+    dailyAverage: 5,
+    completedCycles: 8
+  },
+  monthlyStats: {
+    totalSessions: 110,
+    totalMinutes: 2750,
+    dailyAverage: 3.7,
+    completedCycles: 27
+  }
+};
 
 // Generate wave-like productivity trend data for the last 30 days
 export const mockProductivityTrend = Array.from({ length: 30 }, (_, i) => {
@@ -76,13 +97,13 @@ export const mockProductivityTrend = Array.from({ length: 30 }, (_, i) => {
   };
 });
 
-// Create a single export object that contains all mock data
+// Create a single export object that contains all mock data with proper types
 export const mockDashboardData = {
   streakData: mockStreakData,
   dailyProductivity: mockDailyData,
   weeklyProductivity: mockWeeklyData,
   monthlyProductivity: mockMonthlyData,
   insights: mockInsights,
-  stats: mockStats,
+  stats: mockStatsData,
   productivityTrend: mockProductivityTrend
 };
