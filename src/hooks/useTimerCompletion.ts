@@ -1,3 +1,4 @@
+
 import { useAuth } from '@/contexts/AuthContext';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { getTotalTime } from '@/utils/timerContextUtils';
@@ -85,7 +86,8 @@ export function useTimerCompletion({
         console.log(`Break session completed. Keeping session index at ${currentSessionIndex}`);
         setTimerMode('work');
       } 
-      else if (timerMode === 'longBreak') {
+      else {
+        // This handles the longBreak case correctly without type comparison issues
         if (user) {
           await saveFocusSession(
             user.id, 
@@ -106,7 +108,12 @@ export function useTimerCompletion({
       
       resetTimerState();
       
-      if (timerMode !== 'longBreak') {
+      // Don't automatically start after long break
+      if (timerMode === 'longBreak') {
+        // We won't auto-start after a long break
+        setIsRunning(false);
+      } else {
+        // Auto-start for work and short break sessions
         setTimeout(() => {
           setIsRunning(true);
         }, 1000);

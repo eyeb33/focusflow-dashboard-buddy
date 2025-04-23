@@ -12,7 +12,7 @@ import TimeToggle, { TimePeriod } from "@/components/Dashboard/TimeToggle";
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
-import mockDashboardData from '@/data/mockDashboardData'; // add import
+import { mockDashboardData } from '@/data/mockDashboardData'; // fixed import
 
 const Dashboard = () => {
   const { user, isLoading: authLoading } = useAuth();
