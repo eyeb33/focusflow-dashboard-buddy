@@ -1,14 +1,8 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { WeeklyChange } from './statsTypes';
 
-interface WeeklyChangeData {
-  sessionsChange: number;
-  minutesChange: number;
-  dailyAvgChange: number;
-  isPositive: boolean;
-}
-
-export const fetchWeeklyChangeData = async (userId: string): Promise<WeeklyChangeData> => {
+export const fetchWeeklyChangeData = async (userId: string): Promise<WeeklyChange> => {
   // Calculate weekly change data
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
@@ -38,9 +32,9 @@ export const fetchWeeklyChangeData = async (userId: string): Promise<WeeklyChang
   if (currentWeekError || prevWeekError) {
     console.error('Error fetching weekly comparison data');
     return {
-      sessionsChange: 0,
-      minutesChange: 0,
-      dailyAvgChange: 0,
+      sessions: 0,
+      minutes: 0,
+      dailyAvg: 0,
       isPositive: true
     };
   }
@@ -77,9 +71,9 @@ export const fetchWeeklyChangeData = async (userId: string): Promise<WeeklyChang
   }
   
   return {
-    sessionsChange: sessionChangePercent,
-    minutesChange: minutesChangePercent,
-    dailyAvgChange: avgChangePercent,
+    sessions: sessionChangePercent,
+    minutes: minutesChangePercent,
+    dailyAvg: avgChangePercent,
     isPositive: sessionChangePercent >= 0
   };
 };
