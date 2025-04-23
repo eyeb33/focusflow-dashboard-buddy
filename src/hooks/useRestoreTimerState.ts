@@ -24,7 +24,7 @@ export function useRestoreTimerState({
     setIsRunning(false);
     
     // Default to work mode if no stored state
-    let initialMode = 'work';
+    let initialMode: TimerMode = 'work';
     let initialTime = 25 * 60;
     
     const storedStateStr = localStorage.getItem('timerState');
@@ -36,7 +36,8 @@ export function useRestoreTimerState({
         console.log("Parsed stored state:", storedState);
         
         // Set timer mode from storage, default to work
-        initialMode = storedState.timerMode || 'work';
+        // Ensure we cast the stored mode to TimerMode type
+        initialMode = (storedState.timerMode || 'work') as TimerMode;
         console.log("Setting timer mode to:", initialMode);
         setTimerMode(initialMode);
 
@@ -58,7 +59,7 @@ export function useRestoreTimerState({
     } else {
       // Only set the default time if no stored state was found
       setTimeRemaining(initialTime);
-      setTimerMode(initialMode);
+      setTimerMode(initialMode as TimerMode);
     }
     
     // This must only run on mount
