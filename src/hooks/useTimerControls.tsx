@@ -28,6 +28,27 @@ export const useTimerControls = () => {
     currentSessionIndex
   });
   
+  // Create more reliable wrapper functions to ensure proper behavior
+  const start = () => {
+    console.log("START called from useTimerControls - Current time:", timeRemaining);
+    handleStart();
+  };
+  
+  const pause = () => {
+    console.log("PAUSE called from useTimerControls - Current time:", timeRemaining);
+    handlePause();
+  };
+  
+  const reset = () => {
+    console.log("RESET called from useTimerControls - Current time:", timeRemaining);
+    handleReset();
+  };
+  
+  const changeMode = (mode: TimerMode) => {
+    console.log("CHANGE MODE called from useTimerControls - New mode:", mode);
+    handleModeChange(mode);
+  };
+  
   return {
     isRunning,
     timerMode,
@@ -35,10 +56,10 @@ export const useTimerControls = () => {
     progress,
     currentSessionIndex,
     formatTime,
-    start: handleStart,
-    pause: handlePause,
-    reset: handleReset,
-    changeMode: (mode: TimerMode) => handleModeChange(mode),
+    start,
+    pause,
+    reset,
+    changeMode,
     getModeLabel
   };
 };

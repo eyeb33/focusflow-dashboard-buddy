@@ -19,6 +19,7 @@ export function useRestoreTimerState({
   setTimerMode
 }: UseRestoreTimerStateProps) {
   useEffect(() => {
+    console.log("========== RESTORING TIMER STATE ==========");
     // CRITICAL: Always ensure we start with isRunning false - user must manually start
     setIsRunning(false);
     
@@ -31,51 +32,43 @@ export function useRestoreTimerState({
     if (storedStateStr) {
       try {
         const storedState = JSON.parse(storedStateStr);
+        console.log("Parsed stored state:", storedState);
+        
+        // Calculate elapsed time if needed
         const elapsedMs = Date.now() - storedState.timestamp;
         const elapsedSeconds = Math.floor(elapsedMs / 1000);
+        console.log(`Time elapsed since storage: ${elapsedSeconds} seconds`);
 
-        // Restore the timer mode if available
-        if (storedState.timerMode) {
-          // FORCE to 'work' mode for now to fix UI issues
-          console.log("Forcing timer to work mode for consistency");
-          setTimerMode('work');
-          defaultToWorkMode = false;
-        } else {
-          // If no timer mode is stored, explicitly set to work mode
-          console.log("No timer mode found in stored state, defaulting to work mode");
-          setTimerMode('work');
-        }
+        // ALWAYS set to work mode first to avoid UI issues
+        console.log("Setting timer mode to 'work'");
+        setTimerMode('work');
+        defaultToWorkMode = false;
 
         // Restore time remaining but NEVER auto-start
-        if (storedState.timeRemaining > 0) {
-          // Calculate new time remaining, accounting for elapsed time while away
-          let newTimeRemaining;
-          
-          // If the timer was paused when stored, don't subtract elapsed time
+        if (storedState.timeRemaining && typeof storedState.timeRemaining === 'number') {
+          // If the timer was paused when stored, use the exact stored time
           if (storedState.isRunning === false) {
-            newTimeRemaining = storedState.timeRemaining;
-            console.log("Restoring paused timer with time:", newTimeRemaining);
+            console.log(`Restoring paused timer with exact time: ${storedState.timeRemaining}`);
+            setTimeRemaining(storedState.timeRemaining);
           } else {
-            // If timer was running, subtract elapsed time
-            newTimeRemaining = Math.max(0, storedState.timeRemaining - elapsedSeconds);
-            console.log("Restoring running timer adjusted for elapsed time:", newTimeRemaining);
+            // If timer was running, subtract elapsed time (capped at 0)
+            const newTimeRemaining = Math.max(0, storedState.timeRemaining - elapsedSeconds);
+            console.log(`Restoring previously running timer, adjusted time: ${newTimeRemaining}`);
+            setTimeRemaining(newTimeRemaining);
+            
+            // Handle completion if time elapsed while away
+            if (newTimeRemaining <= 0) {
+              console.log("Timer completed while away, triggering completion");
+              setTimeout(() => onTimerComplete(), 0);
+              localStorage.removeItem('timerState');
+            }
           }
-          
-          setTimeRemaining(newTimeRemaining);
 
           if (storedState.sessionStartTime) {
             sessionStartTimeRef.current = storedState.sessionStartTime;
           }
-          
-          // Handle timer completion if time elapsed while away
-          if (newTimeRemaining <= 0 && storedState.isRunning !== false) {
-            console.log("Timer completed while away, triggering completion");
-            if (storedState.sessionStartTime) {
-              sessionStartTimeRef.current = storedState.sessionStartTime;
-            }
-            setTimeout(() => onTimerComplete(), 0);
-            localStorage.removeItem('timerState');
-          }
+        } else {
+          console.log("No valid timeRemaining in stored state, using default work duration");
         }
       } catch (error) {
         console.error('Error restoring timer state:', error);

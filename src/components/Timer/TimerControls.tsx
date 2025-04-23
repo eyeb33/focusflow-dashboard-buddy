@@ -51,12 +51,17 @@ const TimerControls: React.FC<TimerControlsProps> = ({
     
     if (isRunning) {
       console.log("Pause button clicked - calling onPause() - should ONLY pause, not reset");
+      // CRITICAL: This calls the pause handler from the parent which should only pause
       onPause();
     } else {
       console.log("Play button clicked - calling onStart() - should resume or start");
+      // CRITICAL: This calls the start handler from the parent which should start from current time
       onStart();
     }
   };
+
+  // Debug render
+  console.log("TimerControls rendering with isRunning:", isRunning);
 
   return (
     <div className={cn("flex items-center justify-center gap-4", className)}>
