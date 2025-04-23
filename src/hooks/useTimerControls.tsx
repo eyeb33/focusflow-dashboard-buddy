@@ -36,7 +36,7 @@ export const useTimerControls = () => {
   
   const pause = () => {
     console.log("PAUSE called from useTimerControls - Current time:", timeRemaining);
-    // Pass the current time remaining to ensure it's preserved
+    // Ensure we're only pausing, not modifying the time in any way
     handlePause();
   };
   

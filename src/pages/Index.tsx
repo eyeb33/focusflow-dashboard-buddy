@@ -41,7 +41,7 @@ const Index = () => {
               <TabsTrigger value="tasks">Tasks</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="timer">
+            <TabsContent value="timer" className="w-full">
               <TimerContainer />
             </TabsContent>
             
