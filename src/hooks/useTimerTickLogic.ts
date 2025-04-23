@@ -56,6 +56,7 @@ export function useTimerTickLogic({
   useEffect(() => {
     if (isRunning) {
       lastTickTimeRef.current = Date.now();
+      console.log("Timer is running. Initial time:", lastTickTimeRef.current);
 
       // Set up the interval for the timer
       timerRef.current = setInterval(() => {
@@ -134,6 +135,7 @@ export function useTimerTickLogic({
         });
       }, 1000);
     } else if (timerRef.current) {
+      console.log("Timer stopped. Clearing interval");
       clearInterval(timerRef.current);
       if (requestAnimationFrameRef.current) {
         cancelAnimationFrame(requestAnimationFrameRef.current);

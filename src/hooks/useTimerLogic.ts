@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { getTotalTime, TimerMode } from '@/utils/timerContextUtils';
 import { TimerSettings } from '@/hooks/useTimerSettings';
@@ -63,10 +64,10 @@ export function useTimerLogic(settings: TimerSettings) {
 
   // Reset timer when mode or settings change
   useEffect(() => {
-    setTimeRemaining(getTotalTime(timerMode, settings));
-    
-    // Reset session start time when mode changes
     if (!isRunning) {
+      setTimeRemaining(getTotalTime(timerMode, settings));
+      
+      // Reset session start time when mode changes
       sessionStartTimeRef.current = null;
     }
   }, [timerMode, settings, setTimeRemaining, isRunning]);
@@ -84,16 +85,20 @@ export function useTimerLogic(settings: TimerSettings) {
     // Record the session start time
     sessionStartTimeRef.current = new Date().toISOString();
     baseHandleStart(timerMode);
+    
+    console.log("Timer started");
   };
   
   const handlePause = () => {
     baseHandlePause(timerMode);
+    console.log("Timer paused");
   };
   
   const handleReset = () => {
     // Clear the session start time on reset
     sessionStartTimeRef.current = null;
     baseHandleReset(timerMode, setCurrentSessionIndex);
+    console.log("Timer reset");
   };
 
   const handleModeChange = (mode: TimerMode) => {
@@ -101,6 +106,7 @@ export function useTimerLogic(settings: TimerSettings) {
     sessionStartTimeRef.current = null;
     baseHandleModeChange(timerMode, mode, setCurrentSessionIndex);
     setTimerMode(mode);
+    console.log(`Timer mode changed to: ${mode}`);
   };
 
   // Get the current total time based on timer mode

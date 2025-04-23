@@ -22,6 +22,16 @@ export function useTimerControlsLogic(settings: TimerSettings) {
   
   const handlePause = async (timerMode: TimerMode) => {
     setIsRunning(false);
+    // Store the current timer state in localStorage when paused
+    const timerState = {
+      isRunning: false,
+      timerMode,
+      timeRemaining,
+      totalTime: getTotalTime(timerMode, settings),
+      timestamp: Date.now()
+    };
+    localStorage.setItem('timerState', JSON.stringify(timerState));
+    
     if (user && lastRecordedTimeRef.current) {
       const totalTime = getTotalTime(timerMode, settings);
       await savePartialSession(
@@ -49,6 +59,9 @@ export function useTimerControlsLogic(settings: TimerSettings) {
     setTimeRemaining(getTotalTime(timerMode, settings));
     lastRecordedTimeRef.current = getTotalTime(timerMode, settings);
     lastRecordedFullMinutesRef.current = 0;
+    
+    // Clear the timer state from localStorage when reset
+    localStorage.removeItem('timerState');
     
     // Reset the current session index when timer is reset
     if (timerMode === 'work' && setCurrentSessionIndex) {
