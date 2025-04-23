@@ -20,13 +20,14 @@ export function useTimerControlsLogic(settings: TimerSettings) {
     const elapsedSeconds = totalTime - timeRemaining;
     lastRecordedFullMinutesRef.current = Math.floor(elapsedSeconds / 60);
     
-    // Start the timer
+    // Start the timer without changing timeRemaining
     setIsRunning(true);
     console.log("Timer started at:", timeRemaining, "seconds");
   };
   
   const handlePause = async (timerMode: TimerMode) => {
-    // CRITICAL FIX: Only change the running state to false, don't modify the time at all
+    // CRITICAL: Only change the running state to false
+    // Do NOT modify the time at all - preserve exactly what it was
     console.log("HANDLE PAUSE called with time remaining:", timeRemaining);
     setIsRunning(false);
     console.log("Timer paused at:", timeRemaining, "seconds - PAUSED state only, NOT resetting time");

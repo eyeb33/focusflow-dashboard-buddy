@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect } from 'react';
 import { TimerMode, enableRealtimeForSessionsSummary } from '@/utils/timerContextUtils';
 import { formatTime, getModeLabel } from '@/utils/timerUtils';
@@ -100,7 +99,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 };
 
-export const useTimer = () => {
+export const useTimerContext = () => {
   const context = useContext(TimerContext);
   
   if (context === undefined) {
@@ -109,3 +108,5 @@ export const useTimer = () => {
   
   return context;
 };
+
+export const useTimer = useTimerContext;

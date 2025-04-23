@@ -43,6 +43,12 @@ export function useTimerTickLogic({
       console.log("Starting timer tick with mode:", timerMode);
       lastTickTimeRef.current = Date.now();
 
+      // Save current time before starting
+      setTimeRemaining(prevTime => {
+        currentTimeRef.current = prevTime;
+        return prevTime;
+      });
+
       timerRef.current = setInterval(() => {
         const now = Date.now();
         const expectedElapsed = 1000;
@@ -51,7 +57,7 @@ export function useTimerTickLogic({
         const adjustment = Math.max(0, Math.floor((actualElapsed - expectedElapsed) / 1000));
 
         setTimeRemaining(prevTime => {
-          // Store the current time BEFORE making any changes
+          // Always store the current time for pause state reference
           currentTimeRef.current = prevTime;
           console.log("Timer tick - Current time:", prevTime);
           
@@ -79,7 +85,7 @@ export function useTimerTickLogic({
               : new Date().toISOString().split('T')[0];
 
             savePartialSession(
-              user.id,
+              user.id, 
               timerMode,
               totalTime,
               newTime,
@@ -116,24 +122,21 @@ export function useTimerTickLogic({
           return newTime;
         });
       }, 1000);
-    } else {
-      // CRITICAL FIX: Save the exact current time when paused
-      // This ensures we don't reset timeRemaining when pausing
-      if (currentTimeRef.current !== null) {
-        console.log("Timer paused - Preserving exact time:", currentTimeRef.current);
-        
-        const timerState = {
-          isRunning: false,
-          timerMode,
-          timeRemaining: currentTimeRef.current,
-          totalTime: getTotalTime(),
-          timestamp: Date.now(),
-          sessionStartTime: sessionStartTimeRef.current
-        };
-        
-        console.log("Saving paused timer state with exact time:", timerState);
-        localStorage.setItem('timerState', JSON.stringify(timerState));
-      }
+    } else if (currentTimeRef.current !== null) {
+      // CRITICAL FIX: When pausing, PRESERVE the exact current time from our reference
+      console.log("Timer paused - Preserving exact time:", currentTimeRef.current);
+      
+      const timerState = {
+        isRunning: false,
+        timerMode,
+        timeRemaining: currentTimeRef.current,
+        totalTime: getTotalTime(),
+        timestamp: Date.now(),
+        sessionStartTime: sessionStartTimeRef.current
+      };
+      
+      console.log("Saving paused timer state with exact time:", timerState);
+      localStorage.setItem('timerState', JSON.stringify(timerState));
     }
 
     return () => {
