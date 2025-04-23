@@ -36,8 +36,9 @@ export function useRestoreTimerState({
 
         // Restore the timer mode if available
         if (storedState.timerMode) {
-          console.log("Restoring timer mode:", storedState.timerMode);
-          setTimerMode(storedState.timerMode);
+          // FORCE to 'work' mode for now to fix UI issues
+          console.log("Forcing timer to work mode for consistency");
+          setTimerMode('work');
           defaultToWorkMode = false;
         } else {
           // If no timer mode is stored, explicitly set to work mode
