@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { getTotalTime, TimerMode } from '@/utils/timerContextUtils';
 import { TimerSettings } from '@/hooks/useTimerSettings';
@@ -154,6 +153,7 @@ export function useTimerLogic(settings: TimerSettings) {
     getTotalTime: getCurrentTotalTime,
     onTimerComplete: handleTimerComplete,
     setTimeRemaining,
+    timeRemaining,
     lastRecordedFullMinutesRef,
     lastTickTimeRef,
     sessionStartTimeRef
