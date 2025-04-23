@@ -1,4 +1,3 @@
-
 import React from 'react';
 import TimeToggle from "@/components/Dashboard/TimeToggle";
 import StatCardsGrid from "@/components/Dashboard/StatCardsGrid";
@@ -6,6 +5,7 @@ import ChartsGrid from "@/components/Dashboard/ChartsGrid";
 import ProductivityInsights from "@/components/Dashboard/ProductivityInsights";
 import StreakCalendar from "@/components/Dashboard/StreakCalendar";
 import { useDashboard } from '@/contexts/DashboardContext';
+import { ExperimentalRadialChart } from '@/components/Dashboard/ExperimentalRadialChart';
 
 const DashboardContent = () => {
   const { selectedPeriod, setSelectedPeriod, dashboardData } = useDashboard();
@@ -151,6 +151,7 @@ const DashboardContent = () => {
       </div>
       <div className="mt-6">
         <ProductivityInsights insights={dashboardData.insights} />
+        <ExperimentalRadialChart dailyData={dashboardData.dailyProductivity} />
       </div>
     </div>
   );
