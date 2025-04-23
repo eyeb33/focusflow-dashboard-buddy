@@ -1,8 +1,9 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { getTotalTime, TimerMode } from '@/utils/timerContextUtils';
 import { TimerSettings } from '@/hooks/useTimerSettings';
-import { useTimerInterval } from './useTimerInterval';
+import { useRestoreTimerState } from './useRestoreTimerState';
+import { useTimerVisibilitySync } from './useTimerVisibilitySync';
+import { useTimerTickLogic } from './useTimerTickLogic';
 import { useTimerControlsLogic } from './useTimerControlsLogic';
 import { useTimerCompletion } from './useTimerCompletion';
 import { useTimerStatsLogic } from './useTimerStatsLogic';
@@ -105,15 +106,53 @@ export function useTimerLogic(settings: TimerSettings) {
   // Get the current total time based on timer mode
   const getCurrentTotalTime = () => getTotalTime(timerMode, settings);
 
-  // Use the timer interval hook
-  useTimerInterval({
+  // Create a reference to hold the timer state
+  const timerStateRef = useRef({
     isRunning,
     timerMode,
-    timeRemaining,
+    timeRemaining
+  });
+
+  // Keep the ref updated with current state
+  useEffect(() => {
+    timerStateRef.current = {
+      isRunning,
+      timerMode,
+      timeRemaining
+    };
+  }, [isRunning, timerMode, timeRemaining]);
+
+  // Reference for tracking the last tick time
+  const lastTickTimeRef = useRef<number>(Date.now());
+
+  // Use the restored timer state hook
+  useRestoreTimerState({
+    isRunning,
     setTimeRemaining,
+    onTimerComplete: handleTimerComplete,
+    sessionStartTimeRef
+  });
+
+  // Use the timer visibility sync hook
+  useTimerVisibilitySync({
+    isRunning,
+    timerMode,
+    timerStateRef,
+    setTimeRemaining,
+    onTimerComplete: handleTimerComplete,
+    lastTickTimeRef,
+    sessionStartTimeRef
+  });
+
+  // Use the timer tick logic hook
+  useTimerTickLogic({
+    isRunning,
+    timerMode,
     getTotalTime: getCurrentTotalTime,
     onTimerComplete: handleTimerComplete,
+    setTimeRemaining,
     lastRecordedFullMinutesRef,
+    lastTickTimeRef,
     sessionStartTimeRef
   });
 
