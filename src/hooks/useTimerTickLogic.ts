@@ -121,14 +121,14 @@ export function useTimerTickLogic({
           return newTime;
         });
       }, 1000);
-    } else if (isRunning === false) {
+    } else if (!isRunning) {
       // CRITICAL FIX: When pausing, preserve the exact current time without modifications
       console.log("Timer paused - Preserving exact current time:", timeRemaining);
       
       const timerState = {
         isRunning: false,
         timerMode,
-        timeRemaining: timeRemaining, // Use the current timeRemaining directly without any modification
+        timeRemaining: timeRemaining, // Use the current timeRemaining directly
         totalTime: getTotalTime(),
         timestamp: Date.now(),
         sessionStartTime: sessionStartTimeRef.current
@@ -136,6 +136,9 @@ export function useTimerTickLogic({
       
       console.log("Saving paused timer state with exact time:", timerState);
       localStorage.setItem('timerState', JSON.stringify(timerState));
+      
+      // CRITICAL FIX: Don't call setTimeRemaining here - it will be handled by the useEffect in useTimerLogic
+      // that watches for changes to settings and mode, but ONLY when not running
     }
 
     return () => {
@@ -155,8 +158,8 @@ export function useTimerTickLogic({
     sessionStartTimeRef
   ]);
 
-  // CRITICAL: Don't include timeRemaining in the dependency array
-  // This prevents re-runs of the effect when only the time changes
+  // CRITICAL: timeRemaining is intentionally excluded from the dependency array
+  // to prevent re-runs of the effect when only the time changes
   // The setTimeRemaining function handles time updates inside the interval
 
   return timerRef;

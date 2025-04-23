@@ -41,11 +41,10 @@ export function useRestoreTimerState({
         console.log("Setting timer mode to:", initialMode);
         setTimerMode(initialMode);
 
-        // If a time was stored, use it - regardless of whether the timer was running or paused
+        // CRITICAL FIX: Always use the stored time, don't reset to default
         if (storedState.timeRemaining && typeof storedState.timeRemaining === 'number') {
           console.log(`Restoring timer with exact time: ${storedState.timeRemaining}`);
-          initialTime = storedState.timeRemaining;
-          // CRITICAL FIX: Always use the stored time, don't reset to default
+          // Use the stored time directly without any modifications
           setTimeRemaining(storedState.timeRemaining);
         }
 
