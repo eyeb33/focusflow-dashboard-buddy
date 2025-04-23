@@ -1,102 +1,18 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
-import { StatsData, initialStatsData, WeeklyMonthlyStats } from './stats/statsTypes';
+import { StatsData, initialStatsData } from './stats/statsTypes';
 import { fetchWeeklyChangeData } from './stats/useWeeklyChangeData';
 import { fetchStreakData } from './stats/useStreakData';
 import { fetchDailyAverageData } from './stats/useDailyAverageData';
 import { fetchTotalMetrics } from './stats/useTotalMetrics';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchWeeklyStats, fetchMonthlyStats } from './stats/usePeriodStats';
+import { calculateAllTrends } from './stats/useTrendCalculations';
 
 export type { StatsData } from './stats/statsTypes';
 
 export const useStatsData = (userId: string | undefined) => {
   const currentDateRef = useRef<string>(new Date().toISOString().split('T')[0]);
-
-  const fetchCompletedCycles = async (userId: string, periodStart: Date, periodEnd: Date, sessionsUntilLongBreak: number) => {
-    if (periodStart.toDateString() !== new Date().toDateString()) {
-      const { data, error } = await supabase
-        .from('sessions_summary')
-        .select('total_completed_sessions, date')
-        .eq('user_id', userId)
-        .gte('date', periodStart.toISOString().split('T')[0])
-        .lte('date', periodEnd.toISOString().split('T')[0]);
-
-      if (error) {
-        console.error("Error fetching sessions_summary for cycles:", error);
-        return 0;
-      }
-
-      const totalSessions = data?.reduce((sum, day) => sum + (day.total_completed_sessions || 0), 0) || 0;
-      return Math.floor(totalSessions / sessionsUntilLongBreak);
-    }
-    
-    return 0;
-  };
-
-  const fetchWeeklyStats = async (userId: string): Promise<WeeklyMonthlyStats> => {
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    const oneWeekAgoStr = oneWeekAgo.toISOString();
-    const today = new Date();
-
-    const { data, error } = await supabase
-      .from('focus_sessions')
-      .select('duration')
-      .eq('user_id', userId)
-      .eq('session_type', 'work')
-      .eq('completed', true)
-      .gte('created_at', oneWeekAgoStr);
-
-    let totalSessions = 0;
-    let totalMinutes = 0;
-    if (!error && Array.isArray(data)) {
-      totalSessions = data.length;
-      totalMinutes = data.reduce((acc, session) => acc + Math.min(Math.floor((session.duration || 0) / 60), 60), 0);
-    }
-
-    const sessionsUntilLongBreak = 4;
-    const completedCycles = await fetchCompletedCycles(userId, oneWeekAgo, today, sessionsUntilLongBreak);
-
-    return {
-      totalSessions,
-      totalMinutes,
-      dailyAverage: totalSessions > 0 ? Math.round(totalSessions / 7 * 10) / 10 : 0,
-      completedCycles,
-    };
-  };
-
-  const fetchMonthlyStats = async (userId: string): Promise<WeeklyMonthlyStats> => {
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-    const oneMonthAgoStr = oneMonthAgo.toISOString();
-    const today = new Date();
-
-    const { data, error } = await supabase
-      .from('focus_sessions')
-      .select('duration')
-      .eq('user_id', userId)
-      .eq('session_type', 'work')
-      .eq('completed', true)
-      .gte('created_at', oneMonthAgoStr);
-
-    let totalSessions = 0;
-    let totalMinutes = 0;
-    if (!error && Array.isArray(data)) {
-      totalSessions = data.length;
-      totalMinutes = data.reduce((acc, session) => acc + Math.min(Math.floor((session.duration || 0) / 60), 60), 0);
-    }
-
-    const sessionsUntilLongBreak = 4;
-    const completedCycles = await fetchCompletedCycles(userId, oneMonthAgo, today, sessionsUntilLongBreak);
-
-    return {
-      totalSessions,
-      totalMinutes,
-      dailyAverage: totalSessions > 0 ? Math.round(totalSessions / 30 * 10) / 10 : 0,
-      completedCycles,
-    };
-  };
 
   const fetchTotalStats = async (): Promise<StatsData | null> => {
     try {
@@ -112,14 +28,6 @@ export const useStatsData = (userId: string | undefined) => {
       yesterday.setDate(yesterday.getDate() - 1);
       const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-      const lastWeek = new Date();
-      lastWeek.setDate(lastWeek.getDate() - 7);
-      const lastWeekStr = lastWeek.toISOString().split('T')[0];
-
-      const lastMonth = new Date();
-      lastMonth.setMonth(lastMonth.getMonth() - 1);
-      const lastMonthStr = lastMonth.toISOString().split('T')[0];
-
       const [
         todayMetrics,
         yesterdayMetrics,
@@ -134,75 +42,44 @@ export const useStatsData = (userId: string | undefined) => {
         fetchTotalMetrics(userId, today),
         fetchTotalMetrics(userId, yesterdayStr),
         fetchWeeklyStats(userId),
-        fetchWeeklyStats(userId),  // Fixed: removed second parameter
+        fetchWeeklyStats(userId),
         fetchMonthlyStats(userId),
-        fetchMonthlyStats(userId),  // Fixed: removed second parameter
+        fetchMonthlyStats(userId),
         fetchDailyAverageData(userId, today),
         fetchStreakData(userId, today),
         fetchWeeklyChangeData(userId)
       ]);
 
-      const calculateTrendPercentage = (current: number, previous: number): number => {
-        if (previous === 0) return current > 0 ? 100 : 0;
-        return Math.round(((current - previous) / previous) * 100);
-      };
-
-      const dailySessionsTrend = calculateTrendPercentage(
-        todayMetrics.totalSessions,
-        yesterdayMetrics.totalSessions
-      );
-
-      const dailyMinutesTrend = calculateTrendPercentage(
-        todayMetrics.totalMinutes,
-        yesterdayMetrics.totalMinutes
-      );
-
-      const weeklySessionsTrend = calculateTrendPercentage(
-        weeklyStats.totalSessions,
-        lastWeekStats.totalSessions
-      );
-
-      const weeklyMinutesTrend = calculateTrendPercentage(
-        weeklyStats.totalMinutes,
-        lastWeekStats.totalMinutes
-      );
-
-      const monthlySessionsTrend = calculateTrendPercentage(
-        monthlyStats.totalSessions,
-        lastMonthStats.totalSessions
-      );
-
-      const monthlyMinutesTrend = calculateTrendPercentage(
-        monthlyStats.totalMinutes,
-        lastMonthStats.totalMinutes
+      const trends = calculateAllTrends(
+        todayMetrics,
+        yesterdayMetrics,
+        weeklyStats,
+        lastWeekStats,
+        monthlyStats,
+        lastMonthStats
       );
 
       return {
         totalSessions: todayMetrics.totalSessions,
         totalMinutes: todayMetrics.totalMinutes,
-        completedCycles: 0,  // Fixed: use 0 as default if completedCycles is not available in TotalMetrics
+        completedCycles: 0,
         dailyAverage,
         currentStreak: streakData.currentStreak,
         bestStreak: streakData.bestStreak,
-        weeklyChange: {
-          sessions: weeklyChangeData.sessionsChange,
-          minutes: weeklyChangeData.minutesChange,
-          dailyAvg: weeklyChangeData.dailyAvgChange,
-          isPositive: weeklyChangeData.isPositive
-        },
+        weeklyChange: weeklyChangeData,
         weeklyStats: {
           ...weeklyStats,
-          sessionsTrend: weeklySessionsTrend,
-          minutesTrend: weeklyMinutesTrend
+          sessionsTrend: trends.weeklySessionsTrend,
+          minutesTrend: trends.weeklyMinutesTrend
         },
         monthlyStats: {
           ...monthlyStats,
-          sessionsTrend: monthlySessionsTrend,
-          minutesTrend: monthlyMinutesTrend
+          sessionsTrend: trends.monthlySessionsTrend,
+          minutesTrend: trends.monthlyMinutesTrend
         },
         dailyStats: {
-          sessionsTrend: dailySessionsTrend,
-          minutesTrend: dailyMinutesTrend
+          sessionsTrend: trends.dailySessionsTrend,
+          minutesTrend: trends.dailyMinutesTrend
         }
       };
     } catch (error: any) {
@@ -220,6 +97,7 @@ export const useStatsData = (userId: string | undefined) => {
 
   useEffect(() => {
     if (!userId) return;
+    
     const intervalId = setInterval(() => {
       const currentDate = new Date().toISOString().split('T')[0];
       if (currentDate !== currentDateRef.current) {
