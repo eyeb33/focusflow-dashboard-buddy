@@ -110,8 +110,16 @@ export function useTimerControlsLogic(settings: TimerSettings) {
   };
 
   const resetTimerState = () => {
+    // Calculate the correct time for the current mode
+    const currentMode = localStorage.getItem('timerMode') || 'work';
+    const newTime = getTotalTime(currentMode as TimerMode, settings);
+    setTimeRemaining(newTime);
+    
+    // Reset recording refs
     lastRecordedTimeRef.current = null;
     lastRecordedFullMinutesRef.current = 0;
+    
+    console.log("Timer state reset to:", newTime, "seconds for mode:", currentMode);
   };
 
   return {

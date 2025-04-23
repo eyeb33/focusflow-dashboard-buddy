@@ -9,7 +9,7 @@ interface UseTimerTickLogicProps {
   getTotalTime: () => number;
   onTimerComplete: () => void;
   setTimeRemaining: React.Dispatch<React.SetStateAction<number>>;
-  timeRemaining: number; // Added missing timeRemaining prop
+  timeRemaining: number;
   lastRecordedFullMinutesRef: React.MutableRefObject<number>;
   lastTickTimeRef: React.MutableRefObject<number>;
   sessionStartTimeRef: React.MutableRefObject<string | null>;
@@ -21,7 +21,7 @@ export function useTimerTickLogic({
   getTotalTime,
   onTimerComplete,
   setTimeRemaining,
-  timeRemaining, // Add timeRemaining to destructured props
+  timeRemaining,
   lastRecordedFullMinutesRef,
   lastTickTimeRef,
   sessionStartTimeRef
@@ -31,7 +31,7 @@ export function useTimerTickLogic({
   const currentTimeRef = useRef<number | null>(null);
   
   // Debug the incoming isRunning state
-  console.log(`useTimerTickLogic - isRunning: ${isRunning}, timerMode: ${timerMode}`);
+  console.log(`useTimerTickLogic - isRunning: ${isRunning}, timerMode: ${timerMode}, timeRemaining: ${timeRemaining}`);
 
   useEffect(() => {
     // Critical: Always clear any existing timer first to prevent multiple timers
@@ -42,14 +42,11 @@ export function useTimerTickLogic({
     }
     
     if (isRunning) {
-      console.log("Starting timer tick with mode:", timerMode);
+      console.log("Starting timer tick with mode:", timerMode, "and time:", timeRemaining);
       lastTickTimeRef.current = Date.now();
 
       // When starting or resuming, get the current state but don't modify it
-      setTimeRemaining(prevTime => {
-        currentTimeRef.current = prevTime;
-        return prevTime; // Return unchanged to preserve the time
-      });
+      currentTimeRef.current = timeRemaining; // Store current time in ref
 
       timerRef.current = setInterval(() => {
         const now = Date.now();
@@ -125,16 +122,13 @@ export function useTimerTickLogic({
         });
       }, 1000);
     } else if (isRunning === false) {
-      // CRITICAL FIX: When pausing, do not modify the timeRemaining state at all
-      console.log("Timer paused - Preserving exact current time");
-      
-      // Get the current time from our ref or state
-      const pausedTime = currentTimeRef.current !== null ? currentTimeRef.current : timeRemaining;
+      // CRITICAL FIX: When pausing, preserve the exact current time without modifications
+      console.log("Timer paused - Preserving exact current time:", timeRemaining);
       
       const timerState = {
         isRunning: false,
         timerMode,
-        timeRemaining: pausedTime,
+        timeRemaining: timeRemaining, // Use current timeRemaining directly
         totalTime: getTotalTime(),
         timestamp: Date.now(),
         sessionStartTime: sessionStartTimeRef.current
@@ -156,7 +150,7 @@ export function useTimerTickLogic({
     getTotalTime,
     onTimerComplete,
     setTimeRemaining,
-    timeRemaining, // Add timeRemaining to dependency array
+    timeRemaining,
     lastRecordedFullMinutesRef,
     lastTickTimeRef,
     sessionStartTimeRef

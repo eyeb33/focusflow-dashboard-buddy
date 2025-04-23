@@ -1,3 +1,4 @@
+
 import { useAuth } from '@/contexts/AuthContext';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { getTotalTime } from '@/utils/timerContextUtils';
@@ -34,6 +35,7 @@ export function useTimerCompletion({
 }: UseTimerCompletionProps) {
   const { user } = useAuth();
   const sessionStartTimeRef = useRef<string | null>(null);
+  const isTransitioningRef = useRef<boolean>(false);
   
   // Update session start time when timer mode changes or when timer completes
   useEffect(() => {
@@ -44,6 +46,15 @@ export function useTimerCompletion({
   // Handle timer completion
   const handleTimerComplete = async () => {
     try {
+      // Prevent multiple rapid completions
+      if (isTransitioningRef.current) {
+        console.log("Already transitioning between modes - ignoring completion call");
+        return;
+      }
+      
+      isTransitioningRef.current = true;
+      console.log(`Timer completion started for mode: ${timerMode}`);
+      
       // Play completion sound with the current mode
       await playTimerCompletionSound(timerMode);
       
@@ -101,6 +112,9 @@ export function useTimerCompletion({
         // Determine if we should go to longBreak or regular break
         const nextMode: TimerMode = newSessionIndex === 0 ? 'longBreak' : 'break';
         setTimerMode(nextMode);
+        
+        // Reset timer state to initialize the new mode's time values
+        resetTimerState();
       } 
       else if (timerMode === 'break') {
         // Break sessions don't increment the main session counter
@@ -122,6 +136,9 @@ export function useTimerCompletion({
         // This is critical for correct display of indicator circles
         console.log(`Break session completed. Keeping session index at ${currentSessionIndex}`);
         setTimerMode('work');
+        
+        // Reset timer state to initialize the new mode's time values
+        resetTimerState();
       } 
       else if (timerMode === 'longBreak') {
         if (user) {
@@ -146,21 +163,25 @@ export function useTimerCompletion({
         
         // Don't auto-start after a full cycle
         resetTimerState();
-        return; // Exit early to prevent auto-start
+        
+        // Exit early to prevent auto-start after long break
+        isTransitioningRef.current = false;
+        return;
       }
       
-      // Reset timer state before the next session starts
-      resetTimerState();
-      
-      // Auto-start the next timer (except after a full cycle, which we handled above)
+      // Give a slight delay before auto-starting to ensure UI updates and new timer is loaded
       setTimeout(() => {
+        console.log(`Auto-starting next timer mode: ${timerMode === 'work' ? 'break' : 'work'}`);
         setIsRunning(true);
-      }, 1000); // Small delay before starting the next timer
+        isTransitioningRef.current = false;
+      }, 1500); // Use a longer delay to ensure everything is properly initialized
+      
     } catch (error) {
       console.error('Error handling timer completion:', error);
       setTimerMode('work');
       setIsRunning(false);
       resetTimerState();
+      isTransitioningRef.current = false;
     }
   };
 
