@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Header from "@/components/Layout/Header";
 import MobileNav from "@/components/Layout/MobileNav";
 import DashboardHeader from "@/components/Dashboard/DashboardHeader";
@@ -12,13 +12,19 @@ import TimeToggle, { TimePeriod } from "@/components/Dashboard/TimeToggle";
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import mockDashboardData from '@/data/mockDashboardData'; // add import
 
 const Dashboard = () => {
   const { user, isLoading: authLoading } = useAuth();
   const { dashboardData, isLoading: dataLoading, refetch } = useDashboardData();
   const navigate = useNavigate();
+  const location = useLocation();
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('today');
   const visibilityChangedRef = useRef(false);
+
+  // Detect demo mode from query param
+  const searchParams = new URLSearchParams(location.search);
+  const demoMode = searchParams.get('demo') === '1';
 
   const handlePeriodChange = (period: TimePeriod) => {
     setSelectedPeriod(period);
@@ -33,7 +39,7 @@ const Dashboard = () => {
         // Only refetch if we're returning to the page after being hidden for more than 30 seconds
         const lastActiveTime = localStorage.getItem('lastActiveTime');
         const now = Date.now();
-        if (lastActiveTime && (now - parseInt(lastActiveTime)) > 30000) {
+        if (lastActiveTime && (now - parseInt(lastActiveTime)) > 30000 && !demoMode) {
           refetch();
         }
         visibilityChangedRef.current = false;
@@ -48,15 +54,19 @@ const Dashboard = () => {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [refetch]);
+  }, [refetch, demoMode]);
 
+  // Only redirect to auth if not in demo mode
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!demoMode && !authLoading && !user) {
       navigate('/auth', { state: { mode: 'login' } });
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, demoMode]);
 
-  const isLoading = authLoading || dataLoading;
+  const isLoading = (!demoMode && (authLoading || dataLoading));
+
+  // Use actual or mock dashboard data (for demo mode)
+  const effectiveDashboardData = demoMode ? mockDashboardData : dashboardData;
 
   if (isLoading) {
     return (
@@ -66,32 +76,26 @@ const Dashboard = () => {
     );
   }
 
-  if (!user) {
+  if (!demoMode && !user) {
     return null;
   }
 
   // Get the correct data based on selected period
   const getPeriodStats = () => {
-    const stats = dashboardData.stats;
+    const stats = effectiveDashboardData.stats;
     
     // For daily productivity, use chart data directly to ensure consistency
     const deriveDailySessionsAndMinutes = () => {
-      // Use chart data to calculate total values
-      const dailyData = dashboardData.dailyProductivity;
+      const dailyData = effectiveDashboardData.dailyProductivity;
       const totalMinutes = dailyData.reduce((sum, point) => sum + point.minutes, 0);
       const totalSessions = dailyData.reduce((sum, point) => sum + point.sessions, 0);
-      
-      // Calculate completed cycles (4 sessions = 1 cycle)
       const completedCycles = Math.floor(totalSessions / 4);
-      
       return { totalMinutes, totalSessions, completedCycles };
     };
     
     switch (selectedPeriod) {
       case 'today': {
-        // Use the derived data from chart for today instead of the stats object
         const { totalMinutes, totalSessions, completedCycles } = deriveDailySessionsAndMinutes();
-        
         return [
           {
             title: "Focus Minutes",
@@ -177,22 +181,22 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               <ChartsGrid
-                dailyData={dashboardData.dailyProductivity}
-                weeklyData={dashboardData.weeklyProductivity}
-                monthlyData={dashboardData.monthlyProductivity}
+                dailyData={effectiveDashboardData.dailyProductivity}
+                weeklyData={effectiveDashboardData.weeklyProductivity}
+                monthlyData={effectiveDashboardData.monthlyProductivity}
                 selectedPeriod={selectedPeriod}
               />
             </div>
             <div className="lg:col-span-1">
               <StreakCalendar
-                data={dashboardData.streakData}
-                currentStreak={dashboardData.stats.currentStreak}
-                bestStreak={dashboardData.stats.bestStreak}
+                data={effectiveDashboardData.streakData}
+                currentStreak={effectiveDashboardData.stats.currentStreak}
+                bestStreak={effectiveDashboardData.stats.bestStreak}
               />
             </div>
           </div>
           <div className="mt-6">
-            <ProductivityInsights insights={dashboardData.insights} />
+            <ProductivityInsights insights={effectiveDashboardData.insights} />
           </div>
         </div>
       </div>

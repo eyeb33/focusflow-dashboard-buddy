@@ -20,7 +20,10 @@ const AuthPrompt: React.FC<AuthPromptProps> = ({ onSignupClick }) => {
         <Button onClick={onSignupClick} className="bg-pomodoro-work hover:bg-pomodoro-work/90">
           Start Tracking
         </Button>
-        <Button variant="outline" onClick={() => navigate('/dashboard')}>
+        <Button 
+          variant="outline" 
+          onClick={() => navigate('/dashboard?demo=1')}
+        >
           View Demo Dashboard
         </Button>
       </div>
