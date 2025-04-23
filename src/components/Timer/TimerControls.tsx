@@ -45,17 +45,15 @@ const TimerControls: React.FC<TimerControlsProps> = ({
 
   const currentModeColors = modeColors[mode];
   
-  // Handle play/pause button click
+  // Handle play/pause button click - simplified to avoid any state manipulation
   const handlePlayPauseClick = (e: React.MouseEvent) => {
-    // Prevent any default actions
     e.preventDefault();
     e.stopPropagation();
+    console.log(`${isRunning ? 'Pause' : 'Start'} button clicked`);
     
     if (isRunning) {
-      console.log("Pause button clicked");
       onPause();
     } else {
-      console.log("Start button clicked");
       onStart();
     }
   };
@@ -80,7 +78,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
             : `${currentModeColors.activeClass} border border-transparent hover:bg-white hover:${currentModeColors.color}`
         )}
         aria-label={isRunning ? "Pause timer" : "Start timer"}
-        type="button" // Explicitly set button type to prevent form submission behavior
+        type="button"
       >
         {!isRunning ? (
           <Play className="h-6 w-6" />
@@ -97,7 +95,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
           currentModeColors.color
         )}
         aria-label="Reset timer"
-        type="button" // Explicitly set button type
+        type="button"
       >
         <RotateCcw className="h-6 w-6" />
       </Button>

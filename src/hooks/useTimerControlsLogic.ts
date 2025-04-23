@@ -40,7 +40,7 @@ export function useTimerControlsLogic(settings: TimerSettings) {
     const timerState = {
       isRunning: false,
       timerMode,
-      timeRemaining,
+      timeRemaining, // Use current timeRemaining value
       totalTime: getTotalTime(timerMode, settings),
       timestamp: Date.now(),
       sessionStartTime: localStorage.getItem('sessionStartTime')
