@@ -28,6 +28,9 @@ const StatCard: React.FC<StatCardProps> = ({
   iconColor,
   compact = false
 }) => {
+  // Only show trend if value is not zero and trend exists
+  const shouldShowTrend = trend && Number(value) !== 0;
+
   return (
     <Card className={cn("h-full", className)}>
       <CardHeader className={cn(
@@ -61,7 +64,7 @@ const StatCard: React.FC<StatCardProps> = ({
           <p className="text-xs text-muted-foreground">{description}</p>
         )}
         <div className="flex items-center mt-2 text-xs">
-          {trend ? (
+          {shouldShowTrend && (
             <>
               <span className={cn(
                 "mr-1 flex items-center",
@@ -75,7 +78,7 @@ const StatCard: React.FC<StatCardProps> = ({
               </span>
               <span className="text-muted-foreground">from previous period</span>
             </>
-          ) : null}
+          )}
         </div>
       </CardContent>
     </Card>

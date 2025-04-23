@@ -1,6 +1,9 @@
 
 export const calculateTrendPercentage = (current: number, previous: number): number => {
-  if (previous === 0) return current > 0 ? 100 : 0;
+  // Don't calculate trend if current value is 0
+  if (current === 0) return 0;
+  // If previous was 0 and current is not, that's a 100% increase
+  if (previous === 0) return 100;
   return Math.round(((current - previous) / previous) * 100);
 };
 

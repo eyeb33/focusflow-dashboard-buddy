@@ -1,3 +1,4 @@
+
 import React from 'react';
 import TimeToggle from "@/components/Dashboard/TimeToggle";
 import StatCardsGrid from "@/components/Dashboard/StatCardsGrid";
@@ -44,7 +45,11 @@ const DashboardContent = () => {
             title: "Completed Cycles",
             value: completedCycles,
             icon: "Cycle",
-            iconColor: "#6DD5ED"
+            iconColor: "#6DD5ED",
+            trend: stats.weeklyChange ? {
+              value: stats.weeklyChange.dailyAvg,
+              isPositive: stats.weeklyChange.isPositive
+            } : undefined
           },
         ];
       }
@@ -74,7 +79,11 @@ const DashboardContent = () => {
             title: "Weekly Completed Cycles",
             value: stats.weeklyStats?.completedCycles || 0,
             icon: "Cycle",
-            iconColor: "#6DD5ED"
+            iconColor: "#6DD5ED",
+            trend: stats.weeklyChange ? {
+              value: stats.weeklyChange.sessions,
+              isPositive: stats.weeklyChange.isPositive
+            } : undefined
           },
         ];
       case 'month':
@@ -103,7 +112,11 @@ const DashboardContent = () => {
             title: "Monthly Completed Cycles",
             value: stats.monthlyStats?.completedCycles || 0,
             icon: "Cycle",
-            iconColor: "#6DD5ED"
+            iconColor: "#6DD5ED",
+            trend: stats.monthlyChange ? {
+              value: stats.monthlyChange.sessions,
+              isPositive: stats.monthlyChange.isPositive
+            } : undefined
           },
         ];
       default:
