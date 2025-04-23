@@ -76,6 +76,7 @@ export function useTimerTickLogic({
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
+      console.log("Timer stopped. Clearing interval");
     }
     
     if (isRunning) {

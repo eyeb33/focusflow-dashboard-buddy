@@ -69,7 +69,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
   };
 
   return (
-    <div className={cn("flex items-center justify-center gap-4", className)}>
+    <div className={cn("flex items-center justify-center gap-4", className)} onClick={(e) => e.stopPropagation()}>
       <Button 
         onClick={handlePlayPauseClick}
         size="lg" 

@@ -33,7 +33,21 @@ export function useRestoreTimerState({
           setTimerMode(storedState.timerMode);
         }
 
-        // Restore the timer state and update the UI
+        // For paused timers, just restore the exact time without calculating elapsed time
+        if (!storedState.isRunning) {
+          setTimeRemaining(storedState.timeRemaining);
+          setIsRunning(false);
+          
+          // Force UI update
+          setTimeout(() => {
+            if (window.timerContext && window.timerContext.updateDisplay) {
+              window.timerContext.updateDisplay(storedState.timeRemaining);
+            }
+          }, 10);
+          return;
+        }
+
+        // For running timers, calculate the new remaining time
         if (storedState.isRunning) {
           if (elapsedSeconds < storedState.timeRemaining) {
             // Timer should still be running with remaining time
@@ -45,6 +59,7 @@ export function useRestoreTimerState({
             // Set the session start time if it exists
             if (storedState.sessionStartTime) {
               sessionStartTimeRef.current = storedState.sessionStartTime;
+              localStorage.setItem('sessionStartTime', storedState.sessionStartTime);
             }
             
             // Start the timer
@@ -60,28 +75,21 @@ export function useRestoreTimerState({
             // Timer has completed while away
             if (storedState.sessionStartTime) {
               sessionStartTimeRef.current = storedState.sessionStartTime;
+              localStorage.setItem('sessionStartTime', storedState.sessionStartTime);
             }
             
             // Call onTimerComplete in the next event loop
             setTimeout(() => onTimerComplete(), 10);
             localStorage.removeItem('timerState');
           }
-        } else {
-          // Timer was paused, just restore the time
-          setTimeRemaining(storedState.timeRemaining);
-          setIsRunning(false);
-          
-          // Force UI update
-          setTimeout(() => {
-            if (window.timerContext && window.timerContext.updateDisplay) {
-              window.timerContext.updateDisplay(storedState.timeRemaining);
-            }
-          }, 10);
         }
       } catch (error) {
         console.error('Error restoring timer state:', error);
         localStorage.removeItem('timerState');
       }
+    } else {
+      // Default to 'work' mode if no state is stored
+      setTimerMode('work');
     }
   }, []); // Empty dependency array ensures this only runs once
 }

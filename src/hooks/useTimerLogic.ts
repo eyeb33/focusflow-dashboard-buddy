@@ -58,6 +58,7 @@ export function useTimerLogic(settings: TimerSettings) {
   useEffect(() => {
     if (isRunning && !sessionStartTimeRef.current) {
       sessionStartTimeRef.current = new Date().toISOString();
+      localStorage.setItem('sessionStartTime', sessionStartTimeRef.current);
       console.log(`Session started at: ${sessionStartTimeRef.current}`);
     }
   }, [isRunning]);
@@ -84,6 +85,7 @@ export function useTimerLogic(settings: TimerSettings) {
   const handleStart = () => {
     // Record the session start time
     sessionStartTimeRef.current = new Date().toISOString();
+    localStorage.setItem('sessionStartTime', sessionStartTimeRef.current);
     baseHandleStart(timerMode);
     
     console.log("Timer started");
@@ -92,11 +94,13 @@ export function useTimerLogic(settings: TimerSettings) {
   const handlePause = () => {
     baseHandlePause(timerMode);
     console.log("Timer paused");
+    // Important: We do not clear sessionStartTimeRef when pausing
   };
   
   const handleReset = () => {
     // Clear the session start time on reset
     sessionStartTimeRef.current = null;
+    localStorage.removeItem('sessionStartTime');
     baseHandleReset(timerMode, setCurrentSessionIndex);
     console.log("Timer reset");
   };
@@ -104,6 +108,7 @@ export function useTimerLogic(settings: TimerSettings) {
   const handleModeChange = (mode: TimerMode) => {
     // Clear the session start time on mode change
     sessionStartTimeRef.current = null;
+    localStorage.removeItem('sessionStartTime');
     baseHandleModeChange(timerMode, mode, setCurrentSessionIndex);
     setTimerMode(mode);
     console.log(`Timer mode changed to: ${mode}`);
