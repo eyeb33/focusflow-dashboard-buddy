@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { getTotalTime, TimerMode } from '@/utils/timerContextUtils';
 import { TimerSettings } from '@/hooks/useTimerSettings';
@@ -13,6 +14,7 @@ export function useTimerLogic(settings: TimerSettings) {
   const [timerMode, setTimerMode] = useState<TimerMode>('work');
   const [autoStart, setAutoStart] = useState<boolean>(false);
   const sessionStartTimeRef = useRef<string | null>(null);
+  const skipTimerResetRef = useRef<boolean>(false); // Track when we should skip resetting timer
 
   // Use the smaller hooks
   const {
@@ -61,13 +63,19 @@ export function useTimerLogic(settings: TimerSettings) {
     }
   }, [isRunning]);
 
-  // Update timeRemaining when mode or settings change, but ONLY if not currently running
+  // CRITICAL CHANGE: Only update timeRemaining when mode or settings change AND not running AND not just paused
   useEffect(() => {
-    if (!isRunning) {
+    // Don't reset time if we're running or if we just paused
+    if (!isRunning && !skipTimerResetRef.current) {
+      console.log("Setting time based on mode/settings change:", getTotalTime(timerMode, settings));
       setTimeRemaining(getTotalTime(timerMode, settings));
       
       // Reset session start time when mode changes
       sessionStartTimeRef.current = null;
+    } else if (skipTimerResetRef.current) {
+      // Reset the flag after we've skipped one update
+      console.log("Skipping timer reset after pause");
+      skipTimerResetRef.current = false;
     }
   }, [timerMode, settings, setTimeRemaining, isRunning]);
   
@@ -87,18 +95,22 @@ export function useTimerLogic(settings: TimerSettings) {
   };
   
   const handlePause = () => {
+    console.log("Setting skip flag before pause");
+    skipTimerResetRef.current = true; // Set flag to skip the next timer reset
     baseHandlePause(timerMode);
   };
   
   const handleReset = () => {
     // Clear the session start time on reset
     sessionStartTimeRef.current = null;
+    skipTimerResetRef.current = false; // Allow reset to happen
     baseHandleReset(timerMode, setCurrentSessionIndex);
   };
 
   const handleModeChange = (mode: TimerMode) => {
     // Clear the session start time on mode change
     sessionStartTimeRef.current = null;
+    skipTimerResetRef.current = false; // Allow reset on mode change
     baseHandleModeChange(timerMode, mode, setCurrentSessionIndex);
     setTimerMode(mode);
   };

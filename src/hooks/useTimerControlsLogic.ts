@@ -27,10 +27,24 @@ export function useTimerControlsLogic(settings: TimerSettings) {
   
   const handlePause = async (timerMode: TimerMode) => {
     // CRITICAL: Only change the running state to false
-    // Do NOT modify the time at all - preserve exactly what it was
     console.log("HANDLE PAUSE called with time remaining:", timeRemaining);
+    
+    // Store current time in localStorage BEFORE changing any state
+    const timerState = {
+      isRunning: false,
+      timerMode,
+      timeRemaining: timeRemaining, // Use the current timeRemaining directly
+      totalTime: getTotalTime(timerMode, settings),
+      timestamp: Date.now(),
+      sessionStartTime: localStorage.getItem('sessionStartTime')
+    };
+    
+    console.log("Saving paused timer state with exact time:", timerState);
+    localStorage.setItem('timerState', JSON.stringify(timerState));
+    
+    // Only after saving state, stop the timer
     setIsRunning(false);
-    console.log("Timer paused at:", timeRemaining, "seconds - PAUSED state only, NOT resetting time");
+    console.log("Timer paused at:", timeRemaining, "seconds - PAUSED state only");
     
     // Save partial session if user is logged in
     if (user && lastRecordedTimeRef.current) {
