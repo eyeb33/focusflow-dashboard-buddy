@@ -103,6 +103,10 @@ export function useTimerControlsLogic(settings: TimerSettings) {
     lastRecordedTimeRef.current = null;
     lastRecordedFullMinutesRef.current = 0;
     
+    // Update time remaining based on the new mode
+    const newTotalTime = getTotalTime(newMode, settings);
+    setTimeRemaining(newTotalTime);
+    
     // Reset the current session index when manually changing modes
     if (newMode === 'work' && setCurrentSessionIndex) {
       setCurrentSessionIndex(0);

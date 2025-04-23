@@ -1,8 +1,11 @@
 
 import { useEffect } from 'react';
+import { TimerMode } from '@/utils/timerContextUtils';
 
 interface UseRestoreTimerStateProps {
   isRunning: boolean;
+  setIsRunning: React.Dispatch<React.SetStateAction<boolean>>;
+  setTimerMode: React.Dispatch<React.SetStateAction<TimerMode>>;
   setTimeRemaining: React.Dispatch<React.SetStateAction<number>>;
   onTimerComplete: () => void;
   sessionStartTimeRef: React.MutableRefObject<string | null>;
@@ -10,6 +13,8 @@ interface UseRestoreTimerStateProps {
 
 export function useRestoreTimerState({
   isRunning,
+  setIsRunning,
+  setTimerMode,
   setTimeRemaining,
   onTimerComplete,
   sessionStartTimeRef
@@ -22,6 +27,11 @@ export function useRestoreTimerState({
         const storedState = JSON.parse(storedStateStr);
         const elapsedMs = Date.now() - storedState.timestamp;
         const elapsedSeconds = Math.floor(elapsedMs / 1000);
+
+        // Always restore the timer mode regardless of running state
+        if (storedState.timerMode) {
+          setTimerMode(storedState.timerMode);
+        }
 
         // Restore the timer state and update the UI
         if (storedState.isRunning) {
@@ -36,6 +46,9 @@ export function useRestoreTimerState({
             if (storedState.sessionStartTime) {
               sessionStartTimeRef.current = storedState.sessionStartTime;
             }
+            
+            // Start the timer
+            setIsRunning(true);
             
             // Force UI update with setTimeout
             setTimeout(() => {
@@ -56,6 +69,7 @@ export function useRestoreTimerState({
         } else {
           // Timer was paused, just restore the time
           setTimeRemaining(storedState.timeRemaining);
+          setIsRunning(false);
           
           // Force UI update
           setTimeout(() => {

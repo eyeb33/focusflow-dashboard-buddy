@@ -41,6 +41,10 @@ export function useTimerTickLogic({
 
     // For animation frame loop
     if (isRunning) {
+      if (requestAnimationFrameRef.current) {
+        cancelAnimationFrame(requestAnimationFrameRef.current);
+      }
+      
       requestAnimationFrameRef.current = requestAnimationFrame(() => {
         // This ensures the browser repaints the timer even if tab is inactive
         document.title = `Timer: ${Math.floor(newTime / 60)}:${String(newTime % 60).padStart(2, '0')}`;
@@ -59,6 +63,17 @@ export function useTimerTickLogic({
     if (isRunning !== previousIsRunningRef.current) {
       console.log(`Timer state changed: ${isRunning ? 'started' : 'stopped'}`);
       previousIsRunningRef.current = isRunning;
+      
+      // Force UI update when timer starts/stops
+      if (window.timerContext && window.timerContext.updateDisplay) {
+        window.timerContext.updateDisplay(timeRemaining);
+      }
+    }
+    
+    // Clean up any existing interval
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
     
     if (isRunning) {
@@ -141,9 +156,8 @@ export function useTimerTickLogic({
           return newTime;
         });
       }, 1000);
-    } else if (timerRef.current) {
+    } else {
       console.log("Timer stopped. Clearing interval");
-      clearInterval(timerRef.current);
       if (requestAnimationFrameRef.current) {
         cancelAnimationFrame(requestAnimationFrameRef.current);
         requestAnimationFrameRef.current = null;
@@ -168,7 +182,8 @@ export function useTimerTickLogic({
     setTimeRemaining,
     lastRecordedFullMinutesRef,
     lastTickTimeRef,
-    sessionStartTimeRef
+    sessionStartTimeRef,
+    timeRemaining
   ]);
 
   return timerRef;

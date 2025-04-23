@@ -42,10 +42,8 @@ export function useTimerVisibilitySync({
             
             // Force UI update immediately after visibility change
             if (window.timerContext && window.timerContext.updateDisplay) {
-              setTimeout(() => {
-                window.timerContext.updateDisplay(newTime);
-                document.title = `Timer: ${Math.floor(newTime / 60)}:${String(newTime % 60).padStart(2, '0')}`;
-              }, 0);
+              window.timerContext.updateDisplay(newTime);
+              document.title = `Timer: ${Math.floor(newTime / 60)}:${String(newTime % 60).padStart(2, '0')}`;
             }
 
             if (newTime <= 0) {

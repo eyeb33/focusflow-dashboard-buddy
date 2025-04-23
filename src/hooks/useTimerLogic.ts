@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { getTotalTime, TimerMode } from '@/utils/timerContextUtils';
 import { TimerSettings } from '@/hooks/useTimerSettings';
@@ -134,6 +133,8 @@ export function useTimerLogic(settings: TimerSettings) {
   // Use the restored timer state hook
   useRestoreTimerState({
     isRunning,
+    setIsRunning,
+    setTimerMode,
     setTimeRemaining,
     onTimerComplete: handleTimerComplete,
     sessionStartTimeRef

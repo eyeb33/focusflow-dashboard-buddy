@@ -49,12 +49,23 @@ const TimerControls: React.FC<TimerControlsProps> = ({
   const handlePlayPauseClick = (e: React.MouseEvent) => {
     // Prevent any default actions
     e.preventDefault();
+    e.stopPropagation();
     
     if (isRunning) {
+      console.log("Pause button clicked");
       onPause();
     } else {
+      console.log("Start button clicked");
       onStart();
     }
+  };
+  
+  // Handle reset button click
+  const handleResetClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("Reset button clicked");
+    onReset();
   };
 
   return (
@@ -79,7 +90,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
       </Button>
       
       <Button 
-        onClick={onReset} 
+        onClick={handleResetClick} 
         size="lg"
         className={cn(
           "rounded-full w-14 h-14 flex items-center justify-center shadow-md bg-white hover:bg-gray-100 border border-slate-200",
