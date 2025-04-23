@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { cn } from "@/lib/utils";
 import { Circle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,6 +12,7 @@ interface SessionProgressProps {
   currentSessionIndex: number;
   isRunning: boolean;
   className?: string;
+  timeRemaining?: number;
 }
 
 const SessionProgress: React.FC<SessionProgressProps> = ({
@@ -20,8 +21,21 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
   currentMode,
   currentSessionIndex,
   isRunning,
-  className
+  className,
+  timeRemaining = 0
 }) => {
+  // Animation state for countdown
+  const [isPulsing, setIsPulsing] = useState(false);
+  
+  // Check if we're in the last 10 seconds
+  useEffect(() => {
+    if (timeRemaining <= 10 && timeRemaining > 0 && isRunning) {
+      setIsPulsing(true);
+    } else {
+      setIsPulsing(false);
+    }
+  }, [timeRemaining, isRunning]);
+
   // Get colors based on timer mode
   const getColor = (mode: TimerMode): { fill: string, stroke: string } => {
     switch (mode) {
@@ -55,9 +69,14 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
           key={`${currentMode}-${index}`}
           size={size}
           className={cn(
+            // Fill only if completed
             isCompleted ? colors.fill : 'text-transparent',
-            isActive && !isCompleted ? 'stroke-[2.5px]' : 'stroke-[2px]',
+            // Thicker stroke for active indicator
+            isActive ? 'stroke-[2.5px]' : 'stroke-[2px]',
+            // Stroke color based on mode
             isActive ? colors.fill : colors.stroke,
+            // Add slow pulsing animation for the last 10 seconds
+            isPulsing && isActive ? 'animate-pulse-slow' : '',
             'transition-all duration-300'
           )}
         />
