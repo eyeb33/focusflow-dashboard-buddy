@@ -120,7 +120,7 @@ export const ExperimentalRadialChart: React.FC<ExperimentalRadialChartProps> = (
             options={options}
             ref={(reference) => {
               if (reference !== null) {
-                chartRef.current = reference.chartInstance;
+                chartRef.current = reference.chart;
               }
             }}
           />
