@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from 'react';
 import { savePartialSession } from '@/utils/timerContextUtils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,6 +29,7 @@ export function useTimerTickLogic({
   const currentTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
+    // Critical: Always clear any existing timer first to prevent multiple timers
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -108,6 +110,7 @@ export function useTimerTickLogic({
         });
       }, 1000);
     } else {
+      // CRITICAL FIX: Use the current value from state when paused
       const exactTimeRemaining = currentTimeRef.current !== null ? 
         currentTimeRef.current : 
         setTimeRemaining(current => {

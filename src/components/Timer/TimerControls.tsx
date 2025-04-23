@@ -47,6 +47,8 @@ const TimerControls: React.FC<TimerControlsProps> = ({
   
   // Handle play/pause button click - simplified to avoid state conflicts
   const handlePlayPauseClick = () => {
+    console.log("Play/Pause button clicked - current isRunning state:", isRunning);
+    
     if (isRunning) {
       console.log("Pause button clicked - calling onPause() - should ONLY pause, not reset");
       onPause();

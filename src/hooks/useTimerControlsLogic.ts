@@ -28,7 +28,7 @@ export function useTimerControlsLogic(settings: TimerSettings) {
   const handlePause = async (timerMode: TimerMode) => {
     // CRITICAL FIX: Only change the running state to false, don't modify the time
     setIsRunning(false);
-    console.log("Timer paused at:", timeRemaining, "seconds - NOT resetting time");
+    console.log("Timer paused at:", timeRemaining, "seconds - PAUSED state only, NOT resetting time");
     
     // Save partial session if user is logged in
     if (user && lastRecordedTimeRef.current) {
@@ -64,7 +64,7 @@ export function useTimerControlsLogic(settings: TimerSettings) {
     setTimeRemaining(newTime);
     lastRecordedTimeRef.current = newTime;
     lastRecordedFullMinutesRef.current = 0;
-    console.log("Timer reset to:", newTime, "seconds");
+    console.log("Timer RESET to:", newTime, "seconds");
     
     // Reset the current session index when timer is reset
     if (timerMode === 'work' && setCurrentSessionIndex) {

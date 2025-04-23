@@ -19,6 +19,15 @@ export const useTimerControls = () => {
     currentSessionIndex
   } = timer;
   
+  // Enhanced console logging for debugging timer controls
+  console.log("Timer controls state:", {
+    isRunning,
+    timerMode,
+    timeRemaining, 
+    progress,
+    currentSessionIndex
+  });
+  
   return {
     isRunning,
     timerMode,
