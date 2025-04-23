@@ -27,6 +27,7 @@ export function useTimerTickLogic({
   const { user } = useAuth();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const requestAnimationFrameRef = useRef<number | null>(null);
+  const previousIsRunningRef = useRef(isRunning);
 
   // Function to update the timer display
   const updateTimerDisplay = (newTime: number) => {
@@ -54,6 +55,12 @@ export function useTimerTickLogic({
 
   // Main timer tick effect
   useEffect(() => {
+    // Track state changes for debugging
+    if (isRunning !== previousIsRunningRef.current) {
+      console.log(`Timer state changed: ${isRunning ? 'started' : 'stopped'}`);
+      previousIsRunningRef.current = isRunning;
+    }
+    
     if (isRunning) {
       lastTickTimeRef.current = Date.now();
       console.log("Timer is running. Initial time:", lastTickTimeRef.current);

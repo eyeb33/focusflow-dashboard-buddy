@@ -53,6 +53,16 @@ export function useRestoreTimerState({
             setTimeout(() => onTimerComplete(), 10);
             localStorage.removeItem('timerState');
           }
+        } else {
+          // Timer was paused, just restore the time
+          setTimeRemaining(storedState.timeRemaining);
+          
+          // Force UI update
+          setTimeout(() => {
+            if (window.timerContext && window.timerContext.updateDisplay) {
+              window.timerContext.updateDisplay(storedState.timeRemaining);
+            }
+          }, 10);
         }
       } catch (error) {
         console.error('Error restoring timer state:', error);

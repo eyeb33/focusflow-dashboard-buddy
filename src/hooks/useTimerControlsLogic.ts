@@ -13,15 +13,28 @@ export function useTimerControlsLogic(settings: TimerSettings) {
 
   // Timer control functions
   const handleStart = (timerMode: TimerMode) => {
+    // Store the current time in the ref when starting
     lastRecordedTimeRef.current = timeRemaining;
     const totalTime = getTotalTime(timerMode, settings);
     const elapsedSeconds = totalTime - timeRemaining;
     lastRecordedFullMinutesRef.current = Math.floor(elapsedSeconds / 60);
     setIsRunning(true);
+    
+    // Store the timer state in localStorage when started
+    const timerState = {
+      isRunning: true,
+      timerMode,
+      timeRemaining,
+      totalTime: getTotalTime(timerMode, settings),
+      timestamp: Date.now()
+    };
+    localStorage.setItem('timerState', JSON.stringify(timerState));
   };
   
   const handlePause = async (timerMode: TimerMode) => {
+    // Important: set isRunning to false first to stop the timer
     setIsRunning(false);
+    
     // Store the current timer state in localStorage when paused
     const timerState = {
       isRunning: false,
@@ -56,8 +69,9 @@ export function useTimerControlsLogic(settings: TimerSettings) {
         lastRecordedFullMinutesRef.current
       );
     }
-    setTimeRemaining(getTotalTime(timerMode, settings));
-    lastRecordedTimeRef.current = getTotalTime(timerMode, settings);
+    const totalTime = getTotalTime(timerMode, settings);
+    setTimeRemaining(totalTime);
+    lastRecordedTimeRef.current = totalTime;
     lastRecordedFullMinutesRef.current = 0;
     
     // Clear the timer state from localStorage when reset
@@ -93,6 +107,9 @@ export function useTimerControlsLogic(settings: TimerSettings) {
     if (newMode === 'work' && setCurrentSessionIndex) {
       setCurrentSessionIndex(0);
     }
+    
+    // Clear timer state from localStorage on mode change
+    localStorage.removeItem('timerState');
   };
 
   const resetTimerState = () => {
