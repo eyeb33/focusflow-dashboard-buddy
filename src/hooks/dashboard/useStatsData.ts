@@ -107,28 +107,79 @@ export const useStatsData = (userId: string | undefined) => {
       const today = new Date().toISOString().split('T')[0];
       currentDateRef.current = today;
 
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+      const lastWeek = new Date();
+      lastWeek.setDate(lastWeek.getDate() - 7);
+      const lastWeekStr = lastWeek.toISOString().split('T')[0];
+
+      const lastMonth = new Date();
+      lastMonth.setMonth(lastMonth.getMonth() - 1);
+      const lastMonthStr = lastMonth.toISOString().split('T')[0];
+
       const [
-        totalMetrics,
+        todayMetrics,
+        yesterdayMetrics,
+        weeklyStats,
+        lastWeekStats,
+        monthlyStats,
+        lastMonthStats,
         dailyAverage,
         streakData,
-        weeklyChangeData,
-        weeklyStats,
-        monthlyStats
+        weeklyChangeData
       ] = await Promise.all([
         fetchTotalMetrics(userId, today),
+        fetchTotalMetrics(userId, yesterdayStr),
+        fetchWeeklyStats(userId),
+        fetchWeeklyStats(userId, lastWeekStr),
+        fetchMonthlyStats(userId),
+        fetchMonthlyStats(userId, lastMonthStr),
         fetchDailyAverageData(userId, today),
         fetchStreakData(userId, today),
-        fetchWeeklyChangeData(userId),
-        fetchWeeklyStats(userId),
-        fetchMonthlyStats(userId)
+        fetchWeeklyChangeData(userId)
       ]);
 
-      const completedCycles = 0;
+      const calculateTrendPercentage = (current: number, previous: number): number => {
+        if (previous === 0) return current > 0 ? 100 : 0;
+        return Math.round(((current - previous) / previous) * 100);
+      };
+
+      const dailySessionsTrend = calculateTrendPercentage(
+        todayMetrics.totalSessions,
+        yesterdayMetrics.totalSessions
+      );
+
+      const dailyMinutesTrend = calculateTrendPercentage(
+        todayMetrics.totalMinutes,
+        yesterdayMetrics.totalMinutes
+      );
+
+      const weeklySessionsTrend = calculateTrendPercentage(
+        weeklyStats.totalSessions,
+        lastWeekStats.totalSessions
+      );
+
+      const weeklyMinutesTrend = calculateTrendPercentage(
+        weeklyStats.totalMinutes,
+        lastWeekStats.totalMinutes
+      );
+
+      const monthlySessionsTrend = calculateTrendPercentage(
+        monthlyStats.totalSessions,
+        lastMonthStats.totalSessions
+      );
+
+      const monthlyMinutesTrend = calculateTrendPercentage(
+        monthlyStats.totalMinutes,
+        lastMonthStats.totalMinutes
+      );
 
       return {
-        totalSessions: totalMetrics.totalSessions,
-        totalMinutes: totalMetrics.totalMinutes,
-        completedCycles,
+        totalSessions: todayMetrics.totalSessions,
+        totalMinutes: todayMetrics.totalMinutes,
+        completedCycles: todayMetrics.completedCycles || 0,
         dailyAverage,
         currentStreak: streakData.currentStreak,
         bestStreak: streakData.bestStreak,
@@ -140,9 +191,17 @@ export const useStatsData = (userId: string | undefined) => {
         },
         weeklyStats: {
           ...weeklyStats,
+          sessionsTrend: weeklySessionsTrend,
+          minutesTrend: weeklyMinutesTrend
         },
         monthlyStats: {
           ...monthlyStats,
+          sessionsTrend: monthlySessionsTrend,
+          minutesTrend: monthlyMinutesTrend
+        },
+        dailyStats: {
+          sessionsTrend: dailySessionsTrend,
+          minutesTrend: dailyMinutesTrend
         }
       };
     } catch (error: any) {

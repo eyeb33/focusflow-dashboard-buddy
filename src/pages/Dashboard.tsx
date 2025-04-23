@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from "@/components/Layout/Header";
@@ -89,7 +88,6 @@ const Dashboard = () => {
     
     switch (selectedPeriod) {
       case 'today': {
-        // Use the derived data from chart for today instead of the stats object
         const { totalMinutes, totalSessions, completedCycles } = deriveDailySessionsAndMinutes();
         
         return [
@@ -97,13 +95,21 @@ const Dashboard = () => {
             title: "Focus Minutes",
             value: totalMinutes,
             icon: "Flame",
-            iconColor: "#ea384c"
+            iconColor: "#ea384c",
+            trend: stats.dailyStats ? {
+              value: stats.dailyStats.minutesTrend,
+              isPositive: stats.dailyStats.minutesTrend >= 0
+            } : undefined
           },
           {
             title: "Focus Sessions",
             value: totalSessions,
             icon: "Clock",
-            iconColor: "#1EAEDB"
+            iconColor: "#1EAEDB",
+            trend: stats.dailyStats ? {
+              value: stats.dailyStats.sessionsTrend,
+              isPositive: stats.dailyStats.sessionsTrend >= 0
+            } : undefined
           },
           {
             title: "Completed Cycles",
@@ -119,13 +125,21 @@ const Dashboard = () => {
             title: "Weekly Focus Minutes",
             value: stats.weeklyStats?.totalMinutes || 0,
             icon: "Flame",
-            iconColor: "#ea384c"
+            iconColor: "#ea384c",
+            trend: stats.weeklyStats?.minutesTrend ? {
+              value: stats.weeklyStats.minutesTrend,
+              isPositive: stats.weeklyStats.minutesTrend >= 0
+            } : undefined
           },
           {
             title: "Weekly Focus Sessions",
             value: stats.weeklyStats?.totalSessions || 0,
             icon: "Clock",
-            iconColor: "#1EAEDB"
+            iconColor: "#1EAEDB",
+            trend: stats.weeklyStats?.sessionsTrend ? {
+              value: stats.weeklyStats.sessionsTrend,
+              isPositive: stats.weeklyStats.sessionsTrend >= 0
+            } : undefined
           },
           {
             title: "Weekly Completed Cycles",
@@ -140,13 +154,21 @@ const Dashboard = () => {
             title: "Monthly Focus Minutes",
             value: stats.monthlyStats?.totalMinutes || 0,
             icon: "Flame",
-            iconColor: "#ea384c"
+            iconColor: "#ea384c",
+            trend: stats.monthlyStats?.minutesTrend ? {
+              value: stats.monthlyStats.minutesTrend,
+              isPositive: stats.monthlyStats.minutesTrend >= 0
+            } : undefined
           },
           {
             title: "Monthly Focus Sessions",
             value: stats.monthlyStats?.totalSessions || 0,
             icon: "Clock",
-            iconColor: "#1EAEDB"
+            iconColor: "#1EAEDB",
+            trend: stats.monthlyStats?.sessionsTrend ? {
+              value: stats.monthlyStats.sessionsTrend,
+              isPositive: stats.monthlyStats.sessionsTrend >= 0
+            } : undefined
           },
           {
             title: "Monthly Completed Cycles",
