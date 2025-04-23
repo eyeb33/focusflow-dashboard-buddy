@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Chart as ChartJS, 
-  RadialLinearScale, 
+  RadialLinearScale,
   LinearScale,
   PointElement, 
   LineElement, 
@@ -13,10 +13,9 @@ import {
 import { Scatter } from 'react-chartjs-2';
 import { ProductivityDataPoint } from '@/hooks/dashboard/productivity/types';
 
-// Register required Chart.js components
 ChartJS.register(
   RadialLinearScale,
-  LinearScale,  // Add LinearScale which is needed for x,y coordinates
+  LinearScale,
   PointElement,
   LineElement,
   Tooltip,
@@ -28,34 +27,50 @@ interface ExperimentalRadialChartProps {
 }
 
 export const ExperimentalRadialChart: React.FC<ExperimentalRadialChartProps> = ({ dailyData }) => {
-  // Create a chart instance reference to handle cleanup
   const chartRef = useRef<ChartJS | null>(null);
 
-  // Convert data points to radial coordinates
-  const dataPoints = dailyData.map((point, index) => {
-    const angle = (index / dailyData.length) * Math.PI * 2;
-    const radius = point.minutes || 0;
+  // Convert data points to radial coordinates with more points for smoother appearance
+  const dataPoints = Array.from({ length: 72 }).map((_, index) => {
+    const hour = Math.floor((index / 72) * 24); // Map index to 24-hour format
+    const dataPoint = dailyData.find(d => parseInt(d.name) === hour) || { minutes: 0 };
+    const angle = (index / 72) * Math.PI * 2;
+    const baseRadius = 100; // Base radius for the circular shape
+    const activityRadius = baseRadius + (dataPoint.minutes || 0);
+    
     return {
-      x: Math.cos(angle) * radius,
-      y: Math.sin(angle) * radius,
+      x: Math.cos(angle) * activityRadius,
+      y: Math.sin(angle) * activityRadius,
     };
   });
 
   // Add the first point again to close the shape
-  if (dataPoints.length > 0 && dailyData.length > 1) {
+  if (dataPoints.length > 0) {
     dataPoints.push(dataPoints[0]);
   }
+
+  const createGradient = (ctx: CanvasRenderingContext2D) => {
+    const gradient = ctx.createLinearGradient(0, 0, 400, 400);
+    gradient.addColorStop(0, 'rgba(255, 99, 132, 0.8)');    // Pink
+    gradient.addColorStop(0.5, 'rgba(155, 135, 245, 0.8)'); // Purple
+    gradient.addColorStop(1, 'rgba(14, 165, 233, 0.8)');    // Blue
+    return gradient;
+  };
 
   const chartData = {
     datasets: [
       {
         data: dataPoints,
         backgroundColor: 'rgba(155, 135, 245, 0.1)',
-        borderColor: 'rgba(155, 135, 245, 1)',
-        borderWidth: 2,
+        borderColor: function(context: any) {
+          const chart = context.chart;
+          const { ctx } = chart;
+          return createGradient(ctx);
+        },
+        borderWidth: 3,
         showLine: true,
         tension: 0.4,
         fill: true,
+        pointRadius: 0, // Hide individual points
       },
     ],
   };
@@ -65,16 +80,14 @@ export const ExperimentalRadialChart: React.FC<ExperimentalRadialChartProps> = (
       x: {
         type: 'linear' as const,
         display: false,
-        grid: {
-          display: false,
-        },
+        min: -200,
+        max: 200,
       },
       y: {
         type: 'linear' as const,
         display: false,
-        grid: {
-          display: false,
-        },
+        min: -200,
+        max: 200,
       },
     },
     plugins: {
@@ -85,11 +98,10 @@ export const ExperimentalRadialChart: React.FC<ExperimentalRadialChartProps> = (
         enabled: true,
         callbacks: {
           label: (context: any) => {
-            const index = context.dataIndex;
-            if (index < dailyData.length) {
-              return `${dailyData[index].minutes} minutes`;
-            }
-            return '';
+            const index = Math.floor((context.dataIndex / 72) * 24);
+            const hour = index % 24;
+            const data = dailyData.find(d => parseInt(d.name) === hour);
+            return data ? `${hour}:00 - ${data.minutes} minutes` : '';
           },
         },
       },
@@ -99,7 +111,6 @@ export const ExperimentalRadialChart: React.FC<ExperimentalRadialChartProps> = (
     maintainAspectRatio: true,
   };
 
-  // Handle cleanup on unmount to prevent memory leaks
   useEffect(() => {
     return () => {
       if (chartRef.current) {
@@ -120,7 +131,6 @@ export const ExperimentalRadialChart: React.FC<ExperimentalRadialChartProps> = (
             options={options}
             ref={(reference) => {
               if (reference !== null) {
-                // Access the chart instance directly
                 chartRef.current = reference;
               }
             }}
