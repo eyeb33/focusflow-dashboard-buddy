@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import { savePartialSession } from '@/utils/timerContextUtils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,10 +25,9 @@ export function useTimerTickLogic({
 }: UseTimerTickLogicProps) {
   const { user } = useAuth();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const currentTimeRef = useRef<number | null>(null);
 
-  // Effect to handle the timer interval
   useEffect(() => {
-    // Clear any existing interval first to prevent duplicate timers
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -37,19 +35,18 @@ export function useTimerTickLogic({
     
     if (isRunning) {
       console.log("Starting timer tick with mode:", timerMode);
-      // Set the last tick time to now when starting
       lastTickTimeRef.current = Date.now();
 
       timerRef.current = setInterval(() => {
         const now = Date.now();
-        const expectedElapsed = 1000; // 1 second
+        const expectedElapsed = 1000;
         const actualElapsed = now - lastTickTimeRef.current;
         
-        // Adjust only if there's a significant delay (more than 1 second)
         const adjustment = Math.max(0, Math.floor((actualElapsed - expectedElapsed) / 1000));
 
         setTimeRemaining(prevTime => {
-          // If timer is about to complete
+          currentTimeRef.current = prevTime;
+          
           if (prevTime <= 1) {
             if (timerRef.current) {
               clearInterval(timerRef.current);
@@ -58,17 +55,14 @@ export function useTimerTickLogic({
             return 0;
           }
 
-          // Calculate new time
           const secondsToSubtract = 1 + adjustment;
           const newTime = Math.max(0, prevTime - secondsToSubtract);
 
-          // Save session data for work mode if needed
           const totalTime = getTotalTime();
           const elapsedSeconds = totalTime - newTime;
           const newFullMinutes = Math.floor(elapsedSeconds / 60);
           const prevFullMinutes = lastRecordedFullMinutesRef.current;
 
-          // Save session data for work mode if user is logged in and new full minute completed
           if (user && timerMode === 'work' && newFullMinutes > prevFullMinutes) {
             console.log(`Completed a new minute: ${newFullMinutes} minutes`);
             const startDate = sessionStartTimeRef.current
@@ -91,7 +85,6 @@ export function useTimerTickLogic({
             });
           }
 
-          // Save timer state to localStorage
           const timerState = {
             isRunning: true,
             timerMode,
@@ -102,7 +95,6 @@ export function useTimerTickLogic({
           };
           localStorage.setItem('timerState', JSON.stringify(timerState));
 
-          // Handle timer completion
           if (newTime <= 0) {
             if (timerRef.current) {
               clearInterval(timerRef.current);
@@ -116,23 +108,26 @@ export function useTimerTickLogic({
         });
       }, 1000);
     } else {
-      // If not running, save the paused state to localStorage
-      setTimeRemaining(prevTime => {
-        const timerState = {
-          isRunning: false,  // Explicitly mark as paused
-          timerMode,
-          timeRemaining: prevTime,
-          totalTime: getTotalTime(),
-          timestamp: Date.now(),
-          sessionStartTime: sessionStartTimeRef.current
-        };
-        console.log("Saving paused timer state:", timerState);
-        localStorage.setItem('timerState', JSON.stringify(timerState));
-        return prevTime; // Return unchanged time
-      });
+      const exactTimeRemaining = currentTimeRef.current !== null ? 
+        currentTimeRef.current : 
+        setTimeRemaining(current => {
+          currentTimeRef.current = current;
+          return current;
+        });
+
+      const timerState = {
+        isRunning: false,
+        timerMode,
+        timeRemaining: exactTimeRemaining,
+        totalTime: getTotalTime(),
+        timestamp: Date.now(),
+        sessionStartTime: sessionStartTimeRef.current
+      };
+      
+      console.log("Saving paused timer state with exact time:", timerState);
+      localStorage.setItem('timerState', JSON.stringify(timerState));
     }
 
-    // Cleanup function
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);

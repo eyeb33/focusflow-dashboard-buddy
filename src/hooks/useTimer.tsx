@@ -17,7 +17,8 @@ export const useTimer = () => {
     isRunning: timerContext.isRunning,
     timeRemaining: timerContext.timeRemaining,
     // Add timeFormatted to help with debugging
-    timeFormatted: timerContext.formatTime(timerContext.timeRemaining)
+    timeFormatted: timerContext.formatTime(timerContext.timeRemaining),
+    progress: timerContext.progress
   });
   
   return timerContext;
