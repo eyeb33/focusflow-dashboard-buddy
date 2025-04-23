@@ -128,7 +128,7 @@ export function useTimerTickLogic({
       const timerState = {
         isRunning: false,
         timerMode,
-        timeRemaining: timeRemaining, // Use current timeRemaining directly
+        timeRemaining: timeRemaining, // Use the current timeRemaining directly without any modification
         totalTime: getTotalTime(),
         timestamp: Date.now(),
         sessionStartTime: sessionStartTimeRef.current
@@ -150,11 +150,14 @@ export function useTimerTickLogic({
     getTotalTime,
     onTimerComplete,
     setTimeRemaining,
-    timeRemaining,
     lastRecordedFullMinutesRef,
     lastTickTimeRef,
     sessionStartTimeRef
   ]);
+
+  // CRITICAL: Don't include timeRemaining in the dependency array
+  // This prevents re-runs of the effect when only the time changes
+  // The setTimeRemaining function handles time updates inside the interval
 
   return timerRef;
 }
