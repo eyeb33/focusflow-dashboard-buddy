@@ -9,6 +9,7 @@ interface UseTimerTickLogicProps {
   getTotalTime: () => number;
   onTimerComplete: () => void;
   setTimeRemaining: React.Dispatch<React.SetStateAction<number>>;
+  timeRemaining: number; // Add timeRemaining to the props
   lastRecordedFullMinutesRef: React.MutableRefObject<number>;
   lastTickTimeRef: React.MutableRefObject<number>;
   sessionStartTimeRef: React.MutableRefObject<string | null>;
@@ -20,6 +21,7 @@ export function useTimerTickLogic({
   getTotalTime,
   onTimerComplete,
   setTimeRemaining,
+  timeRemaining, // Add timeRemaining here
   lastRecordedFullMinutesRef,
   lastTickTimeRef,
   sessionStartTimeRef
