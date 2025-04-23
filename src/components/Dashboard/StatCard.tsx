@@ -76,7 +76,7 @@ const StatCard: React.FC<StatCardProps> = ({
                     <Minus className="h-3 w-3 mr-0.5" />}
                 {Math.abs(trend.value)}%
               </span>
-              <span className="text-muted-foreground">from previous period</span>
+              <span className="text-muted-foreground">from yesterday</span>
             </>
           )}
         </div>

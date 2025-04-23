@@ -22,12 +22,6 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
   isRunning,
   className
 }) => {
-  // Calculate current cycle (0-indexed)
-  const currentCycle = Math.floor(completedSessions / sessionsUntilLongBreak);
-  
-  // Calculate position in cycle (0-indexed)
-  const positionInCycle = completedSessions % sessionsUntilLongBreak;
-  
   // Get colors based on timer mode
   const getColor = (mode: TimerMode): { fill: string, stroke: string } => {
     switch (mode) {
@@ -47,11 +41,11 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
     const colors = getColor(currentMode);
     
     return Array.from({ length: sessionsUntilLongBreak }).map((_, index) => {
-      // Is this position completed?
-      const isCompleted = index < positionInCycle;
+      // Only mark as completed if the session is actually completed
+      const isCompleted = index < completedSessions;
       
       // Is this the active position?
-      const isActive = index === positionInCycle;
+      const isActive = index === currentSessionIndex;
       
       // Size the active indicator slightly larger
       const size = isActive ? 20 : 16;

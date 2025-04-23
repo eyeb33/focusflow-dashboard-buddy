@@ -64,7 +64,8 @@ const DashboardContent = () => {
             trend: stats.weeklyStats?.minutesTrend ? {
               value: stats.weeklyStats.minutesTrend,
               isPositive: stats.weeklyStats.minutesTrend >= 0
-            } : undefined
+            } : undefined,
+            description: stats.weeklyStats?.minutesTrend ? "from last week" : undefined
           },
           {
             title: "Weekly Focus Sessions",
@@ -74,7 +75,8 @@ const DashboardContent = () => {
             trend: stats.weeklyStats?.sessionsTrend ? {
               value: stats.weeklyStats.sessionsTrend,
               isPositive: stats.weeklyStats.sessionsTrend >= 0
-            } : undefined
+            } : undefined,
+            description: stats.weeklyStats?.sessionsTrend ? "from last week" : undefined
           },
           {
             title: "Weekly Completed Cycles",
@@ -84,7 +86,8 @@ const DashboardContent = () => {
             trend: stats.weeklyChange ? {
               value: stats.weeklyChange.sessions,
               isPositive: stats.weeklyChange.isPositive
-            } : undefined
+            } : undefined,
+            description: stats.weeklyChange?.sessions ? "from last week" : undefined
           },
         ];
       case 'month':
@@ -97,7 +100,8 @@ const DashboardContent = () => {
             trend: stats.monthlyStats?.minutesTrend ? {
               value: stats.monthlyStats.minutesTrend,
               isPositive: stats.monthlyStats.minutesTrend >= 0
-            } : undefined
+            } : undefined,
+            description: stats.monthlyStats?.minutesTrend ? "from last month" : undefined
           },
           {
             title: "Monthly Focus Sessions",
@@ -107,7 +111,8 @@ const DashboardContent = () => {
             trend: stats.monthlyStats?.sessionsTrend ? {
               value: stats.monthlyStats.sessionsTrend,
               isPositive: stats.monthlyStats.sessionsTrend >= 0
-            } : undefined
+            } : undefined,
+            description: stats.monthlyStats?.sessionsTrend ? "from last month" : undefined
           },
           {
             title: "Monthly Completed Cycles",
@@ -117,7 +122,8 @@ const DashboardContent = () => {
             trend: stats.monthlyChange ? {
               value: stats.monthlyChange.sessions,
               isPositive: stats.monthlyChange.isPositive
-            } : undefined
+            } : undefined,
+            description: stats.monthlyChange?.sessions ? "from last month" : undefined
           },
         ];
       default:
