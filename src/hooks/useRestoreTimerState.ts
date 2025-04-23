@@ -14,6 +14,7 @@ export function useRestoreTimerState({
   onTimerComplete,
   sessionStartTimeRef
 }: UseRestoreTimerStateProps) {
+  // This effect should only run once on mount - no dependencies
   useEffect(() => {
     const storedStateStr = localStorage.getItem('timerState');
     if (storedStateStr) {
@@ -22,26 +23,41 @@ export function useRestoreTimerState({
         const elapsedMs = Date.now() - storedState.timestamp;
         const elapsedSeconds = Math.floor(elapsedMs / 1000);
 
-        if (storedState.isRunning && elapsedSeconds < storedState.timeRemaining) {
-          const newTimeRemaining = Math.max(0, storedState.timeRemaining - elapsedSeconds);
-          setTimeRemaining(newTimeRemaining);
+        // Restore the timer state and update the UI
+        if (storedState.isRunning) {
+          if (elapsedSeconds < storedState.timeRemaining) {
+            // Timer should still be running with remaining time
+            const newTimeRemaining = Math.max(0, storedState.timeRemaining - elapsedSeconds);
+            
+            // Set the time remaining state
+            setTimeRemaining(newTimeRemaining);
 
-          if (storedState.sessionStartTime) {
-            sessionStartTimeRef.current = storedState.sessionStartTime;
+            // Set the session start time if it exists
+            if (storedState.sessionStartTime) {
+              sessionStartTimeRef.current = storedState.sessionStartTime;
+            }
+            
+            // Force UI update with setTimeout
+            setTimeout(() => {
+              if (window.timerContext && window.timerContext.updateDisplay) {
+                window.timerContext.updateDisplay(newTimeRemaining);
+              }
+            }, 10);
+          } else {
+            // Timer has completed while away
+            if (storedState.sessionStartTime) {
+              sessionStartTimeRef.current = storedState.sessionStartTime;
+            }
+            
+            // Call onTimerComplete in the next event loop
+            setTimeout(() => onTimerComplete(), 10);
+            localStorage.removeItem('timerState');
           }
-        } else if (storedState.isRunning && elapsedSeconds >= storedState.timeRemaining) {
-          if (storedState.sessionStartTime) {
-            sessionStartTimeRef.current = storedState.sessionStartTime;
-          }
-          setTimeout(() => onTimerComplete(), 0);
-          localStorage.removeItem('timerState');
         }
       } catch (error) {
         console.error('Error restoring timer state:', error);
         localStorage.removeItem('timerState');
       }
     }
-    // This must only run on mount
-    // eslint-disable-next-line
-  }, []);
+  }, []); // Empty dependency array ensures this only runs once
 }

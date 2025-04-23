@@ -25,9 +25,11 @@ export function useTimerVisibilitySync({
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
+        // Tab is hidden - store the current time
         lastTickTimeRef.current = Date.now();
         visibilityChangeRef.current = true;
       } else if (visibilityChangeRef.current && timerStateRef.current.isRunning) {
+        // Tab is visible again and timer should be running
         const now = Date.now();
         const elapsedMs = now - lastTickTimeRef.current;
         const elapsedSeconds = Math.floor(elapsedMs / 1000);
@@ -39,11 +41,12 @@ export function useTimerVisibilitySync({
             const newTime = Math.max(0, prevTime - elapsedSeconds);
             
             // Force UI update immediately after visibility change
-            setTimeout(() => {
-              if (window.timerContext && window.timerContext.updateDisplay) {
+            if (window.timerContext && window.timerContext.updateDisplay) {
+              setTimeout(() => {
                 window.timerContext.updateDisplay(newTime);
-              }
-            }, 0);
+                document.title = `Timer: ${Math.floor(newTime / 60)}:${String(newTime % 60).padStart(2, '0')}`;
+              }, 0);
+            }
 
             if (newTime <= 0) {
               setTimeout(() => onTimerComplete(), 0);

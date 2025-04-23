@@ -43,14 +43,21 @@ export function useTimerTickLogic({
       requestAnimationFrameRef.current = requestAnimationFrame(() => {
         // This ensures the browser repaints the timer even if tab is inactive
         document.title = `Timer: ${Math.floor(newTime / 60)}:${String(newTime % 60).padStart(2, '0')}`;
+        
+        // Update the UI through the global context if it exists
+        if (window.timerContext && window.timerContext.updateDisplay) {
+          window.timerContext.updateDisplay(newTime);
+        }
       });
     }
   };
 
+  // Main timer tick effect
   useEffect(() => {
     if (isRunning) {
       lastTickTimeRef.current = Date.now();
 
+      // Set up the interval for the timer
       timerRef.current = setInterval(() => {
         const now = Date.now();
         const expectedElapsed = 1000;
@@ -98,6 +105,7 @@ export function useTimerTickLogic({
             });
           }
 
+          // Save the timer state to localStorage for persistence
           const timerState = {
             isRunning: true,
             timerMode,
