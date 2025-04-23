@@ -27,6 +27,7 @@ export function useTimerTickLogic({
   const { user } = useAuth();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Effect to handle the timer interval
   useEffect(() => {
     // Clear any existing interval first to prevent duplicate timers
     if (timerRef.current) {
@@ -40,18 +41,23 @@ export function useTimerTickLogic({
 
       timerRef.current = setInterval(() => {
         const now = Date.now();
-        const expectedElapsed = 1000;
+        const expectedElapsed = 1000; // 1 second
         const actualElapsed = now - lastTickTimeRef.current;
-        // Adjust only if there's a significant delay
+        
+        // Adjust only if there's a significant delay (more than 1 second)
         const adjustment = Math.max(0, Math.floor((actualElapsed - expectedElapsed) / 1000));
 
         setTimeRemaining(prevTime => {
+          // If timer is about to complete
           if (prevTime <= 1) {
-            clearInterval(timerRef.current as ReturnType<typeof setInterval>);
-            onTimerComplete();
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+            }
+            setTimeout(() => onTimerComplete(), 0);
             return 0;
           }
 
+          // Calculate new time
           const secondsToSubtract = 1 + adjustment;
           const newTime = Math.max(0, prevTime - secondsToSubtract);
 
@@ -60,6 +66,7 @@ export function useTimerTickLogic({
           const newFullMinutes = Math.floor(elapsedSeconds / 60);
           const prevFullMinutes = lastRecordedFullMinutesRef.current;
 
+          // Save session data for work mode if user is logged in
           if (user && timerMode === 'work' && newFullMinutes > prevFullMinutes) {
             console.log(`Completed a new minute: ${newFullMinutes} minutes`);
             const startDate = sessionStartTimeRef.current
@@ -93,8 +100,11 @@ export function useTimerTickLogic({
           };
           localStorage.setItem('timerState', JSON.stringify(timerState));
 
+          // Handle timer completion
           if (newTime <= 0) {
-            clearInterval(timerRef.current as ReturnType<typeof setInterval>);
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+            }
             setTimeout(() => onTimerComplete(), 0);
             localStorage.removeItem('timerState');
             return 0;
@@ -104,8 +114,23 @@ export function useTimerTickLogic({
           return newTime;
         });
       }, 1000);
+    } else {
+      // If not running but we have timer state, save it to localStorage
+      setTimeRemaining(prevTime => {
+        const timerState = {
+          isRunning: false,
+          timerMode,
+          timeRemaining: prevTime,
+          totalTime: getTotalTime(),
+          timestamp: Date.now(),
+          sessionStartTime: sessionStartTimeRef.current
+        };
+        localStorage.setItem('timerState', JSON.stringify(timerState));
+        return prevTime;
+      });
     }
 
+    // Cleanup function
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);

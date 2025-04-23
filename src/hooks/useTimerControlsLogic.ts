@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { TimerMode, getTotalTime, savePartialSession } from '@/utils/timerContextUtils';
@@ -35,6 +34,9 @@ export function useTimerControlsLogic(settings: TimerSettings) {
         lastRecordedFullMinutesRef.current
       );
     }
+    
+    // Important: Don't reset timeRemaining here - just keep it as is
+    // Don't reset lastRecordedTimeRef either - we need it for resuming
   };
   
   const handleReset = async (timerMode: TimerMode, setCurrentSessionIndex?: (index: number) => void) => {

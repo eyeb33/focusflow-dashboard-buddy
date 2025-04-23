@@ -65,6 +65,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
             ? `bg-white ${currentModeColors.color} border border-slate-200 ${currentModeColors.hoverClass}` 
             : `${currentModeColors.activeClass} border border-transparent hover:bg-white hover:${currentModeColors.color}`
         )}
+        aria-label={isRunning ? "Pause timer" : "Start timer"}
       >
         {!isRunning ? (
           <Play className="h-6 w-6" />
@@ -80,6 +81,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
           "rounded-full w-14 h-14 flex items-center justify-center shadow-md bg-white hover:bg-gray-100 border border-slate-200",
           currentModeColors.color
         )}
+        aria-label="Reset timer"
       >
         <RotateCcw className="h-6 w-6" />
       </Button>

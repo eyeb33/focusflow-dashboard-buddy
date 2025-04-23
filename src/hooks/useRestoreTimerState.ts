@@ -19,10 +19,13 @@ export function useRestoreTimerState({
   setTimerMode
 }: UseRestoreTimerStateProps) {
   useEffect(() => {
-    const storedStateStr = localStorage.getItem('timerState');
-    
     // Always ensure we start with isRunning false - user must manually start
     setIsRunning(false);
+    
+    // Default to work mode if there's no stored state
+    let defaultToWorkMode = true;
+    
+    const storedStateStr = localStorage.getItem('timerState');
     
     if (storedStateStr) {
       try {
@@ -33,6 +36,7 @@ export function useRestoreTimerState({
         // Restore the timer mode if available
         if (storedState.timerMode) {
           setTimerMode(storedState.timerMode);
+          defaultToWorkMode = false;
         }
 
         // Restore time remaining but don't auto-start
@@ -53,8 +57,15 @@ export function useRestoreTimerState({
       } catch (error) {
         console.error('Error restoring timer state:', error);
         localStorage.removeItem('timerState');
+        defaultToWorkMode = true;
       }
     }
+    
+    // If no valid state was restored, default to work mode
+    if (defaultToWorkMode) {
+      setTimerMode('work');
+    }
+    
     // This must only run on mount
     // eslint-disable-next-line
   }, []);
