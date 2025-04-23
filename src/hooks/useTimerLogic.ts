@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { getTotalTime, TimerMode } from '@/utils/timerContextUtils';
 import { TimerSettings } from '@/hooks/useTimerSettings';
@@ -61,17 +62,17 @@ export function useTimerLogic(settings: TimerSettings) {
     }
   }, [isRunning]);
 
-  // Reset timer when mode or settings change
+  // Update timeRemaining when mode or settings change, but ONLY if not currently running
   useEffect(() => {
-    setTimeRemaining(getTotalTime(timerMode, settings));
-    
-    // Reset session start time when mode changes
     if (!isRunning) {
+      setTimeRemaining(getTotalTime(timerMode, settings));
+      
+      // Reset session start time when mode changes
       sessionStartTimeRef.current = null;
     }
   }, [timerMode, settings, setTimeRemaining, isRunning]);
   
-  // Auto-start feature
+  // Auto-start feature - only used when completing a timer and auto-transitioning
   useEffect(() => {
     if (autoStart && !isRunning) {
       baseHandleStart(timerMode);
@@ -128,9 +129,11 @@ export function useTimerLogic(settings: TimerSettings) {
   // Use the restored timer state hook
   useRestoreTimerState({
     isRunning,
+    setIsRunning,
     setTimeRemaining,
     onTimerComplete: handleTimerComplete,
-    sessionStartTimeRef
+    sessionStartTimeRef,
+    setTimerMode
   });
 
   // Use the timer visibility sync hook

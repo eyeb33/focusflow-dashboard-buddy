@@ -28,13 +28,21 @@ export function useTimerTickLogic({
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    // Clear any existing interval first to prevent duplicate timers
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    
     if (isRunning) {
+      // Set the last tick time to now when starting
       lastTickTimeRef.current = Date.now();
 
       timerRef.current = setInterval(() => {
         const now = Date.now();
         const expectedElapsed = 1000;
         const actualElapsed = now - lastTickTimeRef.current;
+        // Adjust only if there's a significant delay
         const adjustment = Math.max(0, Math.floor((actualElapsed - expectedElapsed) / 1000));
 
         setTimeRemaining(prevTime => {
@@ -74,6 +82,7 @@ export function useTimerTickLogic({
             });
           }
 
+          // Save timer state to localStorage
           const timerState = {
             isRunning: true,
             timerMode,
@@ -95,8 +104,6 @@ export function useTimerTickLogic({
           return newTime;
         });
       }, 1000);
-    } else if (timerRef.current) {
-      clearInterval(timerRef.current);
     }
 
     return () => {

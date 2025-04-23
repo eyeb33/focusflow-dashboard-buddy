@@ -21,7 +21,10 @@ export function useTimerControlsLogic(settings: TimerSettings) {
   };
   
   const handlePause = async (timerMode: TimerMode) => {
+    // Only change the running state, don't reset the time
     setIsRunning(false);
+    
+    // Save partial session if user is logged in
     if (user && lastRecordedTimeRef.current) {
       const totalTime = getTotalTime(timerMode, settings);
       await savePartialSession(
@@ -35,7 +38,10 @@ export function useTimerControlsLogic(settings: TimerSettings) {
   };
   
   const handleReset = async (timerMode: TimerMode, setCurrentSessionIndex?: (index: number) => void) => {
+    // Stop the timer
     setIsRunning(false);
+    
+    // Save partial session if user is logged in
     if (user && lastRecordedTimeRef.current) {
       const totalTime = getTotalTime(timerMode, settings);
       await savePartialSession(
@@ -46,6 +52,8 @@ export function useTimerControlsLogic(settings: TimerSettings) {
         lastRecordedFullMinutesRef.current
       );
     }
+    
+    // Reset the time
     setTimeRemaining(getTotalTime(timerMode, settings));
     lastRecordedTimeRef.current = getTotalTime(timerMode, settings);
     lastRecordedFullMinutesRef.current = 0;
@@ -61,6 +69,7 @@ export function useTimerControlsLogic(settings: TimerSettings) {
     newMode: TimerMode, 
     setCurrentSessionIndex?: (index: number) => void
   ) => {
+    // Save session if the timer was running
     if (isRunning && user && lastRecordedTimeRef.current) {
       const totalTime = getTotalTime(currentMode, settings);
       await savePartialSession(
@@ -72,9 +81,15 @@ export function useTimerControlsLogic(settings: TimerSettings) {
       );
     }
     
+    // Stop the timer when changing modes
     setIsRunning(false);
+    
+    // Reset tracking
     lastRecordedTimeRef.current = null;
     lastRecordedFullMinutesRef.current = 0;
+    
+    // Set new time according to the new mode
+    setTimeRemaining(getTotalTime(newMode, settings));
     
     // Reset the current session index when manually changing modes
     if (newMode === 'work' && setCurrentSessionIndex) {
