@@ -19,13 +19,14 @@ export function useRestoreTimerState({
   setTimerMode
 }: UseRestoreTimerStateProps) {
   useEffect(() => {
-    // Always ensure we start with isRunning false - user must manually start
+    // CRITICAL: Always ensure we start with isRunning false - user must manually start
     setIsRunning(false);
     
     // Default to work mode if there's no stored state
     let defaultToWorkMode = true;
     
     const storedStateStr = localStorage.getItem('timerState');
+    console.log("Restoring timer state:", storedStateStr ? "found stored state" : "no stored state");
     
     if (storedStateStr) {
       try {
@@ -35,24 +36,41 @@ export function useRestoreTimerState({
 
         // Restore the timer mode if available
         if (storedState.timerMode) {
+          console.log("Restoring timer mode:", storedState.timerMode);
           setTimerMode(storedState.timerMode);
           defaultToWorkMode = false;
         }
 
-        // Restore time remaining but don't auto-start
-        if (elapsedSeconds < storedState.timeRemaining) {
-          const newTimeRemaining = Math.max(0, storedState.timeRemaining - elapsedSeconds);
+        // Restore time remaining but NEVER auto-start
+        if (storedState.timeRemaining > 0) {
+          // Calculate new time remaining, accounting for elapsed time while away
+          let newTimeRemaining;
+          
+          // If the timer was paused when stored, don't subtract elapsed time
+          if (storedState.isRunning === false) {
+            newTimeRemaining = storedState.timeRemaining;
+            console.log("Restoring paused timer with time:", newTimeRemaining);
+          } else {
+            // If timer was running, subtract elapsed time
+            newTimeRemaining = Math.max(0, storedState.timeRemaining - elapsedSeconds);
+            console.log("Restoring running timer adjusted for elapsed time:", newTimeRemaining);
+          }
+          
           setTimeRemaining(newTimeRemaining);
 
           if (storedState.sessionStartTime) {
             sessionStartTimeRef.current = storedState.sessionStartTime;
           }
-        } else if (elapsedSeconds >= storedState.timeRemaining) {
-          if (storedState.sessionStartTime) {
-            sessionStartTimeRef.current = storedState.sessionStartTime;
+          
+          // Handle timer completion if time elapsed while away
+          if (newTimeRemaining <= 0 && storedState.isRunning !== false) {
+            console.log("Timer completed while away, triggering completion");
+            if (storedState.sessionStartTime) {
+              sessionStartTimeRef.current = storedState.sessionStartTime;
+            }
+            setTimeout(() => onTimerComplete(), 0);
+            localStorage.removeItem('timerState');
           }
-          setTimeout(() => onTimerComplete(), 0);
-          localStorage.removeItem('timerState');
         }
       } catch (error) {
         console.error('Error restoring timer state:', error);
@@ -63,6 +81,7 @@ export function useRestoreTimerState({
     
     // If no valid state was restored, default to work mode
     if (defaultToWorkMode) {
+      console.log("Defaulting to work mode");
       setTimerMode('work');
     }
     

@@ -1,3 +1,4 @@
+
 import { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { TimerMode, getTotalTime, savePartialSession } from '@/utils/timerContextUtils';
@@ -12,16 +13,22 @@ export function useTimerControlsLogic(settings: TimerSettings) {
 
   // Timer control functions
   const handleStart = (timerMode: TimerMode) => {
+    // Save the current time to compare on pause
     lastRecordedTimeRef.current = timeRemaining;
+    
     const totalTime = getTotalTime(timerMode, settings);
     const elapsedSeconds = totalTime - timeRemaining;
     lastRecordedFullMinutesRef.current = Math.floor(elapsedSeconds / 60);
+    
+    // Start the timer
     setIsRunning(true);
+    console.log("Timer started at:", timeRemaining, "seconds");
   };
   
   const handlePause = async (timerMode: TimerMode) => {
-    // Only change the running state, don't reset the time
+    // IMPORTANT: Only change the running state to false, don't modify the time
     setIsRunning(false);
+    console.log("Timer paused at:", timeRemaining, "seconds");
     
     // Save partial session if user is logged in
     if (user && lastRecordedTimeRef.current) {
@@ -34,9 +41,6 @@ export function useTimerControlsLogic(settings: TimerSettings) {
         lastRecordedFullMinutesRef.current
       );
     }
-    
-    // Important: Don't reset timeRemaining here - just keep it as is
-    // Don't reset lastRecordedTimeRef either - we need it for resuming
   };
   
   const handleReset = async (timerMode: TimerMode, setCurrentSessionIndex?: (index: number) => void) => {
@@ -56,9 +60,11 @@ export function useTimerControlsLogic(settings: TimerSettings) {
     }
     
     // Reset the time
-    setTimeRemaining(getTotalTime(timerMode, settings));
-    lastRecordedTimeRef.current = getTotalTime(timerMode, settings);
+    const newTime = getTotalTime(timerMode, settings);
+    setTimeRemaining(newTime);
+    lastRecordedTimeRef.current = newTime;
     lastRecordedFullMinutesRef.current = 0;
+    console.log("Timer reset to:", newTime, "seconds");
     
     // Reset the current session index when timer is reset
     if (timerMode === 'work' && setCurrentSessionIndex) {
@@ -91,7 +97,9 @@ export function useTimerControlsLogic(settings: TimerSettings) {
     lastRecordedFullMinutesRef.current = 0;
     
     // Set new time according to the new mode
-    setTimeRemaining(getTotalTime(newMode, settings));
+    const newTime = getTotalTime(newMode, settings);
+    setTimeRemaining(newTime);
+    console.log(`Timer mode changed to ${newMode} with time:`, newTime, "seconds");
     
     // Reset the current session index when manually changing modes
     if (newMode === 'work' && setCurrentSessionIndex) {
