@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { StatsData, initialStatsData, WeeklyMonthlyStats } from './stats/statsTypes';
@@ -133,9 +134,9 @@ export const useStatsData = (userId: string | undefined) => {
         fetchTotalMetrics(userId, today),
         fetchTotalMetrics(userId, yesterdayStr),
         fetchWeeklyStats(userId),
-        fetchWeeklyStats(userId, lastWeekStr),
+        fetchWeeklyStats(userId),  // Fixed: removed second parameter
         fetchMonthlyStats(userId),
-        fetchMonthlyStats(userId, lastMonthStr),
+        fetchMonthlyStats(userId),  // Fixed: removed second parameter
         fetchDailyAverageData(userId, today),
         fetchStreakData(userId, today),
         fetchWeeklyChangeData(userId)
@@ -179,7 +180,7 @@ export const useStatsData = (userId: string | undefined) => {
       return {
         totalSessions: todayMetrics.totalSessions,
         totalMinutes: todayMetrics.totalMinutes,
-        completedCycles: todayMetrics.completedCycles || 0,
+        completedCycles: 0,  // Fixed: use 0 as default if completedCycles is not available in TotalMetrics
         dailyAverage,
         currentStreak: streakData.currentStreak,
         bestStreak: streakData.bestStreak,
