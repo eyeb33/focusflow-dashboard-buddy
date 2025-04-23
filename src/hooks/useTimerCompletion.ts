@@ -1,4 +1,3 @@
-
 import { useAuth } from '@/contexts/AuthContext';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { getTotalTime } from '@/utils/timerContextUtils';
@@ -36,21 +35,38 @@ export function useTimerCompletion({
   const { user } = useAuth();
   const sessionStartTimeRef = useRef<string | null>(null);
   
+  // Update session start time when timer mode changes or when timer completes
   useEffect(() => {
+    // Set the start time when a new mode is selected
     sessionStartTimeRef.current = new Date().toISOString();
   }, [timerMode]);
   
+  // Handle timer completion
   const handleTimerComplete = async () => {
     try {
+      // Play completion sound with the current mode
       await playTimerCompletionSound(timerMode);
       
+      // Get total time for this timer mode in seconds
       const totalTime = getTotalTime(timerMode, settings);
+      
+      // Get the session start time (or use current time as fallback)
       const sessionStartTime = sessionStartTimeRef.current || new Date().toISOString();
       
       if (timerMode === 'work') {
-        const minutes = settings.workDuration;
+        // When a work session completes:
+        // 1. Update the completed sessions counter
+        // 2. Calculate next timer mode
+        
+        // Calculate minutes explicitly from settings (standard pomodoro time)
+        const minutes = settings.workDuration; // This is already in minutes (typically 25)
+        
         console.log(`Timer completed with ${minutes} minutes for work session`);
+        
+        // Track the session completion properly for the dashboard
         if (user) {
+          // Save the completed session in the database with accurate duration and start time
+          // This ensures the session is attributed to the day it started on
           await saveFocusSession(
             user.id, 
             timerMode, 
@@ -58,21 +74,37 @@ export function useTimerCompletion({
             true,
             sessionStartTime
           );
+          
+          // Update local state
           setCompletedSessions(prev => prev + 1);
+          
+          // Add the time to today's total (using settings time rather than arbitrary calculation)
           setTotalTimeToday(prev => prev + minutes);
+          
+          // Update daily stats (explicitly passing minutes)
+          // We pass the start date to ensure it's attributed to the correct day
           const sessionStartDate = new Date(sessionStartTime).toISOString().split('T')[0];
           await updateDailyStats(user.id, minutes, timerMode, sessionStartDate);
         }
         
+        // After completing a work session, move to the next position in the cycle
         const newSessionIndex = (currentSessionIndex + 1) % settings.sessionsUntilLongBreak;
         setCurrentSessionIndex(newSessionIndex);
+        
+        // Log the state transition
         console.log(`Work session completed. Moving from session ${currentSessionIndex} to ${newSessionIndex}`);
         console.log(`After completion: completed sessions=${completedSessions + 1}, currentSessionIndex=${newSessionIndex}`);
+        
+        // Reset the session start time for the next session
         sessionStartTimeRef.current = new Date().toISOString();
+        
+        // Determine if we should go to longBreak or regular break
         const nextMode: TimerMode = newSessionIndex === 0 ? 'longBreak' : 'break';
         setTimerMode(nextMode);
       } 
       else if (timerMode === 'break') {
+        // Break sessions don't increment the main session counter
+        // But we still need to record them for analytics
         if (user) {
           await saveFocusSession(
             user.id, 
@@ -82,12 +114,16 @@ export function useTimerCompletion({
             sessionStartTime
           );
         }
+        
+        // Reset the session start time for the next session
         sessionStartTimeRef.current = new Date().toISOString();
+        
+        // IMPORTANT: After break, go back to work mode but keep the same currentSessionIndex
+        // This is critical for correct display of indicator circles
         console.log(`Break session completed. Keeping session index at ${currentSessionIndex}`);
         setTimerMode('work');
       } 
-      else {
-        // This handles the longBreak case correctly without type comparison issues
+      else if (timerMode === 'longBreak') {
         if (user) {
           await saveFocusSession(
             user.id, 
@@ -97,27 +133,29 @@ export function useTimerCompletion({
             sessionStartTime
           );
         }
+        
+        // Reset the session start time for the next session
         sessionStartTimeRef.current = new Date().toISOString();
+        
+        // After a long break, we start a new cycle at position 0
         console.log('Long break completed - starting a new cycle');
+        
+        // Reset position to 0 for the new cycle
         setCurrentSessionIndex(0);
         setTimerMode('work');
+        
+        // Don't auto-start after a full cycle
         resetTimerState();
-        setIsRunning(false);
-        return;
+        return; // Exit early to prevent auto-start
       }
       
+      // Reset timer state before the next session starts
       resetTimerState();
       
-      // Handle auto-start based on timer mode using string comparison
-      if (timerMode === 'work' || timerMode === 'break') {
-        // Auto-start for work and short break sessions
-        setTimeout(() => {
-          setIsRunning(true);
-        }, 1000);
-      } else {
-        // Don't auto-start after long break
-        setIsRunning(false);
-      }
+      // Auto-start the next timer (except after a full cycle, which we handled above)
+      setTimeout(() => {
+        setIsRunning(true);
+      }, 1000); // Small delay before starting the next timer
     } catch (error) {
       console.error('Error handling timer completion:', error);
       setTimerMode('work');

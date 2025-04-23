@@ -13,40 +13,15 @@ export function useTimerControlsLogic(settings: TimerSettings) {
 
   // Timer control functions
   const handleStart = (timerMode: TimerMode) => {
-    // Store the current time in the ref when starting
     lastRecordedTimeRef.current = timeRemaining;
     const totalTime = getTotalTime(timerMode, settings);
     const elapsedSeconds = totalTime - timeRemaining;
     lastRecordedFullMinutesRef.current = Math.floor(elapsedSeconds / 60);
     setIsRunning(true);
-    
-    // Store the timer state in localStorage when started
-    const timerState = {
-      isRunning: true,
-      timerMode,
-      timeRemaining,
-      totalTime: getTotalTime(timerMode, settings),
-      timestamp: Date.now(),
-      sessionStartTime: localStorage.getItem('sessionStartTime')
-    };
-    localStorage.setItem('timerState', JSON.stringify(timerState));
   };
   
   const handlePause = async (timerMode: TimerMode) => {
-    // Important: set isRunning to false first to stop the timer
     setIsRunning(false);
-    
-    // Store the current timer state in localStorage when paused
-    const timerState = {
-      isRunning: false,
-      timerMode,
-      timeRemaining, // Use current timeRemaining value
-      totalTime: getTotalTime(timerMode, settings),
-      timestamp: Date.now(),
-      sessionStartTime: localStorage.getItem('sessionStartTime')
-    };
-    localStorage.setItem('timerState', JSON.stringify(timerState));
-    
     if (user && lastRecordedTimeRef.current) {
       const totalTime = getTotalTime(timerMode, settings);
       await savePartialSession(
@@ -57,9 +32,6 @@ export function useTimerControlsLogic(settings: TimerSettings) {
         lastRecordedFullMinutesRef.current
       );
     }
-    
-    // Don't reset the timeRemaining value when pausing
-    // This preserves the current timer value for when the user resumes
   };
   
   const handleReset = async (timerMode: TimerMode, setCurrentSessionIndex?: (index: number) => void) => {
@@ -74,14 +46,9 @@ export function useTimerControlsLogic(settings: TimerSettings) {
         lastRecordedFullMinutesRef.current
       );
     }
-    const totalTime = getTotalTime(timerMode, settings);
-    setTimeRemaining(totalTime);
-    lastRecordedTimeRef.current = totalTime;
+    setTimeRemaining(getTotalTime(timerMode, settings));
+    lastRecordedTimeRef.current = getTotalTime(timerMode, settings);
     lastRecordedFullMinutesRef.current = 0;
-    
-    // Clear the timer state from localStorage when reset
-    localStorage.removeItem('timerState');
-    localStorage.removeItem('sessionStartTime');
     
     // Reset the current session index when timer is reset
     if (timerMode === 'work' && setCurrentSessionIndex) {
@@ -109,17 +76,10 @@ export function useTimerControlsLogic(settings: TimerSettings) {
     lastRecordedTimeRef.current = null;
     lastRecordedFullMinutesRef.current = 0;
     
-    // Update time remaining based on the new mode
-    const newTotalTime = getTotalTime(newMode, settings);
-    setTimeRemaining(newTotalTime);
-    
     // Reset the current session index when manually changing modes
     if (newMode === 'work' && setCurrentSessionIndex) {
       setCurrentSessionIndex(0);
     }
-    
-    // Clear timer state from localStorage on mode change
-    localStorage.removeItem('timerState');
   };
 
   const resetTimerState = () => {
