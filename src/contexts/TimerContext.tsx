@@ -57,7 +57,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     enableRealtimeForSessionsSummary();
   }, []);
   
-  // Calculate progress percentage based on current mode
+  // Calculate total time for current timer mode
   const getTotalTime = (): number => {
     switch (timerMode) {
       case 'break':
@@ -70,8 +70,10 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
   
-  // Correctly calculate progress as elapsed / total - makes the timer start at 0 and fill up
-  const progress = (getTotalTime() - timeRemaining) / getTotalTime();
+  // Calculate progress as elapsed / total time
+  // This ensures the progress starts at 0 and fills up to 1
+  const totalTime = getTotalTime();
+  const progress = totalTime > 0 ? (totalTime - timeRemaining) / totalTime : 0;
   
   const getTimerModeLabel = () => getModeLabel(timerMode);
 

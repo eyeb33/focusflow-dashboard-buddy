@@ -15,6 +15,7 @@ export function useTimerLogic(settings: TimerSettings) {
   const [autoStart, setAutoStart] = useState<boolean>(false);
   const sessionStartTimeRef = useRef<string | null>(null);
   const skipTimerResetRef = useRef<boolean>(false); // Track when we should skip resetting timer
+  const previousSettingsRef = useRef(settings); // Store previous settings to detect changes
 
   // Use the smaller hooks
   const {
@@ -63,20 +64,47 @@ export function useTimerLogic(settings: TimerSettings) {
     }
   }, [isRunning]);
 
-  // CRITICAL CHANGE: Only update timeRemaining when mode or settings change AND not running AND not just paused
+  // Detect settings changes and reset timer when needed
   useEffect(() => {
-    // Don't reset time if we're running or if we just paused
-    if (!isRunning && !skipTimerResetRef.current) {
+    const hasSettingsChanged = 
+      previousSettingsRef.current.workDuration !== settings.workDuration ||
+      previousSettingsRef.current.breakDuration !== settings.breakDuration ||
+      previousSettingsRef.current.longBreakDuration !== settings.longBreakDuration ||
+      previousSettingsRef.current.sessionsUntilLongBreak !== settings.sessionsUntilLongBreak;
+    
+    // If settings have changed and we're not running, reset the timer
+    if (hasSettingsChanged && !isRunning) {
+      console.log("Settings changed - resetting timer:", {
+        oldSettings: previousSettingsRef.current,
+        newSettings: settings
+      });
+      
+      // Force reset the timer for the current mode with new settings
+      skipTimerResetRef.current = false;
+      const newTime = getTotalTime(timerMode, settings);
+      console.log(`Resetting time to ${newTime} seconds due to settings change`);
+      setTimeRemaining(newTime);
+      
+      // Reset session start time when settings change
+      sessionStartTimeRef.current = null;
+
+      // Save current settings for future comparisons
+      previousSettingsRef.current = { ...settings };
+    } else if (!isRunning && !skipTimerResetRef.current) {
+      // Normal mode change or initial setup - set time based on current mode and settings
       console.log("Setting time based on mode/settings change:", getTotalTime(timerMode, settings));
       setTimeRemaining(getTotalTime(timerMode, settings));
       
-      // Reset session start time when mode changes
+      // Reset session start time
       sessionStartTimeRef.current = null;
     } else if (skipTimerResetRef.current) {
       // Reset the flag after we've skipped one update
       console.log("Skipping timer reset after pause");
       skipTimerResetRef.current = false;
     }
+    
+    // Always update the settings reference
+    previousSettingsRef.current = { ...settings };
   }, [timerMode, settings, setTimeRemaining, isRunning]);
   
   // Auto-start feature - only used when completing a timer and auto-transitioning
