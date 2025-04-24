@@ -1,5 +1,5 @@
-
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import TimeToggle from "@/components/Dashboard/TimeToggle";
 import StatCardsGrid from "@/components/Dashboard/StatCardsGrid";
 import ChartsGrid from "@/components/Dashboard/ChartsGrid";
@@ -7,9 +7,12 @@ import ProductivityInsights from "@/components/Dashboard/ProductivityInsights";
 import StreakCalendar from "@/components/Dashboard/StreakCalendar";
 import { useDashboard } from '@/contexts/DashboardContext';
 import { ExperimentalRadialChart } from '@/components/Dashboard/ExperimentalRadialChart';
+import { Button } from '@/components/ui/button';
+import { AlertCircle } from 'lucide-react';
 
 const DashboardContent = () => {
-  const { selectedPeriod, setSelectedPeriod, dashboardData } = useDashboard();
+  const { selectedPeriod, setSelectedPeriod, dashboardData, isDemoMode } = useDashboard();
+  const navigate = useNavigate();
 
   const getPeriodStats = () => {
     const stats = dashboardData.stats;
@@ -133,6 +136,34 @@ const DashboardContent = () => {
 
   return (
     <div className="space-y-6">
+      {isDemoMode && (
+        <div className="bg-muted p-4 rounded-lg border border-muted-foreground/20 mb-6">
+          <div className="flex items-center gap-3 mb-2">
+            <AlertCircle className="h-5 w-5 text-amber-500" />
+            <h3 className="font-medium">Demo Dashboard</h3>
+          </div>
+          <p className="text-sm text-muted-foreground mb-3">
+            You're viewing demo data. Sign up to track your own productivity and create a personalized dashboard.
+          </p>
+          <div className="flex gap-2">
+            <Button 
+              size="sm" 
+              className="bg-pomodoro-work hover:bg-pomodoro-work/90"
+              onClick={() => navigate('/auth', { state: { mode: 'signup' } })}
+            >
+              Sign Up Now
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => navigate('/auth', { state: { mode: 'login' } })}
+            >
+              Log In
+            </Button>
+          </div>
+        </div>
+      )}
+      
       <TimeToggle
         selectedPeriod={selectedPeriod}
         onChange={setSelectedPeriod}

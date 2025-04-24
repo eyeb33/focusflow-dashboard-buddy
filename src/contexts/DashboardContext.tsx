@@ -2,6 +2,8 @@
 import React, { createContext, useContext } from 'react';
 import { TimePeriod } from '@/components/Dashboard/TimeToggle';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { useAuth } from '@/contexts/AuthContext';
+import { mockDashboardData } from '@/data/mockDashboardData';
 
 interface DashboardContextType {
   selectedPeriod: TimePeriod;
@@ -9,13 +11,19 @@ interface DashboardContextType {
   dashboardData: any;
   isLoading: boolean;
   refetch: () => void;
+  isDemoMode: boolean;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [selectedPeriod, setSelectedPeriod] = React.useState<TimePeriod>('today');
-  const { dashboardData, isLoading, refetch } = useDashboardData();
+  const { user } = useAuth();
+  const { dashboardData: userData, isLoading, refetch } = useDashboardData();
+  
+  // Use mock data for non-authenticated users (demo mode)
+  const isDemoMode = !user;
+  const dashboardData = isDemoMode ? mockDashboardData : userData;
 
   return (
     <DashboardContext.Provider
@@ -25,6 +33,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         dashboardData,
         isLoading,
         refetch,
+        isDemoMode
       }}
     >
       {children}

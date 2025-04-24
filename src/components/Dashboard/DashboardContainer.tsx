@@ -15,11 +15,8 @@ const DashboardContainer = () => {
   const navigate = useNavigate();
   const visibilityChangedRef = useRef(false);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/auth', { state: { mode: 'login' } });
-    }
-  }, [user, authLoading, navigate]);
+  // Remove the redirect for non-authenticated users to allow demo access
+  // We'll handle showing demo data in the DashboardContext
 
   // Handle tab visibility with reduced frequency of refreshes
   useEffect(() => {
@@ -52,10 +49,6 @@ const DashboardContainer = () => {
         <Loader2 className="h-8 w-8 animate-spin text-pomodoro-work" />
       </div>
     );
-  }
-
-  if (!user) {
-    return null;
   }
 
   return (

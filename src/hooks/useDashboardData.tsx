@@ -7,6 +7,7 @@ import { useInsights } from "@/hooks/dashboard/useInsights";
 import { useStreakData } from "@/hooks/dashboard/useStreakData";
 import { useProductivityTrends } from "@/hooks/dashboard/useProductivityTrends";
 import { useRealtimeUpdates } from "@/hooks/dashboard/useRealtimeUpdates";
+import { mockDashboardData } from '@/data/mockDashboardData';
 
 export const useDashboardData = () => {
   const { user } = useAuth();
@@ -20,7 +21,7 @@ export const useDashboardData = () => {
   // Use current date for consistency
   const today = new Date().toISOString().split('T')[0];
   
-  // Set up hooks for data fetching
+  // Set up hooks for data fetching - only if we have a userId
   const { stats, isLoading: statsLoading, refetch: refetchStats } = useStatsData(userId);
   const { 
     dailyProductivity, 
@@ -33,11 +34,17 @@ export const useDashboardData = () => {
   const { streakData, isLoading: streakLoading, refetch: refetchStreak } = useStreakData(userId);
   const { productivityTrend, isLoading: trendsLoading } = useProductivityTrends(userId);
   
-  // Set up realtime updates
-  useRealtimeUpdates(userId);
-
-  // Handle visibility changes to ensure data consistency
+  // Set up realtime updates only if we have a userId
   useEffect(() => {
+    if (userId) {
+      useRealtimeUpdates(userId);
+    }
+  }, [userId]);
+
+  // Handle visibility changes to ensure data consistency - only if we have a userId
+  useEffect(() => {
+    if (!userId) return;
+    
     const handleVisibilityChange = () => {
       if (document.hidden) {
         wasDocumentHidden.current = true;
@@ -55,7 +62,7 @@ export const useDashboardData = () => {
     };
   }, [userId]);
 
-  // Set up periodic data refresh
+  // Set up periodic data refresh - only if we have a userId
   useEffect(() => {
     if (!userId) return;
     
@@ -86,7 +93,16 @@ export const useDashboardData = () => {
     }
   };
   
-  // Combined data
+  // If there's no user, return mock data with no loading state
+  if (!userId) {
+    return {
+      dashboardData: mockDashboardData,
+      isLoading: false,
+      refetch: () => console.log('Demo mode - no data to refresh')
+    };
+  }
+  
+  // Combined data for authenticated users
   const dashboardData = {
     stats,
     dailyProductivity,

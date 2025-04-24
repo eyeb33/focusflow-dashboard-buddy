@@ -2,12 +2,18 @@
 import React from 'react';
 import { DashboardProvider } from '@/contexts/DashboardContext';
 import DashboardContainer from '@/components/Dashboard/DashboardContainer';
+import { Helmet } from 'react-helmet';
 
 const Dashboard = () => {
   return (
-    <DashboardProvider>
-      <DashboardContainer />
-    </DashboardProvider>
+    <>
+      <Helmet>
+        <title>Dashboard - TimeBubble</title>
+      </Helmet>
+      <DashboardProvider>
+        <DashboardContainer />
+      </DashboardProvider>
+    </>
   );
 };
 
