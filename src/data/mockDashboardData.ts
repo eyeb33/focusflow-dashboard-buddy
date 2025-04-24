@@ -83,6 +83,41 @@ export const mockDashboardData = {
   weeklyProductivity: mockWeeklyData,
   monthlyProductivity: mockMonthlyData,
   insights: mockInsights,
-  stats: mockStats,
+  stats: {
+    // Daily stats
+    totalSessions: 10,
+    totalMinutes: 250,
+    completedCycles: 2,
+    dailyAverage: 4.5,
+    currentStreak: 7,
+    bestStreak: 12,
+    weeklyChange: {
+      sessions: 15,
+      minutes: 40,
+      dailyAvg: 10,
+      isPositive: true
+    },
+    // Add weekly and monthly stats for the demo dashboard
+    weeklyStats: {
+      totalSessions: 35,
+      totalMinutes: 875,
+      dailyAverage: 5,
+      completedCycles: 8,
+      sessionsTrend: 12,
+      minutesTrend: 20
+    },
+    monthlyStats: {
+      totalSessions: 110,
+      totalMinutes: 2750,
+      dailyAverage: 3.6,
+      completedCycles: 27,
+      sessionsTrend: 5,
+      minutesTrend: 8
+    },
+    dailyStats: {
+      sessionsTrend: 15,
+      minutesTrend: 10
+    }
+  },
   productivityTrend: mockProductivityTrend
 };
