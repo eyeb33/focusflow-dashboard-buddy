@@ -33,7 +33,8 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
     sessionsUntilLongBreak, 
     currentMode, 
     currentSessionIndex, 
-    isRunning 
+    isRunning,
+    timeRemaining
   });
   
   // Check if we're in the last 10 seconds

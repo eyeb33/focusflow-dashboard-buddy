@@ -19,8 +19,14 @@ const CircularProgress = ({
   children,
   className
 }: CircularProgressProps) => {
-  // Ensure progress is between 0 and 1
-  const normalizedProgress = Math.min(Math.max(progress, 0), 1);
+  // Ensure progress is between 0 and 1 and never negative
+  const normalizedProgress = Math.min(Math.max(progress || 0, 0), 1);
+  
+  // Debug the progress value to help diagnose the issue
+  console.log(`CircularProgress for ${mode} mode with progress:`, { 
+    rawProgress: progress,
+    normalizedProgress: normalizedProgress
+  });
   
   // Calculate stroke colors based on mode
   const getStrokeColor = () => {

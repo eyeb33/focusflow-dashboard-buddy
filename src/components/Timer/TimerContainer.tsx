@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import { useTimerStats } from "@/hooks/useTimerStats";
 import { useTimerSettings } from "@/hooks/useTimerSettings";
 import { cn } from "@/lib/utils";
 import { useTimer } from '@/contexts/TimerContext';
+import { getTotalTime } from '@/utils/timerContextUtils';
 
 const TimerContainer: React.FC = () => {
   
@@ -33,6 +35,33 @@ const TimerContainer: React.FC = () => {
   const { settings } = useTimerSettings();
 
   const timerContext = useTimer();
+  
+  // Calculate the correct progress for all modes
+  const calculateCorrectProgress = () => {
+    const totalTime = getTotalTime(timerMode, settings);
+    // Ensure we have a valid time value to avoid division by zero
+    if (!totalTime) return 0;
+    
+    // Calculate progress correctly: (total - remaining) / total
+    const calculatedProgress = (totalTime - timeRemaining) / totalTime;
+    
+    // Ensure progress is between 0 and 1
+    return Math.max(0, Math.min(1, calculatedProgress));
+  };
+  
+  // Calculate correct progress for the current timer state
+  const correctProgress = calculateCorrectProgress();
+  
+  // Debug progress calculation
+  useEffect(() => {
+    console.log("Progress calculation:", {
+      timerMode,
+      timeRemaining,
+      totalTime: getTotalTime(timerMode, settings),
+      correctProgress,
+      contextProgress: progress
+    });
+  }, [timerMode, timeRemaining, settings, correctProgress, progress]);
   
   useEffect(() => {
     window.timerContext = timerContext;
@@ -108,7 +137,7 @@ const TimerContainer: React.FC = () => {
         </Badge>
         
         <CircularProgress 
-          progress={progress} 
+          progress={correctProgress} 
           mode={timerMode}
           size={260}
           className="mb-6"
