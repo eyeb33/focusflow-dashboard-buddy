@@ -42,7 +42,8 @@ const TimerContainer: React.FC = () => {
     // Ensure we have a valid time value to avoid division by zero
     if (!totalTime) return 0;
     
-    // Calculate progress correctly: (total - remaining) / total
+    // Calculate progress correctly: 1 - (remaining / total)
+    // This ensures we start at 0 and progress to 1
     const calculatedProgress = (totalTime - timeRemaining) / totalTime;
     
     // Ensure progress is between 0 and 1

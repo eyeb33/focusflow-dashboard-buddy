@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect } from 'react';
 import { TimerMode, enableRealtimeForSessionsSummary } from '@/utils/timerContextUtils';
 import { formatTime, getModeLabel } from '@/utils/timerUtils';
@@ -69,7 +70,8 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
   
-  const progress = 1 - (timeRemaining / getTotalTime());
+  // Correctly calculate progress as elapsed / total - makes the timer start at 0 and fill up
+  const progress = (getTotalTime() - timeRemaining) / getTotalTime();
   
   const getTimerModeLabel = () => getModeLabel(timerMode);
 

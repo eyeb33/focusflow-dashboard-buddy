@@ -54,7 +54,8 @@ const CircularProgress = ({
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius * (270 / 360); // 3/4 of the full circumference
   
-  // Calculate the stroke dash offset - starts empty and fills up from left to right
+  // Calculate the stroke dash offset - starts empty and fills up
+  // This is the key calculation that determines how the progress bar fills up
   const strokeDashoffset = circumference * (1 - normalizedProgress);
   
   // Reverting back to the original start angle (135 degrees in radians)
