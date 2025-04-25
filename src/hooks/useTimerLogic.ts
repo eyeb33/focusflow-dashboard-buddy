@@ -16,6 +16,7 @@ export function useTimerLogic(settings: TimerSettings) {
   const sessionStartTimeRef = useRef<string | null>(null);
   const skipTimerResetRef = useRef<boolean>(false); // Track when we should skip resetting timer
   const previousSettingsRef = useRef(settings); // Store previous settings to detect changes
+  const modeChangeInProgressRef = useRef<boolean>(false); // To prevent mode change loops
 
   // Use the smaller hooks
   const {
@@ -66,6 +67,11 @@ export function useTimerLogic(settings: TimerSettings) {
 
   // Detect settings changes and reset timer when needed
   useEffect(() => {
+    if (modeChangeInProgressRef.current) {
+      modeChangeInProgressRef.current = false;
+      return;
+    }
+    
     const hasSettingsChanged = 
       previousSettingsRef.current.workDuration !== settings.workDuration ||
       previousSettingsRef.current.breakDuration !== settings.breakDuration ||
@@ -132,15 +138,38 @@ export function useTimerLogic(settings: TimerSettings) {
     // Clear the session start time on reset
     sessionStartTimeRef.current = null;
     skipTimerResetRef.current = false; // Allow reset to happen
+    
+    // Reset completed sessions counter on manual reset
+    setCompletedSessions(0);
+    setCurrentSessionIndex(0);
+    
     baseHandleReset(timerMode, setCurrentSessionIndex);
+    
+    // Remove stored timer state
+    localStorage.removeItem('timerState');
   };
 
   const handleModeChange = (mode: TimerMode) => {
+    // Prevent mode change loops
+    if (mode === timerMode) return;
+    
+    modeChangeInProgressRef.current = true;
+    
     // Clear the session start time on mode change
     sessionStartTimeRef.current = null;
     skipTimerResetRef.current = false; // Allow reset on mode change
+    
+    // Reset completed sessions counter and session index when manually changing modes
+    if (mode === 'work') {
+      setCompletedSessions(0);
+      setCurrentSessionIndex(0);
+    }
+    
     baseHandleModeChange(timerMode, mode, setCurrentSessionIndex);
     setTimerMode(mode);
+    
+    // Clear any stored timer state
+    localStorage.removeItem('timerState');
   };
 
   // Get the current total time based on timer mode

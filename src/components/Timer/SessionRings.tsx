@@ -33,7 +33,9 @@ const SessionRings: React.FC<SessionRingsProps> = ({
   // Enable pulsing animation for the last 10 seconds
   useEffect(() => {
     const checkRemainingTime = () => {
-      const timer = window.timerContext?.timeRemaining;
+      if (!window.timerContext) return;
+      
+      const timer = window.timerContext.timeRemaining;
       if (timer !== undefined && timer <= 10 && timer > 0) {
         setIsPulsing(true);
       } else {

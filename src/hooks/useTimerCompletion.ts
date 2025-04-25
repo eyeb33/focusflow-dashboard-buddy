@@ -86,8 +86,9 @@ export function useTimerCompletion({
             sessionStartTime
           );
           
-          // Update local state
-          setCompletedSessions(prev => prev + 1);
+          // Update local state - increment completed sessions AFTER current session finishes
+          const newCompletedSessions = completedSessions + 1;
+          setCompletedSessions(newCompletedSessions);
           
           // Add the time to today's total (using settings time rather than arbitrary calculation)
           setTotalTimeToday(prev => prev + minutes);
@@ -181,7 +182,7 @@ export function useTimerCompletion({
       
     } catch (error) {
       console.error('Error handling timer completion:', error);
-      setTimerMode('work');
+      // Don't change mode on error, just stop the timer
       setIsRunning(false);
       resetTimerState();
       isTransitioningRef.current = false;
