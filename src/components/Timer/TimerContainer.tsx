@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -13,6 +12,7 @@ import { useTimerSettings } from "@/hooks/useTimerSettings";
 import { cn } from "@/lib/utils";
 import { useTimer } from '@/contexts/TimerContext';
 import { getTotalTime } from '@/utils/timerContextUtils';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 const TimerContainer: React.FC = () => {
   
@@ -36,42 +36,34 @@ const TimerContainer: React.FC = () => {
 
   const timerContext = useTimer();
   
-  // Instead of forcing a page reload, let's reset the timer state properly
   useEffect(() => {
-    // Check if this is a fresh load - timer not running and localStorage doesn't have running state
     const storedState = localStorage.getItem('timerState');
     const freshLoad = !isRunning && (!storedState || 
       (storedState && JSON.parse(storedState).isRunning === false));
       
     if (freshLoad && completedSessions > 0) {
       console.log("Fresh page load detected with completed sessions > 0, resetting timer state");
-      // Reset the session counter in localStorage without forcing page reload
       localStorage.removeItem('timerState');
-      
-      // Use the reset function instead of forcing page reload
       reset();
     }
   }, [isRunning, completedSessions, reset]);
   
-  // Debug progress and session info
   useEffect(() => {
     console.log("Timer Container State:", {
       mode: timerMode,
       isRunning,
       timeRemaining,
-      progress: progress.toFixed(4), // Show precise progress value for debugging
+      progress: progress.toFixed(4),
       index: currentSessionIndex,
       completed: completedSessions,
       total: sessionsUntilLongBreak
     });
   }, [timerMode, isRunning, timeRemaining, progress, currentSessionIndex, completedSessions, sessionsUntilLongBreak]);
   
-  // Make timerContext available for audio functions and session indicators
   useEffect(() => {
     window.timerContext = timerContext;
   }, [timerContext]);
 
-  // Define colors for each mode
   const modeColors = {
     work: {
       startPauseColor: "bg-red-500",
@@ -92,6 +84,13 @@ const TimerContainer: React.FC = () => {
 
   const currentModeColors = modeColors[timerMode];
   
+  useDocumentTitle({
+    timeRemaining,
+    timerMode,
+    isRunning,
+    formatTime
+  });
+
   return (
     <Card className="w-full max-w-md p-6 bg-white dark:bg-black backdrop-blur-sm shadow-md">
       <div className="flex items-center justify-between mb-6">
@@ -167,7 +166,6 @@ const TimerContainer: React.FC = () => {
   );
 };
 
-// Expose timerContext globally for audio functions
 declare global {
   interface Window {
     timerContext?: {
