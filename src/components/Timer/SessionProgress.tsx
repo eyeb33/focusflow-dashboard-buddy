@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from 'react';
 import { cn } from "@/lib/utils";
 import { Circle } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { TimerMode } from '@/utils/timerContextUtils';
 
 interface SessionProgressProps {
@@ -67,9 +66,9 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
     const colors = getColor(currentMode);
     
     if (currentMode === 'work') {
-      // Render focus session indicators (red circles)
+      // Render work session indicators (red circles)
       return Array.from({ length: sessionsUntilLongBreak }).map((_, index) => {
-        // A session is filled ONLY if its position is LESS than completedSessions
+        // A session is filled if its position is less than completedSessions
         const isFilled = index < completedSessions;
         
         // Is this the active position?
@@ -83,15 +82,10 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
             key={`work-${index}`}
             size={size}
             className={cn(
-              // Always use transparent fill as the default
               'text-transparent',
-              // Only apply fill if definitely completed
               isFilled ? colors.fill : '',
-              // Thicker stroke for active indicator
               isActive ? 'stroke-[2.5px]' : 'stroke-[2px]',
-              // Use the appropriate stroke color
               isActive ? colors.fill : colors.stroke,
-              // Add slow pulsing animation for the last 10 seconds
               isPulsing && isActive ? 'animate-pulse-slow' : '',
               'transition-all duration-300'
             )}
@@ -100,12 +94,11 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
       });
     } else if (currentMode === 'break') {
       // Render break indicators (green circles)
-      // We have one less break than total sessions
       const numBreaks = sessionsUntilLongBreak - 1;
       
       return Array.from({ length: numBreaks }).map((_, index) => {
-        // A break is filled ONLY if its position is LESS than completedSessions
-        const isFilled = index < completedSessions;
+        // A break is filled if previous work sessions are completed
+        const isFilled = index < (completedSessions - 1);
         
         // Is this the active position?
         const isActive = index === currentSessionIndex;
@@ -118,15 +111,10 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
             key={`break-${index}`}
             size={size}
             className={cn(
-              // Always use transparent fill as the default
               'text-transparent',
-              // Only apply fill if definitely completed
               isFilled ? colors.fill : '',
-              // Thicker stroke for active indicator
               isActive ? 'stroke-[2.5px]' : 'stroke-[2px]',
-              // Use the appropriate stroke color
               isActive ? colors.fill : colors.stroke,
-              // Add slow pulsing animation for the last 10 seconds
               isPulsing && isActive ? 'animate-pulse-slow' : '',
               'transition-all duration-300'
             )}
@@ -135,12 +123,10 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
       });
     } else if (currentMode === 'longBreak') {
       // Render long break indicator (single blue circle)
-      const size = 24;
-      
       return [
         <Circle
           key="long-break"
-          size={size}
+          size={24}
           className={cn(
             'text-transparent',
             'stroke-[2.5px]',
@@ -155,10 +141,6 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
     return [];
   };
 
-  if (sessionsUntilLongBreak <= 0) {
-    return <Skeleton className="h-4 w-full" />;
-  }
-  
   return (
     <div className={cn("flex justify-center items-center gap-2 py-3", className)}>
       <div className="flex space-x-1.5 items-center">

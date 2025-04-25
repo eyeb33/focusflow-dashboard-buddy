@@ -1,4 +1,3 @@
-
 import { useAuth } from '@/contexts/AuthContext';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { getTotalTime } from '@/utils/timerContextUtils';
@@ -66,18 +65,18 @@ export function useTimerCompletion({
       
       if (timerMode === 'work') {
         // When a work session completes:
-        // 1. Update the completed sessions counter
-        // 2. Calculate next timer mode
+        // 1. Save the session data
+        // 2. Increment completed sessions
+        // 3. Move to the next position
+        // 4. Transition to the appropriate break type
         
-        // Calculate minutes explicitly from settings (standard pomodoro time)
-        const minutes = settings.workDuration; // This is already in minutes (typically 25)
+        // Calculate minutes from settings
+        const minutes = settings.workDuration;
         
-        console.log(`Timer completed with ${minutes} minutes for work session`);
+        console.log(`Work session completed with ${minutes} minutes`);
         
-        // Track the session completion properly for the dashboard
         if (user) {
-          // Save the completed session in the database with accurate duration and start time
-          // This ensures the session is attributed to the day it started on
+          // Save the completed session with accurate duration and start time
           await saveFocusSession(
             user.id, 
             timerMode, 
@@ -86,27 +85,21 @@ export function useTimerCompletion({
             sessionStartTime
           );
           
-          // Update local state - increment completed sessions AFTER current session finishes
-          const newCompletedSessions = completedSessions + 1;
-          setCompletedSessions(newCompletedSessions);
-          
-          // Add the time to today's total (using settings time rather than arbitrary calculation)
-          setTotalTimeToday(prev => prev + minutes);
-          
-          // Update daily stats (explicitly passing minutes)
-          // We pass the start date to ensure it's attributed to the correct day
+          // Update daily stats with the completed session
           const sessionStartDate = new Date(sessionStartTime).toISOString().split('T')[0];
           await updateDailyStats(user.id, minutes, timerMode, sessionStartDate);
-        } else {
-          // Even without a user, increment the completed sessions count
-          setCompletedSessions(prev => prev + 1);
         }
+        
+        // Always increment completed sessions after a work session
+        setCompletedSessions(prev => prev + 1);
+        
+        // Add time to today's total
+        setTotalTimeToday(prev => prev + minutes);
         
         // After completing a work session, move to the next position in the cycle
         const newSessionIndex = (currentSessionIndex + 1) % settings.sessionsUntilLongBreak;
         setCurrentSessionIndex(newSessionIndex);
         
-        // Log the state transition
         console.log(`Work session completed. Moving from session ${currentSessionIndex} to ${newSessionIndex}`);
         console.log(`After completion: completed sessions=${completedSessions + 1}, currentSessionIndex=${newSessionIndex}`);
         
@@ -114,11 +107,24 @@ export function useTimerCompletion({
         sessionStartTimeRef.current = new Date().toISOString();
         
         // Determine if we should go to longBreak or regular break
-        const nextMode: TimerMode = newSessionIndex === 0 ? 'longBreak' : 'break';
+        // If we've completed all sessions in the cycle, go to long break
+        // Otherwise, go to regular break
+        const nextMode: TimerMode = 
+          completedSessions + 1 >= settings.sessionsUntilLongBreak 
+            ? 'longBreak' 
+            : 'break';
+            
         setTimerMode(nextMode);
         
         // Reset timer state to initialize the new mode's time values
         resetTimerState();
+        
+        // Give a slight delay before auto-starting to ensure UI updates
+        setTimeout(() => {
+          console.log(`Auto-starting next timer mode: ${nextMode}`);
+          setIsRunning(true);
+          isTransitioningRef.current = false;
+        }, 1000);
       } 
       else if (timerMode === 'break') {
         // Break sessions don't increment the main session counter
@@ -136,13 +142,19 @@ export function useTimerCompletion({
         // Reset the session start time for the next session
         sessionStartTimeRef.current = new Date().toISOString();
         
-        // IMPORTANT: After break, go back to work mode but keep the same currentSessionIndex
-        // This is critical for correct display of indicator circles
-        console.log(`Break session completed. Keeping session index at ${currentSessionIndex}`);
+        // After break, go back to work mode but keep the currentSessionIndex
+        console.log(`Break session completed. Session index remains at ${currentSessionIndex}`);
         setTimerMode('work');
         
         // Reset timer state to initialize the new mode's time values
         resetTimerState();
+        
+        // Give a slight delay before auto-starting to ensure UI updates
+        setTimeout(() => {
+          console.log(`Auto-starting next work session after break`);
+          setIsRunning(true);
+          isTransitioningRef.current = false;
+        }, 1000);
       } 
       else if (timerMode === 'longBreak') {
         if (user) {
@@ -158,31 +170,24 @@ export function useTimerCompletion({
         // Reset the session start time for the next session
         sessionStartTimeRef.current = new Date().toISOString();
         
-        // After a long break, we start a new cycle at position 0
         console.log('Long break completed - starting a new cycle');
         
         // Reset position to 0 for the new cycle
         setCurrentSessionIndex(0);
-        setTimerMode('work');
         
         // Reset completed sessions counter when starting a new cycle
-        setCompletedSessions(0); // Reset the count when a cycle completes
+        setCompletedSessions(0);
         
-        // Reset timer state
+        // After long break, go back to work mode
+        setTimerMode('work');
+        
+        // Reset timer state to initialize the new mode's time values
         resetTimerState();
         
-        // Exit early to prevent auto-start after long break
+        // Do NOT auto-start after a long break - wait for user action
+        setIsRunning(false);
         isTransitioningRef.current = false;
-        return;
       }
-      
-      // Give a slight delay before auto-starting to ensure UI updates and new timer is loaded
-      setTimeout(() => {
-        console.log(`Auto-starting next timer mode: ${timerMode === 'work' ? 'break' : 'work'}`);
-        setIsRunning(true);
-        isTransitioningRef.current = false;
-      }, 1500); // Use a longer delay to ensure everything is properly initialized
-      
     } catch (error) {
       console.error('Error handling timer completion:', error);
       // Don't change mode on error, just stop the timer

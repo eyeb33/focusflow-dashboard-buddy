@@ -49,18 +49,17 @@ const SessionRings: React.FC<SessionRingsProps> = ({
 
   /**
    * "Focus" (work) mode: show red rings
-   * - totalSessions red rings
-   * - filled ONLY if position < completedSessions (strictly less than)
-   * - active (currentPosition) ring is larger
+   * - Each ring represents a work session
+   * - A ring is filled if its corresponding session is completed
+   * - The current active session ring is larger
    */
   const renderWorkRings = () => {
     const elements = [];
     for (let i = 0; i < totalSessions; i++) {
-      // A session is filled ONLY if its position is LESS than completedSessions
-      // This ensures we don't fill the current session until it's completed
+      // A session is filled if it's been completed (i < completedSessions)
       const isFilled = i < completedSessions;
       
-      // The active session is the current one in progress
+      // The active session is the current one in progress (i === currentPosition)
       const isActive = i === currentPosition;
       
       elements.push(
@@ -84,22 +83,21 @@ const SessionRings: React.FC<SessionRingsProps> = ({
 
   /**
    * "Break" mode: show green rings
-   * - Correctly use currentPosition to determine active break
-   * - Break indicators correspond to work sessions (but are one fewer)
+   * - Each ring represents a break (one fewer than total work sessions)
+   * - A break ring is filled if its corresponding break is completed 
+   * - The current active break ring is larger
    */
   const renderBreakRings = () => {
+    // There's one fewer break than total sessions
     const numBreaks = totalSessions - 1;
     const elements = [];
     
-    // In break mode, the currentPosition represents the work session we just completed
-    // So the current break position is actually the same as the work session position
-    
     for (let i = 0; i < numBreaks; i++) {
-      // A break is filled if its position is strictly less than current position
-      // Current position should be active, not filled
-      const isFilled = i < currentPosition;
+      // A break is filled if the next work session has been completed
+      // This logic means we show filled circles for completed breaks
+      const isFilled = i < completedSessions - 1;
       
-      // The active break is the current one in progress
+      // The active position is the current break we're on
       const isActive = i === currentPosition;
       
       elements.push(
