@@ -69,8 +69,8 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
     if (currentMode === 'work') {
       // Render focus session indicators (red circles)
       return Array.from({ length: sessionsUntilLongBreak }).map((_, index) => {
-        // A session is filled if it's completed AND not the current active one
-        const isFilled = index < completedSessions && index !== currentSessionIndex;
+        // A session is filled ONLY if its position is LESS than completedSessions
+        const isFilled = index < completedSessions;
         
         // Is this the active position?
         const isActive = index === currentSessionIndex;
@@ -104,8 +104,8 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
       const numBreaks = sessionsUntilLongBreak - 1;
       
       return Array.from({ length: numBreaks }).map((_, index) => {
-        // A break is filled if it's completed AND not the current active one
-        const isFilled = index < completedSessions && index !== currentSessionIndex;
+        // A break is filled ONLY if its position is LESS than completedSessions
+        const isFilled = index < completedSessions;
         
         // Is this the active position?
         const isActive = index === currentSessionIndex;

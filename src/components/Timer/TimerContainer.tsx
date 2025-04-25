@@ -36,6 +36,23 @@ const TimerContainer: React.FC = () => {
 
   const timerContext = useTimer();
   
+  // CRITICAL: Reset completed sessions count on fresh page load if not running
+  useEffect(() => {
+    // Check if this is a fresh load - timer not running and localStorage doesn't have running state
+    const storedState = localStorage.getItem('timerState');
+    const freshLoad = !isRunning && (!storedState || 
+      (storedState && JSON.parse(storedState).isRunning === false));
+      
+    if (freshLoad && completedSessions > 0) {
+      console.log("Fresh page load detected, resetting completed sessions count");
+      // Reset the session counter in localStorage
+      localStorage.removeItem('timerState');
+      
+      // Force page reload to reset the timer state
+      window.location.reload();
+    }
+  }, [isRunning, completedSessions]);
+  
   // Debug progress and session info
   useEffect(() => {
     console.log("Timer Container State:", {

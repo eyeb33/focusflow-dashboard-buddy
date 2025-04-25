@@ -161,6 +161,9 @@ export function useTimerCompletion({
         setCurrentSessionIndex(0);
         setTimerMode('work');
         
+        // Reset completed sessions counter when starting a new cycle
+        setCompletedSessions(0); // Reset the count when a cycle completes
+        
         // Don't auto-start after a full cycle
         resetTimerState();
         

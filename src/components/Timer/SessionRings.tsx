@@ -15,11 +15,11 @@ const SessionRings: React.FC<SessionRingsProps> = ({
   totalSessions,
   mode,
   className,
-  currentPosition
+  currentPosition = 0
 }) => {
   // State for pulsing animation
   const [isPulsing, setIsPulsing] = useState(false);
-
+  
   // Debug logging
   useEffect(() => {
     console.log('SessionRings rendering with:', {
@@ -48,14 +48,15 @@ const SessionRings: React.FC<SessionRingsProps> = ({
   /**
    * "Focus" (work) mode: show red rings
    * - totalSessions red rings
-   * - filled if completed
+   * - filled ONLY if position < completedSessions (strictly less than)
    * - active (currentPosition) ring is larger
    */
   const renderWorkRings = () => {
     const elements = [];
     for (let i = 0; i < totalSessions; i++) {
-      // A session is filled only if it's completed AND not the current active one
-      const isFilled = i < completedSessions && i !== currentPosition;
+      // A session is filled ONLY if its position is LESS than completedSessions
+      // This ensures we don't fill the current session until it's completed
+      const isFilled = i < completedSessions;
       
       // The active session is the current one in progress
       const isActive = i === currentPosition;
@@ -82,7 +83,7 @@ const SessionRings: React.FC<SessionRingsProps> = ({
   /**
    * "Break" mode: show green rings
    * - (totalSessions - 1) green rings for short breaks
-   * - filled if break before this taken
+   * - filled ONLY if position < completedSessions (strictly less than)
    */
   const renderBreakRings = () => {
     // Number of breaks is always one less than total sessions
@@ -90,10 +91,9 @@ const SessionRings: React.FC<SessionRingsProps> = ({
     const elements = [];
     
     for (let i = 0; i < numBreaks; i++) {
-      // A break is filled if:
-      // 1. It's completed (i < completedSessions) 
-      // 2. It is NOT the current break in progress (i !== currentPosition)
-      const isFilled = i < completedSessions && i !== currentPosition;
+      // A break is filled ONLY if its position is LESS than completedSessions
+      // This ensures we don't fill the current break until it's completed
+      const isFilled = i < completedSessions;
       
       // The active break is the current one in progress
       const isActive = i === currentPosition;
