@@ -23,11 +23,14 @@ const CircularProgress = ({
   const normalizedProgress = Math.min(Math.max(progress || 0, 0), 1);
   
   useEffect(() => {
+    // Log progress value for debugging
+    console.log(`CircularProgress: mode=${mode}, progress=${progress}, normalized=${normalizedProgress}`);
+    
     // Periodic progress validation check
     if (progress < 0 || progress > 1) {
       console.warn(`CircularProgress received invalid progress value: ${progress}`);
     }
-  }, [progress]);
+  }, [progress, mode]);
   
   // Calculate stroke colors based on mode
   const getStrokeColor = () => {
@@ -55,7 +58,7 @@ const CircularProgress = ({
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius * (270 / 360); // 3/4 of the full circumference
   
-  // Calculate the stroke dash offset - starts empty and fills up
+  // Calculate the stroke dash offset - starts empty and fills up as progress increases
   const strokeDashoffset = circumference * (1 - normalizedProgress);
   
   // Start angle (135 degrees in radians)

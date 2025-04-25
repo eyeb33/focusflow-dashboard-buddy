@@ -59,7 +59,7 @@ const TimerContainer: React.FC = () => {
       mode: timerMode,
       isRunning,
       timeRemaining,
-      progress,
+      progress: progress.toFixed(4), // Show precise progress value for debugging
       index: currentSessionIndex,
       completed: completedSessions,
       total: sessionsUntilLongBreak

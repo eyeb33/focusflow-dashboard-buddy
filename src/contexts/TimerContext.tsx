@@ -73,7 +73,13 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Calculate progress as elapsed / total time
   // This ensures the progress starts at 0 and fills up to 1
   const totalTime = getTotalTime();
-  const progress = totalTime > 0 ? (totalTime - timeRemaining) / totalTime : 0;
+  const elapsedTime = totalTime - timeRemaining;
+  const progress = totalTime > 0 ? elapsedTime / totalTime : 0;
+  
+  // Debug progress calculation
+  useEffect(() => {
+    console.log(`Progress calculation: ${timerMode} mode - total=${totalTime}, remaining=${timeRemaining}, elapsed=${elapsedTime}, progress=${progress.toFixed(4)}`);
+  }, [timeRemaining, totalTime, progress, timerMode]);
   
   const getTimerModeLabel = () => getModeLabel(timerMode);
 
