@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStatsData } from "@/hooks/dashboard/useStatsData";
 import { useProductivityData } from "@/hooks/dashboard/useProductivityData";
@@ -16,7 +16,8 @@ export const useDashboardData = () => {
   // Track tab visibility changes
   const wasDocumentHidden = useRef<boolean>(false);
   const lastRefreshTime = useRef<number>(Date.now());
-  const refreshInterval = 30 * 1000; // 30 seconds - more frequent updates
+  // Increase refresh interval to reduce database calls
+  const refreshInterval = 60 * 1000; // 60 seconds - less frequent updates
   
   // Use current date for consistency
   const today = new Date().toISOString().split('T')[0];
@@ -35,8 +36,20 @@ export const useDashboardData = () => {
   const { productivityTrend, isLoading: trendsLoading } = useProductivityTrends(userId);
   
   // Set up realtime updates only if we have a userId
-  // Use the hook properly within the component
   useRealtimeUpdates(userId);
+  
+  // Create a memoized refetch function to avoid unnecessary re-renders
+  const refetchData = useCallback(() => {
+    if (userId) {
+      console.log('Refreshing all dashboard data');
+      refetchStats();
+      refetchProductivity();
+      refetchStreak();
+      
+      // Update refresh time
+      lastRefreshTime.current = Date.now();
+    }
+  }, [userId, refetchStats, refetchProductivity, refetchStreak]);
   
   // Handle visibility changes to ensure data consistency - only if we have a userId
   useEffect(() => {
@@ -46,9 +59,11 @@ export const useDashboardData = () => {
       if (document.hidden) {
         wasDocumentHidden.current = true;
       } else if (wasDocumentHidden.current) {
-        // Always refetch data when returning to the page for consistency
-        refetchData();
-        lastRefreshTime.current = Date.now();
+        // Always check if enough time has passed since last refresh
+        const now = Date.now();
+        if (now - lastRefreshTime.current >= refreshInterval) {
+          refetchData();
+        }
         wasDocumentHidden.current = false;
       }
     };
@@ -57,7 +72,7 @@ export const useDashboardData = () => {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [userId]);
+  }, [userId, refetchData]);
 
   // Set up periodic data refresh - only if we have a userId
   useEffect(() => {
@@ -66,29 +81,19 @@ export const useDashboardData = () => {
     // Initial data fetch
     refetchData();
     
-    // Refresh data more frequently when the dashboard is visible
+    // Refresh data periodically when the dashboard is visible
     const intervalId = setInterval(() => {
       if (!document.hidden) {
         const now = Date.now();
         if (now - lastRefreshTime.current >= refreshInterval) {
           console.log('Periodic dashboard refresh triggered');
           refetchData();
-          lastRefreshTime.current = now;
         }
       }
-    }, 5000); // Check every 5 seconds, refresh after the interval
+    }, 10000); // Check every 10 seconds, but only refresh after the interval
     
     return () => clearInterval(intervalId);
-  }, [userId]);
-
-  const refetchData = () => {
-    if (userId) {
-      console.log('Refreshing all dashboard data');
-      refetchStats();
-      refetchProductivity();
-      refetchStreak();
-    }
-  };
+  }, [userId, refetchData]);
   
   // If there's no user, return mock data with no loading state
   if (!userId) {

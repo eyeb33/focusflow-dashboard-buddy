@@ -11,6 +11,7 @@ import { Settings } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { useTimer } from "@/contexts/TimerContext";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/components/ui/use-toast";
 
 interface TimerSettingsProps {
   className?: string;
@@ -19,8 +20,11 @@ interface TimerSettingsProps {
 const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
   const {
     settings,
-    updateSettings
+    updateSettings,
+    timerMode
   } = useTimer();
+  
+  const { toast } = useToast();
 
   const { 
     workDuration, 
@@ -29,20 +33,20 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
     sessionsUntilLongBreak 
   } = settings;
 
-  const updateWorkDuration = (minutes: number) => {
-    updateSettings({ workDuration: minutes });
-  };
-  
-  const updateBreakDuration = (minutes: number) => {
-    updateSettings({ breakDuration: minutes });
-  };
-  
-  const updateLongBreakDuration = (minutes: number) => {
-    updateSettings({ longBreakDuration: minutes });
-  };
-  
-  const updateSessionsUntilLongBreak = (count: number) => {
-    updateSettings({ sessionsUntilLongBreak: count });
+  const handleSettingsUpdate = (settingsUpdate: Partial<typeof settings>) => {
+    // Apply the settings update
+    updateSettings(settingsUpdate);
+    
+    // Show a toast confirmation
+    toast({
+      title: "Settings updated",
+      description: "Your timer settings have been saved",
+      duration: 2000,
+    });
+    
+    // Save settings to localStorage for persistence across sessions
+    const updatedSettings = { ...settings, ...settingsUpdate };
+    localStorage.setItem('timerSettings', JSON.stringify(updatedSettings));
   };
 
   return (
@@ -67,7 +71,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
               max={60}
               step={5}
               value={[workDuration]}
-              onValueChange={(value) => updateWorkDuration(value[0])}
+              onValueChange={(value) => handleSettingsUpdate({ workDuration: value[0] })}
               className="[&_[role=slider]]:bg-red-500 [&_.SliderRange]:bg-red-500"
             />
           </div>
@@ -83,7 +87,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
               max={15}
               step={1}
               value={[breakDuration]}
-              onValueChange={(value) => updateBreakDuration(value[0])}
+              onValueChange={(value) => handleSettingsUpdate({ breakDuration: value[0] })}
               className="[&_[role=slider]]:bg-green-500 [&_.SliderRange]:bg-green-500"
             />
           </div>
@@ -99,7 +103,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
               max={30}
               step={5}
               value={[longBreakDuration]}
-              onValueChange={(value) => updateLongBreakDuration(value[0])}
+              onValueChange={(value) => handleSettingsUpdate({ longBreakDuration: value[0] })}
               className="[&_[role=slider]]:bg-blue-500 [&_.SliderRange]:bg-blue-500"
             />
           </div>
@@ -115,7 +119,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
               max={8}
               step={1}
               value={[sessionsUntilLongBreak]}
-              onValueChange={(value) => updateSessionsUntilLongBreak(value[0])}
+              onValueChange={(value) => handleSettingsUpdate({ sessionsUntilLongBreak: value[0] })}
               className="[&_[role=slider]]:bg-primary [&_.SliderRange]:bg-primary"
             />
           </div>

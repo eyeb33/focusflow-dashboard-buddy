@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { cn } from "@/lib/utils";
 
 interface CircularProgressProps {
@@ -14,7 +14,7 @@ interface CircularProgressProps {
 const CircularProgress = ({
   progress,
   size = 300,
-  strokeWidth = 18, // Keeping the chunkier stroke width
+  strokeWidth = 18,
   mode = 'work',
   children,
   className
@@ -22,11 +22,12 @@ const CircularProgress = ({
   // Ensure progress is between 0 and 1 and never negative
   const normalizedProgress = Math.min(Math.max(progress || 0, 0), 1);
   
-  // Debug the progress value to help diagnose the issue
-  console.log(`CircularProgress for ${mode} mode with progress:`, { 
-    rawProgress: progress,
-    normalizedProgress: normalizedProgress
-  });
+  useEffect(() => {
+    // Periodic progress validation check
+    if (progress < 0 || progress > 1) {
+      console.warn(`CircularProgress received invalid progress value: ${progress}`);
+    }
+  }, [progress]);
   
   // Calculate stroke colors based on mode
   const getStrokeColor = () => {
@@ -58,7 +59,7 @@ const CircularProgress = ({
   // This is the key calculation that determines how the progress bar fills up
   const strokeDashoffset = circumference * (1 - normalizedProgress);
   
-  // Reverting back to the original start angle (135 degrees in radians)
+  // Start angle (135 degrees in radians)
   const startAngle = 135 * (Math.PI / 180);
   
   // Calculate path for the 3/4 arc
@@ -90,6 +91,8 @@ const CircularProgress = ({
         width={size}
         height={size}
         viewBox={`0 0 ${size} ${size}`}
+        aria-label={`${Math.round(normalizedProgress * 100)}% complete`}
+        role="progressbar"
       >
         {/* Background arc */}
         <path

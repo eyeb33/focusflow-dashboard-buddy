@@ -53,12 +53,12 @@ export function useTimerTickLogic({
         const expectedElapsed = 1000;
         const actualElapsed = now - lastTickTimeRef.current;
         
+        // Calculate adjustment if timer drift occurs (more than 100ms off)
         const adjustment = Math.max(0, Math.floor((actualElapsed - expectedElapsed) / 1000));
 
         setTimeRemaining(prevTime => {
           // Always store the current time for pause state reference
           currentTimeRef.current = prevTime;
-          console.log("Timer tick - Current time:", prevTime);
           
           if (prevTime <= 1) {
             if (timerRef.current) {
@@ -70,13 +70,13 @@ export function useTimerTickLogic({
 
           const secondsToSubtract = 1 + adjustment;
           const newTime = Math.max(0, prevTime - secondsToSubtract);
-          console.log("Timer tick - New time:", newTime);
 
           const totalTime = getTotalTime();
           const elapsedSeconds = totalTime - newTime;
           const newFullMinutes = Math.floor(elapsedSeconds / 60);
           const prevFullMinutes = lastRecordedFullMinutesRef.current;
 
+          // Save partial session at minute boundaries
           if (user && timerMode === 'work' && newFullMinutes > prevFullMinutes) {
             console.log(`Completed a new minute: ${newFullMinutes} minutes`);
             const startDate = sessionStartTimeRef.current
@@ -99,6 +99,7 @@ export function useTimerTickLogic({
             });
           }
 
+          // Update timer state in localStorage (for tab switching/visibility)
           const timerState = {
             isRunning: true,
             timerMode,
@@ -122,13 +123,13 @@ export function useTimerTickLogic({
         });
       }, 1000);
     } else if (!isRunning) {
-      // CRITICAL FIX: When pausing, preserve the exact current time without modifications
+      // When pausing, preserve the exact current time
       console.log("Timer paused - Preserving exact current time:", timeRemaining);
       
       const timerState = {
         isRunning: false,
         timerMode,
-        timeRemaining: timeRemaining, // Use the current timeRemaining directly
+        timeRemaining: timeRemaining,
         totalTime: getTotalTime(),
         timestamp: Date.now(),
         sessionStartTime: sessionStartTimeRef.current
@@ -136,9 +137,6 @@ export function useTimerTickLogic({
       
       console.log("Saving paused timer state with exact time:", timerState);
       localStorage.setItem('timerState', JSON.stringify(timerState));
-      
-      // CRITICAL FIX: Don't call setTimeRemaining here - it will be handled by the useEffect in useTimerLogic
-      // that watches for changes to settings and mode, but ONLY when not running
     }
 
     return () => {
@@ -157,10 +155,6 @@ export function useTimerTickLogic({
     lastTickTimeRef,
     sessionStartTimeRef
   ]);
-
-  // CRITICAL: timeRemaining is intentionally excluded from the dependency array
-  // to prevent re-runs of the effect when only the time changes
-  // The setTimeRemaining function handles time updates inside the interval
 
   return timerRef;
 }

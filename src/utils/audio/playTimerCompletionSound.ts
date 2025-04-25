@@ -1,6 +1,9 @@
 
+import { getAudioContext, playSound } from './initAudioContext';
+
 /**
  * Play a completion sound for a given mode using cached MP3s.
+ * Falls back to oscillator if MP3 files can't be played.
  */
 
 const modeToMp3: Record<'work' | 'break' | 'longBreak', string> = {
@@ -9,7 +12,13 @@ const modeToMp3: Record<'work' | 'break' | 'longBreak', string> = {
   longBreak: '/sounds/03_gong.mp3',
 };
 
-// Optionally cache HTMLAudioElements for instant playback
+const modeToFrequency: Record<'work' | 'break' | 'longBreak', number> = {
+  work: 440,  // A4 note
+  break: 523, // C5 note
+  longBreak: 329, // E4 note
+};
+
+// Cache HTMLAudioElements for instant playback
 const audioCache: Partial<Record<'work' | 'break' | 'longBreak', HTMLAudioElement>> = {};
 
 export const playTimerCompletionSound = async (
@@ -17,6 +26,7 @@ export const playTimerCompletionSound = async (
 ): Promise<void> => {
   const src = modeToMp3[mode];
   if (!src) return;
+  
   try {
     let audio = audioCache[mode];
     if (!audio) {
@@ -27,9 +37,25 @@ export const playTimerCompletionSound = async (
       audio.pause();
       audio.currentTime = 0;
     }
-    await audio.play();
+    
+    // Try to play using HTMLAudioElement first
+    const playPromise = audio.play();
+    
+    // Handle promise rejection (browser policies may block autoplay)
+    await playPromise.catch(error => {
+      console.warn(`[AudioUtils] Failed to play MP3 sound: ${error.message}. Falling back to oscillator.`);
+      
+      // Use oscillator as fallback with mode-specific frequency
+      const frequency = modeToFrequency[mode];
+      const duration = mode === 'longBreak' ? 1.0 : 0.7;
+      playSound(frequency, duration);
+    });
+    
+    console.log(`[AudioUtils] Successfully played sound for ${mode} mode`);
   } catch (error) {
-    console.error(`[audioUtils] Failed to play sound for mode "${mode}":`, error);
-    // The oscillator fallback code is omitted for simplicity. Re-add if needed.
+    console.error(`[AudioUtils] Failed to play sound for mode "${mode}":`, error);
+    
+    // Final fallback - use oscillator with default parameters
+    playSound(modeToFrequency[mode] || 440, 0.5);
   }
 };
