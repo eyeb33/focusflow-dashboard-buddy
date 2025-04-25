@@ -36,21 +36,20 @@ const TimerContainer: React.FC = () => {
 
   const timerContext = useTimer();
   
-  // Use the progress directly from the timer context to ensure consistency
-  const correctProgress = timerContext.progress;
-  
-  // Debug progress calculation
+  // Debug progress and session info
   useEffect(() => {
-    console.log("Timer Container Progress:", {
-      timerMode,
+    console.log("Timer Container State:", {
+      mode: timerMode,
+      isRunning,
       timeRemaining,
-      totalTime: getTotalTime(timerMode, settings),
-      correctProgress,
-      progress
+      progress,
+      index: currentSessionIndex,
+      completed: completedSessions,
+      total: sessionsUntilLongBreak
     });
-  }, [timerMode, timeRemaining, settings, correctProgress, progress]);
+  }, [timerMode, isRunning, timeRemaining, progress, currentSessionIndex, completedSessions, sessionsUntilLongBreak]);
   
-  // Make timerContext available for audio functions
+  // Make timerContext available for audio functions and session indicators
   useEffect(() => {
     window.timerContext = timerContext;
   }, [timerContext]);
@@ -75,16 +74,6 @@ const TimerContainer: React.FC = () => {
   };
 
   const currentModeColors = modeColors[timerMode];
-
-  // Debug logging for session indicators
-  useEffect(() => {
-    console.log(`TimerContainer session state:`, {
-      mode: timerMode,
-      index: currentSessionIndex,
-      completed: completedSessions, 
-      total: sessionsUntilLongBreak
-    });
-  }, [timerMode, currentSessionIndex, completedSessions, sessionsUntilLongBreak]);
   
   return (
     <Card className="w-full max-w-md p-6 bg-white dark:bg-black backdrop-blur-sm shadow-md">
@@ -125,7 +114,7 @@ const TimerContainer: React.FC = () => {
         </Badge>
         
         <CircularProgress 
-          progress={correctProgress} 
+          progress={progress} 
           mode={timerMode}
           size={260}
           className="mb-6"

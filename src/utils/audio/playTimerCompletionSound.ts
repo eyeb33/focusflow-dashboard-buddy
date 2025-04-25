@@ -21,11 +21,24 @@ const modeToFrequency: Record<'work' | 'break' | 'longBreak', number> = {
 // Cache HTMLAudioElements for instant playback
 const audioCache: Partial<Record<'work' | 'break' | 'longBreak', HTMLAudioElement>> = {};
 
+// Preload audio files
+const preloadAudioFiles = () => {
+  Object.entries(modeToMp3).forEach(([mode, src]) => {
+    if (!audioCache[mode as keyof typeof modeToMp3]) {
+      const audio = new Audio(src);
+      audio.preload = 'auto';
+      audioCache[mode as keyof typeof modeToMp3] = audio;
+      console.log(`[AudioUtils] Preloaded sound for ${mode} mode`);
+    }
+  });
+};
+
 // Initialize audio context early to improve chances of working without user interaction
 document.addEventListener('DOMContentLoaded', () => {
   // Try to initialize audio context early
   try {
     getAudioContext();
+    preloadAudioFiles();
   } catch (e) {
     console.log('[AudioUtils] Early audio context initialization failed, will try again on user interaction');
   }
@@ -35,6 +48,17 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('click', () => {
   // Initialize audio context on user interaction
   getAudioContext();
+  preloadAudioFiles();
+  
+  // Test play a silent sound to enable audio
+  const audio = new Audio();
+  audio.volume = 0.01; // Very quiet
+  const playPromise = audio.play();
+  if (playPromise) {
+    playPromise.catch(() => {
+      // Silent catch - this is just to enable audio
+    });
+  }
 }, { once: true });
 
 export const playTimerCompletionSound = async (
@@ -62,6 +86,7 @@ export const playTimerCompletionSound = async (
       audio.preload = 'auto';
       audioCache[mode] = audio;
     } else {
+      // Reset the audio element for replay
       audio.pause();
       audio.currentTime = 0;
     }
@@ -70,6 +95,9 @@ export const playTimerCompletionSound = async (
     
     // Try to play using HTMLAudioElement first
     try {
+      // Set volume to make sure it's audible
+      audio.volume = 1.0;
+      
       const playPromise = audio.play();
       
       // Handle promise rejection (browser policies may block autoplay)

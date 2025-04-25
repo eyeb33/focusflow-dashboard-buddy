@@ -20,20 +20,6 @@ const SessionRings: React.FC<SessionRingsProps> = ({
   // State for pulsing animation
   const [isPulsing, setIsPulsing] = useState(false);
 
-  // Enable pulsing animation for the last 10 seconds
-  useEffect(() => {
-    const checkRemainingTime = () => {
-      const timer = window.timerContext?.timeRemaining;
-      if (timer !== undefined && timer <= 10) {
-        setIsPulsing(true);
-      } else {
-        setIsPulsing(false);
-      }
-    };
-    const intervalId = setInterval(checkRemainingTime, 500);
-    return () => clearInterval(intervalId);
-  }, []);
-
   // Debug logging
   useEffect(() => {
     console.log('SessionRings rendering with:', {
@@ -44,8 +30,23 @@ const SessionRings: React.FC<SessionRingsProps> = ({
     });
   }, [mode, completedSessions, totalSessions, currentPosition]);
 
+  // Enable pulsing animation for the last 10 seconds
+  useEffect(() => {
+    const checkRemainingTime = () => {
+      const timer = window.timerContext?.timeRemaining;
+      if (timer !== undefined && timer <= 10 && timer > 0) {
+        setIsPulsing(true);
+      } else {
+        setIsPulsing(false);
+      }
+    };
+    
+    const intervalId = setInterval(checkRemainingTime, 500);
+    return () => clearInterval(intervalId);
+  }, []);
+
   /**
-   * "Focus" (work) mode: show only red rings
+   * "Focus" (work) mode: show red rings
    * - totalSessions red rings
    * - filled if completed
    * - active (currentPosition) ring is larger
@@ -53,9 +54,7 @@ const SessionRings: React.FC<SessionRingsProps> = ({
   const renderWorkRings = () => {
     const elements = [];
     for (let i = 0; i < totalSessions; i++) {
-      // A session is filled if:
-      // 1. It's completed (index < completedSessions)
-      // 2. It is NOT the current session in progress (i !== currentPosition)
+      // A session is filled only if it's completed AND not the current active one
       const isFilled = i < completedSessions && i !== currentPosition;
       
       // The active session is the current one in progress
@@ -65,7 +64,7 @@ const SessionRings: React.FC<SessionRingsProps> = ({
         <div
           key={`work-${i}`}
           className={cn(
-            "rounded-full transition-colors duration-300 flex-shrink-0",
+            "rounded-full transition-all duration-300 flex-shrink-0",
             isActive ? "w-5 h-5" : "w-4 h-4",
             isPulsing && isActive ? "animate-pulse-slow" : "",
             isFilled ? "bg-red-500" : "border-2 border-red-500"
@@ -81,32 +80,29 @@ const SessionRings: React.FC<SessionRingsProps> = ({
   };
 
   /**
-   * "Break" mode: show only green rings
-   * - (totalSessions - 1) green rings, one after each work except the last
+   * "Break" mode: show green rings
+   * - (totalSessions - 1) green rings for short breaks
    * - filled if break before this taken
    */
   const renderBreakRings = () => {
+    // Number of breaks is always one less than total sessions
     const numBreaks = totalSessions - 1;
     const elements = [];
     
-    // Determine active break index
-    // For break mode, we need to show the rings differently
-    // The active break is the one currently in progress
-    // Default to -1 if no active position (for initial display)
-    const activeIdx = currentPosition !== undefined ? currentPosition : -1;
-    
     for (let i = 0; i < numBreaks; i++) {
       // A break is filled if:
-      // 1. It's completed (i < completedSessions - 1)
-      // 2. It is NOT the current break in progress (i !== activeIdx)
-      const isFilled = i < completedSessions && i !== activeIdx;
-      const isActive = i === activeIdx;
+      // 1. It's completed (i < completedSessions) 
+      // 2. It is NOT the current break in progress (i !== currentPosition)
+      const isFilled = i < completedSessions && i !== currentPosition;
+      
+      // The active break is the current one in progress
+      const isActive = i === currentPosition;
       
       elements.push(
         <div
           key={`break-${i}`}
           className={cn(
-            "rounded-full transition-colors duration-300 flex-shrink-0",
+            "rounded-full transition-all duration-300 flex-shrink-0",
             isActive ? "w-5 h-5" : "w-4 h-4",
             isPulsing && isActive ? "animate-pulse-slow" : "",
             isFilled ? "bg-green-500" : "border-2 border-green-500"
@@ -114,6 +110,7 @@ const SessionRings: React.FC<SessionRingsProps> = ({
         ></div>
       );
     }
+    
     return (
       <div className="flex justify-center items-center gap-2">
         {elements}

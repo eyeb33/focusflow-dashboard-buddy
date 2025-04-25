@@ -56,7 +56,6 @@ const CircularProgress = ({
   const circumference = 2 * Math.PI * radius * (270 / 360); // 3/4 of the full circumference
   
   // Calculate the stroke dash offset - starts empty and fills up
-  // This is the key calculation that determines how the progress bar fills up
   const strokeDashoffset = circumference * (1 - normalizedProgress);
   
   // Start angle (135 degrees in radians)
@@ -103,18 +102,17 @@ const CircularProgress = ({
           strokeLinecap="round"
         />
         
-        {/* Progress arc - only visible when progress > 0 */}
-        {normalizedProgress > 0 && (
-          <path
-            d={getArcPath(radius)}
-            fill="transparent"
-            stroke={colors.fg}
-            strokeWidth={strokeWidth}
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-          />
-        )}
+        {/* Progress arc - visible based on progress */}
+        <path
+          d={getArcPath(radius)}
+          fill="transparent"
+          stroke={colors.fg}
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          style={{ transition: 'stroke-dashoffset 0.3s ease' }}
+        />
       </svg>
       
       <div className="absolute inset-0 flex items-center justify-center">

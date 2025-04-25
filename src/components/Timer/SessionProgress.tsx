@@ -62,42 +62,97 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
     }
   };
   
-  // Render indicator circles for focus sessions only
+  // Render indicator circles
   const renderIndicators = () => {
     const colors = getColor(currentMode);
     
-    return Array.from({ length: sessionsUntilLongBreak }).map((_, index) => {
-      // A session is filled if:
-      // 1. It's completed (index < completedSessions)
-      // 2. It is NOT the current session in progress (index !== currentSessionIndex)
-      const isCompleted = index < completedSessions && index !== currentSessionIndex;
+    if (currentMode === 'work') {
+      // Render focus session indicators (red circles)
+      return Array.from({ length: sessionsUntilLongBreak }).map((_, index) => {
+        // A session is filled if it's completed AND not the current active one
+        const isFilled = index < completedSessions && index !== currentSessionIndex;
+        
+        // Is this the active position?
+        const isActive = index === currentSessionIndex;
+        
+        // Size the active indicator slightly larger
+        const size = isActive ? 20 : 16;
+        
+        return (
+          <Circle
+            key={`work-${index}`}
+            size={size}
+            className={cn(
+              // Always use transparent fill as the default
+              'text-transparent',
+              // Only apply fill if definitely completed
+              isFilled ? colors.fill : '',
+              // Thicker stroke for active indicator
+              isActive ? 'stroke-[2.5px]' : 'stroke-[2px]',
+              // Use the appropriate stroke color
+              isActive ? colors.fill : colors.stroke,
+              // Add slow pulsing animation for the last 10 seconds
+              isPulsing && isActive ? 'animate-pulse-slow' : '',
+              'transition-all duration-300'
+            )}
+          />
+        );
+      });
+    } else if (currentMode === 'break') {
+      // Render break indicators (green circles)
+      // We have one less break than total sessions
+      const numBreaks = sessionsUntilLongBreak - 1;
       
-      // Is this the active position?
-      const isActive = index === currentSessionIndex;
+      return Array.from({ length: numBreaks }).map((_, index) => {
+        // A break is filled if it's completed AND not the current active one
+        const isFilled = index < completedSessions && index !== currentSessionIndex;
+        
+        // Is this the active position?
+        const isActive = index === currentSessionIndex;
+        
+        // Size the active indicator slightly larger
+        const size = isActive ? 20 : 16;
+        
+        return (
+          <Circle
+            key={`break-${index}`}
+            size={size}
+            className={cn(
+              // Always use transparent fill as the default
+              'text-transparent',
+              // Only apply fill if definitely completed
+              isFilled ? colors.fill : '',
+              // Thicker stroke for active indicator
+              isActive ? 'stroke-[2.5px]' : 'stroke-[2px]',
+              // Use the appropriate stroke color
+              isActive ? colors.fill : colors.stroke,
+              // Add slow pulsing animation for the last 10 seconds
+              isPulsing && isActive ? 'animate-pulse-slow' : '',
+              'transition-all duration-300'
+            )}
+          />
+        );
+      });
+    } else if (currentMode === 'longBreak') {
+      // Render long break indicator (single blue circle)
+      const size = 24;
       
-      // Size the active indicator slightly larger
-      const size = isActive ? 20 : 16;
-      
-      return (
+      return [
         <Circle
-          key={`${currentMode}-${index}`}
+          key="long-break"
           size={size}
           className={cn(
-            // Always use transparent fill as the default
             'text-transparent',
-            // Only apply fill if definitely completed
-            isCompleted ? colors.fill : '',
-            // Thicker stroke for active indicator
-            isActive ? 'stroke-[2.5px]' : 'stroke-[2px]',
-            // Use the appropriate stroke color
-            isActive ? colors.fill : colors.stroke,
-            // Add slow pulsing animation for the last 10 seconds
-            isPulsing && isActive ? 'animate-pulse-slow' : '',
+            'stroke-[2.5px]',
+            colors.fill,
+            isPulsing ? 'animate-pulse-slow' : '',
             'transition-all duration-300'
           )}
         />
-      );
-    });
+      ];
+    }
+    
+    return [];
   };
 
   if (sessionsUntilLongBreak <= 0) {
