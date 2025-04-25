@@ -34,7 +34,7 @@ const defaultSettings = {
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
 
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Use the settings hook
+  // Use the settings hook first
   const { settings, updateSettings } = useTimerSettings();
   
   // Use the timer logic hook which contains all the core functionality
@@ -74,7 +74,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // This ensures the progress starts at 0 and fills up to 1
   const totalTime = getTotalTime();
   const elapsedTime = totalTime - timeRemaining;
-  const progress = totalTime > 0 ? elapsedTime / totalTime : 0;
+  const progress = totalTime > 0 ? Math.max(0, Math.min(1, elapsedTime / totalTime)) : 0;
   
   // Debug progress calculation
   useEffect(() => {

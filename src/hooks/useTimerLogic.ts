@@ -33,15 +33,6 @@ export function useTimerLogic(settings: TimerSettings) {
   } = useSessionTracking();
 
   const {
-    lastRecordedFullMinutesRef,
-    handleStart: baseHandleStart,
-    handlePause: baseHandlePause,
-    handleReset: baseHandleReset,
-    handleModeChange: baseHandleModeChange,
-    resetTimerState
-  } = useTimerControlsLogic(settings);
-
-  const {
     completedSessions,
     setCompletedSessions,
     totalTimeToday,
@@ -50,6 +41,34 @@ export function useTimerLogic(settings: TimerSettings) {
     setCurrentSessionIndex
   } = useTimerStatsLogic();
 
+  const {
+    lastRecordedFullMinutesRef,
+    handleStart: baseHandleStart,
+    handlePause: baseHandlePause,
+    handleReset: baseHandleReset,
+    handleModeChange: baseHandleModeChange,
+    resetTimerState
+  } = useTimerControlsLogic(settings);
+
+  // Must create timerStateRef before passing to other hooks
+  const timerStateRef = useRef({
+    isRunning,
+    timerMode,
+    timeRemaining
+  });
+
+  // Keep the ref updated with current state
+  useEffect(() => {
+    timerStateRef.current = {
+      isRunning,
+      timerMode,
+      timeRemaining
+    };
+  }, [isRunning, timerMode, timeRemaining]);
+
+  const lastTickTimeRef = useRef<number>(Date.now());
+
+  // Initialize timer completion hook
   const {
     handleTimerComplete
   } = useTimerCompletion({
@@ -65,6 +84,7 @@ export function useTimerLogic(settings: TimerSettings) {
     resetTimerState
   });
 
+  // Initialize other hooks after core state and refs are defined
   useTimerAudio();
 
   useTimerSettingsSync({
@@ -86,22 +106,6 @@ export function useTimerLogic(settings: TimerSettings) {
     sessionStartTimeRef,
     setTimerMode
   });
-
-  const timerStateRef = useRef({
-    isRunning,
-    timerMode,
-    timeRemaining
-  });
-
-  useEffect(() => {
-    timerStateRef.current = {
-      isRunning,
-      timerMode,
-      timeRemaining
-    };
-  }, [isRunning, timerMode, timeRemaining]);
-
-  const lastTickTimeRef = useRef<number>(Date.now());
 
   useTimerVisibilitySync({
     isRunning,
@@ -125,6 +129,7 @@ export function useTimerLogic(settings: TimerSettings) {
     sessionStartTimeRef
   });
 
+  // Wrapper functions for timer controls
   const handleStart = () => {
     sessionStartTimeRef.current = new Date().toISOString();
     baseHandleStart(timerMode);
