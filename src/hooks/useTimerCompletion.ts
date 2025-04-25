@@ -97,6 +97,9 @@ export function useTimerCompletion({
           // We pass the start date to ensure it's attributed to the correct day
           const sessionStartDate = new Date(sessionStartTime).toISOString().split('T')[0];
           await updateDailyStats(user.id, minutes, timerMode, sessionStartDate);
+        } else {
+          // Even without a user, increment the completed sessions count
+          setCompletedSessions(prev => prev + 1);
         }
         
         // After completing a work session, move to the next position in the cycle
@@ -165,7 +168,7 @@ export function useTimerCompletion({
         // Reset completed sessions counter when starting a new cycle
         setCompletedSessions(0); // Reset the count when a cycle completes
         
-        // Don't auto-start after a full cycle
+        // Reset timer state
         resetTimerState();
         
         // Exit early to prevent auto-start after long break

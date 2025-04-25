@@ -43,4 +43,3 @@ export const useDocumentTitle = ({
     };
   }, [timeRemaining, timerMode, isRunning, formatTime]);
 };
-

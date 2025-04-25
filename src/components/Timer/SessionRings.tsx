@@ -84,18 +84,20 @@ const SessionRings: React.FC<SessionRingsProps> = ({
 
   /**
    * "Break" mode: show green rings
-   * - (totalSessions - 1) green rings for short breaks
-   * - filled ONLY if position < completedSessions (strictly less than)
+   * - Correctly use currentPosition to determine active break
+   * - Break indicators correspond to work sessions (but are one fewer)
    */
   const renderBreakRings = () => {
-    // Number of breaks is always one less than total sessions
     const numBreaks = totalSessions - 1;
     const elements = [];
     
+    // In break mode, the currentPosition represents the work session we just completed
+    // So the current break position is actually the same as the work session position
+    
     for (let i = 0; i < numBreaks; i++) {
-      // A break is filled ONLY if its position is LESS than completedSessions
-      // This ensures we don't fill the current break until it's completed
-      const isFilled = i < completedSessions;
+      // A break is filled if its position is strictly less than current position
+      // Current position should be active, not filled
+      const isFilled = i < currentPosition;
       
       // The active break is the current one in progress
       const isActive = i === currentPosition;
