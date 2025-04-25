@@ -1,3 +1,4 @@
+
 import { useRef, useState, useEffect } from 'react';
 import { TimerMode, getTotalTime } from '@/utils/timerContextUtils';
 import { TimerSettings } from './useTimerSettings';
@@ -13,9 +14,18 @@ import { useSessionTracking } from './useSessionTracking';
 import { useTimerSettingsSync } from './useTimerSettingsSync';
 
 export function useTimerLogic(settings: TimerSettings) {
+  // Initialize core state first
   const [timerMode, setTimerMode] = useState<TimerMode>('work');
+  
+  // Initialize session tracking refs
+  const {
+    sessionStartTimeRef,
+    skipTimerResetRef,
+    previousSettingsRef,
+    modeChangeInProgressRef
+  } = useSessionTracking();
 
-  // Use the smaller hooks
+  // Initialize timer state
   const {
     isRunning,
     setIsRunning,
@@ -25,13 +35,7 @@ export function useTimerLogic(settings: TimerSettings) {
     setAutoStart
   } = useTimerState(settings);
 
-  const {
-    sessionStartTimeRef,
-    skipTimerResetRef,
-    previousSettingsRef,
-    modeChangeInProgressRef
-  } = useSessionTracking();
-
+  // Initialize stats tracking
   const {
     completedSessions,
     setCompletedSessions,
@@ -41,6 +45,7 @@ export function useTimerLogic(settings: TimerSettings) {
     setCurrentSessionIndex
   } = useTimerStatsLogic();
 
+  // Initialize timer controls logic
   const {
     lastRecordedFullMinutesRef,
     handleStart: baseHandleStart,
@@ -50,7 +55,7 @@ export function useTimerLogic(settings: TimerSettings) {
     resetTimerState
   } = useTimerControlsLogic(settings);
 
-  // Must create timerStateRef before passing to other hooks
+  // Create state reference for visibility tracking
   const timerStateRef = useRef({
     isRunning,
     timerMode,
@@ -84,9 +89,10 @@ export function useTimerLogic(settings: TimerSettings) {
     resetTimerState
   });
 
-  // Initialize other hooks after core state and refs are defined
+  // Initialize audio hooks
   useTimerAudio();
 
+  // Initialize settings sync hook
   useTimerSettingsSync({
     timerMode,
     settings,
@@ -98,6 +104,7 @@ export function useTimerLogic(settings: TimerSettings) {
     sessionStartTimeRef
   });
 
+  // Initialize state restoration hook
   useRestoreTimerState({
     isRunning,
     setIsRunning,
@@ -107,6 +114,7 @@ export function useTimerLogic(settings: TimerSettings) {
     setTimerMode
   });
 
+  // Initialize visibility sync hook
   useTimerVisibilitySync({
     isRunning,
     timerMode,
@@ -117,6 +125,7 @@ export function useTimerLogic(settings: TimerSettings) {
     sessionStartTimeRef
   });
 
+  // Initialize timer tick logic
   useTimerTickLogic({
     isRunning,
     timerMode,
@@ -131,17 +140,23 @@ export function useTimerLogic(settings: TimerSettings) {
 
   // Wrapper functions for timer controls
   const handleStart = () => {
+    console.log("handleStart called with current time:", timeRemaining);
     sessionStartTimeRef.current = new Date().toISOString();
     baseHandleStart(timerMode);
+    // Force isRunning to true immediately in case of any state update delays
+    setIsRunning(true);
   };
   
   const handlePause = () => {
-    console.log("Setting skip flag before pause");
+    console.log("handlePause called with current time:", timeRemaining);
     skipTimerResetRef.current = true;
     baseHandlePause(timerMode);
+    // Force isRunning to false immediately in case of any state update delays
+    setIsRunning(false);
   };
   
   const handleReset = () => {
+    console.log("handleReset called with current time:", timeRemaining);
     sessionStartTimeRef.current = null;
     skipTimerResetRef.current = false;
     
@@ -154,6 +169,7 @@ export function useTimerLogic(settings: TimerSettings) {
   };
 
   const handleModeChange = (mode: TimerMode) => {
+    console.log("handleModeChange called to:", mode);
     if (mode === timerMode) return;
     
     modeChangeInProgressRef.current = true;

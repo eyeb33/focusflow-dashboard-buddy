@@ -36,9 +36,7 @@ export const useTimerControls = () => {
   
   const pause = () => {
     console.log("PAUSE called from useTimerControls - Current time:", timeRemaining);
-    // CRITICAL FIX: Do not modify the time when pausing, just pass the pause command
     handlePause();
-    console.log("After pause - Current time should remain unchanged:", timeRemaining);
   };
   
   const reset = () => {

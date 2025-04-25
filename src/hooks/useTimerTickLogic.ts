@@ -45,8 +45,8 @@ export function useTimerTickLogic({
       console.log("Starting timer tick with mode:", timerMode, "and time:", timeRemaining);
       lastTickTimeRef.current = Date.now();
 
-      // When starting or resuming, get the current state but don't modify it
-      currentTimeRef.current = timeRemaining; // Store current time in ref
+      // When starting or resuming, store the current time but don't modify it
+      currentTimeRef.current = timeRemaining;
 
       timerRef.current = setInterval(() => {
         const now = Date.now();
@@ -55,6 +55,8 @@ export function useTimerTickLogic({
         
         // Calculate adjustment if timer drift occurs (more than 100ms off)
         const adjustment = Math.max(0, Math.floor((actualElapsed - expectedElapsed) / 1000));
+        
+        console.log("Timer tick: remaining =", timeRemaining, "adjustment =", adjustment);
 
         setTimeRemaining(prevTime => {
           // Always store the current time for pause state reference
@@ -63,6 +65,7 @@ export function useTimerTickLogic({
           if (prevTime <= 1) {
             if (timerRef.current) {
               clearInterval(timerRef.current);
+              timerRef.current = null;
             }
             setTimeout(() => onTimerComplete(), 0);
             return 0;
@@ -113,6 +116,7 @@ export function useTimerTickLogic({
           if (newTime <= 0) {
             if (timerRef.current) {
               clearInterval(timerRef.current);
+              timerRef.current = null;
             }
             setTimeout(() => onTimerComplete(), 0);
             return 0;
@@ -142,6 +146,7 @@ export function useTimerTickLogic({
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
+        timerRef.current = null;
       }
     };
   }, [
