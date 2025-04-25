@@ -33,6 +33,15 @@ export function useTimerLogic(settings: TimerSettings) {
   } = useSessionTracking();
 
   const {
+    lastRecordedFullMinutesRef,
+    handleStart: baseHandleStart,
+    handlePause: baseHandlePause,
+    handleReset: baseHandleReset,
+    handleModeChange: baseHandleModeChange,
+    resetTimerState
+  } = useTimerControlsLogic(settings);
+
+  const {
     completedSessions,
     setCompletedSessions,
     totalTimeToday,
@@ -56,19 +65,8 @@ export function useTimerLogic(settings: TimerSettings) {
     resetTimerState
   });
 
-  const {
-    lastRecordedFullMinutesRef,
-    handleStart: baseHandleStart,
-    handlePause: baseHandlePause,
-    handleReset: baseHandleReset,
-    handleModeChange: baseHandleModeChange,
-    resetTimerState
-  } = useTimerControlsLogic(settings);
-
-  // Initialize audio
   useTimerAudio();
 
-  // Use the timer settings sync hook
   useTimerSettingsSync({
     timerMode,
     settings,
@@ -80,7 +78,6 @@ export function useTimerLogic(settings: TimerSettings) {
     sessionStartTimeRef
   });
 
-  // Use restore state hook
   useRestoreTimerState({
     isRunning,
     setIsRunning,
@@ -90,14 +87,12 @@ export function useTimerLogic(settings: TimerSettings) {
     setTimerMode
   });
 
-  // Create a reference to hold the timer state
   const timerStateRef = useRef({
     isRunning,
     timerMode,
     timeRemaining
   });
 
-  // Keep the ref updated with current state
   useEffect(() => {
     timerStateRef.current = {
       isRunning,
@@ -106,10 +101,8 @@ export function useTimerLogic(settings: TimerSettings) {
     };
   }, [isRunning, timerMode, timeRemaining]);
 
-  // Reference for tracking the last tick time
   const lastTickTimeRef = useRef<number>(Date.now());
 
-  // Use the timer visibility sync hook
   useTimerVisibilitySync({
     isRunning,
     timerMode,
@@ -120,7 +113,6 @@ export function useTimerLogic(settings: TimerSettings) {
     sessionStartTimeRef
   });
 
-  // Use the timer tick logic hook
   useTimerTickLogic({
     isRunning,
     timerMode,
@@ -133,7 +125,6 @@ export function useTimerLogic(settings: TimerSettings) {
     sessionStartTimeRef
   });
 
-  // Create wrappers for the control handlers
   const handleStart = () => {
     sessionStartTimeRef.current = new Date().toISOString();
     baseHandleStart(timerMode);
