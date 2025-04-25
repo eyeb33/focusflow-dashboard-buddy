@@ -21,6 +21,12 @@ const modeToFrequency: Record<'work' | 'break' | 'longBreak', number> = {
 // Cache HTMLAudioElements for instant playback
 const audioCache: Partial<Record<'work' | 'break' | 'longBreak', HTMLAudioElement>> = {};
 
+// Ensure audio context is initialized
+document.addEventListener('click', () => {
+  // Initialize audio context on user interaction
+  getAudioContext();
+}, { once: true });
+
 export const playTimerCompletionSound = async (
   mode: 'work' | 'break' | 'longBreak'
 ): Promise<void> => {
@@ -28,6 +34,7 @@ export const playTimerCompletionSound = async (
   if (!src) return;
   
   try {
+    // First attempt: Use the HTMLAudioElement API
     let audio = audioCache[mode];
     if (!audio) {
       audio = new Audio(src);
@@ -38,20 +45,26 @@ export const playTimerCompletionSound = async (
       audio.currentTime = 0;
     }
     
-    // Try to play using HTMLAudioElement first
-    const playPromise = audio.play();
+    console.log(`[AudioUtils] Attempting to play sound for ${mode} mode`);
     
-    // Handle promise rejection (browser policies may block autoplay)
-    await playPromise.catch(error => {
+    // Try to play using HTMLAudioElement first
+    try {
+      const playPromise = audio.play();
+      
+      // Handle promise rejection (browser policies may block autoplay)
+      await playPromise;
+      console.log(`[AudioUtils] Successfully played MP3 sound for ${mode} mode`);
+    } catch (error) {
       console.warn(`[AudioUtils] Failed to play MP3 sound: ${error.message}. Falling back to oscillator.`);
       
-      // Use oscillator as fallback with mode-specific frequency
+      // Second attempt: Use AudioContext oscillator as fallback
       const frequency = modeToFrequency[mode];
       const duration = mode === 'longBreak' ? 1.0 : 0.7;
       playSound(frequency, duration);
-    });
-    
-    console.log(`[AudioUtils] Successfully played sound for ${mode} mode`);
+      
+      // Store a flag in localStorage to remember that we need to use oscillator next time
+      localStorage.setItem('useOscillatorFallback', 'true');
+    }
   } catch (error) {
     console.error(`[AudioUtils] Failed to play sound for mode "${mode}":`, error);
     

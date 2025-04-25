@@ -43,8 +43,11 @@ const SessionRings: React.FC<SessionRingsProps> = ({
   const renderWorkRings = () => {
     const elements = [];
     for (let i = 0; i < totalSessions; i++) {
-      const isFilled = i < completedSessions;
-      const isActive = i === (currentPosition ?? completedSessions);
+      // Important fix: A session should only be filled if completed
+      // It should NOT be filled if it's the current session in progress
+      const isFilled = i < completedSessions && i !== currentPosition;
+      const isActive = i === currentPosition;
+      
       elements.push(
         <div
           key={`work-${i}`}
@@ -68,17 +71,21 @@ const SessionRings: React.FC<SessionRingsProps> = ({
    * "Break" mode: show only green rings
    * - (totalSessions - 1) green rings, one after each work except the last
    * - filled if break before this taken
-   * - active is currentPosition-1
    */
   const renderBreakRings = () => {
     const numBreaks = totalSessions - 1;
     const elements = [];
-    // The current break is at currentPosition-1, except when starting, then it's 0
-    // fallback if currentPosition undefined: use completedSessions-1 but not below 0
-    const activeIdx = (currentPosition !== undefined ? currentPosition - 1 : Math.max(completedSessions - 1, 0));
+    
+    // For break mode, we need to show the rings differently
+    // The active break is the one currently in progress
+    const activeIdx = currentPosition !== undefined ? currentPosition - 1 : completedSessions - 1;
+    
     for (let i = 0; i < numBreaks; i++) {
-      const isFilled = i < completedSessions - 1;
+      // Fix: A break should only be filled if it's completed
+      // NOT if it's currently active
+      const isFilled = i < completedSessions - 1 && i !== activeIdx;
       const isActive = i === activeIdx;
+      
       elements.push(
         <div
           key={`break-${i}`}

@@ -65,13 +65,7 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
     const colors = getColor(currentMode);
     
     return Array.from({ length: sessionsUntilLongBreak }).map((_, index) => {
-      // CRITICAL FIX: Ensure proper session display logic
-      // A session should only be filled if:
-      // 1. It's a completed session (index < completedSessions)
-      // 2. It's not the current active session
-      // 3. We must account for the session cycle properly
-      
-      // Calculate if this position has been completed
+      // Fix: A session should only be filled if it's completed, not in progress
       const isCompleted = index < completedSessions && index !== currentSessionIndex;
       
       // Is this the active position?
