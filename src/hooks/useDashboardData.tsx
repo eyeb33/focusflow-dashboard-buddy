@@ -35,12 +35,9 @@ export const useDashboardData = () => {
   const { productivityTrend, isLoading: trendsLoading } = useProductivityTrends(userId);
   
   // Set up realtime updates only if we have a userId
-  useEffect(() => {
-    if (userId) {
-      useRealtimeUpdates(userId);
-    }
-  }, [userId]);
-
+  // Use the hook properly within the component
+  useRealtimeUpdates(userId);
+  
   // Handle visibility changes to ensure data consistency - only if we have a userId
   useEffect(() => {
     if (!userId) return;

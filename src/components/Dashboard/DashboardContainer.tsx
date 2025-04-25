@@ -15,9 +15,6 @@ const DashboardContainer = () => {
   const navigate = useNavigate();
   const visibilityChangedRef = useRef(false);
 
-  // Remove the redirect for non-authenticated users to allow demo access
-  // We'll handle showing demo data in the DashboardContext
-
   // Handle tab visibility with reduced frequency of refreshes
   useEffect(() => {
     const handleVisibilityChange = () => {
