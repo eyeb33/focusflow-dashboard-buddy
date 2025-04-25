@@ -29,10 +29,13 @@ export const useDocumentTitle = ({
     };
 
     const baseTitle = 'FocusFlow';
-    const timerText = isRunning ? ` (${formatTime(timeRemaining)})` : '';
     const circle = getCircleColor();
     
-    document.title = `${circle} ${baseTitle}${timerText}`;
+    // When timer is running, show just the circle and time
+    // When not running, show the app name
+    document.title = isRunning 
+      ? `${circle} ${formatTime(timeRemaining)}`
+      : baseTitle;
 
     // Cleanup - restore original title when component unmounts
     return () => {
