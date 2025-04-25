@@ -21,7 +21,17 @@ const modeToFrequency: Record<'work' | 'break' | 'longBreak', number> = {
 // Cache HTMLAudioElements for instant playback
 const audioCache: Partial<Record<'work' | 'break' | 'longBreak', HTMLAudioElement>> = {};
 
-// Ensure audio context is initialized
+// Initialize audio context early to improve chances of working without user interaction
+document.addEventListener('DOMContentLoaded', () => {
+  // Try to initialize audio context early
+  try {
+    getAudioContext();
+  } catch (e) {
+    console.log('[AudioUtils] Early audio context initialization failed, will try again on user interaction');
+  }
+});
+
+// Ensure audio context is initialized on user interaction
 document.addEventListener('click', () => {
   // Initialize audio context on user interaction
   getAudioContext();
@@ -34,6 +44,17 @@ export const playTimerCompletionSound = async (
   if (!src) return;
   
   try {
+    // Check if we should use oscillator fallback based on previous failures
+    const useOscillatorFallback = localStorage.getItem('useOscillatorFallback') === 'true';
+    
+    if (useOscillatorFallback) {
+      console.log(`[AudioUtils] Using oscillator fallback for ${mode} mode based on previous failures`);
+      const frequency = modeToFrequency[mode];
+      const duration = mode === 'longBreak' ? 1.0 : 0.7;
+      playSound(frequency, duration);
+      return;
+    }
+    
     // First attempt: Use the HTMLAudioElement API
     let audio = audioCache[mode];
     if (!audio) {

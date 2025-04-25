@@ -36,25 +36,26 @@ const TimerContainer: React.FC = () => {
 
   const timerContext = useTimer();
   
-  // Use the progress directly from the timer context
-  // This is the correct and consistent progress calculation
+  // Use the progress directly from the timer context to ensure consistency
   const correctProgress = timerContext.progress;
   
   // Debug progress calculation
   useEffect(() => {
-    console.log("Progress calculation:", {
+    console.log("Timer Container Progress:", {
       timerMode,
       timeRemaining,
       totalTime: getTotalTime(timerMode, settings),
       correctProgress,
-      contextProgress: progress
+      progress
     });
   }, [timerMode, timeRemaining, settings, correctProgress, progress]);
   
+  // Make timerContext available for audio functions
   useEffect(() => {
     window.timerContext = timerContext;
   }, [timerContext]);
 
+  // Define colors for each mode
   const modeColors = {
     work: {
       startPauseColor: "bg-red-500",
@@ -75,9 +76,14 @@ const TimerContainer: React.FC = () => {
 
   const currentModeColors = modeColors[timerMode];
 
-  // Debug logging for developers to verify session tracking
+  // Debug logging for session indicators
   useEffect(() => {
-    console.log(`Current state: mode=${timerMode}, index=${currentSessionIndex}, completedSessions=${completedSessions}, sessionsUntilLongBreak=${sessionsUntilLongBreak}`);
+    console.log(`TimerContainer session state:`, {
+      mode: timerMode,
+      index: currentSessionIndex,
+      completed: completedSessions, 
+      total: sessionsUntilLongBreak
+    });
   }, [timerMode, currentSessionIndex, completedSessions, sessionsUntilLongBreak]);
   
   return (
@@ -91,25 +97,19 @@ const TimerContainer: React.FC = () => {
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger 
               value="work"
-              className={cn(
-                currentModeColors.activeClass
-              )}
+              className={cn(currentModeColors.activeClass)}
             >
               Focus
             </TabsTrigger>
             <TabsTrigger 
               value="break"
-              className={cn(
-                currentModeColors.activeClass
-              )}
+              className={cn(currentModeColors.activeClass)}
             >
               Break
             </TabsTrigger>
             <TabsTrigger 
               value="longBreak"
-              className={cn(
-                currentModeColors.activeClass
-              )}
+              className={cn(currentModeColors.activeClass)}
             >
               Long Break
             </TabsTrigger>
@@ -161,6 +161,7 @@ const TimerContainer: React.FC = () => {
   );
 };
 
+// Expose timerContext globally for audio functions
 declare global {
   interface Window {
     timerContext?: {

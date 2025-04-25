@@ -34,6 +34,16 @@ const SessionRings: React.FC<SessionRingsProps> = ({
     return () => clearInterval(intervalId);
   }, []);
 
+  // Debug logging
+  useEffect(() => {
+    console.log('SessionRings rendering with:', {
+      mode,
+      completedSessions,
+      totalSessions,
+      currentPosition
+    });
+  }, [mode, completedSessions, totalSessions, currentPosition]);
+
   /**
    * "Focus" (work) mode: show only red rings
    * - totalSessions red rings
@@ -43,9 +53,12 @@ const SessionRings: React.FC<SessionRingsProps> = ({
   const renderWorkRings = () => {
     const elements = [];
     for (let i = 0; i < totalSessions; i++) {
-      // Important fix: A session should only be filled if completed
-      // It should NOT be filled if it's the current session in progress
+      // A session is filled if:
+      // 1. It's completed (index < completedSessions)
+      // 2. It is NOT the current session in progress (i !== currentPosition)
       const isFilled = i < completedSessions && i !== currentPosition;
+      
+      // The active session is the current one in progress
       const isActive = i === currentPosition;
       
       elements.push(
@@ -76,14 +89,17 @@ const SessionRings: React.FC<SessionRingsProps> = ({
     const numBreaks = totalSessions - 1;
     const elements = [];
     
+    // Determine active break index
     // For break mode, we need to show the rings differently
     // The active break is the one currently in progress
-    const activeIdx = currentPosition !== undefined ? currentPosition - 1 : completedSessions - 1;
+    // Default to -1 if no active position (for initial display)
+    const activeIdx = currentPosition !== undefined ? currentPosition : -1;
     
     for (let i = 0; i < numBreaks; i++) {
-      // Fix: A break should only be filled if it's completed
-      // NOT if it's currently active
-      const isFilled = i < completedSessions - 1 && i !== activeIdx;
+      // A break is filled if:
+      // 1. It's completed (i < completedSessions - 1)
+      // 2. It is NOT the current break in progress (i !== activeIdx)
+      const isFilled = i < completedSessions && i !== activeIdx;
       const isActive = i === activeIdx;
       
       elements.push(

@@ -94,7 +94,7 @@ const CircularProgress = ({
         aria-label={`${Math.round(normalizedProgress * 100)}% complete`}
         role="progressbar"
       >
-        {/* Background arc */}
+        {/* Background arc - always visible */}
         <path
           d={getArcPath(radius)}
           fill="transparent"
@@ -103,16 +103,18 @@ const CircularProgress = ({
           strokeLinecap="round"
         />
         
-        {/* Progress arc */}
-        <path
-          d={getArcPath(radius)}
-          fill="transparent"
-          stroke={colors.fg}
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-        />
+        {/* Progress arc - only visible when progress > 0 */}
+        {normalizedProgress > 0 && (
+          <path
+            d={getArcPath(radius)}
+            fill="transparent"
+            stroke={colors.fg}
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+          />
+        )}
       </svg>
       
       <div className="absolute inset-0 flex items-center justify-center">

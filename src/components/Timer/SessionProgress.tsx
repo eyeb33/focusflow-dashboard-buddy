@@ -28,14 +28,16 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
   const [isPulsing, setIsPulsing] = useState(false);
   
   // Debug log to see what values are being provided
-  console.log('SessionProgress props:', { 
-    completedSessions, 
-    sessionsUntilLongBreak, 
-    currentMode, 
-    currentSessionIndex, 
-    isRunning,
-    timeRemaining
-  });
+  useEffect(() => {
+    console.log('SessionProgress rendering with:', { 
+      completedSessions, 
+      sessionsUntilLongBreak, 
+      currentMode, 
+      currentSessionIndex, 
+      isRunning,
+      timeRemaining
+    });
+  }, [completedSessions, sessionsUntilLongBreak, currentMode, currentSessionIndex, isRunning, timeRemaining]);
   
   // Check if we're in the last 10 seconds
   useEffect(() => {
@@ -65,7 +67,9 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
     const colors = getColor(currentMode);
     
     return Array.from({ length: sessionsUntilLongBreak }).map((_, index) => {
-      // Fix: A session should only be filled if it's completed, not in progress
+      // A session is filled if:
+      // 1. It's completed (index < completedSessions)
+      // 2. It is NOT the current session in progress (index !== currentSessionIndex)
       const isCompleted = index < completedSessions && index !== currentSessionIndex;
       
       // Is this the active position?
