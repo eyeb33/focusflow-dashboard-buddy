@@ -1,7 +1,6 @@
-
-import { useState, useEffect, useRef } from 'react';
-import { getTotalTime, TimerMode } from '@/utils/timerContextUtils';
-import { TimerSettings } from '@/hooks/useTimerSettings';
+import { useRef, useState, useEffect } from 'react';
+import { TimerMode, getTotalTime } from '@/utils/timerContextUtils';
+import { TimerSettings } from './useTimerSettings';
 import { useRestoreTimerState } from './useRestoreTimerState';
 import { useTimerVisibilitySync } from './useTimerVisibilitySync';
 import { useTimerTickLogic } from './useTimerTickLogic';
@@ -9,16 +8,30 @@ import { useTimerControlsLogic } from './useTimerControlsLogic';
 import { useTimerCompletion } from './useTimerCompletion';
 import { useTimerStatsLogic } from './useTimerStatsLogic';
 import { useTimerAudio } from './useTimerAudio';
+import { useTimerState } from './useTimerState';
+import { useSessionTracking } from './useSessionTracking';
+import { useTimerSettingsSync } from './useTimerSettingsSync';
 
 export function useTimerLogic(settings: TimerSettings) {
   const [timerMode, setTimerMode] = useState<TimerMode>('work');
-  const [autoStart, setAutoStart] = useState<boolean>(false);
-  const sessionStartTimeRef = useRef<string | null>(null);
-  const skipTimerResetRef = useRef<boolean>(false); // Track when we should skip resetting timer
-  const previousSettingsRef = useRef(settings); // Store previous settings to detect changes
-  const modeChangeInProgressRef = useRef<boolean>(false); // To prevent mode change loops
 
   // Use the smaller hooks
+  const {
+    isRunning,
+    setIsRunning,
+    timeRemaining,
+    setTimeRemaining,
+    autoStart,
+    setAutoStart
+  } = useTimerState(settings);
+
+  const {
+    sessionStartTimeRef,
+    skipTimerResetRef,
+    previousSettingsRef,
+    modeChangeInProgressRef
+  } = useSessionTracking();
+
   const {
     completedSessions,
     setCompletedSessions,
@@ -29,19 +42,8 @@ export function useTimerLogic(settings: TimerSettings) {
   } = useTimerStatsLogic();
 
   const {
-    isRunning,
-    setIsRunning,
-    timeRemaining,
-    setTimeRemaining,
-    lastRecordedFullMinutesRef,
-    handleStart: baseHandleStart,
-    handlePause: baseHandlePause,
-    handleReset: baseHandleReset,
-    handleModeChange: baseHandleModeChange,
-    resetTimerState
-  } = useTimerControlsLogic(settings);
-
-  const { handleTimerComplete } = useTimerCompletion({
+    handleTimerComplete
+  } = useTimerCompletion({
     timerMode,
     settings,
     completedSessions,
@@ -54,126 +56,39 @@ export function useTimerLogic(settings: TimerSettings) {
     resetTimerState
   });
 
+  const {
+    lastRecordedFullMinutesRef,
+    handleStart: baseHandleStart,
+    handlePause: baseHandlePause,
+    handleReset: baseHandleReset,
+    handleModeChange: baseHandleModeChange,
+    resetTimerState
+  } = useTimerControlsLogic(settings);
+
   // Initialize audio
   useTimerAudio();
 
-  // Store session start time when a session begins
-  useEffect(() => {
-    if (isRunning && !sessionStartTimeRef.current) {
-      sessionStartTimeRef.current = new Date().toISOString();
-      console.log(`Session started at: ${sessionStartTimeRef.current}`);
-    }
-  }, [isRunning]);
+  // Use the timer settings sync hook
+  useTimerSettingsSync({
+    timerMode,
+    settings,
+    isRunning,
+    setTimeRemaining,
+    skipTimerResetRef,
+    modeChangeInProgressRef,
+    previousSettingsRef,
+    sessionStartTimeRef
+  });
 
-  // Detect settings changes and reset timer when needed
-  useEffect(() => {
-    if (modeChangeInProgressRef.current) {
-      modeChangeInProgressRef.current = false;
-      return;
-    }
-    
-    const hasSettingsChanged = 
-      previousSettingsRef.current.workDuration !== settings.workDuration ||
-      previousSettingsRef.current.breakDuration !== settings.breakDuration ||
-      previousSettingsRef.current.longBreakDuration !== settings.longBreakDuration ||
-      previousSettingsRef.current.sessionsUntilLongBreak !== settings.sessionsUntilLongBreak;
-    
-    // If settings have changed and we're not running, reset the timer
-    if (hasSettingsChanged && !isRunning) {
-      console.log("Settings changed - resetting timer:", {
-        oldSettings: previousSettingsRef.current,
-        newSettings: settings
-      });
-      
-      // Force reset the timer for the current mode with new settings
-      skipTimerResetRef.current = false;
-      const newTime = getTotalTime(timerMode, settings);
-      console.log(`Resetting time to ${newTime} seconds due to settings change`);
-      setTimeRemaining(newTime);
-      
-      // Reset session start time when settings change
-      sessionStartTimeRef.current = null;
-
-      // Save current settings for future comparisons
-      previousSettingsRef.current = { ...settings };
-    } else if (!isRunning && !skipTimerResetRef.current) {
-      // Normal mode change or initial setup - set time based on current mode and settings
-      console.log("Setting time based on mode/settings change:", getTotalTime(timerMode, settings));
-      setTimeRemaining(getTotalTime(timerMode, settings));
-      
-      // Reset session start time
-      sessionStartTimeRef.current = null;
-    } else if (skipTimerResetRef.current) {
-      // Reset the flag after we've skipped one update
-      console.log("Skipping timer reset after pause");
-      skipTimerResetRef.current = false;
-    }
-    
-    // Always update the settings reference
-    previousSettingsRef.current = { ...settings };
-  }, [timerMode, settings, setTimeRemaining, isRunning]);
-  
-  // Auto-start feature - only used when completing a timer and auto-transitioning
-  useEffect(() => {
-    if (autoStart && !isRunning) {
-      baseHandleStart(timerMode);
-      setAutoStart(false);
-    }
-  }, [autoStart, isRunning, baseHandleStart, timerMode]);
-
-  // Create wrappers for the control handlers
-  const handleStart = () => {
-    // Record the session start time
-    sessionStartTimeRef.current = new Date().toISOString();
-    baseHandleStart(timerMode);
-  };
-  
-  const handlePause = () => {
-    console.log("Setting skip flag before pause");
-    skipTimerResetRef.current = true; // Set flag to skip the next timer reset
-    baseHandlePause(timerMode);
-  };
-  
-  const handleReset = () => {
-    // Clear the session start time on reset
-    sessionStartTimeRef.current = null;
-    skipTimerResetRef.current = false; // Allow reset to happen
-    
-    // Reset completed sessions counter on manual reset
-    setCompletedSessions(0);
-    setCurrentSessionIndex(0);
-    
-    baseHandleReset(timerMode, setCurrentSessionIndex);
-    
-    // Remove stored timer state
-    localStorage.removeItem('timerState');
-  };
-
-  const handleModeChange = (mode: TimerMode) => {
-    // Prevent mode change loops
-    if (mode === timerMode) return;
-    
-    modeChangeInProgressRef.current = true;
-    
-    // Clear the session start time on mode change
-    sessionStartTimeRef.current = null;
-    skipTimerResetRef.current = false; // Allow reset on mode change
-    
-    // Reset completed sessions counter and session index when manually changing modes
-    if (mode === 'work') {
-      setCompletedSessions(0);
-      setCurrentSessionIndex(0);
-    }
-    
-    baseHandleModeChange(timerMode, mode, setCurrentSessionIndex);
-    setTimerMode(mode);
-    
-    // Clear any stored timer state
-    localStorage.removeItem('timerState');
-  };
-
-  // Get the current total time based on timer mode
-  const getCurrentTotalTime = () => getTotalTime(timerMode, settings);
+  // Use restore state hook
+  useRestoreTimerState({
+    isRunning,
+    setIsRunning,
+    setTimeRemaining,
+    onTimerComplete: handleTimerComplete,
+    sessionStartTimeRef,
+    setTimerMode
+  });
 
   // Create a reference to hold the timer state
   const timerStateRef = useRef({
@@ -194,16 +109,6 @@ export function useTimerLogic(settings: TimerSettings) {
   // Reference for tracking the last tick time
   const lastTickTimeRef = useRef<number>(Date.now());
 
-  // Use the restored timer state hook
-  useRestoreTimerState({
-    isRunning,
-    setIsRunning,
-    setTimeRemaining,
-    onTimerComplete: handleTimerComplete,
-    sessionStartTimeRef,
-    setTimerMode
-  });
-
   // Use the timer visibility sync hook
   useTimerVisibilitySync({
     isRunning,
@@ -219,7 +124,7 @@ export function useTimerLogic(settings: TimerSettings) {
   useTimerTickLogic({
     isRunning,
     timerMode,
-    getTotalTime: getCurrentTotalTime,
+    getTotalTime: () => getTotalTime(timerMode, settings),
     onTimerComplete: handleTimerComplete,
     setTimeRemaining,
     timeRemaining,
@@ -227,6 +132,49 @@ export function useTimerLogic(settings: TimerSettings) {
     lastTickTimeRef,
     sessionStartTimeRef
   });
+
+  // Create wrappers for the control handlers
+  const handleStart = () => {
+    sessionStartTimeRef.current = new Date().toISOString();
+    baseHandleStart(timerMode);
+  };
+  
+  const handlePause = () => {
+    console.log("Setting skip flag before pause");
+    skipTimerResetRef.current = true;
+    baseHandlePause(timerMode);
+  };
+  
+  const handleReset = () => {
+    sessionStartTimeRef.current = null;
+    skipTimerResetRef.current = false;
+    
+    setCompletedSessions(0);
+    setCurrentSessionIndex(0);
+    
+    baseHandleReset(timerMode, setCurrentSessionIndex);
+    
+    localStorage.removeItem('timerState');
+  };
+
+  const handleModeChange = (mode: TimerMode) => {
+    if (mode === timerMode) return;
+    
+    modeChangeInProgressRef.current = true;
+    
+    sessionStartTimeRef.current = null;
+    skipTimerResetRef.current = false;
+    
+    if (mode === 'work') {
+      setCompletedSessions(0);
+      setCurrentSessionIndex(0);
+    }
+    
+    baseHandleModeChange(timerMode, mode, setCurrentSessionIndex);
+    setTimerMode(mode);
+    
+    localStorage.removeItem('timerState');
+  };
 
   return {
     timerMode,
