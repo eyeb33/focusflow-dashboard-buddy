@@ -78,9 +78,9 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
   });
 
   // Fix: Create a handleStart function that always passes the timerMode
-  const handleStart = (mode = timerMode) => {
-    console.log("handleStart in useTimerLogic called with mode:", mode);
-    controlsHandleStart(mode);
+  const handleStart = () => {
+    console.log("handleStart in useTimerLogic called with mode:", timerMode);
+    controlsHandleStart(timerMode);
   };
 
   // Initialize timer completion logic

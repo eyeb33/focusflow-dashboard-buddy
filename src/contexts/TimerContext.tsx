@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect } from 'react';
 import { TimerMode, enableRealtimeForSessionsSummary } from '@/utils/timerContextUtils';
 import { formatTime, getModeLabel } from '@/utils/timerUtils';
@@ -27,10 +26,8 @@ interface TimerContextType {
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
 
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Use the settings hook first
   const { settings, updateSettings } = useTimerSettings();
   
-  // Use the timer logic hook which contains all the core functionality
   const {
     timerMode,
     isRunning,
@@ -46,15 +43,12 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setAutoStart
   } = useTimerLogic(settings);
   
-  // Enable realtime updates
   useEffect(() => {
     enableRealtimeForSessionsSummary();
   }, []);
   
-  // Create a wrapper for handleStart that uses the current timerMode
   const handleStart = () => {
     console.log("handleStart wrapper called in TimerContext, current mode:", timerMode);
-    // This calls the handleStart in useTimerLogic, which will pass timerMode to controlsHandleStart
     originalHandleStart();
   };
   

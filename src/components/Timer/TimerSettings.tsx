@@ -42,7 +42,11 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
     console.log("Resetting timer after settings change to apply new duration");
     handleReset();
     
-    // Show a toast confirmation
+    // We'll only show toast when saving all settings, not on individual slider changes
+  };
+
+  // Function to save all settings and show toast notification
+  const saveAllSettings = () => {
     toast({
       title: "Settings updated",
       description: "Your timer settings have been saved",
@@ -124,6 +128,13 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
               className="[&_[role=slider]]:bg-primary [&_.SliderRange]:bg-primary"
             />
           </div>
+          
+          <Button 
+            className="w-full mt-4" 
+            onClick={saveAllSettings}
+          >
+            Save Settings
+          </Button>
         </div>
       </PopoverContent>
     </Popover>
