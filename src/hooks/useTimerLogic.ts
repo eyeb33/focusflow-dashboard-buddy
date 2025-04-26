@@ -101,7 +101,7 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
     progress,
     setCompletedSessions,
     setTotalTimeToday,
-    handleStart,  // This function expects the timerMode parameter
+    handleStart,
     handlePause,
     handleReset,
     handleModeChange,

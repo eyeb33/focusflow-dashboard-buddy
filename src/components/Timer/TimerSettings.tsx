@@ -38,14 +38,11 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
     // Apply the settings update
     updateSettings(settingsUpdate);
     
-    // Reset the timer when settings change to apply the new duration
+    // Reset the timer when settings change to apply the new duration immediately
     setTimeout(() => {
-      // Only reset if we're in the related mode to avoid unexpected resets
-      if ((settingsUpdate.workDuration && timerMode === 'work') || 
-          (settingsUpdate.breakDuration && timerMode === 'break') ||
-          (settingsUpdate.longBreakDuration && timerMode === 'longBreak')) {
-        handleReset();
-      }
+      // Reset the timer regardless of mode to ensure settings are applied consistently
+      console.log("Resetting timer after settings change to apply new duration");
+      handleReset();
     }, 50);
     
     // Show a toast confirmation
