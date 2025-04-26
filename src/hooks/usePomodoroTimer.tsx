@@ -13,7 +13,7 @@ export function usePomodoroTimer(settings: TimerSettings) {
   const [timeLeft, setTimeLeft] = useState(settings.workDuration * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [mode, setMode] = useState<TimerMode>('work');
-  const [progress, setProgress] = useState(100);
+  const [progress, setProgress] = useState(0); // Start at 0% (empty)
   const [currentSessionIndex, setCurrentSessionIndex] = useState(0);
 
   // Get current mode duration
@@ -45,7 +45,7 @@ export function usePomodoroTimer(settings: TimerSettings) {
         break;
     }
     
-    setProgress(100);
+    setProgress(0); // Reset progress to 0% (empty)
     setIsRunning(false);
   }, [settings]);
 
@@ -59,8 +59,8 @@ export function usePomodoroTimer(settings: TimerSettings) {
           if (prevTime > 0) {
             const newTime = prevTime - 1;
             const totalTime = getCurrentModeDuration();
-            // Calculate progress percentage based on remaining time
-            const newProgress = (newTime / totalTime) * 100;
+            // Calculate progress percentage - increases as time passes
+            const newProgress = ((totalTime - newTime) / totalTime) * 100;
             setProgress(newProgress);
             return newTime;
           } else {
@@ -95,7 +95,7 @@ export function usePomodoroTimer(settings: TimerSettings) {
   const reset = useCallback(() => {
     setIsRunning(false);
     setTimeLeft(getCurrentModeDuration());
-    setProgress(100);
+    setProgress(0); // Reset progress to 0% (empty)
   }, [getCurrentModeDuration]);
 
   const formatTime = useCallback((seconds: number) => {

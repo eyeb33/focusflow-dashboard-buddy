@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { cn } from "@/lib/utils";
 
@@ -19,7 +20,9 @@ const CircularProgress = ({
   className
 }: CircularProgressProps) => {
   // Normalize progress to a value between 0 and 1
-  const normalizedProgress = Math.min(Math.max(progress / 100, 0), 1);
+  // IMPORTANT: For timer progress, we need to invert the progress (100 - progress)
+  // so it starts empty (0%) and fills up as time passes
+  const normalizedProgress = Math.min(Math.max((100 - progress) / 100, 0), 1);
   
   useEffect(() => {
     // Log progress value for debugging
