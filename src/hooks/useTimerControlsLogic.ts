@@ -111,6 +111,9 @@ export function useTimerControlsLogic({
         lastRecordedFullMinutesRef.current
       );
     }
+    
+    // CRITICAL: Set skipTimerResetRef to true to prevent timeRemaining from being reset
+    skipTimerResetRef.current = true;
   };
   
   const handleReset = async () => {

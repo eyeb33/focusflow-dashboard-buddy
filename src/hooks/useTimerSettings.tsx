@@ -36,11 +36,12 @@ export function useTimerSettings() {
   // Update localStorage when settings change
   useEffect(() => {
     localStorage.setItem('timerSettings', JSON.stringify(settings));
-    console.log('Saved updated timer settings:', settings);
+    console.log('Saved updated timer settings to localStorage:', settings);
   }, [settings]);
   
   // Function to update settings
   const updateSettings = (newSettings: Partial<TimerSettings>) => {
+    console.log('Updating settings with:', newSettings);
     setSettings(prevSettings => ({
       ...prevSettings,
       ...newSettings
@@ -49,6 +50,7 @@ export function useTimerSettings() {
   
   // Reset to defaults
   const resetSettings = () => {
+    console.log('Resetting timer settings to defaults');
     setSettings(DEFAULT_TIMER_SETTINGS);
   };
   

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Popover,
   PopoverContent,
@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useTimer } from "@/contexts/TimerContext";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
+import { TimerSettings as TimerSettingsType } from "@/hooks/useTimerSettings";
 
 interface TimerSettingsProps {
   className?: string;
@@ -22,29 +23,34 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
     settings,
     updateSettings,
     timerMode,
-    handleReset
+    handleReset,
+    isRunning
   } = useTimer();
   
   const { toast } = useToast();
+  
+  // Create local state to track settings before save
+  const [localSettings, setLocalSettings] = useState<TimerSettingsType>(settings);
 
-  const { 
-    workDuration, 
-    breakDuration, 
-    longBreakDuration, 
-    sessionsUntilLongBreak 
-  } = settings;
-
-  const handleSettingsUpdate = (settingsUpdate: Partial<typeof settings>) => {
-    // Apply the settings update
-    updateSettings(settingsUpdate);
-    
-    // Reset the timer immediately to apply the new duration
-    console.log("Resetting timer after settings change to apply new duration");
-    handleReset();
+  // Update local settings without immediately applying them
+  const updateLocalSettings = (settingsUpdate: Partial<TimerSettingsType>) => {
+    setLocalSettings(prev => ({
+      ...prev,
+      ...settingsUpdate
+    }));
   };
 
   // Function to save all settings and show toast notification
   const saveAllSettings = () => {
+    // Apply all local settings at once
+    updateSettings(localSettings);
+    
+    // Only reset the timer if it's not currently running
+    if (!isRunning) {
+      console.log("Resetting timer after settings save to apply new duration");
+      handleReset();
+    }
+    
     toast({
       title: "Settings updated",
       description: "Your timer settings have been saved",
@@ -66,15 +72,15 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
           <div className="space-y-2">
             <div className="flex justify-between">
               <Label htmlFor="work-duration">Work Duration</Label>
-              <span className="text-sm text-muted-foreground">{workDuration} min</span>
+              <span className="text-sm text-muted-foreground">{localSettings.workDuration} min</span>
             </div>
             <Slider
               id="work-duration"
               min={5}
               max={60}
               step={5}
-              value={[workDuration]}
-              onValueChange={(value) => handleSettingsUpdate({ workDuration: value[0] })}
+              value={[localSettings.workDuration]}
+              onValueChange={(value) => updateLocalSettings({ workDuration: value[0] })}
               className="[&_[role=slider]]:bg-red-500 [&_.SliderRange]:bg-red-500"
             />
           </div>
@@ -82,15 +88,15 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
           <div className="space-y-2">
             <div className="flex justify-between">
               <Label htmlFor="break-duration">Break Duration</Label>
-              <span className="text-sm text-muted-foreground">{breakDuration} min</span>
+              <span className="text-sm text-muted-foreground">{localSettings.breakDuration} min</span>
             </div>
             <Slider
               id="break-duration"
               min={1}
               max={15}
               step={1}
-              value={[breakDuration]}
-              onValueChange={(value) => handleSettingsUpdate({ breakDuration: value[0] })}
+              value={[localSettings.breakDuration]}
+              onValueChange={(value) => updateLocalSettings({ breakDuration: value[0] })}
               className="[&_[role=slider]]:bg-green-500 [&_.SliderRange]:bg-green-500"
             />
           </div>
@@ -98,15 +104,15 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
           <div className="space-y-2">
             <div className="flex justify-between">
               <Label htmlFor="long-break-duration">Long Break Duration</Label>
-              <span className="text-sm text-muted-foreground">{longBreakDuration} min</span>
+              <span className="text-sm text-muted-foreground">{localSettings.longBreakDuration} min</span>
             </div>
             <Slider
               id="long-break-duration"
               min={10}
               max={30}
               step={5}
-              value={[longBreakDuration]}
-              onValueChange={(value) => handleSettingsUpdate({ longBreakDuration: value[0] })}
+              value={[localSettings.longBreakDuration]}
+              onValueChange={(value) => updateLocalSettings({ longBreakDuration: value[0] })}
               className="[&_[role=slider]]:bg-blue-500 [&_.SliderRange]:bg-blue-500"
             />
           </div>
@@ -114,15 +120,15 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
           <div className="space-y-2">
             <div className="flex justify-between">
               <Label htmlFor="sessions-until-long-break">Sessions Until Long Break</Label>
-              <span className="text-sm text-muted-foreground">{sessionsUntilLongBreak}</span>
+              <span className="text-sm text-muted-foreground">{localSettings.sessionsUntilLongBreak}</span>
             </div>
             <Slider
               id="sessions-until-long-break"
               min={1}
               max={8}
               step={1}
-              value={[sessionsUntilLongBreak]}
-              onValueChange={(value) => handleSettingsUpdate({ sessionsUntilLongBreak: value[0] })}
+              value={[localSettings.sessionsUntilLongBreak]}
+              onValueChange={(value) => updateLocalSettings({ sessionsUntilLongBreak: value[0] })}
               className="[&_[role=slider]]:bg-primary [&_.SliderRange]:bg-primary"
             />
           </div>
