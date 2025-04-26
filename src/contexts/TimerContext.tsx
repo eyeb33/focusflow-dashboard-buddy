@@ -54,7 +54,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Create a wrapper for handleStart that uses the current timerMode
   const handleStart = () => {
     console.log("handleStart wrapper called in TimerContext, current mode:", timerMode);
-    originalHandleStart(timerMode);
+    originalHandleStart(timerMode); // Make sure to pass timerMode here
   };
   
   const getTimerModeLabel = () => getModeLabel(timerMode);
