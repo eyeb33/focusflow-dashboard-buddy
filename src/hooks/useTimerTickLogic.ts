@@ -52,9 +52,12 @@ export function useTimerTickLogic({
         // Calculate adjustment if timer drift occurs (more than 100ms off)
         const adjustment = Math.max(0, Math.floor((actualElapsed - 1000) / 1000));
         
-        console.log("Timer tick: remaining =", timeRemaining, "adjustment =", adjustment);
-
         setTimeRemaining(prevTime => {
+          // Debug with less frequent logging (only every 5 seconds)
+          if (prevTime % 5 === 0 || prevTime <= 5) {
+            console.log("Timer tick: remaining =", prevTime, "adjustment =", adjustment);
+          }
+
           if (prevTime <= 1) {
             if (timerRef.current) {
               clearInterval(timerRef.current);

@@ -57,6 +57,11 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
       duration: 2000,
     });
   };
+  
+  // Sync local settings when main settings change
+  React.useEffect(() => {
+    setLocalSettings(settings);
+  }, [settings]);
 
   return (
     <Popover>

@@ -65,6 +65,10 @@ export function useTimerControlsLogic({
     console.log("Setting isRunning to TRUE with time remaining:", timeRemaining);
     setIsRunning(true);
     
+    // Important: Set skipTimerResetRef to true to prevent timeRemaining from being reset
+    // when starting or resuming the timer
+    skipTimerResetRef.current = true;
+    
     // Save the timer state to localStorage for persistence
     const timerState = {
       isRunning: true,
@@ -132,7 +136,7 @@ export function useTimerControlsLogic({
       );
     }
     
-    // Reset the time
+    // Reset the time - CRITICAL: we always want to reset here
     const newTime = getTotalTime(timerMode, settings);
     setTimeRemaining(newTime);
     lastRecordedTimeRef.current = newTime;
@@ -147,6 +151,9 @@ export function useTimerControlsLogic({
     if (timerMode === 'work' && setCurrentSessionIndex) {
       setCurrentSessionIndex(0);
     }
+    
+    // Important: We're intentionally resetting, so don't skip the reset
+    skipTimerResetRef.current = false;
   };
 
   const handleModeChange = async (newMode: TimerMode) => {
@@ -186,6 +193,9 @@ export function useTimerControlsLogic({
     // Finally, change the timer mode
     setTimerMode(newMode);
     
+    // Important: Don't skip the reset when changing modes
+    skipTimerResetRef.current = false;
+    
     // Save the timer state to localStorage for persistence
     const timerState = {
       isRunning: false,
@@ -210,6 +220,9 @@ export function useTimerControlsLogic({
     // Reset session start time
     sessionStartTimeRef.current = null;
     localStorage.removeItem('sessionStartTime');
+    
+    // Important: We're intentionally resetting, so don't skip the reset
+    skipTimerResetRef.current = false;
     
     console.log("Timer state reset to:", newTime, "seconds for mode:", timerMode);
   };
