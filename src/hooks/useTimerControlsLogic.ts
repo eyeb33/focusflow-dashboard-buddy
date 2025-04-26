@@ -4,19 +4,44 @@ import { useAuth } from '@/contexts/AuthContext';
 import { TimerMode, getTotalTime, savePartialSession } from '@/utils/timerContextUtils';
 import { TimerSettings } from './useTimerSettings';
 
-export function useTimerControlsLogic(settings: TimerSettings) {
+// Interface for the hook's parameters
+interface UseTimerControlsLogicParams {
+  timerMode: TimerMode;
+  settings: TimerSettings;
+  isRunning: boolean;
+  timeRemaining: number;
+  setIsRunning: (isRunning: boolean) => void;
+  setTimeRemaining: (time: number) => void;
+  setTimerMode: (mode: TimerMode) => void;
+  sessionStartTimeRef: React.MutableRefObject<string | null>;
+  skipTimerResetRef: React.MutableRefObject<boolean>;
+  modeChangeInProgressRef: React.MutableRefObject<boolean>;
+  setCurrentSessionIndex?: (index: number) => void;
+}
+
+export function useTimerControlsLogic({
+  timerMode,
+  settings,
+  isRunning,
+  timeRemaining,
+  setIsRunning,
+  setTimeRemaining,
+  setTimerMode,
+  sessionStartTimeRef,
+  skipTimerResetRef,
+  modeChangeInProgressRef,
+  setCurrentSessionIndex
+}: UseTimerControlsLogicParams) {
   const { user } = useAuth();
-  const [isRunning, setIsRunning] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(settings.workDuration * 60);
   const lastRecordedTimeRef = useRef<number | null>(null);
   const lastRecordedFullMinutesRef = useRef<number>(0);
 
   // Timer control functions
-  const handleStart = (timerMode: TimerMode) => {
+  const handleStart = (mode: TimerMode) => {
     // Save the current time to compare on pause
     lastRecordedTimeRef.current = timeRemaining;
     
-    const totalTime = getTotalTime(timerMode, settings);
+    const totalTime = getTotalTime(mode, settings);
     const elapsedSeconds = totalTime - timeRemaining;
     lastRecordedFullMinutesRef.current = Math.floor(elapsedSeconds / 60);
     
@@ -25,7 +50,7 @@ export function useTimerControlsLogic(settings: TimerSettings) {
     console.log("Timer started at:", timeRemaining, "seconds");
   };
   
-  const handlePause = async (timerMode: TimerMode) => {
+  const handlePause = async () => {
     // CRITICAL: Only change the running state to false
     console.log("HANDLE PAUSE called with time remaining:", timeRemaining);
     
@@ -59,7 +84,7 @@ export function useTimerControlsLogic(settings: TimerSettings) {
     }
   };
   
-  const handleReset = async (timerMode: TimerMode, setCurrentSessionIndex?: (index: number) => void) => {
+  const handleReset = async () => {
     // Stop the timer
     setIsRunning(false);
     
@@ -88,17 +113,13 @@ export function useTimerControlsLogic(settings: TimerSettings) {
     }
   };
 
-  const handleModeChange = async (
-    currentMode: TimerMode,
-    newMode: TimerMode, 
-    setCurrentSessionIndex?: (index: number) => void
-  ) => {
+  const handleModeChange = async (newMode: TimerMode) => {
     // Save session if the timer was running
     if (isRunning && user && lastRecordedTimeRef.current) {
-      const totalTime = getTotalTime(currentMode, settings);
+      const totalTime = getTotalTime(timerMode, settings);
       await savePartialSession(
         user.id, 
-        currentMode, 
+        timerMode, 
         totalTime, 
         timeRemaining, 
         lastRecordedFullMinutesRef.current
@@ -121,6 +142,9 @@ export function useTimerControlsLogic(settings: TimerSettings) {
     if (newMode === 'work' && setCurrentSessionIndex) {
       setCurrentSessionIndex(0);
     }
+    
+    // Finally, change the timer mode
+    setTimerMode(newMode);
   };
 
   const resetTimerState = () => {

@@ -15,7 +15,7 @@ interface TimerContextType {
   settings: ReturnType<typeof useTimerSettings>['settings'];
   progress: number;
   formatTime: (seconds: number) => string;
-  handleStart: () => void;
+  handleStart: () => void; // Changed to match what's used in components
   handlePause: () => void;
   handleReset: () => void;
   handleModeChange: (mode: TimerMode) => void;
@@ -45,41 +45,24 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     completedSessions,
     totalTimeToday,
     currentSessionIndex,
-    handleStart,
+    progress, // Get progress from useTimerLogic
+    handleStart: originalHandleStart,
     handlePause,
     handleReset,
     handleModeChange,
     setAutoStart
   } = useTimerLogic(settings);
   
-  // Enable realtime updates for sessions_summary table
+  // Enable realtime updates
   useEffect(() => {
     enableRealtimeForSessionsSummary();
   }, []);
   
-  // Calculate total time for current timer mode
-  const getTotalTime = (): number => {
-    switch (timerMode) {
-      case 'break':
-        return settings.breakDuration * 60;
-      case 'longBreak':
-        return settings.longBreakDuration * 60;
-      case 'work':
-      default:
-        return settings.workDuration * 60;
-    }
+  // Wrapper for handleStart that doesn't require a timerMode parameter
+  // This fixes the type incompatibility
+  const handleStart = () => {
+    originalHandleStart(timerMode);
   };
-  
-  // Calculate progress as elapsed / total time
-  // This ensures the progress starts at 0 and fills up to 1
-  const totalTime = getTotalTime();
-  const elapsedTime = totalTime - timeRemaining;
-  const progress = totalTime > 0 ? Math.max(0, Math.min(1, elapsedTime / totalTime)) : 0;
-  
-  // Debug progress calculation
-  useEffect(() => {
-    console.log(`Progress calculation: ${timerMode} mode - total=${totalTime}, remaining=${timeRemaining}, elapsed=${elapsedTime}, progress=${progress.toFixed(4)}`);
-  }, [timeRemaining, totalTime, progress, timerMode]);
   
   const getTimerModeLabel = () => getModeLabel(timerMode);
 
@@ -93,7 +76,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     settings,
     progress,
     formatTime,
-    handleStart,
+    handleStart, // Use our wrapped version
     handlePause,
     handleReset,
     handleModeChange,
