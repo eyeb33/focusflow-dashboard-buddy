@@ -37,6 +37,22 @@ const TimerContainer: React.FC = () => {
     settings
   });
 
+  // Make window.timerContext available for SessionRings animation
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.timerContext = {
+        timeRemaining: timeLeft,
+        isRunning
+      };
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        delete window.timerContext;
+      }
+    };
+  }, [timeLeft, isRunning]);
+
   const modeColors = {
     work: {
       startPauseColor: "bg-red-500",
@@ -122,9 +138,9 @@ const TimerContainer: React.FC = () => {
         
         <SessionRings
           completedSessions={currentSessionIndex}
-          totalSessions={4}
+          totalSessions={settings.sessionsUntilLongBreak}
           mode={mode}
-          currentPosition={currentSessionIndex % 4}
+          currentPosition={currentSessionIndex % settings.sessionsUntilLongBreak}
           className="mt-2"
         />
       </div>

@@ -32,19 +32,26 @@ const SessionRings: React.FC<SessionRingsProps> = ({
 
   // Enable pulsing animation for the last 10 seconds
   useEffect(() => {
+    let timerCheckInterval: NodeJS.Timeout | null = null;
+    
+    // Check if window.timerContext exists before using it
     const checkRemainingTime = () => {
-      if (!window.timerContext) return;
-      
-      const timer = window.timerContext.timeRemaining;
-      if (timer !== undefined && timer <= 10 && timer > 0) {
-        setIsPulsing(true);
-      } else {
-        setIsPulsing(false);
+      if (typeof window !== 'undefined' && window.timerContext && window.timerContext.timeRemaining !== undefined) {
+        const timer = window.timerContext.timeRemaining;
+        if (timer <= 10 && timer > 0) {
+          setIsPulsing(true);
+        } else {
+          setIsPulsing(false);
+        }
       }
     };
     
-    const intervalId = setInterval(checkRemainingTime, 500);
-    return () => clearInterval(intervalId);
+    timerCheckInterval = setInterval(checkRemainingTime, 500);
+    return () => {
+      if (timerCheckInterval) {
+        clearInterval(timerCheckInterval);
+      }
+    };
   }, []);
 
   /**
