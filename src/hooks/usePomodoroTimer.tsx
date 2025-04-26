@@ -3,13 +3,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 
 interface TimerSettings {
-  workTime: number;
-  breakTime: number;
-  longBreakTime: number;
+  workDuration: number;
+  breakDuration: number;
+  longBreakDuration: number;
+  sessionsUntilLongBreak: number;
 }
 
 export function usePomodoroTimer(settings: TimerSettings) {
-  const [timeLeft, setTimeLeft] = useState(settings.workTime);
+  const [timeLeft, setTimeLeft] = useState(settings.workDuration * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [mode, setMode] = useState<TimerMode>('work');
   const [progress, setProgress] = useState(100);
@@ -19,18 +20,31 @@ export function usePomodoroTimer(settings: TimerSettings) {
   const getCurrentModeDuration = useCallback(() => {
     switch (mode) {
       case 'work':
-        return settings.workTime;
+        return settings.workDuration * 60;
       case 'break':
-        return settings.breakTime;
+        return settings.breakDuration * 60;
       case 'longBreak':
-        return settings.longBreakTime;
+        return settings.longBreakDuration * 60;
     }
   }, [mode, settings]);
 
   // Handle mode changes
   const handleModeChange = useCallback((newMode: TimerMode) => {
     setMode(newMode);
-    setTimeLeft(settings[`${newMode}Time`]);
+    
+    // Set time based on the new mode using the correct property names
+    switch (newMode) {
+      case 'work':
+        setTimeLeft(settings.workDuration * 60);
+        break;
+      case 'break':
+        setTimeLeft(settings.breakDuration * 60);
+        break;
+      case 'longBreak':
+        setTimeLeft(settings.longBreakDuration * 60);
+        break;
+    }
+    
     setProgress(100);
     setIsRunning(false);
   }, [settings]);
@@ -56,7 +70,7 @@ export function usePomodoroTimer(settings: TimerSettings) {
             if (mode === 'work') {
               const nextIndex = currentSessionIndex + 1;
               setCurrentSessionIndex(nextIndex);
-              const shouldTakeLongBreak = nextIndex % 4 === 0;
+              const shouldTakeLongBreak = nextIndex % settings.sessionsUntilLongBreak === 0;
               handleModeChange(shouldTakeLongBreak ? 'longBreak' : 'break');
             } else {
               handleModeChange('work');
@@ -72,7 +86,7 @@ export function usePomodoroTimer(settings: TimerSettings) {
         clearInterval(interval);
       }
     };
-  }, [isRunning, getCurrentModeDuration, mode, currentSessionIndex, handleModeChange]);
+  }, [isRunning, getCurrentModeDuration, mode, currentSessionIndex, handleModeChange, settings]);
 
   const start = useCallback(() => setIsRunning(true), []);
   const pause = useCallback(() => setIsRunning(false), []);
