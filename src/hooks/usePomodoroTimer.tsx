@@ -10,9 +10,10 @@ interface TimerSettings {
 }
 
 export function usePomodoroTimer(settings: TimerSettings) {
-  const [timeLeft, setTimeLeft] = useState(settings.workDuration * 60);
-  const [isRunning, setIsRunning] = useState(false);
+  // Initialize time based on current mode (work by default)
   const [mode, setMode] = useState<TimerMode>('work');
+  const [timeLeft, setTimeLeft] = useState(() => settings.workDuration * 60);
+  const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0); // Start at 0% (empty)
   const [currentSessionIndex, setCurrentSessionIndex] = useState(0);
 
@@ -28,23 +29,35 @@ export function usePomodoroTimer(settings: TimerSettings) {
     }
   }, [mode, settings]);
 
+  // Update timer when settings change
+  useEffect(() => {
+    if (!isRunning) {
+      // Only update the time if the timer isn't running
+      const newTime = getCurrentModeDuration();
+      setTimeLeft(newTime);
+      // Reset progress when settings change
+      setProgress(0);
+      console.log(`Settings changed: Updated timer for ${mode} mode to ${newTime} seconds`);
+    }
+  }, [settings, mode, getCurrentModeDuration, isRunning]);
+
   // Handle mode changes
   const handleModeChange = useCallback((newMode: TimerMode) => {
     setMode(newMode);
     
-    // Set time based on the new mode using the correct property names
-    switch (newMode) {
-      case 'work':
-        setTimeLeft(settings.workDuration * 60);
-        break;
-      case 'break':
-        setTimeLeft(settings.breakDuration * 60);
-        break;
-      case 'longBreak':
-        setTimeLeft(settings.longBreakDuration * 60);
-        break;
-    }
+    // Set time based on the new mode
+    const newTime = (() => {
+      switch (newMode) {
+        case 'work':
+          return settings.workDuration * 60;
+        case 'break':
+          return settings.breakDuration * 60;
+        case 'longBreak':
+          return settings.longBreakDuration * 60;
+      }
+    })();
     
+    setTimeLeft(newTime);
     setProgress(0); // Reset progress to 0% (empty)
     setIsRunning(false);
   }, [settings]);
