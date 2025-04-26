@@ -10,18 +10,18 @@ interface TimerSettings {
 }
 
 export function usePomodoroTimer(settings: TimerSettings) {
-  // Initialize time based on current mode (work by default)
+  // Core timer state
   const [mode, setMode] = useState<TimerMode>('work');
-  const [timeLeft, setTimeLeft] = useState(() => settings.workDuration * 60);
   const [isRunning, setIsRunning] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(() => settings.workDuration * 60);
   const [progress, setProgress] = useState(0); // Start at 0% (empty)
   const [currentSessionIndex, setCurrentSessionIndex] = useState(0);
   
   // Timer interval reference
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Get current mode duration
-  const getCurrentModeDuration = useCallback(() => {
+  // Get current mode duration in seconds
+  const getCurrentModeDuration = useCallback((): number => {
     switch (mode) {
       case 'work':
         return settings.workDuration * 60;
@@ -32,48 +32,19 @@ export function usePomodoroTimer(settings: TimerSettings) {
     }
   }, [mode, settings]);
 
-  // Update timer when settings change
+  // Update timer when settings change but only if not running
   useEffect(() => {
     if (!isRunning) {
-      // Only update the time if the timer isn't running
       const newTime = getCurrentModeDuration();
       setTimeLeft(newTime);
-      // Reset progress when settings change
-      setProgress(0);
+      setProgress(0); // Reset progress when settings change
       console.log(`Settings changed: Updated timer for ${mode} mode to ${newTime} seconds`);
     }
   }, [settings, mode, getCurrentModeDuration, isRunning]);
 
-  // Handle mode changes
-  const handleModeChange = useCallback((newMode: TimerMode) => {
-    // Stop the timer if it's running
-    if (isRunning) {
-      clearInterval(timerIntervalRef.current!);
-      timerIntervalRef.current = null;
-    }
-    
-    setMode(newMode);
-    setIsRunning(false);
-    
-    // Set time based on the new mode
-    const newTime = (() => {
-      switch (newMode) {
-        case 'work':
-          return settings.workDuration * 60;
-        case 'break':
-          return settings.breakDuration * 60;
-        case 'longBreak':
-          return settings.longBreakDuration * 60;
-      }
-    })();
-    
-    setTimeLeft(newTime);
-    setProgress(0); // Reset progress to 0% (empty)
-  }, [settings, isRunning]);
-
-  // Timer effect
+  // Timer tick effect
   useEffect(() => {
-    // Clean up any existing timer interval
+    // Always clear any existing interval first
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
@@ -86,6 +57,13 @@ export function usePomodoroTimer(settings: TimerSettings) {
       timerIntervalRef.current = setInterval(() => {
         const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
         const newTimeLeft = Math.max(0, initialTimeLeft - elapsedSeconds);
+        
+        setTimeLeft(newTimeLeft);
+        
+        // Calculate progress percentage - increases as time passes
+        const totalTime = getCurrentModeDuration();
+        const newProgress = ((totalTime - newTimeLeft) / totalTime) * 100;
+        setProgress(newProgress);
         
         if (newTimeLeft <= 0) {
           // Timer completed
@@ -102,12 +80,6 @@ export function usePomodoroTimer(settings: TimerSettings) {
           } else {
             handleModeChange('work');
           }
-        } else {
-          setTimeLeft(newTimeLeft);
-          const totalTime = getCurrentModeDuration();
-          // Calculate progress percentage - increases as time passes
-          const newProgress = ((totalTime - newTimeLeft) / totalTime) * 100;
-          setProgress(newProgress);
         }
       }, 100); // Update more frequently for smoother progress
     }
@@ -115,10 +87,12 @@ export function usePomodoroTimer(settings: TimerSettings) {
     return () => {
       if (timerIntervalRef.current) {
         clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
       }
     };
-  }, [isRunning, getCurrentModeDuration, mode, currentSessionIndex, handleModeChange, settings]);
+  }, [isRunning, getCurrentModeDuration, mode, currentSessionIndex, settings.sessionsUntilLongBreak, timeLeft]);
 
+  // Timer control functions
   const start = useCallback(() => {
     console.log("Starting timer with mode:", mode, "and time left:", timeLeft);
     setIsRunning(true);
@@ -136,6 +110,28 @@ export function usePomodoroTimer(settings: TimerSettings) {
     setTimeLeft(newTime);
     setProgress(0); // Reset progress to 0% (empty)
   }, [getCurrentModeDuration, mode]);
+
+  const handleModeChange = useCallback((newMode: TimerMode) => {
+    // Stop the timer if it's running
+    setIsRunning(false);
+    
+    setMode(newMode);
+    
+    // Set time based on the new mode
+    const newTime = (() => {
+      switch (newMode) {
+        case 'work':
+          return settings.workDuration * 60;
+        case 'break':
+          return settings.breakDuration * 60;
+        case 'longBreak':
+          return settings.longBreakDuration * 60;
+      }
+    })();
+    
+    setTimeLeft(newTime);
+    setProgress(0); // Reset progress to 0% (empty)
+  }, [settings]);
 
   const formatTime = useCallback((seconds: number) => {
     const minutes = Math.floor(seconds / 60);
