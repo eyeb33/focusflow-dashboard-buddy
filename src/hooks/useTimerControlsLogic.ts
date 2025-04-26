@@ -38,7 +38,8 @@ export function useTimerControlsLogic({
   const timerStartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Timer control functions
-  const handleStart = (mode: TimerMode) => {
+  // Making handleStart accept an optional parameter to fix TypeScript error
+  const handleStart = (mode: TimerMode = timerMode) => {
     console.log("HANDLE START called in useTimerControlsLogic with mode:", mode, "isRunning:", isRunning);
     
     // If the timer is already running, don't restart it
