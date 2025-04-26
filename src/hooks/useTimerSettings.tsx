@@ -35,6 +35,9 @@ export const useTimerSettings = () => {
         
         setSettings(validatedSettings);
         console.log("Loaded timer settings from localStorage:", validatedSettings);
+      } else {
+        // Make sure the storage is initialized with default values
+        localStorage.setItem('timerSettings', JSON.stringify(defaultSettings));
       }
     } catch (error) {
       console.error("Error loading timer settings:", error);

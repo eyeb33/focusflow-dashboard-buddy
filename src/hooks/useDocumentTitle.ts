@@ -1,9 +1,10 @@
 
 import { useEffect } from 'react';
+import { TimerMode } from '@/utils/timerContextUtils';
 
 interface UseDocumentTitleProps {
   timeRemaining: number;
-  timerMode: 'work' | 'break' | 'longBreak';
+  timerMode: TimerMode;
   isRunning: boolean;
   formatTime: (seconds: number) => string;
   settings?: {

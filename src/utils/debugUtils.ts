@@ -1,3 +1,4 @@
+
 /**
  * Utility functions for debugging the timer
  */
@@ -41,4 +42,22 @@ export const clearTimerTicks = () => {
 // Debug timer state
 export const logTimerState = (state: any) => {
   console.log("TIMER STATE:", state);
+};
+
+// Debug timer settings
+export const logTimerSettings = (settings: any) => {
+  console.log("TIMER SETTINGS:", settings);
+};
+
+// Helper to check time mismatch between expected and actual
+export const checkTimeMismatch = (
+  expectedTime: number, 
+  actualTime: number, 
+  mode: string
+) => {
+  if (Math.abs(expectedTime - actualTime) > 5) {
+    console.warn(`Time mismatch for ${mode} mode: expected=${expectedTime}, actual=${actualTime}`);
+    return true;
+  }
+  return false;
 };

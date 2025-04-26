@@ -15,7 +15,7 @@ interface TimerContextType {
   settings: ReturnType<typeof useTimerSettings>['settings'];
   progress: number;
   formatTime: (seconds: number) => string;
-  handleStart: () => void; // Changed to match what's used in components
+  handleStart: () => void; // No timerMode parameter required here
   handlePause: () => void;
   handleReset: () => void;
   handleModeChange: (mode: TimerMode) => void;
@@ -23,13 +23,6 @@ interface TimerContextType {
   updateSettings: (newSettings: Partial<ReturnType<typeof useTimerSettings>['settings']>) => void;
   setAutoStart: React.Dispatch<React.SetStateAction<boolean>>;
 }
-
-const defaultSettings = {
-  workDuration: 25,
-  breakDuration: 5,
-  longBreakDuration: 15,
-  sessionsUntilLongBreak: 4
-};
 
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
 
@@ -45,7 +38,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     completedSessions,
     totalTimeToday,
     currentSessionIndex,
-    progress, // Get progress from useTimerLogic
+    progress,
     handleStart: originalHandleStart,
     handlePause,
     handleReset,
@@ -58,8 +51,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     enableRealtimeForSessionsSummary();
   }, []);
   
-  // Wrapper for handleStart that doesn't require a timerMode parameter
-  // This fixes the type incompatibility
+  // Create a wrapper for handleStart that uses the current timerMode
   const handleStart = () => {
     console.log("handleStart wrapper called in TimerContext, current mode:", timerMode);
     originalHandleStart(timerMode);
@@ -77,7 +69,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     settings,
     progress,
     formatTime,
-    handleStart, // Use our wrapped version
+    handleStart,
     handlePause,
     handleReset,
     handleModeChange,

@@ -7,10 +7,15 @@ import { useTimerStatsLogic } from './useTimerStatsLogic';
 import { useTimerProgress } from './timer/useTimerProgress';
 import { useTimerInitialization } from './timer/useTimerInitialization';
 import { useSessionTracking } from './timer/useSessionTracking';
+import { getTotalTime } from '@/utils/timerContextUtils';
+import { useEffect } from 'react';
 
 export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['settings']) {
   // Initialize core timer state
   const { timerMode, setTimerMode } = useTimerInitialization();
+  
+  // Calculate appropriate initial time based on mode and settings
+  const initialTime = getTotalTime(timerMode, settings);
   
   const {
     isRunning,
@@ -19,7 +24,16 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
     setTimeRemaining,
     autoStart,
     setAutoStart
-  } = useTimerState(settings);
+  } = useTimerState(initialTime);
+
+  // Sync timeRemaining with settings when they change
+  useEffect(() => {
+    if (!isRunning) {
+      const newTime = getTotalTime(timerMode, settings);
+      console.log(`Settings changed: Updating timer for ${timerMode} mode to ${newTime} seconds`);
+      setTimeRemaining(newTime);
+    }
+  }, [settings, timerMode, isRunning]);
 
   // Initialize stats tracking
   const {
@@ -37,20 +51,21 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
     skipTimerResetRef,
     previousSettingsRef,
     modeChangeInProgressRef
-  } = useSessionTracking(settings);
+  } = useSessionTracking();
 
   // Calculate progress
-  const { progress, getTotalTime } = useTimerProgress(timerMode, timeRemaining, settings);
+  const { progress, getTotalTime: getModeTotalTime } = useTimerProgress(timerMode, timeRemaining, settings);
 
   // Initialize timer controls
   const {
     handleStart,
     handlePause,
     handleReset,
-    handleModeChange
+    handleModeChange,
+    resetTimerState
   } = useTimerControlsLogic({
-    timerMode, // Pass timerMode separately, not as part of settings
-    settings,  // This is the settings object
+    timerMode,
+    settings,
     isRunning,
     timeRemaining,
     setIsRunning,
@@ -60,6 +75,20 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
     skipTimerResetRef,
     modeChangeInProgressRef,
     setCurrentSessionIndex
+  });
+
+  // Initialize timer completion logic
+  const { handleTimerComplete } = useTimerCompletion({
+    timerMode,
+    settings,
+    completedSessions,
+    currentSessionIndex,
+    setCompletedSessions,
+    setTimerMode,
+    setIsRunning,
+    setTotalTimeToday,
+    setCurrentSessionIndex,
+    resetTimerState
   });
 
   return {
@@ -77,6 +106,7 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
     handleReset,
     handleModeChange,
     setAutoStart,
-    sessionStartTimeRef
+    sessionStartTimeRef,
+    handleTimerComplete
   };
 }

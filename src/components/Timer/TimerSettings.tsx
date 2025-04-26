@@ -21,7 +21,8 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
   const {
     settings,
     updateSettings,
-    timerMode
+    timerMode,
+    handleReset
   } = useTimer();
   
   const { toast } = useToast();
@@ -37,16 +38,22 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
     // Apply the settings update
     updateSettings(settingsUpdate);
     
+    // Reset the timer when settings change to apply the new duration
+    setTimeout(() => {
+      // Only reset if we're in the related mode to avoid unexpected resets
+      if ((settingsUpdate.workDuration && timerMode === 'work') || 
+          (settingsUpdate.breakDuration && timerMode === 'break') ||
+          (settingsUpdate.longBreakDuration && timerMode === 'longBreak')) {
+        handleReset();
+      }
+    }, 50);
+    
     // Show a toast confirmation
     toast({
       title: "Settings updated",
       description: "Your timer settings have been saved",
       duration: 2000,
     });
-    
-    // Save settings to localStorage for persistence across sessions
-    const updatedSettings = { ...settings, ...settingsUpdate };
-    localStorage.setItem('timerSettings', JSON.stringify(updatedSettings));
   };
 
   return (

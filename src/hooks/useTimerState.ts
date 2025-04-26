@@ -1,11 +1,9 @@
 
 import { useState } from 'react';
-import { TimerMode } from '@/utils/timerContextUtils';
-import { TimerSettings } from './useTimerSettings';
 
-export function useTimerState(settings: TimerSettings) {
+export function useTimerState(initialTime: number) {
   const [isRunning, setIsRunning] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(settings.workDuration * 60);
+  const [timeRemaining, setTimeRemaining] = useState(initialTime);
   const [autoStart, setAutoStart] = useState<boolean>(false);
   
   return {
