@@ -31,8 +31,7 @@ export const useTimerControls = () => {
   // Create more reliable wrapper functions to ensure proper behavior
   const start = () => {
     console.log("START called from useTimerControls - Current time:", timeRemaining);
-    // Previously this wasn't passing the current timerMode which was causing issues
-    // Make sure we use the handleStart without any parameters as defined in TimerContext
+    // The handleStart in TimerContext is already set up to use the current timerMode
     handleStart();
   };
   

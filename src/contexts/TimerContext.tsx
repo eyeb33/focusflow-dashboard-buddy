@@ -15,7 +15,7 @@ interface TimerContextType {
   settings: ReturnType<typeof useTimerSettings>['settings'];
   progress: number;
   formatTime: (seconds: number) => string;
-  handleStart: () => void; // No timerMode parameter required here
+  handleStart: () => void;
   handlePause: () => void;
   handleReset: () => void;
   handleModeChange: (mode: TimerMode) => void;
