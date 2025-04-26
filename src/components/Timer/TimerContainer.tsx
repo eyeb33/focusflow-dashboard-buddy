@@ -73,6 +73,8 @@ const TimerContainer: React.FC = () => {
 
   const currentModeColors = modeColors[mode];
   
+  console.log("TimerContainer render with progress:", progress);
+  
   return (
     <Card className="w-full max-w-md p-6 bg-white dark:bg-black backdrop-blur-sm shadow-md">
       <div className="flex items-center justify-between mb-6">

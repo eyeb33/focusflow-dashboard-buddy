@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Popover,
   PopoverContent,
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Settings } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { useTimer } from "@/contexts/TimerContext";
+import { useTimerSettings } from "@/hooks/useTimerSettings";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import { TimerSettings as TimerSettingsType } from "@/hooks/useTimerSettings";
@@ -19,18 +19,16 @@ interface TimerSettingsProps {
 }
 
 const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
-  const {
-    settings,
-    updateSettings,
-    timerMode,
-    handleReset,
-    isRunning
-  } = useTimer();
-  
+  const { settings, updateSettings, resetSettings } = useTimerSettings();
   const { toast } = useToast();
   
   // Create local state to track settings before save
   const [localSettings, setLocalSettings] = useState<TimerSettingsType>(settings);
+  
+  // Update local settings when main settings change
+  useEffect(() => {
+    setLocalSettings(settings);
+  }, [settings]);
 
   // Update local settings without immediately applying them
   const updateLocalSettings = (settingsUpdate: Partial<TimerSettingsType>) => {
@@ -42,14 +40,10 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
 
   // Function to save all settings and show toast notification
   const saveAllSettings = () => {
+    console.log("Saving settings:", localSettings);
+    
     // Apply all local settings at once
     updateSettings(localSettings);
-    
-    // Only reset the timer if it's not currently running
-    if (!isRunning) {
-      console.log("Resetting timer after settings save to apply new duration");
-      handleReset();
-    }
     
     toast({
       title: "Settings updated",
@@ -57,11 +51,6 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
       duration: 2000,
     });
   };
-  
-  // Sync local settings when main settings change
-  React.useEffect(() => {
-    setLocalSettings(settings);
-  }, [settings]);
 
   return (
     <Popover>
@@ -138,12 +127,22 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
             />
           </div>
           
-          <Button 
-            className="w-full mt-4" 
-            onClick={saveAllSettings}
-          >
-            Save Settings
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              className="flex-1" 
+              onClick={saveAllSettings}
+            >
+              Save Settings
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              className="flex-1"
+              onClick={resetSettings}
+            >
+              Reset Defaults
+            </Button>
+          </div>
         </div>
       </PopoverContent>
     </Popover>

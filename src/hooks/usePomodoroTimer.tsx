@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 
 interface TimerSettings {
@@ -16,6 +16,9 @@ export function usePomodoroTimer(settings: TimerSettings) {
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0); // Start at 0% (empty)
   const [currentSessionIndex, setCurrentSessionIndex] = useState(0);
+  
+  // Timer interval reference
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get current mode duration
   const getCurrentModeDuration = useCallback(() => {
@@ -43,7 +46,14 @@ export function usePomodoroTimer(settings: TimerSettings) {
 
   // Handle mode changes
   const handleModeChange = useCallback((newMode: TimerMode) => {
+    // Stop the timer if it's running
+    if (isRunning) {
+      clearInterval(timerIntervalRef.current!);
+      timerIntervalRef.current = null;
+    }
+    
     setMode(newMode);
+    setIsRunning(false);
     
     // Set time based on the new mode
     const newTime = (() => {
@@ -59,57 +69,73 @@ export function usePomodoroTimer(settings: TimerSettings) {
     
     setTimeLeft(newTime);
     setProgress(0); // Reset progress to 0% (empty)
-    setIsRunning(false);
-  }, [settings]);
+  }, [settings, isRunning]);
 
   // Timer effect
   useEffect(() => {
-    let interval: NodeJS.Timeout | undefined;
+    // Clean up any existing timer interval
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
 
     if (isRunning) {
-      interval = setInterval(() => {
-        setTimeLeft(prevTime => {
-          if (prevTime > 0) {
-            const newTime = prevTime - 1;
-            const totalTime = getCurrentModeDuration();
-            // Calculate progress percentage - increases as time passes
-            const newProgress = ((totalTime - newTime) / totalTime) * 100;
-            setProgress(newProgress);
-            return newTime;
+      const startTime = Date.now();
+      const initialTimeLeft = timeLeft;
+      
+      timerIntervalRef.current = setInterval(() => {
+        const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+        const newTimeLeft = Math.max(0, initialTimeLeft - elapsedSeconds);
+        
+        if (newTimeLeft <= 0) {
+          // Timer completed
+          clearInterval(timerIntervalRef.current!);
+          timerIntervalRef.current = null;
+          setIsRunning(false);
+          
+          // Auto switch modes
+          if (mode === 'work') {
+            const nextIndex = currentSessionIndex + 1;
+            setCurrentSessionIndex(nextIndex);
+            const shouldTakeLongBreak = nextIndex % settings.sessionsUntilLongBreak === 0;
+            handleModeChange(shouldTakeLongBreak ? 'longBreak' : 'break');
           } else {
-            // Timer completed
-            clearInterval(interval);
-            setIsRunning(false);
-            
-            // Auto switch modes
-            if (mode === 'work') {
-              const nextIndex = currentSessionIndex + 1;
-              setCurrentSessionIndex(nextIndex);
-              const shouldTakeLongBreak = nextIndex % settings.sessionsUntilLongBreak === 0;
-              handleModeChange(shouldTakeLongBreak ? 'longBreak' : 'break');
-            } else {
-              handleModeChange('work');
-            }
-            return 0;
+            handleModeChange('work');
           }
-        });
-      }, 1000);
+        } else {
+          setTimeLeft(newTimeLeft);
+          const totalTime = getCurrentModeDuration();
+          // Calculate progress percentage - increases as time passes
+          const newProgress = ((totalTime - newTimeLeft) / totalTime) * 100;
+          setProgress(newProgress);
+        }
+      }, 100); // Update more frequently for smoother progress
     }
 
     return () => {
-      if (interval) {
-        clearInterval(interval);
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
       }
     };
   }, [isRunning, getCurrentModeDuration, mode, currentSessionIndex, handleModeChange, settings]);
 
-  const start = useCallback(() => setIsRunning(true), []);
-  const pause = useCallback(() => setIsRunning(false), []);
-  const reset = useCallback(() => {
+  const start = useCallback(() => {
+    console.log("Starting timer with mode:", mode, "and time left:", timeLeft);
+    setIsRunning(true);
+  }, [mode, timeLeft]);
+  
+  const pause = useCallback(() => {
+    console.log("Pausing timer with time left:", timeLeft);
     setIsRunning(false);
-    setTimeLeft(getCurrentModeDuration());
+  }, [timeLeft]);
+  
+  const reset = useCallback(() => {
+    console.log("Resetting timer for mode:", mode);
+    setIsRunning(false);
+    const newTime = getCurrentModeDuration();
+    setTimeLeft(newTime);
     setProgress(0); // Reset progress to 0% (empty)
-  }, [getCurrentModeDuration]);
+  }, [getCurrentModeDuration, mode]);
 
   const formatTime = useCallback((seconds: number) => {
     const minutes = Math.floor(seconds / 60);

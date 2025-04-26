@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export interface TimerSettings {
   workDuration: number;
@@ -18,16 +18,15 @@ const DEFAULT_TIMER_SETTINGS: TimerSettings = {
 export function useTimerSettings() {
   const [settings, setSettings] = useState<TimerSettings>(() => {
     // Try to get settings from localStorage
-    const savedSettings = localStorage.getItem('timerSettings');
-    
-    if (savedSettings) {
-      try {
+    try {
+      const savedSettings = localStorage.getItem('timerSettings');
+      
+      if (savedSettings) {
         const parsed = JSON.parse(savedSettings);
         return {...DEFAULT_TIMER_SETTINGS, ...parsed};
-      } catch (e) {
-        console.error('Error parsing timer settings', e);
-        return DEFAULT_TIMER_SETTINGS;
       }
+    } catch (e) {
+      console.error('Error parsing timer settings', e);
     }
     
     return DEFAULT_TIMER_SETTINGS;
@@ -35,24 +34,28 @@ export function useTimerSettings() {
   
   // Update localStorage when settings change
   useEffect(() => {
-    localStorage.setItem('timerSettings', JSON.stringify(settings));
-    console.log('Saved updated timer settings to localStorage:', settings);
+    try {
+      localStorage.setItem('timerSettings', JSON.stringify(settings));
+      console.log('Saved updated timer settings to localStorage:', settings);
+    } catch (e) {
+      console.error('Error saving timer settings', e);
+    }
   }, [settings]);
   
   // Function to update settings
-  const updateSettings = (newSettings: Partial<TimerSettings>) => {
+  const updateSettings = useCallback((newSettings: Partial<TimerSettings>) => {
     console.log('Updating settings with:', newSettings);
     setSettings(prevSettings => ({
       ...prevSettings,
       ...newSettings
     }));
-  };
+  }, []);
   
   // Reset to defaults
-  const resetSettings = () => {
+  const resetSettings = useCallback(() => {
     console.log('Resetting timer settings to defaults');
     setSettings(DEFAULT_TIMER_SETTINGS);
-  };
+  }, []);
   
   return {
     settings,
