@@ -45,7 +45,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
 
   const currentModeColors = modeColors[mode];
   
-  // Critical fix: Handle play/pause button click properly
+  // Handle play/pause button click properly
   const handlePlayPauseClick = () => {
     console.log("Play/Pause button clicked - current isRunning state:", isRunning);
     
@@ -57,9 +57,6 @@ const TimerControls: React.FC<TimerControlsProps> = ({
       onStart();
     }
   };
-
-  // Debug render
-  console.log("TimerControls rendering with isRunning:", isRunning);
 
   return (
     <div className={cn("flex items-center justify-center gap-4", className)}>

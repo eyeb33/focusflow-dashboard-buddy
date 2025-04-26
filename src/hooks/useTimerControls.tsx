@@ -31,7 +31,7 @@ export const useTimerControls = () => {
   // Create more reliable wrapper functions to ensure proper behavior
   const start = () => {
     console.log("START called from useTimerControls - Current time:", timeRemaining);
-    // This will call the wrapper in TimerContext which then calls originalHandleStart with timerMode
+    // This will call the wrapper in TimerContext
     handleStart();
   };
   

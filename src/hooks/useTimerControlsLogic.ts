@@ -1,4 +1,3 @@
-
 import { useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { TimerMode, getTotalTime, savePartialSession } from '@/utils/timerContextUtils';
@@ -38,8 +37,8 @@ export function useTimerControlsLogic({
   const timerStartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Timer control functions
-  // Making handleStart accept an optional parameter to fix TypeScript error
-  const handleStart = (mode: TimerMode = timerMode) => {
+  // Fixing the parameter issue here - timerMode is required parameter now
+  const handleStart = (mode: TimerMode) => {
     console.log("HANDLE START called in useTimerControlsLogic with mode:", mode, "isRunning:", isRunning);
     
     // If the timer is already running, don't restart it

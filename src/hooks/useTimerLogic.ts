@@ -58,7 +58,7 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
 
   // Initialize timer controls
   const {
-    handleStart,
+    handleStart: controlsHandleStart,
     handlePause,
     handleReset,
     handleModeChange,
@@ -76,6 +76,12 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
     modeChangeInProgressRef,
     setCurrentSessionIndex
   });
+
+  // Fix: Create a handleStart function that always passes the timerMode
+  const handleStart = (mode = timerMode) => {
+    console.log("handleStart in useTimerLogic called with mode:", mode);
+    controlsHandleStart(mode);
+  };
 
   // Initialize timer completion logic
   const { handleTimerComplete } = useTimerCompletion({
@@ -101,7 +107,7 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
     progress,
     setCompletedSessions,
     setTotalTimeToday,
-    handleStart, // This needs to properly handle the timerMode parameter
+    handleStart,
     handlePause,
     handleReset,
     handleModeChange,

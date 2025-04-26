@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Popover,
@@ -37,12 +38,9 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
     // Apply the settings update
     updateSettings(settingsUpdate);
     
-    // Reset the timer when settings change to apply the new duration immediately
-    setTimeout(() => {
-      // Reset the timer regardless of mode to ensure settings are applied consistently
-      console.log("Resetting timer after settings change to apply new duration");
-      handleReset();
-    }, 50);
+    // Reset the timer immediately to apply the new duration
+    console.log("Resetting timer after settings change to apply new duration");
+    handleReset();
     
     // Show a toast confirmation
     toast({
