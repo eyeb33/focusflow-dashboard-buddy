@@ -41,8 +41,6 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ className }) => {
     // Reset the timer immediately to apply the new duration
     console.log("Resetting timer after settings change to apply new duration");
     handleReset();
-    
-    // We'll only show toast when saving all settings, not on individual slider changes
   };
 
   // Function to save all settings and show toast notification

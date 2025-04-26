@@ -8,7 +8,8 @@ import { useTimerProgress } from './timer/useTimerProgress';
 import { useTimerInitialization } from './timer/useTimerInitialization';
 import { useSessionTracking } from './timer/useSessionTracking';
 import { getTotalTime } from '@/utils/timerContextUtils';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { useTimerTickLogic } from './useTimerTickLogic';
 
 export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['settings']) {
   // Initialize core timer state
@@ -52,6 +53,10 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
     previousSettingsRef,
     modeChangeInProgressRef
   } = useSessionTracking();
+  
+  // Refs for timer ticking
+  const lastRecordedFullMinutesRef = useRef<number>(0);
+  const lastTickTimeRef = useRef<number>(Date.now());
 
   // Calculate progress
   const { progress, getTotalTime: getModeTotalTime } = useTimerProgress(timerMode, timeRemaining, settings);
@@ -62,7 +67,8 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
     handlePause,
     handleReset,
     handleModeChange,
-    resetTimerState
+    resetTimerState,
+    lastRecordedFullMinutesRef: controlsFullMinutesRef
   } = useTimerControlsLogic({
     timerMode,
     settings,
@@ -95,6 +101,19 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
     setTotalTimeToday,
     setCurrentSessionIndex,
     resetTimerState
+  });
+
+  // Initialize timer tick logic
+  useTimerTickLogic({
+    isRunning,
+    timerMode,
+    getTotalTime: () => getModeTotalTime(),
+    onTimerComplete: handleTimerComplete,
+    setTimeRemaining,
+    timeRemaining,
+    lastRecordedFullMinutesRef: controlsFullMinutesRef || lastRecordedFullMinutesRef,
+    lastTickTimeRef,
+    sessionStartTimeRef
   });
 
   return {

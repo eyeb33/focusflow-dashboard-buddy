@@ -29,7 +29,6 @@ export function useTimerTickLogic({
 }: UseTimerTickLogicProps) {
   const { user } = useAuth();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const currentTimeRef = useRef<number | null>(null);
   
   // Debug the incoming isRunning state
   console.log(`useTimerTickLogic - isRunning: ${isRunning}, timerMode: ${timerMode}, timeRemaining: ${timeRemaining}`);
@@ -46,23 +45,16 @@ export function useTimerTickLogic({
       console.log("Starting timer tick with mode:", timerMode, "and time:", timeRemaining);
       lastTickTimeRef.current = Date.now();
 
-      // When starting or resuming, store the current time but don't modify it
-      currentTimeRef.current = timeRemaining;
-
       timerRef.current = setInterval(() => {
         const now = Date.now();
-        const expectedElapsed = 1000;
         const actualElapsed = now - lastTickTimeRef.current;
         
         // Calculate adjustment if timer drift occurs (more than 100ms off)
-        const adjustment = Math.max(0, Math.floor((actualElapsed - expectedElapsed) / 1000));
+        const adjustment = Math.max(0, Math.floor((actualElapsed - 1000) / 1000));
         
         console.log("Timer tick: remaining =", timeRemaining, "adjustment =", adjustment);
 
         setTimeRemaining(prevTime => {
-          // Always store the current time for pause state reference
-          currentTimeRef.current = prevTime;
-          
           if (prevTime <= 1) {
             if (timerRef.current) {
               clearInterval(timerRef.current);
@@ -117,15 +109,6 @@ export function useTimerTickLogic({
           };
           localStorage.setItem('timerState', JSON.stringify(timerState));
 
-          if (newTime <= 0) {
-            if (timerRef.current) {
-              clearInterval(timerRef.current);
-              timerRef.current = null;
-            }
-            setTimeout(() => onTimerComplete(), 0);
-            return 0;
-          }
-
           lastTickTimeRef.current = now;
           return newTime;
         });
@@ -143,7 +126,6 @@ export function useTimerTickLogic({
         sessionStartTime: sessionStartTimeRef.current
       };
       
-      console.log("Saving paused timer state with exact time:", timerState);
       localStorage.setItem('timerState', JSON.stringify(timerState));
     }
 
