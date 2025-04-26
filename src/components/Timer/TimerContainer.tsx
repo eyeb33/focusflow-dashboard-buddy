@@ -89,7 +89,8 @@ const TimerContainer: React.FC = () => {
     timeRemaining,
     timerMode,
     isRunning,
-    formatTime
+    formatTime,
+    settings
   });
 
   return (

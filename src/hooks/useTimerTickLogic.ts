@@ -2,6 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { savePartialSession } from '@/utils/timerContextUtils';
 import { useAuth } from '@/contexts/AuthContext';
+import { trackTimerTick } from '@/utils/debugUtils';
 
 interface UseTimerTickLogicProps {
   isRunning: boolean;
@@ -73,6 +74,9 @@ export function useTimerTickLogic({
 
           const secondsToSubtract = 1 + adjustment;
           const newTime = Math.max(0, prevTime - secondsToSubtract);
+          
+          // Track this tick for debugging purposes
+          trackTimerTick(prevTime, newTime, timerMode, now);
 
           const totalTime = getTotalTime();
           const elapsedSeconds = totalTime - newTime;

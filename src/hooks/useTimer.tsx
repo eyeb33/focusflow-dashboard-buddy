@@ -12,7 +12,7 @@ export const useTimer = () => {
   const timerContext = useTimerContext();
   
   // Enhanced logging for better debugging of timer functionality
-  console.log("Timer context:", {
+  console.log("useTimer hook called with timerContext:", {
     mode: timerContext.timerMode,
     isRunning: timerContext.isRunning,
     timeRemaining: timerContext.timeRemaining,

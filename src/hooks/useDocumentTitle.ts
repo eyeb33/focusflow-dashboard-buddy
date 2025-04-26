@@ -6,13 +6,20 @@ interface UseDocumentTitleProps {
   timerMode: 'work' | 'break' | 'longBreak';
   isRunning: boolean;
   formatTime: (seconds: number) => string;
+  settings?: {
+    workDuration: number;
+    breakDuration: number;
+    longBreakDuration: number;
+    sessionsUntilLongBreak: number;
+  };
 }
 
 export const useDocumentTitle = ({ 
   timeRemaining, 
   timerMode, 
   isRunning,
-  formatTime 
+  formatTime,
+  settings
 }: UseDocumentTitleProps) => {
   useEffect(() => {
     const getCircleColor = () => {
@@ -33,15 +40,29 @@ export const useDocumentTitle = ({
     
     // Helper function to get total time based on mode
     const getTotalTime = () => {
-      switch (timerMode) {
-        case 'work':
-          return 25 * 60; // Default work time
-        case 'break':
-          return 5 * 60;  // Default break time
-        case 'longBreak':
-          return 15 * 60; // Default long break time
-        default:
-          return 0;
+      if (settings) {
+        switch (timerMode) {
+          case 'work':
+            return settings.workDuration * 60;
+          case 'break':
+            return settings.breakDuration * 60;
+          case 'longBreak':
+            return settings.longBreakDuration * 60;
+          default:
+            return 0;
+        }
+      } else {
+        // Fallback to default values if settings aren't provided
+        switch (timerMode) {
+          case 'work':
+            return 25 * 60; // Default work time
+          case 'break':
+            return 5 * 60;  // Default break time
+          case 'longBreak':
+            return 15 * 60; // Default long break time
+          default:
+            return 0;
+        }
       }
     };
     
@@ -55,5 +76,5 @@ export const useDocumentTitle = ({
     return () => {
       document.title = 'FocusFlow';
     };
-  }, [timeRemaining, timerMode, isRunning, formatTime]);
+  }, [timeRemaining, timerMode, isRunning, formatTime, settings]);
 };

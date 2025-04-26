@@ -61,12 +61,13 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Wrapper for handleStart that doesn't require a timerMode parameter
   // This fixes the type incompatibility
   const handleStart = () => {
+    console.log("handleStart wrapper called in TimerContext, current mode:", timerMode);
     originalHandleStart(timerMode);
   };
   
   const getTimerModeLabel = () => getModeLabel(timerMode);
 
-  const value = {
+  const value: TimerContextType = {
     timerMode,
     isRunning,
     timeRemaining,

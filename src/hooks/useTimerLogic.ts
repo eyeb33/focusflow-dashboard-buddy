@@ -49,7 +49,7 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
     handleReset,
     handleModeChange
   } = useTimerControlsLogic({
-    timerMode, // This is fine, not part of the settings object
+    timerMode, // Pass timerMode separately, not as part of settings
     settings,  // This is the settings object
     isRunning,
     timeRemaining,

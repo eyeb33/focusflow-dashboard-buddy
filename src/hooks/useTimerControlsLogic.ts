@@ -1,5 +1,5 @@
 
-import { useState, useRef } from 'react';
+import { useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { TimerMode, getTotalTime, savePartialSession } from '@/utils/timerContextUtils';
 import { TimerSettings } from './useTimerSettings';
@@ -35,9 +35,18 @@ export function useTimerControlsLogic({
   const { user } = useAuth();
   const lastRecordedTimeRef = useRef<number | null>(null);
   const lastRecordedFullMinutesRef = useRef<number>(0);
+  const timerStartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Timer control functions
   const handleStart = (mode: TimerMode) => {
+    console.log("HANDLE START called in useTimerControlsLogic with mode:", mode, "isRunning:", isRunning);
+    
+    // If the timer is already running, don't restart it
+    if (isRunning) {
+      console.log("Timer is already running, ignoring start call");
+      return;
+    }
+    
     // Save the current time to compare on pause
     lastRecordedTimeRef.current = timeRemaining;
     
@@ -45,9 +54,29 @@ export function useTimerControlsLogic({
     const elapsedSeconds = totalTime - timeRemaining;
     lastRecordedFullMinutesRef.current = Math.floor(elapsedSeconds / 60);
     
+    // Set session start time if it's not already set
+    if (!sessionStartTimeRef.current) {
+      sessionStartTimeRef.current = new Date().toISOString();
+      localStorage.setItem('sessionStartTime', sessionStartTimeRef.current);
+      console.log("Set new session start time:", sessionStartTimeRef.current);
+    }
+    
     // Start the timer without changing timeRemaining
+    console.log("Setting isRunning to TRUE with time remaining:", timeRemaining);
     setIsRunning(true);
-    console.log("Timer started at:", timeRemaining, "seconds");
+    
+    // Save the timer state to localStorage for persistence
+    const timerState = {
+      isRunning: true,
+      timerMode: mode,
+      timeRemaining,
+      totalTime: getTotalTime(mode, settings),
+      timestamp: Date.now(),
+      sessionStartTime: sessionStartTimeRef.current
+    };
+    localStorage.setItem('timerState', JSON.stringify(timerState));
+    
+    console.log("Timer started at:", timeRemaining, "seconds with mode:", mode);
   };
   
   const handlePause = async () => {
@@ -107,6 +136,10 @@ export function useTimerControlsLogic({
     lastRecordedFullMinutesRef.current = 0;
     console.log("Timer RESET to:", newTime, "seconds");
     
+    // Reset session start time
+    sessionStartTimeRef.current = null;
+    localStorage.removeItem('sessionStartTime');
+    
     // Reset the current session index when timer is reset
     if (timerMode === 'work' && setCurrentSessionIndex) {
       setCurrentSessionIndex(0);
@@ -133,6 +166,10 @@ export function useTimerControlsLogic({
     lastRecordedTimeRef.current = null;
     lastRecordedFullMinutesRef.current = 0;
     
+    // Reset session start time
+    sessionStartTimeRef.current = null;
+    localStorage.removeItem('sessionStartTime');
+    
     // Set new time according to the new mode
     const newTime = getTotalTime(newMode, settings);
     setTimeRemaining(newTime);
@@ -145,19 +182,33 @@ export function useTimerControlsLogic({
     
     // Finally, change the timer mode
     setTimerMode(newMode);
+    
+    // Save the timer state to localStorage for persistence
+    const timerState = {
+      isRunning: false,
+      timerMode: newMode,
+      timeRemaining: newTime,
+      totalTime: newTime,
+      timestamp: Date.now(),
+      sessionStartTime: null
+    };
+    localStorage.setItem('timerState', JSON.stringify(timerState));
   };
 
   const resetTimerState = () => {
     // Calculate the correct time for the current mode
-    const currentMode = localStorage.getItem('timerMode') || 'work';
-    const newTime = getTotalTime(currentMode as TimerMode, settings);
+    const newTime = getTotalTime(timerMode, settings);
     setTimeRemaining(newTime);
     
     // Reset recording refs
     lastRecordedTimeRef.current = null;
     lastRecordedFullMinutesRef.current = 0;
     
-    console.log("Timer state reset to:", newTime, "seconds for mode:", currentMode);
+    // Reset session start time
+    sessionStartTimeRef.current = null;
+    localStorage.removeItem('sessionStartTime');
+    
+    console.log("Timer state reset to:", newTime, "seconds for mode:", timerMode);
   };
 
   return {
