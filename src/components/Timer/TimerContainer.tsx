@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,63 +7,35 @@ import CircularProgress from "@/components/Timer/CircularProgress";
 import TimerControls from "@/components/Timer/TimerControls";
 import TimerSettings from "@/components/Timer/TimerSettings";
 import SessionRings from "@/components/Timer/SessionRings";
-import { useTimerControls } from "@/hooks/useTimerControls";
-import { useTimerStats } from "@/hooks/useTimerStats";
 import { useTimerSettings } from "@/hooks/useTimerSettings";
 import { cn } from "@/lib/utils";
-import { useTimer } from '@/contexts/TimerContext';
-import { getTotalTime } from '@/utils/timerContextUtils';
+import { usePomodoroTimer } from "@/hooks/usePomodoroTimer";
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 const TimerContainer: React.FC = () => {
+  const { settings } = useTimerSettings();
   
   const {
+    timeLeft,
     isRunning,
-    timerMode,
-    timeRemaining,
+    mode,
     progress,
     currentSessionIndex,
-    formatTime,
     start,
     pause,
     reset,
-    changeMode,
+    handleModeChange,
+    formatTime,
     getModeLabel
-  } = useTimerControls();
+  } = usePomodoroTimer(settings);
   
-  const { completedSessions, sessionsUntilLongBreak } = useTimerStats();
-  
-  const { settings } = useTimerSettings();
-
-  const timerContext = useTimer();
-  
-  useEffect(() => {
-    const storedState = localStorage.getItem('timerState');
-    const freshLoad = !isRunning && (!storedState || 
-      (storedState && JSON.parse(storedState).isRunning === false));
-      
-    if (freshLoad && completedSessions > 0) {
-      console.log("Fresh page load detected with completed sessions > 0, resetting timer state");
-      localStorage.removeItem('timerState');
-      reset();
-    }
-  }, [isRunning, completedSessions, reset]);
-  
-  useEffect(() => {
-    console.log("Timer Container State:", {
-      mode: timerMode,
-      isRunning,
-      timeRemaining,
-      progress: progress.toFixed(4),
-      index: currentSessionIndex,
-      completed: completedSessions,
-      total: sessionsUntilLongBreak
-    });
-  }, [timerMode, isRunning, timeRemaining, progress, currentSessionIndex, completedSessions, sessionsUntilLongBreak]);
-  
-  useEffect(() => {
-    window.timerContext = timerContext;
-  }, [timerContext]);
+  useDocumentTitle({
+    timeRemaining: timeLeft,
+    timerMode: mode,
+    isRunning,
+    formatTime,
+    settings
+  });
 
   const modeColors = {
     work: {
@@ -83,22 +55,14 @@ const TimerContainer: React.FC = () => {
     }
   };
 
-  const currentModeColors = modeColors[timerMode];
+  const currentModeColors = modeColors[mode];
   
-  useDocumentTitle({
-    timeRemaining,
-    timerMode,
-    isRunning,
-    formatTime,
-    settings
-  });
-
   return (
     <Card className="w-full max-w-md p-6 bg-white dark:bg-black backdrop-blur-sm shadow-md">
       <div className="flex items-center justify-between mb-6">
         <Tabs 
-          value={timerMode} 
-          onValueChange={(v) => changeMode(v as 'work' | 'break' | 'longBreak')}
+          value={mode} 
+          onValueChange={(v) => handleModeChange(v as 'work' | 'break' | 'longBreak')}
           className="w-full"
         >
           <TabsList className="grid w-full grid-cols-3">
@@ -133,16 +97,16 @@ const TimerContainer: React.FC = () => {
         
         <CircularProgress 
           progress={progress} 
-          mode={timerMode}
+          mode={mode}
           size={260}
           className="mb-6"
         >
           <div className="text-center">
             <div className="text-5xl font-bold tracking-tighter font-mono w-[180px] flex justify-center">
-              {formatTime(timeRemaining)}
+              {formatTime(timeLeft)}
             </div>
             <div className="text-sm text-muted-foreground mt-2">
-              {timerMode === 'work' ? "Focus on your task" : "Take a break"}
+              {mode === 'work' ? "Focus on your task" : "Take a break"}
             </div>
           </div>
         </CircularProgress>
@@ -152,29 +116,20 @@ const TimerContainer: React.FC = () => {
           onStart={start}
           onPause={pause}
           onReset={reset}
-          mode={timerMode}
+          mode={mode}
           className="mb-4"
         />
         
         <SessionRings
-          completedSessions={completedSessions}
-          totalSessions={sessionsUntilLongBreak}
-          mode={timerMode}
-          currentPosition={currentSessionIndex}
+          completedSessions={currentSessionIndex}
+          totalSessions={4}
+          mode={mode}
+          currentPosition={currentSessionIndex % 4}
           className="mt-2"
         />
       </div>
     </Card>
   );
 };
-
-declare global {
-  interface Window {
-    timerContext?: {
-      timeRemaining: number;
-      [key: string]: any;
-    };
-  }
-}
 
 export default TimerContainer;
