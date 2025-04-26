@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useEffect } from 'react';
-import { TimerMode, enableRealtimeForSessionsSummary } from '@/utils/timerContextUtils';
-import { formatTime, getModeLabel } from '@/utils/timerUtils';
-import { useTimerLogic } from '@/hooks/useTimerLogic';
+
+import React, { createContext, useContext } from 'react';
+import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerSettings } from '@/hooks/useTimerSettings';
+import { useTimer as useTimerHook } from '@/hooks/useTimer';
 
 interface TimerContextType {
   timerMode: TimerMode;
@@ -36,24 +36,15 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     totalTimeToday,
     currentSessionIndex,
     progress,
-    handleStart: originalHandleStart,
+    handleStart,
     handlePause,
     handleReset,
     handleModeChange,
+    getModeLabel,
+    formatTime,
     setAutoStart
-  } = useTimerLogic(settings);
+  } = useTimerHook(settings);
   
-  useEffect(() => {
-    enableRealtimeForSessionsSummary();
-  }, []);
-  
-  const handleStart = () => {
-    console.log("handleStart wrapper called in TimerContext, current mode:", timerMode);
-    originalHandleStart();
-  };
-  
-  const getTimerModeLabel = () => getModeLabel(timerMode);
-
   const value: TimerContextType = {
     timerMode,
     isRunning,
@@ -68,7 +59,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     handlePause,
     handleReset,
     handleModeChange,
-    getModeLabel: getTimerModeLabel,
+    getModeLabel,
     updateSettings,
     setAutoStart
   };
