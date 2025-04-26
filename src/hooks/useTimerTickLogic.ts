@@ -147,7 +147,8 @@ export function useTimerTickLogic({
     setTimeRemaining,
     lastRecordedFullMinutesRef,
     lastTickTimeRef,
-    sessionStartTimeRef
+    sessionStartTimeRef,
+    timeRemaining
   ]);
 
   return timerRef;

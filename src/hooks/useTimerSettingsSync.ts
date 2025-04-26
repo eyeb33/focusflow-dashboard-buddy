@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { getTotalTime, TimerMode } from '@/utils/timerContextUtils';
 import { TimerSettings } from './useTimerSettings';
@@ -36,8 +35,23 @@ export function useTimerSettingsSync({
       previousSettingsRef.current?.longBreakDuration !== settings.longBreakDuration ||
       previousSettingsRef.current?.sessionsUntilLongBreak !== settings.sessionsUntilLongBreak;
     
-    // Only update timer if settings changed AND the timer is not running AND we're not skipping reset
-    if (hasSettingsChanged && !isRunning && !skipTimerResetRef.current) {
+    // Check if we need to skip the timer reset (e.g., after a pause)
+    if (skipTimerResetRef.current) {
+      console.log("Skipping timer reset due to skipTimerResetRef flag");
+      
+      // We've acknowledged the skip flag, but keep it for 100ms to ensure all effects have time to run
+      setTimeout(() => {
+        skipTimerResetRef.current = false;
+        console.log("Reset skipTimerResetRef after delay");
+      }, 100);
+      
+      // Always update the settings ref
+      previousSettingsRef.current = { ...settings };
+      return;
+    }
+    
+    // Only update timer if settings changed AND the timer is not running
+    if (hasSettingsChanged && !isRunning) {
       console.log("Settings changed - resetting timer:", {
         oldSettings: previousSettingsRef.current,
         newSettings: settings
@@ -48,18 +62,24 @@ export function useTimerSettingsSync({
       setTimeRemaining(newTime);
       
       sessionStartTimeRef.current = null;
-    } else if (!isRunning && !skipTimerResetRef.current) {
-      // If timer isn't running and we're not skipping reset, set time based on mode/settings
-      console.log("Setting time based on mode/settings change:", getTotalTime(timerMode, settings));
+    } else if (!isRunning && previousSettingsRef.current === null) {
+      // If timer isn't running and this is initial settings load, set time based on mode/settings
+      console.log("Initial settings load - setting time based on mode:", getTotalTime(timerMode, settings));
       setTimeRemaining(getTotalTime(timerMode, settings));
       
       sessionStartTimeRef.current = null;
-    } else if (skipTimerResetRef.current) {
-      console.log("Skipping timer reset after pause/resume");
-      // Once we've acknowledged the skip, reset the flag so future settings changes can take effect
-      skipTimerResetRef.current = false;
     }
     
+    // Always update the settings ref
     previousSettingsRef.current = { ...settings };
-  }, [timerMode, settings, isRunning, setTimeRemaining, skipTimerResetRef, modeChangeInProgressRef, previousSettingsRef, sessionStartTimeRef]);
+  }, [
+    timerMode,
+    settings,
+    isRunning,
+    setTimeRemaining,
+    skipTimerResetRef,
+    modeChangeInProgressRef,
+    previousSettingsRef,
+    sessionStartTimeRef
+  ]);
 }

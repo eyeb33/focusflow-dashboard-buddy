@@ -45,10 +45,8 @@ const TimerControls: React.FC<TimerControlsProps> = ({
 
   const currentModeColors = modeColors[mode];
   
-  // Handle play/pause button click properly
+  // Handle play/pause button click with console logging for debugging
   const handlePlayPauseClick = () => {
-    console.log("Play/Pause button clicked - current isRunning state:", isRunning);
-    
     if (isRunning) {
       console.log("Pause button clicked - calling onPause()");
       onPause();

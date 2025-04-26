@@ -1,4 +1,3 @@
-
 import { useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { TimerMode, getTotalTime, savePartialSession } from '@/utils/timerContextUtils';
@@ -63,11 +62,12 @@ export function useTimerControlsLogic({
     
     // Start the timer without changing timeRemaining
     console.log("Setting isRunning to TRUE with time remaining:", timeRemaining);
-    setIsRunning(true);
     
-    // Important: Set skipTimerResetRef to true to prevent timeRemaining from being reset
-    // when starting or resuming the timer
+    // CRITICAL: Set skipTimerResetRef to true BEFORE changing isRunning
+    // This prevents any listeners from resetting the timer
     skipTimerResetRef.current = true;
+    
+    setIsRunning(true);
     
     // Save the timer state to localStorage for persistence
     const timerState = {
@@ -84,8 +84,11 @@ export function useTimerControlsLogic({
   };
   
   const handlePause = async () => {
-    // CRITICAL: Only change the running state to false
     console.log("HANDLE PAUSE called with time remaining:", timeRemaining);
+    
+    // CRITICAL: Set skipTimerResetRef to true BEFORE changing isRunning
+    // This prevents any listeners from resetting the timer
+    skipTimerResetRef.current = true;
     
     // Store current time in localStorage BEFORE changing any state
     const timerState = {
@@ -94,7 +97,7 @@ export function useTimerControlsLogic({
       timeRemaining: timeRemaining, // Use the current timeRemaining directly
       totalTime: getTotalTime(timerMode, settings),
       timestamp: Date.now(),
-      sessionStartTime: localStorage.getItem('sessionStartTime')
+      sessionStartTime: sessionStartTimeRef.current
     };
     
     console.log("Saving paused timer state with exact time:", timerState);
@@ -115,9 +118,6 @@ export function useTimerControlsLogic({
         lastRecordedFullMinutesRef.current
       );
     }
-    
-    // CRITICAL: Set skipTimerResetRef to true to prevent timeRemaining from being reset
-    skipTimerResetRef.current = true;
   };
   
   const handleReset = async () => {
