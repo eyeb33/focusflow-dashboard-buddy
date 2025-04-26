@@ -1,9 +1,8 @@
-
 import React, { useEffect } from 'react';
 import { cn } from "@/lib/utils";
 
 interface CircularProgressProps {
-  progress: number; // 0 to 1
+  progress: number; // 0 to 100
   size?: number;
   strokeWidth?: number;
   mode?: 'work' | 'break' | 'longBreak';
@@ -19,18 +18,13 @@ const CircularProgress = ({
   children,
   className
 }: CircularProgressProps) => {
-  // Ensure progress is between 0 and 1 and never negative
-  const normalizedProgress = Math.min(Math.max(progress || 0, 0), 1);
+  // Normalize progress to a value between 0 and 1
+  const normalizedProgress = Math.min(Math.max(progress / 100, 0), 1);
   
   useEffect(() => {
     // Log progress value for debugging
     console.log(`CircularProgress: mode=${mode}, progress=${progress}, normalized=${normalizedProgress}`);
-    
-    // Periodic progress validation check
-    if (progress < 0 || progress > 1) {
-      console.warn(`CircularProgress received invalid progress value: ${progress}`);
-    }
-  }, [progress, mode]);
+  }, [progress, mode, normalizedProgress]);
   
   // Calculate stroke colors based on mode
   const getStrokeColor = () => {

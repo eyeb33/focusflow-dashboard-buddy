@@ -59,7 +59,9 @@ export function usePomodoroTimer(settings: TimerSettings) {
           if (prevTime > 0) {
             const newTime = prevTime - 1;
             const totalTime = getCurrentModeDuration();
-            setProgress((newTime / totalTime) * 100);
+            // Calculate progress percentage based on remaining time
+            const newProgress = (newTime / totalTime) * 100;
+            setProgress(newProgress);
             return newTime;
           } else {
             // Timer completed
