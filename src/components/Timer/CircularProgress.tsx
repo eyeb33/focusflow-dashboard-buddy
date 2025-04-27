@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { cn } from "@/lib/utils";
 
 interface CircularProgressProps {
@@ -19,9 +19,8 @@ const CircularProgress = ({
   children,
   className
 }: CircularProgressProps) => {
-  // Progress comes in as 0-100 where 0 is empty and 100 is full
-  // We want to normalize it to 0-1 for SVG calculations
-  const normalizedProgress = Math.min(Math.max(progress / 100, 0), 1);
+  // Ensure progress is within 0-100 range
+  const normalizedProgress = Math.min(Math.max(progress, 0), 100) / 100;
   
   // Calculate stroke colors based on mode
   const getStrokeColor = () => {

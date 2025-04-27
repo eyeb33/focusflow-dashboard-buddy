@@ -45,10 +45,19 @@ const TimerControls: React.FC<TimerControlsProps> = ({
 
   const currentModeColors = modeColors[mode];
   
+  // Handle play/pause button click
+  const handlePlayPauseClick = () => {
+    if (isRunning) {
+      onPause();
+    } else {
+      onStart();
+    }
+  };
+  
   return (
     <div className={cn("flex items-center justify-center gap-4", className)}>
       <Button 
-        onClick={isRunning ? onPause : onStart}
+        onClick={handlePlayPauseClick}
         size="lg" 
         className={cn(
           "rounded-full w-14 h-14 flex items-center justify-center shadow-md transition-colors",
