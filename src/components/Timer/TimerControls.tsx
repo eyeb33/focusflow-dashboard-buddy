@@ -1,5 +1,5 @@
+"use client";
 
-import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Play, Pause, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -9,84 +9,51 @@ interface TimerControlsProps {
   onStart: () => void;
   onPause: () => void;
   onReset: () => void;
-  mode: 'work' | 'break' | 'longBreak';
+  mode: "work" | "break" | "longBreak";
   className?: string;
 }
 
-const TimerControls: React.FC<TimerControlsProps> = ({
+const modeColors = {
+  work: {
+    startPause: "bg-red-500 hover:bg-red-600",
+    reset: "text-red-500 hover:text-red-600",
+  },
+  break: {
+    startPause: "bg-green-500 hover:bg-green-600",
+    reset: "text-green-500 hover:text-green-600",
+  },
+  longBreak: {
+    startPause: "bg-blue-500 hover:bg-blue-600",
+    reset: "text-blue-500 hover:text-blue-600",
+  },
+};
+
+export default function TimerControls({
   isRunning,
   onStart,
   onPause,
   onReset,
   mode,
-  className
-}) => {
-  // Color mapping for different modes
-  const modeColors = {
-    work: {
-      color: "text-red-500",
-      bgColor: "bg-red-500",
-      hoverClass: "hover:bg-white hover:text-red-500",
-      activeClass: "bg-red-500 text-white"
-    },
-    break: {
-      color: "text-green-500",
-      bgColor: "bg-green-500",
-      hoverClass: "hover:bg-white hover:text-green-500",
-      activeClass: "bg-green-500 text-white"
-    },
-    longBreak: {
-      color: "text-blue-500",
-      bgColor: "bg-blue-500",
-      hoverClass: "hover:bg-white hover:text-blue-500",
-      activeClass: "bg-blue-500 text-white"
-    }
-  };
+  className,
+}: TimerControlsProps) {
+  const colors = modeColors[mode];
 
-  const currentModeColors = modeColors[mode];
-  
-  // Handle play/pause button click
-  const handlePlayPauseClick = () => {
-    if (isRunning) {
-      onPause();
-    } else {
-      onStart();
-    }
-  };
-  
   return (
-    <div className={cn("flex items-center justify-center gap-4", className)}>
-      <Button 
-        onClick={handlePlayPauseClick}
-        size="lg" 
-        className={cn(
-          "rounded-full w-14 h-14 flex items-center justify-center shadow-md transition-colors",
-          isRunning 
-            ? `bg-white ${currentModeColors.color} border border-slate-200 ${currentModeColors.hoverClass}` 
-            : `${currentModeColors.activeClass} border border-transparent hover:bg-white hover:${currentModeColors.color}`
-        )}
-        aria-label={isRunning ? "Pause timer" : "Start timer"}
+    <div className={cn("flex items-center gap-4", className)}>
+      <Button
+        onClick={isRunning ? onPause : onStart}
+        className={cn("rounded-full w-14 h-14 p-0", colors.startPause)}
       >
-        {!isRunning ? (
-          <Play className="h-6 w-6" />
-        ) : (
-          <Pause className="h-6 w-6" />
-        )}
+        {isRunning ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
       </Button>
-      
-      <Button 
-        onClick={onReset} 
-        size="lg"
-        className={cn(
-          "rounded-full w-14 h-14 flex items-center justify-center shadow-md bg-white hover:bg-gray-100 border border-slate-200",
-          currentModeColors.color
-        )}
-        aria-label="Reset timer"
+
+      <Button
+        onClick={onReset}
+        variant="ghost"
+        className={cn("rounded-full w-12 h-12 p-0", colors.reset)}
       >
-        <RotateCcw className="h-6 w-6" />
+        <RotateCcw className="w-5 h-5" />
       </Button>
     </div>
   );
-};
-
-export default TimerControls;
+}
