@@ -1,6 +1,4 @@
-"use client";
-
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,11 +6,13 @@ import CircularProgress from "./CircularProgress";
 import TimerControls from "./TimerControls";
 import TimerSettings from "./TimerSettings";
 import SessionRings from "./SessionRings";
+
 import { useTimerControls } from "@/hooks/useTimerControls";
 import { useTimerSettings } from "@/hooks/useTimerSettings";
+import { useTimerStats } from "@/hooks/useTimerStats";
 import { cn } from "@/lib/utils";
 
-const TimerContainer = () => {
+const TimerContainer: React.FC = () => {
   const {
     isRunning,
     timerMode,
@@ -27,36 +27,28 @@ const TimerContainer = () => {
     getModeLabel,
   } = useTimerControls();
 
+  const { completedSessions, sessionsUntilLongBreak } = useTimerStats();
   const { settings } = useTimerSettings();
 
   const modeColors = {
     work: {
       startPauseColor: "bg-red-500",
       resetColor: "text-red-500",
-      activeClass:
-        "data-[state=active]:bg-red-500 data-[state=active]:text-white",
+      activeClass: "data-[state=active]:bg-red-500 data-[state=active]:text-white",
     },
     break: {
       startPauseColor: "bg-green-500",
       resetColor: "text-green-500",
-      activeClass:
-        "data-[state=active]:bg-green-500 data-[state=active]:text-white",
+      activeClass: "data-[state=active]:bg-green-500 data-[state=active]:text-white",
     },
     longBreak: {
       startPauseColor: "bg-blue-500",
       resetColor: "text-blue-500",
-      activeClass:
-        "data-[state=active]:bg-blue-500 data-[state=active]:text-white",
+      activeClass: "data-[state=active]:bg-blue-500 data-[state=active]:text-white",
     },
   };
 
   const currentModeColors = modeColors[timerMode];
-
-  useEffect(() => {
-    console.log(
-      `Mode: ${timerMode} | Session: ${currentSessionIndex} | Time Left: ${timeRemaining}s`
-    );
-  }, [timerMode, currentSessionIndex, timeRemaining]);
 
   return (
     <Card className="w-full max-w-md p-6 bg-white dark:bg-black backdrop-blur-sm shadow-md">
@@ -67,19 +59,15 @@ const TimerContainer = () => {
           className="w-full"
         >
           <TabsList className="grid w-full grid-cols-3">
-            {["work", "break", "longBreak"].map((mode) => (
-              <TabsTrigger
-                key={mode}
-                value={mode}
-                className={cn(currentModeColors.activeClass)}
-              >
-                {mode === "work"
-                  ? "Focus"
-                  : mode === "break"
-                  ? "Break"
-                  : "Long Break"}
-              </TabsTrigger>
-            ))}
+            <TabsTrigger value="work" className={cn(currentModeColors.activeClass)}>
+              Focus
+            </TabsTrigger>
+            <TabsTrigger value="break" className={cn(currentModeColors.activeClass)}>
+              Break
+            </TabsTrigger>
+            <TabsTrigger value="longBreak" className={cn(currentModeColors.activeClass)}>
+              Long Break
+            </TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -117,8 +105,8 @@ const TimerContainer = () => {
         />
 
         <SessionRings
-          completedSessions={currentSessionIndex}
-          totalSessions={settings.sessionsUntilLongBreak}
+          completedSessions={completedSessions}
+          totalSessions={sessionsUntilLongBreak}
           mode={timerMode}
           currentPosition={currentSessionIndex}
           className="mt-2"

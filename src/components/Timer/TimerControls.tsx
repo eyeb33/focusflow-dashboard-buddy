@@ -1,7 +1,6 @@
-"use client";
-
+import React from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RotateCcw } from "lucide-react";
+import { RotateCcw, Pause, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TimerControlsProps {
@@ -15,45 +14,51 @@ interface TimerControlsProps {
 
 const modeColors = {
   work: {
-    startPause: "bg-red-500 hover:bg-red-600",
-    reset: "text-red-500 hover:text-red-600",
+    startPauseColor: "bg-red-500 hover:bg-red-600",
+    resetColor: "text-red-500 hover:text-red-600",
   },
   break: {
-    startPause: "bg-green-500 hover:bg-green-600",
-    reset: "text-green-500 hover:text-green-600",
+    startPauseColor: "bg-green-500 hover:bg-green-600",
+    resetColor: "text-green-500 hover:text-green-600",
   },
   longBreak: {
-    startPause: "bg-blue-500 hover:bg-blue-600",
-    reset: "text-blue-500 hover:text-blue-600",
+    startPauseColor: "bg-blue-500 hover:bg-blue-600",
+    resetColor: "text-blue-500 hover:text-blue-600",
   },
 };
 
-export default function TimerControls({
+const TimerControls: React.FC<TimerControlsProps> = ({
   isRunning,
   onStart,
   onPause,
   onReset,
   mode,
   className,
-}: TimerControlsProps) {
+}) => {
   const colors = modeColors[mode];
 
   return (
     <div className={cn("flex items-center gap-4", className)}>
       <Button
         onClick={isRunning ? onPause : onStart}
-        className={cn("rounded-full w-14 h-14 p-0", colors.startPause)}
+        className={cn(
+          "rounded-full w-14 h-14 text-white transition",
+          colors.startPauseColor
+        )}
+        aria-label={isRunning ? "Pause timer" : "Start timer"}
       >
-        {isRunning ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+        {isRunning ? <Pause size={24} /> : <Play size={24} />}
       </Button>
-
       <Button
         onClick={onReset}
         variant="ghost"
-        className={cn("rounded-full w-12 h-12 p-0", colors.reset)}
+        className={cn("rounded-full p-2 transition", colors.resetColor)}
+        aria-label="Reset timer"
       >
-        <RotateCcw className="w-5 h-5" />
+        <RotateCcw size={22} />
       </Button>
     </div>
   );
-}
+};
+
+export default TimerControls;

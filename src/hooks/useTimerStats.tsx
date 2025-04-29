@@ -1,24 +1,14 @@
+import { useTimerControls } from "./useTimerControls";
+import { useTimerSettings } from "./useTimerSettings";
 
-import React from 'react';
-import { useTimer } from '@/contexts/TimerContext';
+export function useTimerStats() {
+  const { completedSessions } = useTimerControls();
+  const { settings } = useTimerSettings();
 
-export const useTimerStats = () => {
-  const timer = useTimer();
+  const sessionsUntilLongBreak = settings.sessionsBeforeLongBreak;
 
-  // Extract only the stats
-  const {
-    completedSessions,
-    totalTimeToday,
-    settings,
-    currentSessionIndex
-  } = timer;
-
-  // Provide sessionsUntilLongBreak directly (can customize per user later)
   return {
     completedSessions,
-    totalTimeToday,
-    currentSessionIndex,
-    sessionsUntilLongBreak: settings?.sessionsUntilLongBreak ?? 4,
-    completedRounds: Math.floor(completedSessions / (settings?.sessionsUntilLongBreak ?? 4))
+    sessionsUntilLongBreak,
   };
-};
+}

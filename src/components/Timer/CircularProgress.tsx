@@ -1,69 +1,69 @@
-"use client";
-
+import React from "react";
 import { cn } from "@/lib/utils";
 
 interface CircularProgressProps {
-  progress: number;
+  progress: number; // Value between 0 and 1
   mode: "work" | "break" | "longBreak";
   size?: number;
-  thickness?: number;
-  children?: React.ReactNode;
   className?: string;
+  children?: React.ReactNode;
 }
 
 const modeColors = {
-  work: "stroke-red-500",
-  break: "stroke-green-500",
-  longBreak: "stroke-blue-500",
+  work: "#ef4343",
+  break: "#2fc55e",
+  longBreak: "#3b81f6",
 };
 
-export default function CircularProgress({
+const CircularProgress: React.FC<CircularProgressProps> = ({
   progress,
   mode,
   size = 240,
-  thickness = 8,
-  children,
   className,
-}: CircularProgressProps) {
-  const radius = (size - thickness) / 2;
+  children,
+}) => {
+  const strokeWidth = 10;
+  const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - progress * circumference;
+  const offset = circumference * (1 - progress);
 
   return (
     <div
-      className={cn(
-        "relative",
-        className
-      )}
+      className={cn("relative flex items-center justify-center", className)}
       style={{ width: size, height: size }}
     >
-      <svg className="w-full h-full transform -rotate-90" viewBox={`0 0 ${size} ${size}`}>
+      <svg
+        className="absolute top-0 left-0"
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+      >
         <circle
-          className="text-gray-300 dark:text-gray-700"
-          stroke="currentColor"
-          strokeWidth={thickness}
-          fill="transparent"
-          r={radius}
           cx={size / 2}
           cy={size / 2}
+          r={radius}
+          stroke="#e5e7eb" // neutral gray background
+          strokeWidth={strokeWidth}
+          fill="none"
         />
         <circle
-          className={cn("transition-all duration-300 ease-out", modeColors[mode])}
-          stroke="currentColor"
-          strokeWidth={thickness}
-          strokeLinecap="round"
-          fill="transparent"
-          r={radius}
           cx={size / 2}
           cy={size / 2}
+          r={radius}
+          stroke={modeColors[mode]}
+          strokeWidth={strokeWidth}
+          fill="none"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
+          strokeLinecap="round"
+          style={{ transition: "stroke-dashoffset 0.3s ease" }}
         />
       </svg>
-
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="relative z-10 flex items-center justify-center">
         {children}
       </div>
     </div>
   );
-}
+};
+
+export default CircularProgress;
