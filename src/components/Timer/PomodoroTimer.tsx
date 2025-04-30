@@ -1,109 +1,149 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabaseClient";
+import React, { useEffect, useRef, useState } from "react";
 import TimerCircle from "./TimerCircle";
+import TimerSettings from "./TimerSettings";
 import { Button } from "@/components/ui/button";
-
-const DEFAULTS = {
-  focus: 25 * 60,
-  shortBreak: 5 * 60,
-  longBreak: 15 * 60,
-  sessionsPerCycle: 4
-};
+import { Pause, Play, RotateCw } from "lucide-react";
 
 const PomodoroTimer = () => {
-  const { user } = useAuth();
-  const [phase, setPhase] = useState<'focus' | 'shortBreak' | 'longBreak'>('focus');
-  const [duration, setDuration] = useState(DEFAULTS.focus);
-  const [timeLeft, setTimeLeft] = useState(DEFAULTS.focus);
+  const defaultDurations = {
+    focus: 25,
+    break: 5,
+    longBreak: 15,
+    sessionsBeforeLongBreak: 4,
+  };
+
+  const [mode, setMode] = useState<"focus" | "break" | "longBreak">("focus");
+  const [durations, setDurations] = useState(defaultDurations);
+  const [secondsLeft, setSecondsLeft] = useState(durations.focus * 60);
   const [isRunning, setIsRunning] = useState(false);
-  const [sessionCount, setSessionCount] = useState(0);
+  const [completedFocusSessions, setCompletedFocusSessions] = useState(0);
+
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load user preferences
   useEffect(() => {
-    const loadPrefs = async () => {
-      if (!user) return;
-      const { data, error } = await supabase.from("user_preferences").select("*").eq("id", user.id).single();
-      if (data) {
-        DEFAULTS.focus = data.focus_duration * 60;
-        DEFAULTS.shortBreak = data.short_break_duration * 60;
-        DEFAULTS.longBreak = data.long_break_duration * 60;
-        DEFAULTS.sessionsPerCycle = data.sessions_per_cycle;
-        setDuration(DEFAULTS.focus);
-        setTimeLeft(DEFAULTS.focus);
-      }
-    };
-    loadPrefs();
-  }, [user]);
+    // Reset timer if mode or durations change
+    if (!isRunning) {
+      if (mode === "focus") setSecondsLeft(durations.focus * 60);
+      if (mode === "break") setSecondsLeft(durations.break * 60);
+      if (mode === "longBreak") setSecondsLeft(durations.longBreak * 60);
+    }
+  }, [mode, durations, isRunning]);
 
   useEffect(() => {
     if (isRunning) {
       intervalRef.current = setInterval(() => {
-        setTimeLeft(prev => {
+        setSecondsLeft((prev) => {
           if (prev <= 1) {
-            clearInterval(intervalRef.current!);
-            handleSessionComplete();
+            handleTimerEnd();
             return 0;
           }
           return prev - 1;
         });
       }, 1000);
-    } else {
-      clearInterval(intervalRef.current!);
+    } else if (intervalRef.current) {
+      clearInterval(intervalRef.current);
     }
-    return () => clearInterval(intervalRef.current!);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [isRunning]);
 
-  const handleSessionComplete = async () => {
-    if (user) {
-      await supabase.from("pomodoro_sessions").insert({
-        user_id: user.id,
-        type: phase,
-        duration: duration
-      });
-    }
-    if (phase === 'focus') {
-      const newCount = sessionCount + 1;
-      setSessionCount(newCount);
-      if (newCount % DEFAULTS.sessionsPerCycle === 0) {
-        switchTo('longBreak');
+  const handleTimerEnd = () => {
+    setIsRunning(false);
+    if (mode === "focus") {
+      const newSessionCount = completedFocusSessions + 1;
+      setCompletedFocusSessions(newSessionCount);
+      if (newSessionCount % durations.sessionsBeforeLongBreak === 0) {
+        setMode("longBreak");
       } else {
-        switchTo('shortBreak');
+        setMode("break");
       }
     } else {
-      switchTo('focus');
+      setMode("focus");
     }
-  };
-
-  const switchTo = (newPhase: 'focus' | 'shortBreak' | 'longBreak') => {
-    const durations = {
-      focus: DEFAULTS.focus,
-      shortBreak: DEFAULTS.shortBreak,
-      longBreak: DEFAULTS.longBreak
-    };
-    setPhase(newPhase);
-    setDuration(durations[newPhase]);
-    setTimeLeft(durations[newPhase]);
-    setIsRunning(false);
   };
 
   const toggleTimer = () => {
-    setIsRunning(prev => !prev);
+    setIsRunning((prev) => !prev);
   };
 
-  const formatTime = (secs: number) => {
-    const m = Math.floor(secs / 60).toString().padStart(2, '0');
-    const s = (secs % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
+  const resetTimer = () => {
+    setIsRunning(false);
+    if (mode === "focus") setSecondsLeft(durations.focus * 60);
+    if (mode === "break") setSecondsLeft(durations.break * 60);
+    if (mode === "longBreak") setSecondsLeft(durations.longBreak * 60);
+  };
+
+  const handleDurationChange = (newDurations: typeof durations) => {
+    setDurations(newDurations);
   };
 
   return (
-    <div className="flex flex-col items-center space-y-4">
-      <h2 className="text-2xl font-bold capitalize">{phase.replace('Break', ' Break')}</h2>
-      <TimerCircle timeLeft={timeLeft} duration={duration} progress={(duration - timeLeft) / duration * 100} />
-      <div className="text-4xl font-mono">{formatTime(timeLeft)}</div>
-      <Button onClick={toggleTimer}>{isRunning ? 'Pause' : 'Start'}</Button>
+    <div className="p-4 bg-black text-white rounded-lg border border-gray-700 w-full">
+      {/* Mode Selection */}
+      <div className="flex justify-between mb-4">
+        {["focus", "break", "longBreak"].map((label) => (
+          <button
+            key={label}
+            onClick={() => {
+              setMode(label as any);
+              resetTimer();
+            }}
+            className={`px-4 py-2 rounded ${
+              mode === label ? "bg-red-600 text-white" : "bg-gray-800"
+            }`}
+          >
+            {label === "focus"
+              ? "Focus"
+              : label === "break"
+              ? "Break"
+              : "Long Break"}
+          </button>
+        ))}
+        <TimerSettings durations={durations} onChange={handleDurationChange} />
+      </div>
+
+      {/* Timer Display */}
+      <div className="flex flex-col items-center gap-2">
+        <TimerCircle secondsLeft={secondsLeft} totalSeconds={durations[mode] * 60} />
+        <p className="text-xl font-medium mt-2">
+          {mode === "focus"
+            ? "Focus on your task"
+            : mode === "break"
+            ? "Take a break"
+            : "Take a long break"}
+        </p>
+      </div>
+
+      {/* Controls */}
+      <div className="flex justify-center gap-4 mt-4">
+        <Button
+          onClick={toggleTimer}
+          className={`rounded-full p-6 ${
+            mode === "focus" ? "bg-red-600" : "bg-green-600"
+          }`}
+        >
+          {isRunning ? <Pause size={32} /> : <Play size={32} />}
+        </Button>
+        <Button onClick={resetTimer} variant="ghost" className="text-white">
+          <RotateCw size={24} />
+        </Button>
+      </div>
+
+      {/* Session Dots */}
+      <div className="flex justify-center gap-2 mt-2">
+        {Array.from({ length: durations.sessionsBeforeLongBreak }).map((_, i) => (
+          <div
+            key={i}
+            className={`h-2 w-2 rounded-full ${
+              i < completedFocusSessions % durations.sessionsBeforeLongBreak
+                ? "bg-red-500"
+                : "bg-gray-700"
+            }`}
+          />
+        ))}
+      </div>
     </div>
   );
 };
