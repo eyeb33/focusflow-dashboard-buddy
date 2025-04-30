@@ -6,8 +6,13 @@ import TimerModeTabs from './TimerModeTabs';
 import TimerControls from './TimerControls';
 import SessionDots from './SessionDots';
 import { useTimer } from '@/hooks/useTimer';
+import { useTimerSettings } from '@/hooks/useTimerSettings';
 
 const TimerContainer = () => {
+  // Add the useTimerSettings hook to get the settings
+  const { settings } = useTimerSettings();
+
+  // Pass the settings to useTimer
   const {
     timerMode,
     isRunning,
@@ -19,7 +24,7 @@ const TimerContainer = () => {
     handlePause,
     handleReset,
     handleModeChange
-  } = useTimer();
+  } = useTimer(settings);
 
   // Map timerMode to the format expected by TimerCircle
   const getTimerCircleMode = () => {
