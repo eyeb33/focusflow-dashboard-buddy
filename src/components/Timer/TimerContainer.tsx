@@ -28,8 +28,6 @@ const TimerContainer = () => {
     completedSessions,
     timerInterval,
     setTimerInterval,
-    autoStart,
-    setAutoStart,
     handleTimerComplete
   } = useTimerState(defaultSettings);
 
@@ -40,6 +38,8 @@ const TimerContainer = () => {
       if (timerInterval) {
         clearInterval(timerInterval);
       }
+      
+      console.log("Starting timer with mode:", mode, "and time:", timeRemaining);
       
       // Set up a new interval
       const interval = setInterval(() => {
@@ -121,15 +121,6 @@ const TimerContainer = () => {
     }
   };
 
-  // Toggle auto-start feature
-  const toggleAutoStart = () => {
-    setAutoStart(prev => {
-      const newValue = !prev;
-      toast.info(`Auto-start ${newValue ? 'enabled' : 'disabled'}`);
-      return newValue;
-    });
-  };
-
   // Calculate current session index based on completed sessions
   const currentSessionIndex = completedSessions % settings.sessionsUntilLongBreak;
 
@@ -171,19 +162,6 @@ const TimerContainer = () => {
       {/* Settings button in the top right */}
       <div className="absolute top-4 right-4">
         <TimerSettings durations={settings} onChange={updateSettings} />
-      </div>
-
-      {/* Auto-start toggle */}
-      <div className="mt-2">
-        <label className="flex items-center space-x-2 cursor-pointer">
-          <input 
-            type="checkbox" 
-            checked={autoStart} 
-            onChange={toggleAutoStart} 
-            className="rounded text-red-500 focus:ring-red-500"
-          />
-          <span className="text-xs text-gray-300">Auto-start next session</span>
-        </label>
       </div>
     </div>
   );

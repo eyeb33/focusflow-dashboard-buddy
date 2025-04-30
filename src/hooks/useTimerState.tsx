@@ -16,7 +16,6 @@ export function useTimerState(initialSettings: TimerSettings) {
   const [timeRemaining, setTimeRemaining] = useState(settings.focus * 60);
   const [completedSessions, setCompletedSessions] = useState(0);
   const [timerInterval, setTimerInterval] = useState<number | null>(null);
-  const [autoStart, setAutoStart] = useState<boolean>(false);
   
   // Update timer when mode or settings change (but only if not running)
   useEffect(() => {
@@ -56,16 +55,19 @@ export function useTimerState(initialSettings: TimerSettings) {
       } else {
         setMode('break');
       }
+      
+      // Auto-start next session after a short delay
+      setTimeout(() => {
+        setIsRunning(true);
+      }, 500);
     } else {
       // After any break, return to focus mode
       setMode('focus');
-    }
-    
-    // If auto-start is enabled, start the next session after a short delay
-    if (autoStart) {
+      
+      // Auto-start next focus session after a short delay
       setTimeout(() => {
         setIsRunning(true);
-      }, 500); // Small delay for UI to update
+      }, 500);
     }
   };
 
@@ -82,8 +84,6 @@ export function useTimerState(initialSettings: TimerSettings) {
     setCompletedSessions,
     timerInterval,
     setTimerInterval,
-    autoStart,
-    setAutoStart,
     handleTimerComplete
   };
 }
