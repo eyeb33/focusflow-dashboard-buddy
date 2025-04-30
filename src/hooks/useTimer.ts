@@ -11,19 +11,86 @@ export function useTimer(settings: TimerSettings) {
   const { user } = useAuth();
 
   // Core timer state
-  const [timerMode, setTimerMode] = useState<TimerMode>('work');
-  const [isRunning, setIsRunning] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(() => settings.workDuration * 60);
+  const [timerMode, setTimerMode] = useState<TimerMode>(() => {
+    // Try to restore timer mode from storage
+    const savedState = localStorage.getItem('timerState');
+    if (savedState) {
+      const parsed = JSON.parse(savedState);
+      return parsed.timerMode || 'work';
+    }
+    return 'work';
+  });
+  
+  const [isRunning, setIsRunning] = useState(() => {
+    // Don't auto-start on initial load, but remember if it was running
+    const savedState = localStorage.getItem('timerState');
+    if (savedState) {
+      const parsed = JSON.parse(savedState);
+      // Store was running state but don't auto-resume
+      return false;
+    }
+    return false;
+  });
+  
+  const [timeRemaining, setTimeRemaining] = useState(() => {
+    // Try to restore time from storage
+    const savedState = localStorage.getItem('timerState');
+    if (savedState) {
+      const parsed = JSON.parse(savedState);
+      if (parsed.timeRemaining !== undefined) {
+        console.log("Restored timer with time:", parsed.timeRemaining);
+        return parsed.timeRemaining;
+      }
+    }
+    return settings.workDuration * 60;
+  });
   
   // Stats tracking
   const [completedSessions, setCompletedSessions] = useState(0);
   const [totalTimeToday, setTotalTimeToday] = useState(0);
-  const [currentSessionIndex, setCurrentSessionIndex] = useState(0);
+  const [currentSessionIndex, setCurrentSessionIndex] = useState(() => {
+    // Try to restore session index from storage
+    const savedState = localStorage.getItem('timerState');
+    if (savedState) {
+      const parsed = JSON.parse(savedState);
+      if (parsed.currentSessionIndex !== undefined) {
+        return parsed.currentSessionIndex;
+      }
+    }
+    return 0;
+  });
   
   // Timer refs
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionStartTimeRef = useRef<string | null>(null);
   const settingsRef = useRef(settings);
+  const wasRunningRef = useRef(false);
+  const lastTickTimeRef = useRef<number>(Date.now());
+  
+  // Save the current timer state to localStorage
+  const saveTimerState = useCallback(() => {
+    const timerState = {
+      timerMode,
+      isRunning,
+      timeRemaining,
+      currentSessionIndex,
+      sessionStartTime: sessionStartTimeRef.current,
+      timestamp: Date.now()
+    };
+    localStorage.setItem('timerState', JSON.stringify(timerState));
+    console.log("Saved timer state:", timerState);
+  }, [timerMode, isRunning, timeRemaining, currentSessionIndex]);
+  
+  // Restore session start time
+  useEffect(() => {
+    const savedState = localStorage.getItem('timerState');
+    if (savedState) {
+      const parsed = JSON.parse(savedState);
+      if (parsed.sessionStartTime) {
+        sessionStartTimeRef.current = parsed.sessionStartTime;
+      }
+    }
+  }, []);
   
   // Update settings ref when settings change
   useEffect(() => {
@@ -56,6 +123,77 @@ export function useTimer(settings: TimerSettings) {
   const elapsedTime = totalTime - timeRemaining;
   const progress = totalTime > 0 ? Math.max(0, Math.min(1, elapsedTime / totalTime)) * 100 : 0;
   
+  // Save state on changes
+  useEffect(() => {
+    saveTimerState();
+  }, [timerMode, isRunning, timeRemaining, currentSessionIndex, saveTimerState]);
+  
+  // Handle visibility change to adjust timer when tab becomes visible again
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Tab is hidden, store the running state
+        wasRunningRef.current = isRunning;
+        console.log("Tab hidden, timer was running:", wasRunningRef.current);
+        // Record the time when hidden
+        lastTickTimeRef.current = Date.now();
+      } else {
+        // Tab is visible again
+        console.log("Tab visible again, timer was running:", wasRunningRef.current);
+        
+        // Check if timer was running before hiding
+        if (wasRunningRef.current && !isRunning) {
+          // Resume the timer
+          setIsRunning(true);
+        }
+        
+        // If timer is running, adjust the time based on how long it was hidden
+        if (isRunning || wasRunningRef.current) {
+          const now = Date.now();
+          const elapsedMs = now - lastTickTimeRef.current;
+          const elapsedSeconds = Math.floor(elapsedMs / 1000);
+          
+          console.log(`Tab was hidden for ${elapsedSeconds} seconds`);
+          
+          if (elapsedSeconds >= 1) {
+            setTimeRemaining(prevTime => {
+              const newTime = Math.max(0, prevTime - elapsedSeconds);
+              console.log(`Adjusting time from ${prevTime} to ${newTime}`);
+              
+              if (newTime <= 0) {
+                setTimeout(() => handleTimerComplete(), 0);
+                return 0;
+              }
+              return newTime;
+            });
+          }
+          
+          lastTickTimeRef.current = now;
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isRunning]);
+  
+  // Handle page navigation using the beforeunload event
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Save timer state before navigating away
+      saveTimerState();
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [saveTimerState]);
+  
   // Handle timer tick
   useEffect(() => {
     // Always clear any existing timer first
@@ -67,9 +205,20 @@ export function useTimer(settings: TimerSettings) {
     if (isRunning) {
       console.log("Starting timer with mode:", timerMode, "and time:", timeRemaining);
       
+      // Ensure we have a session start time
+      if (!sessionStartTimeRef.current) {
+        sessionStartTimeRef.current = new Date().toISOString();
+      }
+      
+      lastTickTimeRef.current = Date.now();
+      
       timerRef.current = setInterval(() => {
+        const now = Date.now();
+        const elapsedMs = now - lastTickTimeRef.current;
+        const elapsedSeconds = Math.max(1, Math.floor(elapsedMs / 1000));
+        
         setTimeRemaining(prevTime => {
-          if (prevTime <= 1) {
+          if (prevTime <= elapsedSeconds) {
             // Clear the timer and handle completion
             if (timerRef.current) {
               clearInterval(timerRef.current);
@@ -80,8 +229,17 @@ export function useTimer(settings: TimerSettings) {
             setTimeout(() => handleTimerComplete(), 0);
             return 0;
           }
-          return prevTime - 1;
+          const newTime = prevTime - elapsedSeconds;
+          
+          // Save timer state every 5 seconds
+          if (prevTime % 5 === 0 || newTime % 5 === 0) {
+            saveTimerState();
+          }
+          
+          return newTime;
         });
+        
+        lastTickTimeRef.current = now;
       }, 1000);
     }
 
@@ -91,7 +249,7 @@ export function useTimer(settings: TimerSettings) {
         timerRef.current = null;
       }
     };
-  }, [isRunning, timerMode]);
+  }, [isRunning, timerMode, saveTimerState]);
   
   // Timer control functions
   const handleStart = useCallback(() => {
@@ -100,12 +258,24 @@ export function useTimer(settings: TimerSettings) {
       sessionStartTimeRef.current = new Date().toISOString();
     }
     setIsRunning(true);
+    lastTickTimeRef.current = Date.now();
   }, []);
   
   const handlePause = useCallback(() => {
     console.log("Pausing timer...");
     setIsRunning(false);
-  }, []);
+    
+    // Save state immediately on pause
+    const timerState = {
+      timerMode,
+      isRunning: false,
+      timeRemaining,
+      currentSessionIndex,
+      sessionStartTime: sessionStartTimeRef.current,
+      timestamp: Date.now()
+    };
+    localStorage.setItem('timerState', JSON.stringify(timerState));
+  }, [timerMode, timeRemaining, currentSessionIndex]);
   
   const handleReset = useCallback(() => {
     // Stop the timer
@@ -119,7 +289,18 @@ export function useTimer(settings: TimerSettings) {
     sessionStartTimeRef.current = null;
     
     console.log("Timer reset to", newTime, "seconds");
-  }, [getTotalTimeForMode]);
+    
+    // Save the reset state
+    const timerState = {
+      timerMode,
+      isRunning: false,
+      timeRemaining: newTime,
+      currentSessionIndex,
+      sessionStartTime: null,
+      timestamp: Date.now()
+    };
+    localStorage.setItem('timerState', JSON.stringify(timerState));
+  }, [getTotalTimeForMode, timerMode, currentSessionIndex]);
   
   const handleModeChange = useCallback((mode: TimerMode) => {
     // Stop the timer when changing modes
@@ -139,7 +320,18 @@ export function useTimer(settings: TimerSettings) {
     if (mode === 'work') {
       setCurrentSessionIndex(0);
     }
-  }, [getTotalTimeForMode]);
+    
+    // Save the new mode state
+    const timerState = {
+      timerMode: mode,
+      isRunning: false,
+      timeRemaining: newTime,
+      currentSessionIndex: mode === 'work' ? 0 : currentSessionIndex,
+      sessionStartTime: null,
+      timestamp: Date.now()
+    };
+    localStorage.setItem('timerState', JSON.stringify(timerState));
+  }, [getTotalTimeForMode, currentSessionIndex]);
   
   // Timer completion handler
   const handleTimerComplete = useCallback(() => {
@@ -195,6 +387,17 @@ export function useTimer(settings: TimerSettings) {
       // Auto-start next session
       sessionStartTimeRef.current = new Date().toISOString();
       setTimeout(() => setIsRunning(true), 500);
+      
+      // Save the new state after completion
+      const timerState = {
+        timerMode: nextMode,
+        isRunning: true,
+        timeRemaining: nextMode === 'longBreak' ? currentSettings.longBreakDuration * 60 : currentSettings.breakDuration * 60,
+        currentSessionIndex: newIndex,
+        sessionStartTime: sessionStartTimeRef.current,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('timerState', JSON.stringify(timerState));
     } else {
       // After any break, return to work mode
       setTimerMode('work');
@@ -202,7 +405,25 @@ export function useTimer(settings: TimerSettings) {
       
       // Auto-start next session
       sessionStartTimeRef.current = new Date().toISOString();
-      setTimeout(() => setIsRunning(true), 500);
+      
+      // For long break, don't auto-start
+      if (currentMode === 'longBreak') {
+        setIsRunning(false);
+        setCurrentSessionIndex(0);
+      } else {
+        setTimeout(() => setIsRunning(true), 500);
+      }
+      
+      // Save the new state after completion
+      const timerState = {
+        timerMode: 'work',
+        isRunning: currentMode !== 'longBreak', // Don't auto-start after long break
+        timeRemaining: currentSettings.workDuration * 60,
+        currentSessionIndex: currentMode === 'longBreak' ? 0 : currentSessionIndex,
+        sessionStartTime: sessionStartTimeRef.current,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('timerState', JSON.stringify(timerState));
       
       // If it was a long break, reset the session counter
       if (currentMode === 'longBreak') {

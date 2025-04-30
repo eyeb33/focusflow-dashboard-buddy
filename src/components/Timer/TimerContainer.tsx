@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import TimerCircle from './TimerCircle';
 import TimerSettings from './TimerSettings';
 import TimerModeTabs from './TimerModeTabs';
@@ -26,6 +26,9 @@ const TimerContainer = () => {
     handleModeChange
   } = useTimer(settings);
 
+  // Store the container element to check if timer is visible
+  const containerRef = useRef<HTMLDivElement>(null);
+
   // Map timerMode to the format expected by TimerCircle
   const getTimerCircleMode = () => {
     switch(timerMode) {
@@ -46,14 +49,56 @@ const TimerContainer = () => {
     }
   };
 
-  // Debug settings integration
+  // Log visibility changes for debugging
   useEffect(() => {
-    console.log("Timer settings updated:", settings);
-    console.log("Current timer state:", { timerMode, timeRemaining, isRunning });
-  }, [settings, timerMode, timeRemaining, isRunning]);
+    const handleVisibilityChange = () => {
+      const isVisible = !document.hidden;
+      console.log("Document visibility changed:", isVisible ? "visible" : "hidden");
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  // Use IntersetionObserver to detect if timer is visible in the DOM
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          const isVisible = entry.isIntersecting;
+          console.log("Timer container visibility:", isVisible ? "visible" : "hidden");
+          
+          // Store visibility state in session storage
+          if (isVisible) {
+            sessionStorage.setItem('timerVisible', 'true');
+          } else {
+            sessionStorage.setItem('timerVisible', 'false');
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(containerRef.current);
+    
+    return () => {
+      if (containerRef.current) {
+        observer.unobserve(containerRef.current);
+      }
+    };
+  }, []);
 
   return (
-    <div className="h-[450px] bg-black text-white rounded-lg p-4 flex flex-col items-center">
+    <div 
+      ref={containerRef}
+      className="h-[450px] bg-black text-white rounded-lg p-4 flex flex-col items-center"
+      data-testid="timer-container"
+    >
       <TimerModeTabs 
         currentMode={timerMode === 'work' ? 'focus' : timerMode} 
         onModeChange={(newMode) => {
