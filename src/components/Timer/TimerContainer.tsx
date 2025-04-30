@@ -9,7 +9,7 @@ const TimerContainer = () => {
     focus: 25,
     break: 5,
     longBreak: 15,
-    sessionsBeforeLongBreak: 4
+    sessionsUntilLongBreak: 4
   });
 
   const [mode, setMode] = useState<'focus' | 'break' | 'longBreak'>('focus');
