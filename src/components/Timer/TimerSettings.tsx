@@ -27,7 +27,9 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange }) =>
   
   useEffect(() => {
     // Update local settings when props change
-    setLocalSettings(durations);
+    if (durations) {
+      setLocalSettings(durations);
+    }
   }, [durations]);
   
   const handleChange = (key: keyof typeof localSettings, value: number) => {
@@ -50,7 +52,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange }) =>
           <Settings size={18} />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md bg-background">
         <DialogHeader>
           <DialogTitle>Timer Settings</DialogTitle>
         </DialogHeader>
@@ -60,7 +62,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange }) =>
               <div className="flex items-center justify-between">
                 <Label htmlFor={key}>{label}</Label>
                 <span className="text-sm text-muted-foreground">
-                  {localSettings[key as keyof typeof localSettings]}
+                  {localSettings && localSettings[key as keyof typeof localSettings]}
                 </span>
               </div>
               <Slider
@@ -68,7 +70,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange }) =>
                 min={min}
                 max={max}
                 step={1}
-                value={[localSettings[key as keyof typeof localSettings]]}
+                value={[localSettings && localSettings[key as keyof typeof localSettings] || min]}
                 onValueChange={(values) => handleChange(key as keyof typeof localSettings, values[0])}
               />
             </div>

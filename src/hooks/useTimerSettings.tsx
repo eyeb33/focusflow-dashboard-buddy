@@ -1,11 +1,19 @@
+
 import { useEffect, useState } from "react";
 
+export interface TimerSettings {
+  workDuration: number;
+  breakDuration: number;
+  longBreakDuration: number;
+  sessionsUntilLongBreak: number;
+}
+
 export function useTimerSettings() {
-  const [settings, setSettings] = useState({
-    workDuration: 25 * 60, // 25 minutes
-    breakDuration: 5 * 60, // 5 minutes
-    longBreakDuration: 15 * 60, // 15 minutes
-    sessionsBeforeLongBreak: 4,
+  const [settings, setSettings] = useState<TimerSettings>({
+    workDuration: 25, // 25 minutes
+    breakDuration: 5, // 5 minutes
+    longBreakDuration: 15, // 15 minutes
+    sessionsUntilLongBreak: 4,
   });
 
   useEffect(() => {
@@ -19,15 +27,23 @@ export function useTimerSettings() {
     localStorage.setItem("timerSettings", JSON.stringify(settings));
   }, [settings]);
 
-  const updateSetting = (key: keyof typeof settings, value: number) => {
+  const updateSetting = (key: keyof TimerSettings, value: number) => {
     setSettings((prev) => ({
       ...prev,
       [key]: value,
     }));
   };
 
+  const updateSettings = (newSettings: Partial<TimerSettings>) => {
+    setSettings((prev) => ({
+      ...prev,
+      ...newSettings,
+    }));
+  };
+
   return {
     settings,
     updateSetting,
+    updateSettings
   };
 }

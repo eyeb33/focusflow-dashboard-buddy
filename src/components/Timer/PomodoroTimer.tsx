@@ -16,20 +16,24 @@ const PomodoroTimer = () => {
   const [mode, setMode] = useState<"focus" | "break" | "longBreak">("focus");
   const [durations, setDurations] = useState(defaultDurations);
   const [secondsLeft, setSecondsLeft] = useState(durations.focus * 60);
+  const [totalSeconds, setTotalSeconds] = useState(durations.focus * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [completedFocusSessions, setCompletedFocusSessions] = useState(0);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Update timer when mode or durations change
   useEffect(() => {
-    // Reset timer if mode or durations change
+    const newTotalSeconds = durations[mode] * 60;
+    setTotalSeconds(newTotalSeconds);
+    
+    // Only reset secondsLeft if timer is not running
     if (!isRunning) {
-      if (mode === "focus") setSecondsLeft(durations.focus * 60);
-      if (mode === "break") setSecondsLeft(durations.break * 60);
-      if (mode === "longBreak") setSecondsLeft(durations.longBreak * 60);
+      setSecondsLeft(newTotalSeconds);
     }
   }, [mode, durations, isRunning]);
 
+  // Timer tick effect
   useEffect(() => {
     if (isRunning) {
       intervalRef.current = setInterval(() => {
@@ -71,9 +75,7 @@ const PomodoroTimer = () => {
 
   const resetTimer = () => {
     setIsRunning(false);
-    if (mode === "focus") setSecondsLeft(durations.focus * 60);
-    if (mode === "break") setSecondsLeft(durations.break * 60);
-    if (mode === "longBreak") setSecondsLeft(durations.longBreak * 60);
+    setSecondsLeft(durations[mode] * 60);
   };
 
   const handleDurationChange = (newDurations: typeof durations) => {
@@ -81,7 +83,7 @@ const PomodoroTimer = () => {
   };
 
   return (
-    <div className="p-4 bg-black text-white rounded-lg border border-gray-700 w-full">
+    <div className="p-4 rounded-lg border border-border w-full bg-background">
       {/* Mode Selection */}
       <div className="flex justify-between mb-4">
         {["focus", "break", "longBreak"].map((label) => (
@@ -92,7 +94,7 @@ const PomodoroTimer = () => {
               resetTimer();
             }}
             className={`px-4 py-2 rounded ${
-              mode === label ? "bg-red-600 text-white" : "bg-gray-800"
+              mode === label ? "bg-red-600 text-white" : "bg-muted"
             }`}
           >
             {label === "focus"
@@ -107,7 +109,7 @@ const PomodoroTimer = () => {
 
       {/* Timer Display */}
       <div className="flex flex-col items-center gap-2">
-        <TimerCircle secondsLeft={secondsLeft} totalSeconds={durations[mode] * 60} />
+        <TimerCircle secondsLeft={secondsLeft} totalSeconds={totalSeconds} />
         <p className="text-xl font-medium mt-2">
           {mode === "focus"
             ? "Focus on your task"
@@ -127,7 +129,7 @@ const PomodoroTimer = () => {
         >
           {isRunning ? <Pause size={32} /> : <Play size={32} />}
         </Button>
-        <Button onClick={resetTimer} variant="ghost" className="text-white">
+        <Button onClick={resetTimer} variant="ghost">
           <RotateCw size={24} />
         </Button>
       </div>
@@ -140,7 +142,7 @@ const PomodoroTimer = () => {
             className={`h-2 w-2 rounded-full ${
               i < completedFocusSessions % durations.sessionsBeforeLongBreak
                 ? "bg-red-500"
-                : "bg-gray-700"
+                : "bg-muted"
             }`}
           />
         ))}

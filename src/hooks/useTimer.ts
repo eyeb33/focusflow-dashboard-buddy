@@ -1,14 +1,13 @@
 
 import { useState, useEffect, useRef } from 'react';
-import { TimerMode, getTotalTime } from '@/utils/timerContextUtils';
+import { TimerMode } from '@/utils/timerContextUtils';
 import { TimerSettings } from './useTimerSettings';
-import { useAuth } from '@/contexts/AuthContext';
 
 export function useTimer(settings: TimerSettings) {
   // Core timer state
   const [timerMode, setTimerMode] = useState<TimerMode>('work');
   const [isRunning, setIsRunning] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(() => getTotalTime('work', settings));
+  const [timeRemaining, setTimeRemaining] = useState(() => settings.workDuration * 60);
   const [autoStart, setAutoStart] = useState(false);
   
   // Stats tracking
@@ -22,48 +21,24 @@ export function useTimer(settings: TimerSettings) {
   const lastTickTimeRef = useRef<number>(Date.now());
   const lastRecordedFullMinutesRef = useRef<number>(0);
   
-  const { user } = useAuth();
-  
   // Calculate total time for current timer mode
   const getTotalTimeForMode = (): number => {
-    return getTotalTime(timerMode, settings);
+    switch (timerMode) {
+      case 'work':
+        return settings.workDuration * 60;
+      case 'break':
+        return settings.breakDuration * 60;
+      case 'longBreak':
+        return settings.longBreakDuration * 60;
+      default:
+        return settings.workDuration * 60;
+    }
   };
   
   // Calculate progress (0 to 1)
   const totalTime = getTotalTimeForMode();
   const elapsedTime = totalTime - timeRemaining;
   const progress = totalTime > 0 ? Math.max(0, Math.min(1, elapsedTime / totalTime)) : 0;
-  
-  // Load timer state from localStorage on mount
-  useEffect(() => {
-    try {
-      const storedStateStr = localStorage.getItem('timerState');
-      if (storedStateStr) {
-        const storedState = JSON.parse(storedStateStr);
-        setTimerMode(storedState.timerMode || 'work');
-        setTimeRemaining(storedState.timeRemaining || getTotalTime('work', settings));
-        
-        // IMPORTANT: Start with timer paused - user must manually start
-        setIsRunning(false);
-        
-        if (storedState.sessionStartTime) {
-          sessionStartTimeRef.current = storedState.sessionStartTime;
-        }
-      }
-    } catch (error) {
-      console.error('Error loading timer state:', error);
-      localStorage.removeItem('timerState');
-    }
-  }, []);
-  
-  // Clear any existing timer when unmounting
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, []);
   
   // Handle timer tick
   useEffect(() => {
@@ -78,13 +53,8 @@ export function useTimer(settings: TimerSettings) {
       
       timerRef.current = setInterval(() => {
         const now = Date.now();
-        const actualElapsed = now - lastTickTimeRef.current;
         
         setTimeRemaining(prevTime => {
-          // Calculate adjustment if timer drift occurs
-          const adjustment = Math.max(0, Math.floor((actualElapsed - 1000) / 1000));
-          
-          // If time is about to expire, handle completion
           if (prevTime <= 1) {
             if (timerRef.current) {
               clearInterval(timerRef.current);
@@ -94,55 +64,18 @@ export function useTimer(settings: TimerSettings) {
             return 0;
           }
           
-          const secondsToSubtract = 1 + adjustment;
-          const newTime = Math.max(0, prevTime - secondsToSubtract);
-          
-          // Save state in localStorage
-          const timerState = {
-            isRunning: true,
-            timerMode,
-            timeRemaining: newTime,
-            totalTime: getTotalTimeForMode(),
-            timestamp: now,
-            sessionStartTime: sessionStartTimeRef.current
-          };
-          localStorage.setItem('timerState', JSON.stringify(timerState));
-          
-          // Save partial session at minute boundaries for work sessions
-          const totalTime = getTotalTimeForMode();
-          const elapsedSeconds = totalTime - newTime;
-          const newFullMinutes = Math.floor(elapsedSeconds / 60);
-          const prevFullMinutes = lastRecordedFullMinutesRef.current;
-          
-          if (user && timerMode === 'work' && newFullMinutes > prevFullMinutes) {
-            lastRecordedFullMinutesRef.current = newFullMinutes;
-            // NOTE: We're intentionally not awaiting this
-            savePartialSession(
-              user.id, 
-              timerMode, 
-              totalTime,
-              newTime,
-              prevFullMinutes
-            );
-          }
-          
-          lastTickTimeRef.current = now;
-          return newTime;
+          return Math.max(0, prevTime - 1);
         });
       }, 1000);
-    } else {
-      // When paused, preserve the current time in localStorage
-      const timerState = {
-        isRunning: false,
-        timerMode,
-        timeRemaining,
-        totalTime: getTotalTimeForMode(),
-        timestamp: Date.now(),
-        sessionStartTime: sessionStartTimeRef.current
-      };
-      localStorage.setItem('timerState', JSON.stringify(timerState));
     }
-  }, [isRunning, timerMode, user]);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [isRunning, timerMode]);
   
   // Update settings when they change (only if timer is not running)
   useEffect(() => {
@@ -156,16 +89,13 @@ export function useTimer(settings: TimerSettings) {
   const handleStart = () => {
     if (!sessionStartTimeRef.current) {
       sessionStartTimeRef.current = new Date().toISOString();
-      localStorage.setItem('sessionStartTime', sessionStartTimeRef.current);
     }
     
     setIsRunning(true);
-    console.log("Timer started with time remaining:", timeRemaining);
   };
   
   const handlePause = () => {
     setIsRunning(false);
-    console.log("Timer paused with time remaining:", timeRemaining);
   };
   
   const handleReset = () => {
@@ -179,9 +109,6 @@ export function useTimer(settings: TimerSettings) {
     
     // Reset session start time
     sessionStartTimeRef.current = null;
-    localStorage.removeItem('sessionStartTime');
-    
-    console.log("Timer reset to:", newTime);
   };
   
   const handleModeChange = (mode: TimerMode) => {
@@ -191,19 +118,16 @@ export function useTimer(settings: TimerSettings) {
     // Reset tracking
     lastRecordedFullMinutesRef.current = 0;
     sessionStartTimeRef.current = null;
-    localStorage.removeItem('sessionStartTime');
     
     // Change the mode and set appropriate time
     setTimerMode(mode);
-    const newTime = getTotalTime(mode, settings);
+    const newTime = getTotalTimeForMode();
     setTimeRemaining(newTime);
     
     // Reset the current session index when manually changing modes
     if (mode === 'work') {
       setCurrentSessionIndex(0);
     }
-    
-    console.log(`Timer mode changed to ${mode} with time:`, newTime);
   };
   
   // Timer completion handler
@@ -240,14 +164,13 @@ export function useTimer(settings: TimerSettings) {
     
     // Reset session start time
     sessionStartTimeRef.current = null;
-    localStorage.removeItem('sessionStartTime');
     
     // Reset tracking
     lastRecordedFullMinutesRef.current = 0;
     
     // Change to next mode and set appropriate time
     setTimerMode(nextMode);
-    const newTime = getTotalTime(nextMode, settings);
+    const newTime = getTotalTimeForMode();
     setTimeRemaining(newTime);
     
     // Reset session index if needed
@@ -259,36 +182,8 @@ export function useTimer(settings: TimerSettings) {
     if (autoStart) {
       setTimeout(() => {
         sessionStartTimeRef.current = new Date().toISOString();
-        localStorage.setItem('sessionStartTime', sessionStartTimeRef.current);
         setIsRunning(true);
       }, 1000);
-    }
-    
-    console.log(`Timer completed. Mode changed from ${currentMode} to ${nextMode}`);
-  };
-  
-  // Helper function to save partial session data
-  const savePartialSession = async (
-    userId: string,
-    mode: TimerMode,
-    totalTime: number,
-    timeRemaining: number,
-    previousFullMinutes: number,
-    date?: string
-  ) => {
-    try {
-      const elapsedSeconds = totalTime - timeRemaining;
-      const newFullMinutes = Math.floor(elapsedSeconds / 60);
-      const minutesToLog = newFullMinutes - previousFullMinutes;
-      
-      if (minutesToLog <= 0) return;
-      
-      console.log(`Logging ${minutesToLog} minutes of ${mode} time`);
-      
-      // In a real implementation, this would save to a database
-      return { newFullMinutes };
-    } catch (error) {
-      console.error('Error saving partial session:', error);
     }
   };
   
@@ -335,17 +230,3 @@ export function useTimer(settings: TimerSettings) {
     sessionStartTimeRef,
   };
 }
-
-// Re-export the same interface as before for compatibility
-export const useTimerControls = () => {
-  const timerContext = useTimerContext();
-  return timerContext;
-};
-
-export const useTimerStats = () => {
-  const timerContext = useTimerContext();
-  return timerContext;
-};
-
-// Import this to maintain compatibility with existing code
-import { useTimerContext } from '@/contexts/TimerContext';

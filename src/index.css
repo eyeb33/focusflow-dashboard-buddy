@@ -98,11 +98,11 @@
 
 /* Additional custom styles */
 .timer-gradient {
-  background: linear-gradient(to bottom, #f0f0f0, #e0e0e0);
+  background: linear-gradient(to bottom, hsl(var(--background)), hsl(var(--muted)));
 }
 
 .dark .timer-gradient {
-  background: linear-gradient(to bottom, #333, #222);
+  background: linear-gradient(to bottom, hsl(var(--background)), hsl(var(--muted)));
 }
 
 /* Modified animation for slower pulsing effect during last 10 seconds */
