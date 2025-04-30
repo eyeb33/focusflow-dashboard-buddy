@@ -39,13 +39,7 @@ const TimerContainer = () => {
       
       return () => clearInterval(interval);
     }
-    
-    return () => {
-      if (timerInterval) {
-        clearInterval(timerInterval);
-      }
-    };
-  }, [isRunning, mode]);
+  }, [isRunning]);
 
   // Update timer when mode or settings change (but only if not running)
   useEffect(() => {
@@ -207,7 +201,7 @@ const TimerContainer = () => {
         </button>
       </div>
 
-      {/* Session progress dots - update styling for active and completed */}
+      {/* Session progress dots */}
       <div className="flex justify-center space-x-1.5 mb-2">
         {Array.from({ length: settings.sessionsUntilLongBreak }).map((_, i) => (
           <div
@@ -216,7 +210,7 @@ const TimerContainer = () => {
               i < currentSessionIndex 
                 ? "bg-red-500 w-2 h-2" // Completed sessions
                 : i === currentSessionIndex 
-                  ? "bg-gray-600 w-3 h-3" // Active session (larger)
+                  ? "bg-red-500 w-3 h-3" // Active session (larger and red)
                   : "bg-gray-600 w-2 h-2" // Future sessions
             }`}
           />

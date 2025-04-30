@@ -168,7 +168,18 @@
 /* Cache busting */
 @media (max-width: 0px) {
   body::after {
-    content: 'v1.0.4';
+    content: 'v1.0.5';
     display: none;
   }
+}
+
+/* Override the header to ensure it has black background */
+header.border-b {
+  background-color: #000000 !important;
+  border-color: #333 !important;
+}
+
+/* Make sure tabslist has correct styling */
+.TabsList {
+  background-color: #1e293b !important;
 }
