@@ -1,7 +1,7 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 
-interface TimerSettings {
+export interface TimerSettings {
   focus: number;
   break: number;
   longBreak: number;
@@ -9,10 +9,10 @@ interface TimerSettings {
 }
 
 export function useTimerState(initialSettings: TimerSettings) {
-  const [settings, setSettings] = useState(initialSettings);
+  const [settings, setSettings] = useState<TimerSettings>(initialSettings);
   const [mode, setMode] = useState<'focus' | 'break' | 'longBreak'>('focus');
   const [isRunning, setIsRunning] = useState(false);
-  const [remainingTime, setRemainingTime] = useState(settings.focus * 60);
+  const [timeRemaining, setTimeRemaining] = useState(settings.focus * 60);
   const [completedSessions, setCompletedSessions] = useState(0);
   const [timerInterval, setTimerInterval] = useState<number | null>(null);
   const [autoStart, setAutoStart] = useState<boolean>(false);
@@ -21,11 +21,11 @@ export function useTimerState(initialSettings: TimerSettings) {
   useEffect(() => {
     if (!isRunning) {
       if (mode === 'focus') {
-        setRemainingTime(settings.focus * 60);
+        setTimeRemaining(settings.focus * 60);
       } else if (mode === 'break') {
-        setRemainingTime(settings.break * 60);
+        setTimeRemaining(settings.break * 60);
       } else {
-        setRemainingTime(settings.longBreak * 60);
+        setTimeRemaining(settings.longBreak * 60);
       }
     }
   }, [mode, settings, isRunning]);
@@ -34,7 +34,7 @@ export function useTimerState(initialSettings: TimerSettings) {
   useEffect(() => {
     if (isRunning) {
       const interval = window.setInterval(() => {
-        setRemainingTime((prevTime) => {
+        setTimeRemaining((prevTime) => {
           if (prevTime <= 1) {
             handleTimerComplete();
             return 0;
@@ -80,8 +80,8 @@ export function useTimerState(initialSettings: TimerSettings) {
     setMode,
     isRunning,
     setIsRunning,
-    remainingTime,
-    setRemainingTime,
+    timeRemaining,
+    setTimeRemaining,
     completedSessions,
     setCompletedSessions,
     timerInterval,

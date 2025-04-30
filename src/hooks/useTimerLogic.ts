@@ -18,6 +18,14 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
   // Calculate appropriate initial time based on mode and settings
   const initialTime = getTotalTime(timerMode, settings);
   
+  // Initialize timer state with the correct initial time
+  const timerState = useTimerState({
+    focus: settings.workDuration,
+    break: settings.breakDuration,
+    longBreak: settings.longBreakDuration,
+    sessionsUntilLongBreak: settings.sessionsUntilLongBreak
+  });
+
   const {
     isRunning,
     setIsRunning,
@@ -25,7 +33,7 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
     setTimeRemaining,
     autoStart,
     setAutoStart
-  } = useTimerState(initialTime);
+  } = timerState;
 
   // Sync timeRemaining with settings when they change
   useEffect(() => {
