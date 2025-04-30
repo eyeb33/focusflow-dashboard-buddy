@@ -13,9 +13,9 @@ const TimerCircle: React.FC<TimerCircleProps> = ({ secondsLeft, totalSeconds }) 
   // Calculate progress percentage
   const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
   
-  // SVG parameters - making it smaller to match the first screenshot
-  const size = 220; // Reduced from 280
-  const strokeWidth = 8; // Reduced from 12
+  // SVG parameters
+  const size = 220;
+  const strokeWidth = 8;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference - (progress / 100) * circumference;

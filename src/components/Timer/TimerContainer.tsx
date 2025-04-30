@@ -136,7 +136,7 @@ const TimerContainer = () => {
   const currentSessionIndex = completedSessions % settings.sessionsUntilLongBreak;
 
   return (
-    <div className="h-[480px] bg-black text-white rounded-lg p-4 flex flex-col items-center">
+    <div className="h-[450px] bg-black text-white rounded-lg p-4 flex flex-col items-center">
       <div className="w-full mb-2">
         <div className="flex bg-[#1e293b] rounded-md p-1">
           <button 
@@ -207,13 +207,17 @@ const TimerContainer = () => {
         </button>
       </div>
 
-      {/* Session progress dots */}
+      {/* Session progress dots - update styling for active and completed */}
       <div className="flex justify-center space-x-1.5 mb-2">
         {Array.from({ length: settings.sessionsUntilLongBreak }).map((_, i) => (
           <div
             key={i}
-            className={`w-2 h-2 rounded-full ${
-              i < currentSessionIndex ? "bg-red-500" : "bg-gray-600"
+            className={`rounded-full ${
+              i < currentSessionIndex 
+                ? "bg-red-500 w-2 h-2" // Completed sessions
+                : i === currentSessionIndex 
+                  ? "bg-gray-600 w-3 h-3" // Active session (larger)
+                  : "bg-gray-600 w-2 h-2" // Future sessions
             }`}
           />
         ))}

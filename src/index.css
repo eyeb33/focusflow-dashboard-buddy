@@ -146,10 +146,29 @@
   color: white;
 }
 
+/* Session dot styling */
 .session-dot-active {
   background-color: #ff4545;
+  width: 12px !important;
+  height: 12px !important;
+}
+
+.session-dot-completed {
+  background-color: #ff4545;
+  width: 8px;
+  height: 8px;
 }
 
 .session-dot {
   background-color: #444;
+  width: 8px;
+  height: 8px;
+}
+
+/* Cache busting */
+@media (max-width: 0px) {
+  body::after {
+    content: 'v1.0.4';
+    display: none;
+  }
 }
