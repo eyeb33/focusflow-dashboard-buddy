@@ -8,7 +8,6 @@ export function useTimer(settings: TimerSettings) {
   const [timerMode, setTimerMode] = useState<TimerMode>('work');
   const [isRunning, setIsRunning] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(() => settings.workDuration * 60);
-  const [autoStart, setAutoStart] = useState(false);
   
   // Stats tracking
   const [completedSessions, setCompletedSessions] = useState(0);
@@ -50,10 +49,9 @@ export function useTimer(settings: TimerSettings) {
     
     if (isRunning) {
       lastTickTimeRef.current = Date.now();
+      console.log("Starting timer tick with mode:", timerMode, "and time:", timeRemaining);
       
       timerRef.current = setInterval(() => {
-        const now = Date.now();
-        
         setTimeRemaining(prevTime => {
           if (prevTime <= 1) {
             if (timerRef.current) {
@@ -90,11 +88,12 @@ export function useTimer(settings: TimerSettings) {
     if (!sessionStartTimeRef.current) {
       sessionStartTimeRef.current = new Date().toISOString();
     }
-    
+    console.log("handleStart called - Setting isRunning to true");
     setIsRunning(true);
   };
   
   const handlePause = () => {
+    console.log("handlePause called - Setting isRunning to false");
     setIsRunning(false);
   };
   
@@ -126,7 +125,7 @@ export function useTimer(settings: TimerSettings) {
     
     // Reset the current session index when manually changing modes
     if (mode === 'work') {
-      setCurrentSessionIndex(0);
+      setCurrentSessionIndex(prevIndex => prevIndex % settings.sessionsUntilLongBreak);
     }
   };
   
@@ -135,6 +134,8 @@ export function useTimer(settings: TimerSettings) {
     const currentMode = timerMode;
     let nextMode: TimerMode;
     let resetCurrentIndex = false;
+    
+    console.log("Timer completed with mode:", currentMode);
     
     // Determine next mode
     if (currentMode === 'work') {
@@ -178,13 +179,11 @@ export function useTimer(settings: TimerSettings) {
       setCurrentSessionIndex(0);
     }
     
-    // Auto-start next session if enabled
-    if (autoStart) {
-      setTimeout(() => {
-        sessionStartTimeRef.current = new Date().toISOString();
-        setIsRunning(true);
-      }, 1000);
-    }
+    // Auto-start next session
+    setTimeout(() => {
+      sessionStartTimeRef.current = new Date().toISOString();
+      setIsRunning(true);
+    }, 1000);
   };
   
   // Format time helper
@@ -209,7 +208,6 @@ export function useTimer(settings: TimerSettings) {
     timerMode,
     isRunning,
     timeRemaining,
-    autoStart,
     completedSessions,
     totalTimeToday,
     currentSessionIndex,
@@ -220,7 +218,6 @@ export function useTimer(settings: TimerSettings) {
     handlePause,
     handleReset,
     handleModeChange,
-    setAutoStart,
     
     // Helper functions
     formatTime,

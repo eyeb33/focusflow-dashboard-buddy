@@ -16,7 +16,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
   const seconds = secondsLeft % 60;
   
   // Calculate progress percentage (0-100)
-  const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
+  const progress = totalSeconds > 0 ? ((totalSeconds - secondsLeft) / totalSeconds) * 100 : 0;
   
   // SVG parameters
   const size = 220;
