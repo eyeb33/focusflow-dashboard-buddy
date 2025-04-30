@@ -10,21 +10,15 @@ const TimerCircle: React.FC<TimerCircleProps> = ({ secondsLeft, totalSeconds }) 
   const minutes = Math.floor(secondsLeft / 60);
   const seconds = secondsLeft % 60;
   
-  // Calculate progress percentage (0-100)
+  // Calculate progress percentage
   const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
   
   // SVG parameters
-  const size = 200;
-  const strokeWidth = 8;
+  const size = 280;
+  const strokeWidth = 12;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference - (progress / 100) * circumference;
-
-  // Determine color based on progress
-  const getStrokeColor = () => {
-    if (progress === 100) return "#4CAF50"; // Green when complete
-    return "#FF5252"; // Red when in progress
-  };
 
   return (
     <div className="relative flex items-center justify-center">
@@ -35,7 +29,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({ secondsLeft, totalSeconds }) 
           cy={size / 2}
           r={radius}
           fill="transparent"
-          stroke="hsl(var(--muted))"
+          stroke="#444"
           strokeWidth={strokeWidth}
         />
         {/* Progress circle */}
@@ -44,7 +38,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({ secondsLeft, totalSeconds }) 
           cy={size / 2}
           r={radius}
           fill="transparent"
-          stroke={getStrokeColor()}
+          stroke="#ff4545"
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={dashOffset}
@@ -52,8 +46,11 @@ const TimerCircle: React.FC<TimerCircleProps> = ({ secondsLeft, totalSeconds }) 
           style={{ transition: 'stroke-dashoffset 0.5s' }}
         />
       </svg>
-      <div className="absolute text-4xl font-bold">
-        {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
+      <div className="absolute flex flex-col items-center">
+        <div className="text-6xl font-bold">
+          {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
+        </div>
+        <div className="text-gray-400 text-sm mt-1">Focus on your task</div>
       </div>
     </div>
   );

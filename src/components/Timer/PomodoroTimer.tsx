@@ -2,8 +2,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import TimerCircle from "./TimerCircle";
 import TimerSettings from "./TimerSettings";
-import { Button } from "@/components/ui/button";
-import { Pause, Play, RotateCw } from "lucide-react";
+import { Pause, Play, RotateCcw } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const PomodoroTimer = () => {
   const defaultDurations = {
@@ -56,6 +56,10 @@ const PomodoroTimer = () => {
 
   const handleTimerEnd = () => {
     setIsRunning(false);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    
     if (mode === "focus") {
       const newSessionCount = completedFocusSessions + 1;
       setCompletedFocusSessions(newSessionCount);
@@ -75,6 +79,9 @@ const PomodoroTimer = () => {
 
   const resetTimer = () => {
     setIsRunning(false);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
     setSecondsLeft(durations[mode] * 60);
   };
 
@@ -83,19 +90,30 @@ const PomodoroTimer = () => {
   };
 
   return (
-    <div className="p-4 rounded-lg border border-border w-full bg-background">
+    <div className="p-4 rounded-lg border border-border w-full bg-black text-white">
       {/* Mode Selection */}
-      <div className="flex justify-between mb-4">
+      <div className="flex mb-4 bg-[#1e293b] rounded-md p-1">
         {["focus", "break", "longBreak"].map((label) => (
           <button
             key={label}
             onClick={() => {
               setMode(label as any);
-              resetTimer();
+              if (isRunning) {
+                setIsRunning(false);
+                if (intervalRef.current) {
+                  clearInterval(intervalRef.current);
+                }
+              }
+              setSecondsLeft(durations[label as keyof typeof durations] * 60);
             }}
-            className={`px-4 py-2 rounded ${
-              mode === label ? "bg-red-600 text-white" : "bg-muted"
-            }`}
+            className={cn(
+              "flex-1 py-2 rounded-sm text-center transition-colors",
+              mode === label 
+                ? (label === "focus" ? "bg-red-500 text-white" : 
+                   label === "break" ? "bg-green-500 text-white" : 
+                   "bg-blue-500 text-white")
+                : "text-gray-400 hover:text-white"
+            )}
           >
             {label === "focus"
               ? "Focus"
@@ -104,48 +122,57 @@ const PomodoroTimer = () => {
               : "Long Break"}
           </button>
         ))}
-        <TimerSettings durations={durations} onChange={handleDurationChange} />
       </div>
 
       {/* Timer Display */}
-      <div className="flex flex-col items-center gap-2">
+      <div className="flex flex-col items-center">
+        <div className="text-center mb-2">
+          <div className="text-sm rounded-full bg-black px-4 py-1 inline-block">
+            {mode === "focus" ? "Focus" : mode === "break" ? "Break" : "Long Break"}
+          </div>
+        </div>
+        
         <TimerCircle secondsLeft={secondsLeft} totalSeconds={totalSeconds} />
-        <p className="text-xl font-medium mt-2">
-          {mode === "focus"
-            ? "Focus on your task"
-            : mode === "break"
-            ? "Take a break"
-            : "Take a long break"}
-        </p>
       </div>
 
       {/* Controls */}
-      <div className="flex justify-center gap-4 mt-4">
-        <Button
+      <div className="flex justify-center gap-6 mt-10 mb-6">
+        <button
           onClick={toggleTimer}
-          className={`rounded-full p-6 ${
-            mode === "focus" ? "bg-red-600" : "bg-green-600"
-          }`}
+          className="w-16 h-16 rounded-full bg-white flex items-center justify-center"
         >
-          {isRunning ? <Pause size={32} /> : <Play size={32} />}
-        </Button>
-        <Button onClick={resetTimer} variant="ghost">
-          <RotateCw size={24} />
-        </Button>
+          {isRunning ? (
+            <Pause className="h-6 w-6 text-red-500" />
+          ) : (
+            <Play className="h-6 w-6 text-red-500 ml-1" />
+          )}
+        </button>
+        
+        <button 
+          onClick={resetTimer}
+          className="w-16 h-16 rounded-full bg-white flex items-center justify-center"
+        >
+          <RotateCcw className="h-6 w-6 text-red-500" />
+        </button>
       </div>
 
       {/* Session Dots */}
-      <div className="flex justify-center gap-2 mt-2">
+      <div className="flex justify-center space-x-2">
         {Array.from({ length: durations.sessionsUntilLongBreak }).map((_, i) => (
           <div
             key={i}
-            className={`h-2 w-2 rounded-full ${
+            className={`w-3 h-3 rounded-full ${
               i < completedFocusSessions % durations.sessionsUntilLongBreak
                 ? "bg-red-500"
-                : "bg-muted"
+                : "bg-gray-600"
             }`}
           />
         ))}
+      </div>
+      
+      {/* Settings button */}
+      <div className="absolute top-4 right-4">
+        <TimerSettings durations={durations} onChange={handleDurationChange} />
       </div>
     </div>
   );

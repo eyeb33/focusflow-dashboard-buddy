@@ -118,3 +118,32 @@
 .animate-pulse-slow {
   animation: pulse-slow 2.5s ease-in-out infinite;
 }
+
+/* Add a class for the timer container with black background */
+.timer-container {
+  background-color: #000000;
+  color: white;
+  border-radius: 0.5rem;
+}
+
+.mode-button-active {
+  background-color: #ff4545;
+  color: white;
+}
+
+.mode-button {
+  color: #888;
+  transition: all 0.3s ease;
+}
+
+.mode-button:hover {
+  color: white;
+}
+
+.session-dot-active {
+  background-color: #ff4545;
+}
+
+.session-dot {
+  background-color: #444;
+}
