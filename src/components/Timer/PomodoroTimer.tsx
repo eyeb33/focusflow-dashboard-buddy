@@ -10,7 +10,7 @@ const PomodoroTimer = () => {
     focus: 25,
     break: 5,
     longBreak: 15,
-    sessionsBeforeLongBreak: 4,
+    sessionsUntilLongBreak: 4,
   };
 
   const [mode, setMode] = useState<"focus" | "break" | "longBreak">("focus");
@@ -59,7 +59,7 @@ const PomodoroTimer = () => {
     if (mode === "focus") {
       const newSessionCount = completedFocusSessions + 1;
       setCompletedFocusSessions(newSessionCount);
-      if (newSessionCount % durations.sessionsBeforeLongBreak === 0) {
+      if (newSessionCount % durations.sessionsUntilLongBreak === 0) {
         setMode("longBreak");
       } else {
         setMode("break");
@@ -136,11 +136,11 @@ const PomodoroTimer = () => {
 
       {/* Session Dots */}
       <div className="flex justify-center gap-2 mt-2">
-        {Array.from({ length: durations.sessionsBeforeLongBreak }).map((_, i) => (
+        {Array.from({ length: durations.sessionsUntilLongBreak }).map((_, i) => (
           <div
             key={i}
             className={`h-2 w-2 rounded-full ${
-              i < completedFocusSessions % durations.sessionsBeforeLongBreak
+              i < completedFocusSessions % durations.sessionsUntilLongBreak
                 ? "bg-red-500"
                 : "bg-muted"
             }`}

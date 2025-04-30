@@ -11,19 +11,24 @@ interface TimerSettingsProps {
     focus: number;
     break: number;
     longBreak: number;
-    sessionsBeforeLongBreak: number;
+    sessionsUntilLongBreak: number;
   };
   onChange: (durations: {
     focus: number;
     break: number;
     longBreak: number;
-    sessionsBeforeLongBreak: number;
+    sessionsUntilLongBreak: number;
   }) => void;
 }
 
 const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [localSettings, setLocalSettings] = useState(durations);
+  const [localSettings, setLocalSettings] = useState(durations || {
+    focus: 25,
+    break: 5,
+    longBreak: 15,
+    sessionsUntilLongBreak: 4
+  });
   
   useEffect(() => {
     // Update local settings when props change
@@ -42,7 +47,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange }) =>
     { label: 'Focus Duration (min)', key: 'focus', min: 1, max: 60 },
     { label: 'Break Duration (min)', key: 'break', min: 1, max: 15 },
     { label: 'Long Break Duration (min)', key: 'longBreak', min: 5, max: 30 },
-    { label: 'Sessions Before Long Break', key: 'sessionsBeforeLongBreak', min: 1, max: 10 }
+    { label: 'Sessions Before Long Break', key: 'sessionsUntilLongBreak', min: 1, max: 10 }
   ];
 
   return (
@@ -62,7 +67,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange }) =>
               <div className="flex items-center justify-between">
                 <Label htmlFor={key}>{label}</Label>
                 <span className="text-sm text-muted-foreground">
-                  {localSettings && localSettings[key as keyof typeof localSettings]}
+                  {localSettings[key as keyof typeof localSettings]}
                 </span>
               </div>
               <Slider
@@ -70,7 +75,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange }) =>
                 min={min}
                 max={max}
                 step={1}
-                value={[localSettings && localSettings[key as keyof typeof localSettings] || min]}
+                value={[localSettings[key as keyof typeof localSettings]]}
                 onValueChange={(values) => handleChange(key as keyof typeof localSettings, values[0])}
               />
             </div>

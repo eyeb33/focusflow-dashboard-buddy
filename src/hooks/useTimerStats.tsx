@@ -1,11 +1,16 @@
-import { useTimerControls } from "./useTimerControls";
+
+import { useTimerContext } from '@/contexts/TimerContext';
 import { useTimerSettings } from "./useTimerSettings";
 
 export function useTimerStats() {
-  const { completedSessions } = useTimerControls();
+  const timer = useTimerContext();
   const { settings } = useTimerSettings();
 
-  const sessionsUntilLongBreak = settings.sessionsBeforeLongBreak;
+  // Access completedSessions directly from the timer context
+  const completedSessions = timer.completedSessions || 0;
+  
+  // Use sessionsUntilLongBreak instead of sessionsBeforeLongBreak
+  const sessionsUntilLongBreak = settings.sessionsUntilLongBreak;
 
   return {
     completedSessions,
