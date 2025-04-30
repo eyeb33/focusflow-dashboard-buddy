@@ -15,6 +15,7 @@ export function useTimerState(initialSettings: TimerSettings) {
   const [remainingTime, setRemainingTime] = useState(settings.focus * 60);
   const [completedSessions, setCompletedSessions] = useState(0);
   const [timerInterval, setTimerInterval] = useState<number | null>(null);
+  const [autoStart, setAutoStart] = useState<boolean>(false);
   
   // Update timer when mode or settings change (but only if not running)
   useEffect(() => {
@@ -82,8 +83,11 @@ export function useTimerState(initialSettings: TimerSettings) {
     remainingTime,
     setRemainingTime,
     completedSessions,
+    setCompletedSessions,
     timerInterval,
     setTimerInterval,
+    autoStart,
+    setAutoStart,
     handleTimerComplete
   };
 }
