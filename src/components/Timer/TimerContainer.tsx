@@ -22,8 +22,8 @@ const TimerContainer = () => {
     setMode,
     isRunning,
     setIsRunning,
-    remainingTime,
-    setRemainingTime,
+    timeRemaining,
+    setTimeRemaining,
     completedSessions,
     timerInterval,
     setTimerInterval
@@ -44,11 +44,11 @@ const TimerContainer = () => {
   const resetTimer = () => {
     pauseTimer();
     if (mode === 'focus') {
-      setRemainingTime(settings.focus * 60);
+      setTimeRemaining(settings.focus * 60);
     } else if (mode === 'break') {
-      setRemainingTime(settings.break * 60);
+      setTimeRemaining(settings.break * 60);
     } else {
-      setRemainingTime(settings.longBreak * 60);
+      setTimeRemaining(settings.longBreak * 60);
     }
   };
 
@@ -56,11 +56,11 @@ const TimerContainer = () => {
     setMode(newMode);
     pauseTimer();
     if (newMode === 'focus') {
-      setRemainingTime(settings.focus * 60);
+      setTimeRemaining(settings.focus * 60);
     } else if (newMode === 'break') {
-      setRemainingTime(settings.break * 60);
+      setTimeRemaining(settings.break * 60);
     } else {
-      setRemainingTime(settings.longBreak * 60);
+      setTimeRemaining(settings.longBreak * 60);
     }
   };
 
@@ -68,11 +68,11 @@ const TimerContainer = () => {
     setSettings(newSettings);
     if (!isRunning) {
       if (mode === 'focus') {
-        setRemainingTime(newSettings.focus * 60);
+        setTimeRemaining(newSettings.focus * 60);
       } else if (mode === 'break') {
-        setRemainingTime(newSettings.break * 60);
+        setTimeRemaining(newSettings.break * 60);
       } else {
-        setRemainingTime(newSettings.longBreak * 60);
+        setTimeRemaining(newSettings.longBreak * 60);
       }
     }
   };
@@ -92,7 +92,7 @@ const TimerContainer = () => {
         </div>
         
         <TimerCircle
-          secondsLeft={remainingTime}
+          secondsLeft={timeRemaining}
           totalSeconds={mode === 'focus' 
             ? settings.focus * 60 
             : mode === 'break' 
