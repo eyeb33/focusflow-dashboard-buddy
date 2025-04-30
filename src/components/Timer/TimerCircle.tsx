@@ -1,45 +1,53 @@
-// TimerCircle.tsx
-import React, { useEffect } from 'react';
 
-const TimerCircle = ({
-  mode,
-  remainingTime,
-  isRunning,
-  isPaused,
-  onPauseResume,
-  onReset,
-  startTimer,
-  setRemainingTime
-}: any) => {
+import React from 'react';
 
-  useEffect(() => {
-    let interval: any;
-    if (isRunning && !isPaused) {
-      interval = setInterval(() => {
-        setRemainingTime((prev: number) => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isRunning, isPaused]);
+interface TimerCircleProps {
+  secondsLeft: number;
+  totalSeconds: number;
+}
 
-  const minutes = Math.floor(remainingTime / 60);
-  const seconds = remainingTime % 60;
+const TimerCircle: React.FC<TimerCircleProps> = ({ secondsLeft, totalSeconds }) => {
+  const minutes = Math.floor(secondsLeft / 60);
+  const seconds = secondsLeft % 60;
+  
+  // Calculate progress percentage (0-100)
+  const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
+  
+  // SVG parameters
+  const size = 200;
+  const strokeWidth = 8;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const dashOffset = circumference - (progress / 100) * circumference;
 
   return (
-    <div className="flex flex-col items-center space-y-4">
-      <div className="text-5xl font-bold">
+    <div className="relative flex items-center justify-center">
+      <svg width={size} height={size} className="transform -rotate-90">
+        {/* Background circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="transparent"
+          stroke="#333"
+          strokeWidth={strokeWidth}
+        />
+        {/* Progress circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="transparent"
+          stroke={progress === 100 ? "#4CAF50" : "#FF5252"}
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={dashOffset}
+          strokeLinecap="round"
+          style={{ transition: 'stroke-dashoffset 0.5s' }}
+        />
+      </svg>
+      <div className="absolute text-4xl font-bold">
         {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
-      </div>
-      <div className="flex gap-4">
-        <button onClick={startTimer}>Start</button>
-        <button onClick={onPauseResume}>{isPaused ? 'Resume' : 'Pause'}</button>
-        <button onClick={onReset}>Reset</button>
       </div>
     </div>
   );

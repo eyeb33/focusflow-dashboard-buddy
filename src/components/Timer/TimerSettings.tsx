@@ -1,37 +1,81 @@
-// TimerSettings.tsx
-import React from 'react';
 
-const TimerSettings = ({ settings, onChange }: any) => {
+import React, { useEffect, useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Settings } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
+
+interface TimerSettingsProps {
+  durations: {
+    focus: number;
+    break: number;
+    longBreak: number;
+    sessionsBeforeLongBreak: number;
+  };
+  onChange: (durations: {
+    focus: number;
+    break: number;
+    longBreak: number;
+    sessionsBeforeLongBreak: number;
+  }) => void;
+}
+
+const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [localSettings, setLocalSettings] = useState(durations);
+  
+  useEffect(() => {
+    // Update local settings when props change
+    setLocalSettings(durations);
+  }, [durations]);
+  
+  const handleChange = (key: keyof typeof localSettings, value: number) => {
+    const updated = { ...localSettings, [key]: value };
+    setLocalSettings(updated);
+    onChange(updated);
+  };
+  
+  const settingsConfig = [
+    { label: 'Focus Duration (min)', key: 'focus', min: 1, max: 60 },
+    { label: 'Break Duration (min)', key: 'break', min: 1, max: 15 },
+    { label: 'Long Break Duration (min)', key: 'longBreak', min: 5, max: 30 },
+    { label: 'Sessions Before Long Break', key: 'sessionsBeforeLongBreak', min: 1, max: 10 }
+  ];
+
   return (
-    <div className="bg-gray-900 text-white p-4 rounded space-y-4">
-      {[
-        { label: 'Focus Duration (min)', key: 'focus', min: 5, max: 60 },
-        { label: 'Break Duration (min)', key: 'break', min: 1, max: 15 },
-        { label: 'Long Break Duration (min)', key: 'longBreak', min: 5, max: 30 },
-        { label: 'Sessions before Long Break', key: 'sessionsBeforeLongBreak', min: 1, max: 10 }
-      ].map(({ label, key, min, max }) => (
-        <div key={key}>
-          <label className="block text-sm mb-1">{label}</label>
-          <div className="flex items-center gap-4">
-            <input
-              type="range"
-              min={min}
-              max={max}
-              value={Math.floor(settings[key] / 60) || settings[key]}
-              onChange={(e) =>
-                onChange(key, key.includes('Duration') ? parseInt(e.target.value) * 60 : parseInt(e.target.value))
-              }
-              className="w-full"
-            />
-            <span className="w-10 text-right">
-              {key.includes('Duration')
-                ? Math.floor(settings[key] / 60)
-                : settings[key]}
-            </span>
-          </div>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" className="rounded-full">
+          <Settings size={18} />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Timer Settings</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          {settingsConfig.map(({ label, key, min, max }) => (
+            <div key={key} className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor={key}>{label}</Label>
+                <span className="text-sm text-muted-foreground">
+                  {localSettings[key as keyof typeof localSettings]}
+                </span>
+              </div>
+              <Slider
+                id={key}
+                min={min}
+                max={max}
+                step={1}
+                value={[localSettings[key as keyof typeof localSettings]]}
+                onValueChange={(values) => handleChange(key as keyof typeof localSettings, values[0])}
+              />
+            </div>
+          ))}
         </div>
-      ))}
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
