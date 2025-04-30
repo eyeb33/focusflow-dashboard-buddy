@@ -10,12 +10,14 @@ const SessionDots: React.FC<SessionDotsProps> = ({
   totalSessions,
   currentSessionIndex
 }) => {
+  console.log(`SessionDots render: totalSessions=${totalSessions}, currentIndex=${currentSessionIndex}`);
+  
   return (
     <div className="flex justify-center space-x-1.5 mb-2">
       {Array.from({ length: totalSessions }).map((_, i) => (
         <div
           key={i}
-          className={`rounded-full ${
+          className={`rounded-full transition-all ${
             i < currentSessionIndex 
               ? "bg-red-500 w-2 h-2" // Completed sessions
               : i === currentSessionIndex 

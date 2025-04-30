@@ -25,6 +25,8 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference - (progress / 100) * circumference;
 
+  console.log(`TimerCircle render: mode=${mode}, secondsLeft=${secondsLeft}, totalSeconds=${totalSeconds}, progress=${progress.toFixed(2)}%, dashOffset=${dashOffset.toFixed(2)}`);
+
   // Determine color based on mode
   const getProgressColor = () => {
     switch (mode) {

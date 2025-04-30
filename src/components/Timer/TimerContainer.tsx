@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import TimerCircle from './TimerCircle';
 import TimerSettings from './TimerSettings';
 import TimerModeTabs from './TimerModeTabs';
@@ -9,7 +9,7 @@ import { useTimer } from '@/hooks/useTimer';
 import { useTimerSettings } from '@/hooks/useTimerSettings';
 
 const TimerContainer = () => {
-  // Add the useTimerSettings hook to get the settings
+  // Get the timer settings
   const { settings } = useTimerSettings();
 
   // Pass the settings to useTimer
@@ -38,9 +38,15 @@ const TimerContainer = () => {
 
   // Calculate total seconds for the current mode
   const getTotalSeconds = () => {
-    if (!timeRemaining) return 0;
-    return timeRemaining;
+    switch(timerMode) {
+      case 'work': return settings.workDuration * 60;
+      case 'break': return settings.breakDuration * 60;
+      case 'longBreak': return settings.longBreakDuration * 60;
+      default: return settings.workDuration * 60;
+    }
   };
+
+  console.log(`TimerContainer render: mode=${timerMode}, isRunning=${isRunning}, timeRemaining=${timeRemaining}, currentSessionIndex=${currentSessionIndex}`);
 
   return (
     <div className="h-[450px] bg-black text-white rounded-lg p-4 flex flex-col items-center">
@@ -75,7 +81,7 @@ const TimerContainer = () => {
       />
       
       <SessionDots 
-        totalSessions={4} // Default to 4 sessions
+        totalSessions={settings.sessionsUntilLongBreak} 
         currentSessionIndex={currentSessionIndex}
       />
     </div>

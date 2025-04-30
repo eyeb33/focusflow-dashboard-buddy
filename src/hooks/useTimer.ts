@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { TimerSettings } from './useTimerSettings';
+import { toast } from 'sonner';
 
 export function useTimer(settings: TimerSettings) {
   // Core timer state
@@ -54,14 +55,16 @@ export function useTimer(settings: TimerSettings) {
       timerRef.current = setInterval(() => {
         setTimeRemaining(prevTime => {
           if (prevTime <= 1) {
+            // Clear the timer and handle completion
             if (timerRef.current) {
               clearInterval(timerRef.current);
               timerRef.current = null;
             }
-            handleTimerComplete();
+            
+            // We use setTimeout to ensure state updates occur in the next event loop
+            setTimeout(() => handleTimerComplete(), 0);
             return 0;
           }
-          
           return Math.max(0, prevTime - 1);
         });
       }, 1000);
@@ -79,6 +82,7 @@ export function useTimer(settings: TimerSettings) {
   useEffect(() => {
     if (!isRunning) {
       const newTime = getTotalTimeForMode();
+      console.log(`Settings changed: mode=${timerMode}, newTime=${newTime}`);
       setTimeRemaining(newTime);
     }
   }, [settings, timerMode, isRunning]);
@@ -103,6 +107,7 @@ export function useTimer(settings: TimerSettings) {
     
     // Reset the time
     const newTime = getTotalTimeForMode();
+    console.log(`handleReset: Resetting timer for ${timerMode} mode to ${newTime} seconds`);
     setTimeRemaining(newTime);
     lastRecordedFullMinutesRef.current = 0;
     
@@ -119,7 +124,10 @@ export function useTimer(settings: TimerSettings) {
     sessionStartTimeRef.current = null;
     
     // Change the mode and set appropriate time
+    console.log(`handleModeChange: Changing mode from ${timerMode} to ${mode}`);
     setTimerMode(mode);
+    
+    // Set the appropriate time for the new mode
     const newTime = getTotalTimeForMode();
     setTimeRemaining(newTime);
     
@@ -136,6 +144,7 @@ export function useTimer(settings: TimerSettings) {
     let resetCurrentIndex = false;
     
     console.log("Timer completed with mode:", currentMode);
+    toast.success(`${currentMode.charAt(0).toUpperCase() + currentMode.slice(1)} session completed!`);
     
     // Determine next mode
     if (currentMode === 'work') {
@@ -149,6 +158,8 @@ export function useTimer(settings: TimerSettings) {
       // Update session index
       const newIndex = (currentSessionIndex + 1) % settings.sessionsUntilLongBreak;
       setCurrentSessionIndex(newIndex);
+      
+      console.log(`Work session completed. Moving from session ${currentSessionIndex} to ${newIndex}`);
       
       // Determine if it's time for a long break
       nextMode = (newIndex === 0) ? 'longBreak' : 'break';
@@ -171,19 +182,30 @@ export function useTimer(settings: TimerSettings) {
     
     // Change to next mode and set appropriate time
     setTimerMode(nextMode);
-    const newTime = getTotalTimeForMode();
-    setTimeRemaining(newTime);
     
-    // Reset session index if needed
+    // If we need to reset the session index (after a long break)
     if (resetCurrentIndex) {
       setCurrentSessionIndex(0);
     }
     
-    // Auto-start next session
+    // Set the appropriate time for the new mode
+    // We do this in a setTimeout to ensure the mode has been updated
     setTimeout(() => {
+      const newTime = (() => {
+        switch (nextMode) {
+          case 'work': return settings.workDuration * 60;
+          case 'break': return settings.breakDuration * 60;
+          case 'longBreak': return settings.longBreakDuration * 60;
+          default: return settings.workDuration * 60;
+        }
+      })();
+      
+      setTimeRemaining(newTime);
+      
+      // Auto-start next session
       sessionStartTimeRef.current = new Date().toISOString();
       setIsRunning(true);
-    }, 1000);
+    }, 100);
   };
   
   // Format time helper
