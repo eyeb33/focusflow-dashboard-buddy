@@ -87,6 +87,7 @@ const TimerContainer = () => {
       <SessionDots 
         totalSessions={settings.sessionsUntilLongBreak} 
         currentSessionIndex={currentSessionIndex}
+        mode={timerMode}
       />
       
       {/* Position the settings button in the upper right corner */}

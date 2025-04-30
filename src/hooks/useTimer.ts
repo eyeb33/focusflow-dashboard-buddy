@@ -3,8 +3,13 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { TimerSettings } from './useTimerSettings';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { saveFocusSession } from '@/utils/timerStorage';
 
 export function useTimer(settings: TimerSettings) {
+  // Get user context for tracking stats
+  const { user } = useAuth();
+
   // Core timer state
   const [timerMode, setTimerMode] = useState<TimerMode>('work');
   const [isRunning, setIsRunning] = useState(false);
@@ -147,6 +152,27 @@ export function useTimer(settings: TimerSettings) {
     // Stop the timer
     setIsRunning(false);
     
+    // Save session data if user is logged in
+    if (user && sessionStartTimeRef.current) {
+      const sessionDuration = currentMode === 'work' 
+        ? currentSettings.workDuration * 60
+        : currentMode === 'break'
+          ? currentSettings.breakDuration * 60
+          : currentSettings.longBreakDuration * 60;
+          
+      saveFocusSession(
+        user.id,
+        currentMode,
+        sessionDuration,
+        true,
+        sessionStartTimeRef.current
+      ).then(() => {
+        console.log(`Session saved to database: ${currentMode} - ${sessionDuration} seconds`);
+      }).catch(err => {
+        console.error("Error saving session:", err);
+      });
+    }
+    
     if (currentMode === 'work') {
       // Increment completed sessions counter
       setCompletedSessions(prev => prev + 1);
@@ -183,7 +209,7 @@ export function useTimer(settings: TimerSettings) {
         setCurrentSessionIndex(0);
       }
     }
-  }, [timerMode, currentSessionIndex]);
+  }, [timerMode, currentSessionIndex, user]);
   
   // Format time helper
   const formatTime = (seconds: number): string => {

@@ -1,29 +1,79 @@
 
 import React from 'react';
+import { Circle } from 'lucide-react';
+import { cn } from "@/lib/utils";
 
 interface SessionDotsProps {
   totalSessions: number;
   currentSessionIndex: number;
+  mode?: 'work' | 'break' | 'longBreak';
+  className?: string;
 }
 
 const SessionDots: React.FC<SessionDotsProps> = ({
   totalSessions,
-  currentSessionIndex
+  currentSessionIndex,
+  mode = 'work',
+  className
 }) => {
-  return (
-    <div className="flex justify-center space-x-2 mb-2">
-      {Array.from({ length: totalSessions }).map((_, i) => (
-        <div
-          key={i}
-          className={`rounded-full border-2 transition-all ${
-            i === currentSessionIndex
-              ? "border-red-500 w-4 h-4" // Active session (larger and red border)
-              : i < currentSessionIndex
-                ? "border-red-500 w-3 h-3" // Completed sessions (red border)
-                : "border-gray-600 w-3 h-3" // Future sessions (gray border)
-          }`}
+  // Get colors based on timer mode
+  const getColor = (mode: string): { fill: string, stroke: string } => {
+    switch (mode) {
+      case 'work':
+        return { fill: 'text-red-500', stroke: 'text-red-200' };
+      case 'break':
+        return { fill: 'text-green-500', stroke: 'text-green-200' };
+      case 'longBreak':
+        return { fill: 'text-blue-500', stroke: 'text-blue-200' };
+      default:
+        return { fill: 'text-gray-500', stroke: 'text-gray-200' };
+    }
+  };
+
+  const colors = getColor(mode);
+  
+  const renderDots = () => {
+    if (mode === 'longBreak') {
+      // For long break, show a single blue circle
+      return (
+        <Circle
+          size={24}
+          className="text-transparent stroke-[2.5px] text-blue-500"
         />
-      ))}
+      );
+    }
+    
+    // For work sessions (red) or break sessions (green)
+    return Array.from({ length: totalSessions }).map((_, i) => {
+      // For work mode: a session is filled if its position is less than currentSessionIndex
+      // For break mode: a break is filled if position is less than currentSessionIndex
+      const isFilled = i < currentSessionIndex;
+      
+      // Is this the active position?
+      const isActive = i === currentSessionIndex;
+      
+      // Size the active indicator slightly larger
+      const size = isActive ? 24 : 18;
+      
+      return (
+        <Circle
+          key={`${mode}-${i}`}
+          size={size}
+          className={cn(
+            'text-transparent',
+            isFilled ? colors.fill : '',
+            isActive ? 'stroke-[2.5px]' : 'stroke-[2px]',
+            isActive ? colors.fill : colors.stroke,
+            'transition-all duration-300'
+          )}
+        />
+      );
+    });
+  };
+
+  return (
+    <div className={cn("flex justify-center space-x-2 mb-2", className)}>
+      {renderDots()}
     </div>
   );
 };
