@@ -1,51 +1,39 @@
 
-import React from "react";
-import {
-  Play,
-  Pause,
-  RotateCcw,
-  SkipForward,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import React from 'react';
+import { Pause, Play, RotateCcw } from "lucide-react";
 
 interface TimerControlsProps {
   isRunning: boolean;
-  onToggle: () => void;
+  onStart: () => void;
+  onPause: () => void;
   onReset: () => void;
-  onSkip?: () => void;
 }
 
 const TimerControls: React.FC<TimerControlsProps> = ({
   isRunning,
-  onToggle,
-  onReset,
-  onSkip
+  onStart,
+  onPause,
+  onReset
 }) => {
   return (
-    <div className="flex justify-center space-x-4 mt-6">
-      <Button variant="outline" onClick={onReset}>
-        <RotateCcw className="w-4 h-4 mr-2" />
-        Reset
-      </Button>
-      <Button onClick={onToggle}>
+    <div className="flex gap-5 mt-6 mb-4">
+      <button 
+        onClick={isRunning ? onPause : onStart}
+        className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center"
+      >
         {isRunning ? (
-          <>
-            <Pause className="w-4 h-4 mr-2" />
-            Pause
-          </>
+          <Pause className="h-5 w-5 text-white" />
         ) : (
-          <>
-            <Play className="w-4 h-4 mr-2" />
-            Start
-          </>
+          <Play className="h-5 w-5 text-white ml-1" />
         )}
-      </Button>
-      {onSkip && (
-        <Button variant="outline" onClick={onSkip}>
-          <SkipForward className="w-4 h-4 mr-2" />
-          Skip
-        </Button>
-      )}
+      </button>
+      
+      <button 
+        onClick={onReset}
+        className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center"
+      >
+        <RotateCcw className="h-5 w-5 text-white" />
+      </button>
     </div>
   );
 };
