@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Header from "@/components/Layout/Header";
@@ -6,8 +5,10 @@ import MobileNav from "@/components/Layout/MobileNav";
 import TaskManager from "@/components/Tasks/TaskManager";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
-import TimerContainer from "@/components/Timer/TimerContainer";
+// REMOVE this if you're no longer using TimerContainer
+// import TimerContainer from "@/components/Timer/TimerContainer";
 import AuthPrompt from "@/components/Auth/AuthPrompt";
+import PomodoroTimer from "@/components/Timer/PomodoroTimer";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -30,7 +31,8 @@ const Index = () => {
     });
   };
   
-  return <div className="min-h-screen flex flex-col">
+  return (
+    <div className="min-h-screen flex flex-col">
       <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
       
       <main className="flex-1 flex flex-col">
@@ -42,7 +44,7 @@ const Index = () => {
             </TabsList>
             
             <TabsContent value="timer" className="w-full">
-              <TimerContainer />
+              <PomodoroTimer />
             </TabsContent>
             
             <TabsContent value="tasks">
@@ -57,7 +59,8 @@ const Index = () => {
       </main>
       
       <MobileNav />
-    </div>;
+    </div>
+  );
 };
 
 export default Index;
