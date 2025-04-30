@@ -46,8 +46,6 @@ const TimerContainer = () => {
     }
   };
 
-  console.log(`TimerContainer render: mode=${timerMode}, isRunning=${isRunning}, timeRemaining=${timeRemaining}, currentSessionIndex=${currentSessionIndex}`);
-
   return (
     <div className="h-[450px] bg-black text-white rounded-lg p-4 flex flex-col items-center">
       <TimerModeTabs 
@@ -84,6 +82,21 @@ const TimerContainer = () => {
         totalSessions={settings.sessionsUntilLongBreak} 
         currentSessionIndex={currentSessionIndex}
       />
+      
+      {/* Position the settings button in the upper right corner */}
+      <div className="absolute top-4 right-4">
+        <TimerSettings 
+          durations={{
+            focus: settings.workDuration,
+            break: settings.breakDuration,
+            longBreak: settings.longBreakDuration,
+            sessionsUntilLongBreak: settings.sessionsUntilLongBreak
+          }}
+          onChange={(newDurations) => {
+            // This function will be called by the TimerSettings component
+          }}
+        />
+      </div>
     </div>
   );
 };

@@ -10,8 +10,6 @@ const SessionDots: React.FC<SessionDotsProps> = ({
   totalSessions,
   currentSessionIndex
 }) => {
-  console.log(`SessionDots render: totalSessions=${totalSessions}, currentIndex=${currentSessionIndex}`);
-  
   return (
     <div className="flex justify-center space-x-1.5 mb-2">
       {Array.from({ length: totalSessions }).map((_, i) => (

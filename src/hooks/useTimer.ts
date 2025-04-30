@@ -18,8 +18,6 @@ export function useTimer(settings: TimerSettings) {
   // Timer refs
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionStartTimeRef = useRef<string | null>(null);
-  const lastTickTimeRef = useRef<number>(Date.now());
-  const lastRecordedFullMinutesRef = useRef<number>(0);
   
   // Calculate total time for current timer mode
   const getTotalTimeForMode = (): number => {
@@ -38,7 +36,15 @@ export function useTimer(settings: TimerSettings) {
   // Calculate progress (0 to 1)
   const totalTime = getTotalTimeForMode();
   const elapsedTime = totalTime - timeRemaining;
-  const progress = totalTime > 0 ? Math.max(0, Math.min(1, elapsedTime / totalTime)) : 0;
+  const progress = totalTime > 0 ? Math.max(0, Math.min(1, elapsedTime / totalTime)) * 100 : 0;
+  
+  // Update settings when they change (only if timer is not running)
+  useEffect(() => {
+    if (!isRunning) {
+      const newTime = getTotalTimeForMode();
+      setTimeRemaining(newTime);
+    }
+  }, [settings, timerMode, isRunning]);
   
   // Handle timer tick
   useEffect(() => {
@@ -49,8 +55,7 @@ export function useTimer(settings: TimerSettings) {
     }
     
     if (isRunning) {
-      lastTickTimeRef.current = Date.now();
-      console.log("Starting timer tick with mode:", timerMode, "and time:", timeRemaining);
+      console.log("Starting timer with mode:", timerMode, "and time:", timeRemaining);
       
       timerRef.current = setInterval(() => {
         setTimeRemaining(prevTime => {
@@ -65,7 +70,7 @@ export function useTimer(settings: TimerSettings) {
             setTimeout(() => handleTimerComplete(), 0);
             return 0;
           }
-          return Math.max(0, prevTime - 1);
+          return prevTime - 1;
         });
       }, 1000);
     }
@@ -78,26 +83,15 @@ export function useTimer(settings: TimerSettings) {
     };
   }, [isRunning, timerMode]);
   
-  // Update settings when they change (only if timer is not running)
-  useEffect(() => {
-    if (!isRunning) {
-      const newTime = getTotalTimeForMode();
-      console.log(`Settings changed: mode=${timerMode}, newTime=${newTime}`);
-      setTimeRemaining(newTime);
-    }
-  }, [settings, timerMode, isRunning]);
-  
   // Timer control functions
   const handleStart = () => {
     if (!sessionStartTimeRef.current) {
       sessionStartTimeRef.current = new Date().toISOString();
     }
-    console.log("handleStart called - Setting isRunning to true");
     setIsRunning(true);
   };
   
   const handlePause = () => {
-    console.log("handlePause called - Setting isRunning to false");
     setIsRunning(false);
   };
   
@@ -107,9 +101,7 @@ export function useTimer(settings: TimerSettings) {
     
     // Reset the time
     const newTime = getTotalTimeForMode();
-    console.log(`handleReset: Resetting timer for ${timerMode} mode to ${newTime} seconds`);
     setTimeRemaining(newTime);
-    lastRecordedFullMinutesRef.current = 0;
     
     // Reset session start time
     sessionStartTimeRef.current = null;
@@ -119,12 +111,10 @@ export function useTimer(settings: TimerSettings) {
     // Stop the timer when changing modes
     setIsRunning(false);
     
-    // Reset tracking
-    lastRecordedFullMinutesRef.current = 0;
+    // Reset session tracking
     sessionStartTimeRef.current = null;
     
-    // Change the mode and set appropriate time
-    console.log(`handleModeChange: Changing mode from ${timerMode} to ${mode}`);
+    // Change the mode
     setTimerMode(mode);
     
     // Set the appropriate time for the new mode
@@ -133,20 +123,20 @@ export function useTimer(settings: TimerSettings) {
     
     // Reset the current session index when manually changing modes
     if (mode === 'work') {
-      setCurrentSessionIndex(prevIndex => prevIndex % settings.sessionsUntilLongBreak);
+      setCurrentSessionIndex(0);
     }
   };
   
   // Timer completion handler
   const handleTimerComplete = () => {
     const currentMode = timerMode;
-    let nextMode: TimerMode;
-    let resetCurrentIndex = false;
     
     console.log("Timer completed with mode:", currentMode);
     toast.success(`${currentMode.charAt(0).toUpperCase() + currentMode.slice(1)} session completed!`);
     
-    // Determine next mode
+    // Stop the timer
+    setIsRunning(false);
+    
     if (currentMode === 'work') {
       // Increment completed sessions counter
       setCompletedSessions(prev => prev + 1);
@@ -162,50 +152,23 @@ export function useTimer(settings: TimerSettings) {
       console.log(`Work session completed. Moving from session ${currentSessionIndex} to ${newIndex}`);
       
       // Determine if it's time for a long break
-      nextMode = (newIndex === 0) ? 'longBreak' : 'break';
+      const nextMode = newIndex === 0 ? 'longBreak' : 'break';
+      setTimerMode(nextMode);
+      setTimeRemaining(nextMode === 'longBreak' ? settings.longBreakDuration * 60 : settings.breakDuration * 60);
     } else {
       // After any break, return to work mode
-      nextMode = 'work';
+      setTimerMode('work');
+      setTimeRemaining(settings.workDuration * 60);
+      
+      // If it was a long break, reset the session counter
       if (currentMode === 'longBreak') {
-        resetCurrentIndex = true;
+        setCurrentSessionIndex(0);
       }
     }
     
-    // Stop the timer
-    setIsRunning(false);
-    
-    // Reset session start time
-    sessionStartTimeRef.current = null;
-    
-    // Reset tracking
-    lastRecordedFullMinutesRef.current = 0;
-    
-    // Change to next mode and set appropriate time
-    setTimerMode(nextMode);
-    
-    // If we need to reset the session index (after a long break)
-    if (resetCurrentIndex) {
-      setCurrentSessionIndex(0);
-    }
-    
-    // Set the appropriate time for the new mode
-    // We do this in a setTimeout to ensure the mode has been updated
-    setTimeout(() => {
-      const newTime = (() => {
-        switch (nextMode) {
-          case 'work': return settings.workDuration * 60;
-          case 'break': return settings.breakDuration * 60;
-          case 'longBreak': return settings.longBreakDuration * 60;
-          default: return settings.workDuration * 60;
-        }
-      })();
-      
-      setTimeRemaining(newTime);
-      
-      // Auto-start next session
-      sessionStartTimeRef.current = new Date().toISOString();
-      setIsRunning(true);
-    }, 100);
+    // Auto-start next session
+    sessionStartTimeRef.current = new Date().toISOString();
+    setIsRunning(true);
   };
   
   // Format time helper
