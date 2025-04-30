@@ -13,9 +13,9 @@ const TimerCircle: React.FC<TimerCircleProps> = ({ secondsLeft, totalSeconds }) 
   // Calculate progress percentage
   const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
   
-  // SVG parameters
-  const size = 280;
-  const strokeWidth = 12;
+  // SVG parameters - making it smaller to match the first screenshot
+  const size = 220; // Reduced from 280
+  const strokeWidth = 8; // Reduced from 12
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference - (progress / 100) * circumference;
@@ -47,10 +47,10 @@ const TimerCircle: React.FC<TimerCircleProps> = ({ secondsLeft, totalSeconds }) 
         />
       </svg>
       <div className="absolute flex flex-col items-center">
-        <div className="text-6xl font-bold">
+        <div className="text-5xl font-bold tracking-wider">
           {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
         </div>
-        <div className="text-gray-400 text-sm mt-1">Focus on your task</div>
+        <div className="text-gray-400 text-xs mt-1">Focus on your task</div>
       </div>
     </div>
   );

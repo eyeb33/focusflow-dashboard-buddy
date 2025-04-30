@@ -35,9 +35,9 @@ const Index = () => {
       <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
       
       <main className="flex-1 flex flex-col">
-        <div className="relative flex flex-col items-center justify-center flex-1 px-4 py-8 md:py-16 bg-black">
+        <div className="relative flex flex-col items-center justify-center flex-1 px-4 py-6 md:py-10 bg-black">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-md">
-            <TabsList className="grid w-full grid-cols-2 mb-4 bg-[#1e293b]">
+            <TabsList className="grid w-full grid-cols-2 mb-2 bg-[#1e293b]">
               <TabsTrigger value="timer">Timer</TabsTrigger>
               <TabsTrigger value="tasks">Tasks</TabsTrigger>
             </TabsList>

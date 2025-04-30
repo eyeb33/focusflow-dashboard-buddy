@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import TimerCircle from './TimerCircle';
 import TimerSettings from './TimerSettings';
-import TimerControls from './TimerControls';
 import { cn } from "@/lib/utils";
 import { Pause, Play, RotateCcw } from "lucide-react";
 
@@ -137,13 +136,13 @@ const TimerContainer = () => {
   const currentSessionIndex = completedSessions % settings.sessionsUntilLongBreak;
 
   return (
-    <div className="min-h-[500px] bg-black text-white rounded-lg p-5 flex flex-col items-center">
-      <div className="w-full mb-4">
+    <div className="h-[480px] bg-black text-white rounded-lg p-4 flex flex-col items-center">
+      <div className="w-full mb-2">
         <div className="flex bg-[#1e293b] rounded-md p-1">
           <button 
             onClick={() => changeMode('focus')} 
             className={cn(
-              "flex-1 py-2 rounded-sm text-center transition-colors",
+              "flex-1 py-1.5 text-sm rounded-sm text-center transition-colors",
               mode === 'focus' ? "bg-red-500 text-white" : "text-gray-400 hover:text-white"
             )}
           >
@@ -152,7 +151,7 @@ const TimerContainer = () => {
           <button 
             onClick={() => changeMode('break')} 
             className={cn(
-              "flex-1 py-2 rounded-sm text-center transition-colors",
+              "flex-1 py-1.5 text-sm rounded-sm text-center transition-colors",
               mode === 'break' ? "bg-green-500 text-white" : "text-gray-400 hover:text-white"
             )}
           >
@@ -161,7 +160,7 @@ const TimerContainer = () => {
           <button 
             onClick={() => changeMode('longBreak')} 
             className={cn(
-              "flex-1 py-2 rounded-sm text-center transition-colors",
+              "flex-1 py-1.5 text-sm rounded-sm text-center transition-colors",
               mode === 'longBreak' ? "bg-blue-500 text-white" : "text-gray-400 hover:text-white"
             )}
           >
@@ -170,9 +169,9 @@ const TimerContainer = () => {
         </div>
       </div>
 
-      <div className="relative flex flex-col items-center justify-center">
+      <div className="relative flex flex-col items-center justify-center mt-2">
         <div className="text-center mb-2">
-          <div className="text-sm rounded-full bg-black px-4 py-1 inline-block">
+          <div className="text-xs rounded-full bg-black px-3 py-0.5 inline-block">
             {mode === 'focus' ? 'Focus' : mode === 'break' ? 'Break' : 'Long Break'}
           </div>
         </div>
@@ -186,38 +185,34 @@ const TimerContainer = () => {
               : settings.longBreak * 60
           }
         />
-        
-        <p className="text-sm text-gray-400 mt-2">
-          {mode === 'focus' ? 'Focus on your task' : 'Take a break'}
-        </p>
       </div>
 
-      <div className="flex gap-6 mt-10 mb-6">
+      <div className="flex gap-5 mt-6 mb-4">
         <button 
           onClick={isRunning ? pauseTimer : startTimer}
-          className="w-16 h-16 rounded-full bg-white flex items-center justify-center"
+          className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center"
         >
           {isRunning ? (
-            <Pause className="h-6 w-6 text-red-500" />
+            <Pause className="h-5 w-5 text-white" />
           ) : (
-            <Play className="h-6 w-6 text-red-500 ml-1" />
+            <Play className="h-5 w-5 text-white ml-1" />
           )}
         </button>
         
         <button 
           onClick={resetTimer}
-          className="w-16 h-16 rounded-full bg-white flex items-center justify-center"
+          className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center"
         >
-          <RotateCcw className="h-6 w-6 text-red-500" />
+          <RotateCcw className="h-5 w-5 text-white" />
         </button>
       </div>
 
       {/* Session progress dots */}
-      <div className="flex justify-center space-x-2 mb-4">
+      <div className="flex justify-center space-x-1.5 mb-2">
         {Array.from({ length: settings.sessionsUntilLongBreak }).map((_, i) => (
           <div
             key={i}
-            className={`w-3 h-3 rounded-full ${
+            className={`w-2 h-2 rounded-full ${
               i < currentSessionIndex ? "bg-red-500" : "bg-gray-600"
             }`}
           />
