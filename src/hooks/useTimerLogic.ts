@@ -31,8 +31,6 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
     setIsRunning,
     timeRemaining,
     setTimeRemaining,
-    autoStart,
-    setAutoStart
   } = timerState;
 
   // Sync timeRemaining with settings when they change
@@ -138,7 +136,6 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
     handlePause,
     handleReset,
     handleModeChange,
-    setAutoStart,
     sessionStartTimeRef,
     handleTimerComplete
   };

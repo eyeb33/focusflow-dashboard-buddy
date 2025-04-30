@@ -20,7 +20,6 @@ interface TimerContextType {
   handleModeChange: (mode: TimerMode) => void;
   getModeLabel: () => string;
   updateSettings: (newSettings: Partial<ReturnType<typeof useTimerSettings>['settings']>) => void;
-  setAutoStart: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
@@ -41,8 +40,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     handleReset,
     handleModeChange,
     getModeLabel,
-    formatTime,
-    setAutoStart
+    formatTime
   } = useTimerHook(settings);
   
   const value: TimerContextType = {
@@ -60,8 +58,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     handleReset,
     handleModeChange,
     getModeLabel,
-    updateSettings,
-    setAutoStart
+    updateSettings
   };
 
   return (
