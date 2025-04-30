@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { TimerSettings } from './useTimerSettings';
 import { toast } from 'sonner';
@@ -18,33 +18,38 @@ export function useTimer(settings: TimerSettings) {
   // Timer refs
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionStartTimeRef = useRef<string | null>(null);
+  const settingsRef = useRef(settings);
   
-  // Calculate total time for current timer mode
-  const getTotalTimeForMode = (): number => {
-    switch (timerMode) {
-      case 'work':
-        return settings.workDuration * 60;
-      case 'break':
-        return settings.breakDuration * 60;
-      case 'longBreak':
-        return settings.longBreakDuration * 60;
-      default:
-        return settings.workDuration * 60;
-    }
-  };
-  
-  // Calculate progress (0 to 1)
-  const totalTime = getTotalTimeForMode();
-  const elapsedTime = totalTime - timeRemaining;
-  const progress = totalTime > 0 ? Math.max(0, Math.min(1, elapsedTime / totalTime)) * 100 : 0;
-  
-  // Update settings when they change (only if timer is not running)
+  // Update settings ref when settings change
   useEffect(() => {
+    settingsRef.current = settings;
+    
+    // Update timer duration if not running
     if (!isRunning) {
       const newTime = getTotalTimeForMode();
       setTimeRemaining(newTime);
     }
-  }, [settings, timerMode, isRunning]);
+  }, [settings, isRunning]);
+  
+  // Calculate total time for current timer mode
+  const getTotalTimeForMode = useCallback((): number => {
+    const currentSettings = settingsRef.current;
+    switch (timerMode) {
+      case 'work':
+        return currentSettings.workDuration * 60;
+      case 'break':
+        return currentSettings.breakDuration * 60;
+      case 'longBreak':
+        return currentSettings.longBreakDuration * 60;
+      default:
+        return currentSettings.workDuration * 60;
+    }
+  }, [timerMode]);
+  
+  // Calculate progress (0 to 100)
+  const totalTime = getTotalTimeForMode();
+  const elapsedTime = totalTime - timeRemaining;
+  const progress = totalTime > 0 ? Math.max(0, Math.min(1, elapsedTime / totalTime)) * 100 : 0;
   
   // Handle timer tick
   useEffect(() => {
@@ -84,18 +89,20 @@ export function useTimer(settings: TimerSettings) {
   }, [isRunning, timerMode]);
   
   // Timer control functions
-  const handleStart = () => {
+  const handleStart = useCallback(() => {
+    console.log("Starting timer...");
     if (!sessionStartTimeRef.current) {
       sessionStartTimeRef.current = new Date().toISOString();
     }
     setIsRunning(true);
-  };
+  }, []);
   
-  const handlePause = () => {
+  const handlePause = useCallback(() => {
+    console.log("Pausing timer...");
     setIsRunning(false);
-  };
+  }, []);
   
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     // Stop the timer
     setIsRunning(false);
     
@@ -105,9 +112,11 @@ export function useTimer(settings: TimerSettings) {
     
     // Reset session start time
     sessionStartTimeRef.current = null;
-  };
+    
+    console.log("Timer reset to", newTime, "seconds");
+  }, [getTotalTimeForMode]);
   
-  const handleModeChange = (mode: TimerMode) => {
+  const handleModeChange = useCallback((mode: TimerMode) => {
     // Stop the timer when changing modes
     setIsRunning(false);
     
@@ -125,11 +134,12 @@ export function useTimer(settings: TimerSettings) {
     if (mode === 'work') {
       setCurrentSessionIndex(0);
     }
-  };
+  }, [getTotalTimeForMode]);
   
   // Timer completion handler
-  const handleTimerComplete = () => {
+  const handleTimerComplete = useCallback(() => {
     const currentMode = timerMode;
+    const currentSettings = settingsRef.current;
     
     console.log("Timer completed with mode:", currentMode);
     toast.success(`${currentMode.charAt(0).toUpperCase() + currentMode.slice(1)} session completed!`);
@@ -142,11 +152,11 @@ export function useTimer(settings: TimerSettings) {
       setCompletedSessions(prev => prev + 1);
       
       // Add work time to total time for today
-      const workSeconds = settings.workDuration * 60;
+      const workSeconds = currentSettings.workDuration * 60;
       setTotalTimeToday(prev => prev + workSeconds);
       
       // Update session index
-      const newIndex = (currentSessionIndex + 1) % settings.sessionsUntilLongBreak;
+      const newIndex = (currentSessionIndex + 1) % currentSettings.sessionsUntilLongBreak;
       setCurrentSessionIndex(newIndex);
       
       console.log(`Work session completed. Moving from session ${currentSessionIndex} to ${newIndex}`);
@@ -154,22 +164,26 @@ export function useTimer(settings: TimerSettings) {
       // Determine if it's time for a long break
       const nextMode = newIndex === 0 ? 'longBreak' : 'break';
       setTimerMode(nextMode);
-      setTimeRemaining(nextMode === 'longBreak' ? settings.longBreakDuration * 60 : settings.breakDuration * 60);
+      setTimeRemaining(nextMode === 'longBreak' ? currentSettings.longBreakDuration * 60 : currentSettings.breakDuration * 60);
+      
+      // Auto-start next session
+      sessionStartTimeRef.current = new Date().toISOString();
+      setTimeout(() => setIsRunning(true), 500);
     } else {
       // After any break, return to work mode
       setTimerMode('work');
-      setTimeRemaining(settings.workDuration * 60);
+      setTimeRemaining(currentSettings.workDuration * 60);
+      
+      // Auto-start next session
+      sessionStartTimeRef.current = new Date().toISOString();
+      setTimeout(() => setIsRunning(true), 500);
       
       // If it was a long break, reset the session counter
       if (currentMode === 'longBreak') {
         setCurrentSessionIndex(0);
       }
     }
-    
-    // Auto-start next session
-    sessionStartTimeRef.current = new Date().toISOString();
-    setIsRunning(true);
-  };
+  }, [timerMode, currentSessionIndex]);
   
   // Format time helper
   const formatTime = (seconds: number): string => {

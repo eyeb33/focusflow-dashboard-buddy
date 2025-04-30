@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import TimerCircle from './TimerCircle';
 import TimerSettings from './TimerSettings';
 import TimerModeTabs from './TimerModeTabs';
@@ -10,7 +10,7 @@ import { useTimerSettings } from '@/hooks/useTimerSettings';
 
 const TimerContainer = () => {
   // Get the timer settings
-  const { settings } = useTimerSettings();
+  const { settings, updateSettings } = useTimerSettings();
 
   // Pass the settings to useTimer
   const {
@@ -45,6 +45,12 @@ const TimerContainer = () => {
       default: return settings.workDuration * 60;
     }
   };
+
+  // Debug settings integration
+  useEffect(() => {
+    console.log("Timer settings updated:", settings);
+    console.log("Current timer state:", { timerMode, timeRemaining, isRunning });
+  }, [settings, timerMode, timeRemaining, isRunning]);
 
   return (
     <div className="h-[450px] bg-black text-white rounded-lg p-4 flex flex-col items-center">
@@ -93,7 +99,13 @@ const TimerContainer = () => {
             sessionsUntilLongBreak: settings.sessionsUntilLongBreak
           }}
           onChange={(newDurations) => {
-            // This function will be called by the TimerSettings component
+            // Update timer settings when sliders are changed
+            updateSettings({
+              workDuration: newDurations.focus,
+              breakDuration: newDurations.break,
+              longBreakDuration: newDurations.longBreak,
+              sessionsUntilLongBreak: newDurations.sessionsUntilLongBreak
+            });
           }}
         />
       </div>
