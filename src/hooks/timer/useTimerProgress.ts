@@ -1,38 +1,35 @@
 
-import { useEffect } from 'react';
-import { TimerSettings } from '../useTimerSettings';
+import { useCallback } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
+import { TimerSettings } from '../useTimerSettings';
 
 export function useTimerProgress(
-  timerMode: TimerMode,
-  timeRemaining: number,
+  timerMode: TimerMode, 
+  timeRemaining: number, 
   settings: TimerSettings
 ) {
   // Calculate total time for current timer mode
-  const getTotalTime = (): number => {
+  const getTotalTimeForMode = useCallback((): number => {
     switch (timerMode) {
+      case 'work':
+        return settings.workDuration * 60;
       case 'break':
         return settings.breakDuration * 60;
       case 'longBreak':
         return settings.longBreakDuration * 60;
-      case 'work':
       default:
         return settings.workDuration * 60;
     }
-  };
+  }, [timerMode, settings]);
   
-  // Calculate progress
-  const totalTime = getTotalTime();
+  // Calculate progress (0 to 100)
+  const totalTime = getTotalTimeForMode();
   const elapsedTime = totalTime - timeRemaining;
-  const progress = totalTime > 0 ? Math.max(0, Math.min(1, elapsedTime / totalTime)) : 0;
-
-  // Debug progress calculation
-  useEffect(() => {
-    console.log(`Progress calculation: ${timerMode} mode - total=${totalTime}, remaining=${timeRemaining}, elapsed=${elapsedTime}, progress=${progress.toFixed(4)}`);
-  }, [timeRemaining, totalTime, progress, timerMode]);
+  const progress = totalTime > 0 ? Math.max(0, Math.min(1, elapsedTime / totalTime)) * 100 : 0;
 
   return {
     progress,
-    getTotalTime
+    totalTime,
+    getTotalTimeForMode
   };
 }
