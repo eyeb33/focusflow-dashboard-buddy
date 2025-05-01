@@ -47,7 +47,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange }) =>
     { label: 'Focus Duration (min)', key: 'focus', min: 1, max: 60 },
     { label: 'Break Duration (min)', key: 'break', min: 1, max: 15 },
     { label: 'Long Break Duration (min)', key: 'longBreak', min: 5, max: 30 },
-    { label: 'Sessions Before Long Break', key: 'sessionsUntilLongBreak', min: 1, max: 10 }
+    { label: 'Focus Sessions Until Long Break', key: 'sessionsUntilLongBreak', min: 1, max: 10 }
   ];
 
   return (

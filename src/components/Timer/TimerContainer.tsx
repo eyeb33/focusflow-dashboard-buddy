@@ -7,6 +7,7 @@ import TimerControls from './TimerControls';
 import SessionDots from './SessionDots';
 import { useTimer } from '@/hooks/useTimer';
 import { useTimerSettings } from '@/hooks/useTimerSettings';
+import { toast } from 'sonner';
 
 const TimerContainer = () => {
   // Get the timer settings
@@ -48,20 +49,6 @@ const TimerContainer = () => {
       default: return settings.workDuration * 60;
     }
   };
-
-  // Log visibility changes for debugging
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      const isVisible = !document.hidden;
-      console.log("Document visibility changed:", isVisible ? "visible" : "hidden");
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
 
   // Use IntersetionObserver to detect if timer is visible in the DOM
   useEffect(() => {
@@ -152,6 +139,9 @@ const TimerContainer = () => {
               longBreakDuration: newDurations.longBreak,
               sessionsUntilLongBreak: newDurations.sessionsUntilLongBreak
             });
+            
+            // Show a toast notification
+            toast.success('Timer settings updated');
           }}
         />
       </div>

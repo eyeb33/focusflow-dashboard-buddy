@@ -39,67 +39,39 @@ const SessionDots: React.FC<SessionDotsProps> = ({
         <Circle
           key="longbreak-circle"
           size={24}
-          className="text-transparent stroke-[2.5px] text-blue-500"
+          className={cn("text-transparent stroke-[2.5px]", colors.fill)}
           fill="none"
         />
       );
     }
     
-    if (mode === 'work') {
-      // For work sessions (red circles)
-      return Array.from({ length: totalSessions }).map((_, i) => {
-        // A session is filled if its position is less than currentSessionIndex
-        const isFilled = i < currentSessionIndex;
-        
-        // Is this the active position?
-        const isActive = i === currentSessionIndex;
-        
-        // Size the active indicator slightly larger
-        const size = isActive ? 24 : 18;
-        
-        return (
-          <Circle
-            key={`work-${i}`}
-            size={size}
-            className={cn(
-              isFilled ? colors.fill : 'text-transparent',
-              isActive ? 'stroke-[2.5px]' : 'stroke-[2px]',
-              isActive ? colors.fill : colors.stroke,
-              'transition-all duration-300'
-            )}
-            fill={isFilled ? "currentColor" : "none"}
-          />
-        );
-      });
-    } else if (mode === 'break') {
-      // For break sessions (green circles)
-      return Array.from({ length: totalSessions }).map((_, i) => {
-        // A break is filled if position is less than currentSessionIndex
-        const isFilled = i < currentSessionIndex;
-        
-        // Is this the active position?
-        const isActive = i === currentSessionIndex;
-        
-        // Size the active indicator slightly larger
-        const size = isActive ? 24 : 18;
-        
-        return (
-          <Circle
-            key={`break-${i}`}
-            size={size}
-            className={cn(
-              'transition-all duration-300',
-              isFilled ? colors.fill : 'text-transparent',
-              isActive ? 'stroke-[2.5px]' : 'stroke-[2px]',
-              isActive ? colors.fill : colors.stroke
-            )}
-            fill={isFilled ? "currentColor" : "none"}
-          />
-        );
-      });
-    }
+    // Determine which set of circles to show based on mode
+    const dotsToShow = mode === 'work' ? totalSessions : totalSessions - 1;
     
-    return null;
+    return Array.from({ length: dotsToShow }).map((_, i) => {
+      // A session is filled if its position is less than currentSessionIndex
+      const isFilled = i < currentSessionIndex;
+      
+      // Is this the active position?
+      const isActive = i === currentSessionIndex;
+      
+      // Size the active indicator slightly larger
+      const size = isActive ? 24 : 18;
+      
+      return (
+        <Circle
+          key={`${mode}-${i}`}
+          size={size}
+          className={cn(
+            'transition-all duration-300',
+            isFilled ? colors.fill : 'text-transparent',
+            isActive ? 'stroke-[2.5px]' : 'stroke-[2px]',
+            isActive ? colors.fill : colors.stroke
+          )}
+          fill={isFilled ? "currentColor" : "none"}
+        />
+      );
+    });
   };
 
   return (

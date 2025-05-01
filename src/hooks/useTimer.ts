@@ -66,6 +66,7 @@ export function useTimer(settings: TimerSettings) {
   const settingsRef = useRef(settings);
   const wasRunningRef = useRef(false);
   const lastTickTimeRef = useRef<number>(Date.now());
+  const isCompletingCycleRef = useRef(false);
   
   // Save the current timer state to localStorage
   const saveTimerState = useCallback(() => {
@@ -313,10 +314,26 @@ export function useTimer(settings: TimerSettings) {
     setTimerMode(mode);
     
     // Set the appropriate time for the new mode
-    const newTime = getTotalTimeForMode();
+    const newSettings = settingsRef.current;
+    let newTime: number;
+    
+    switch (mode) {
+      case 'work':
+        newTime = newSettings.workDuration * 60;
+        break;
+      case 'break':
+        newTime = newSettings.breakDuration * 60;
+        break;
+      case 'longBreak':
+        newTime = newSettings.longBreakDuration * 60;
+        break;
+      default:
+        newTime = newSettings.workDuration * 60;
+    }
+    
     setTimeRemaining(newTime);
     
-    // Reset the current session index when manually changing modes
+    // If switching to work mode manually, reset the cycle
     if (mode === 'work') {
       setCurrentSessionIndex(0);
     }
@@ -331,104 +348,119 @@ export function useTimer(settings: TimerSettings) {
       timestamp: Date.now()
     };
     localStorage.setItem('timerState', JSON.stringify(timerState));
-  }, [getTotalTimeForMode, currentSessionIndex]);
+  }, [currentSessionIndex]);
   
   // Timer completion handler
   const handleTimerComplete = useCallback(() => {
-    const currentMode = timerMode;
-    const currentSettings = settingsRef.current;
-    
-    console.log("Timer completed with mode:", currentMode);
-    toast.success(`${currentMode.charAt(0).toUpperCase() + currentMode.slice(1)} session completed!`);
-    
-    // Stop the timer
-    setIsRunning(false);
-    
-    // Save session data if user is logged in
-    if (user && sessionStartTimeRef.current) {
-      const sessionDuration = currentMode === 'work' 
-        ? currentSettings.workDuration * 60
-        : currentMode === 'break'
-          ? currentSettings.breakDuration * 60
-          : currentSettings.longBreakDuration * 60;
-          
-      saveFocusSession(
-        user.id,
-        currentMode,
-        sessionDuration,
-        true,
-        sessionStartTimeRef.current
-      ).then(() => {
-        console.log(`Session saved to database: ${currentMode} - ${sessionDuration} seconds`);
-      }).catch(err => {
-        console.error("Error saving session:", err);
-      });
+    // Prevent multiple completions
+    if (isCompletingCycleRef.current) {
+      console.log("Already handling completion - skipping");
+      return;
     }
     
-    if (currentMode === 'work') {
-      // Increment completed sessions counter
-      setCompletedSessions(prev => prev + 1);
+    isCompletingCycleRef.current = true;
+    
+    try {
+      const currentMode = timerMode;
+      const currentSettings = settingsRef.current;
       
-      // Add work time to total time for today
-      const workSeconds = currentSettings.workDuration * 60;
-      setTotalTimeToday(prev => prev + workSeconds);
+      console.log("Timer completed with mode:", currentMode);
+      toast.success(`${currentMode.charAt(0).toUpperCase() + currentMode.slice(1)} session completed!`);
       
-      // Update session index
-      const newIndex = (currentSessionIndex + 1) % currentSettings.sessionsUntilLongBreak;
-      setCurrentSessionIndex(newIndex);
+      // Stop the timer
+      setIsRunning(false);
       
-      console.log(`Work session completed. Moving from session ${currentSessionIndex} to ${newIndex}`);
+      // Save session data if user is logged in
+      if (user && sessionStartTimeRef.current) {
+        const sessionDuration = currentMode === 'work' 
+          ? currentSettings.workDuration * 60
+          : currentMode === 'break'
+            ? currentSettings.breakDuration * 60
+            : currentSettings.longBreakDuration * 60;
+            
+        saveFocusSession(
+          user.id,
+          currentMode,
+          sessionDuration,
+          true,
+          sessionStartTimeRef.current
+        ).then(() => {
+          console.log(`Session saved to database: ${currentMode} - ${sessionDuration} seconds`);
+        }).catch(err => {
+          console.error("Error saving session:", err);
+        });
+      }
       
-      // Determine if it's time for a long break
-      const nextMode = newIndex === 0 ? 'longBreak' : 'break';
-      setTimerMode(nextMode);
-      setTimeRemaining(nextMode === 'longBreak' ? currentSettings.longBreakDuration * 60 : currentSettings.breakDuration * 60);
-      
-      // Auto-start next session
-      sessionStartTimeRef.current = new Date().toISOString();
-      setTimeout(() => setIsRunning(true), 500);
-      
-      // Save the new state after completion
-      const timerState = {
-        timerMode: nextMode,
-        isRunning: true,
-        timeRemaining: nextMode === 'longBreak' ? currentSettings.longBreakDuration * 60 : currentSettings.breakDuration * 60,
-        currentSessionIndex: newIndex,
-        sessionStartTime: sessionStartTimeRef.current,
-        timestamp: Date.now()
-      };
-      localStorage.setItem('timerState', JSON.stringify(timerState));
-    } else {
-      // After any break, return to work mode
-      setTimerMode('work');
-      setTimeRemaining(currentSettings.workDuration * 60);
-      
-      // Auto-start next session
-      sessionStartTimeRef.current = new Date().toISOString();
-      
-      // For long break, don't auto-start
-      if (currentMode === 'longBreak') {
-        setIsRunning(false);
-        setCurrentSessionIndex(0);
-      } else {
+      if (currentMode === 'work') {
+        // Increment completed sessions counter
+        setCompletedSessions(prev => prev + 1);
+        
+        // Add work time to total time for today
+        const workSeconds = currentSettings.workDuration * 60;
+        setTotalTimeToday(prev => prev + workSeconds);
+        
+        // Calculate next session index
+        const nextIndex = (currentSessionIndex + 1) % currentSettings.sessionsUntilLongBreak;
+        setCurrentSessionIndex(nextIndex);
+        
+        console.log(`Work session completed. Moving from session ${currentSessionIndex} to ${nextIndex}`);
+        
+        // Determine if it's time for a long break
+        const nextMode = nextIndex === 0 ? 'longBreak' : 'break';
+        setTimerMode(nextMode);
+        
+        // Set time for next mode
+        const nextTime = nextMode === 'longBreak' 
+          ? currentSettings.longBreakDuration * 60 
+          : currentSettings.breakDuration * 60;
+        setTimeRemaining(nextTime);
+        
+        // Auto-start next session
+        sessionStartTimeRef.current = new Date().toISOString();
         setTimeout(() => setIsRunning(true), 500);
+        
+        // Save the new state
+        const timerState = {
+          timerMode: nextMode,
+          isRunning: true,
+          timeRemaining: nextTime,
+          currentSessionIndex: nextIndex,
+          sessionStartTime: sessionStartTimeRef.current,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('timerState', JSON.stringify(timerState));
+      } else {
+        // After any break, return to work mode
+        setTimerMode('work');
+        setTimeRemaining(currentSettings.workDuration * 60);
+        
+        // Auto-start next work session after regular break
+        sessionStartTimeRef.current = new Date().toISOString();
+        
+        // For long break, reset the cycle and don't auto-start
+        if (currentMode === 'longBreak') {
+          setIsRunning(false);
+          setCurrentSessionIndex(0);
+          setCompletedSessions(0); // Reset completed sessions counter for new cycle
+        } else {
+          // Auto-start after short break
+          setTimeout(() => setIsRunning(true), 500);
+        }
+        
+        // Save the new state
+        const timerState = {
+          timerMode: 'work',
+          isRunning: currentMode !== 'longBreak', // Don't auto-start after long break
+          timeRemaining: currentSettings.workDuration * 60,
+          currentSessionIndex: currentMode === 'longBreak' ? 0 : currentSessionIndex,
+          sessionStartTime: sessionStartTimeRef.current,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('timerState', JSON.stringify(timerState));
       }
-      
-      // Save the new state after completion
-      const timerState = {
-        timerMode: 'work',
-        isRunning: currentMode !== 'longBreak', // Don't auto-start after long break
-        timeRemaining: currentSettings.workDuration * 60,
-        currentSessionIndex: currentMode === 'longBreak' ? 0 : currentSessionIndex,
-        sessionStartTime: sessionStartTimeRef.current,
-        timestamp: Date.now()
-      };
-      localStorage.setItem('timerState', JSON.stringify(timerState));
-      
-      // If it was a long break, reset the session counter
-      if (currentMode === 'longBreak') {
-        setCurrentSessionIndex(0);
-      }
+    } finally {
+      // Reset completion flag
+      isCompletingCycleRef.current = false;
     }
   }, [timerMode, currentSessionIndex, user]);
   
