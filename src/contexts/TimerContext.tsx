@@ -18,7 +18,7 @@ interface TimerContextType {
   handlePause: () => void;
   handleReset: () => void;
   handleModeChange: (mode: TimerMode) => void;
-  getModeLabel: () => string;
+  getModeLabel: (mode?: TimerMode) => string;
   updateSettings: (newSettings: Partial<ReturnType<typeof useTimerSettings>['settings']>) => void;
 }
 

@@ -65,7 +65,7 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
   const lastTickTimeRef = useRef<number>(Date.now());
 
   // Calculate progress
-  const { progress, getTotalTime: getModeTotalTime } = useTimerProgress(timerMode, timeRemaining, settings);
+  const { progress, getTotalTimeForMode } = useTimerProgress(timerMode, timeRemaining, settings);
 
   // Initialize timer controls
   const {
@@ -113,7 +113,7 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
   useTimerTickLogic({
     isRunning,
     timerMode,
-    getTotalTime: () => getModeTotalTime(),
+    getTotalTime: () => getTotalTimeForMode(),
     onTimerComplete: handleTimerComplete,
     setTimeRemaining,
     timeRemaining,
