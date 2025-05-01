@@ -3,6 +3,7 @@
 // and adds additional specialized hooks for backward compatibility
 
 import { useTimerContext } from '@/contexts/TimerContext';
+import { TimerMode } from '@/utils/timerContextUtils';
 
 // Re-export the main hook
 export const useTimer = () => {
@@ -63,9 +64,6 @@ export const useTimerControls = () => {
     getModeLabel
   };
 };
-
-// Import this for typing
-import { TimerMode } from '@/utils/timerContextUtils';
 
 // Re-export these for compatibility
 export { useTimerStats } from '@/hooks/useTimerStats';
