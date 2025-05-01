@@ -2,7 +2,7 @@
 import React, { createContext, useContext } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerSettings } from '@/hooks/useTimerSettings';
-import { useTimer as useTimerHook } from '@/hooks/useTimer';
+import { useTimer } from '@/hooks/useTimer';
 
 interface TimerContextType {
   timerMode: TimerMode;
@@ -41,7 +41,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     handleModeChange,
     getModeLabel,
     formatTime
-  } = useTimerHook(settings);
+  } = useTimer(settings);
   
   const value: TimerContextType = {
     timerMode,
