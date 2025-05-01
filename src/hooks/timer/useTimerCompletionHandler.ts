@@ -1,11 +1,7 @@
-
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { TimerSettings } from '../useTimerSettings';
 import { toast } from 'sonner';
-import { useAuth } from '@/contexts/AuthContext';
-import { saveFocusSession } from '@/utils/timerStorage';
-import { playTimerCompletionSound } from '@/utils/audioUtils';
 
 interface UseTimerCompletionHandlerProps {
   timerMode: TimerMode;
@@ -36,105 +32,79 @@ export function useTimerCompletionHandler({
   setSessionStartTime,
   resetTimerState
 }: UseTimerCompletionHandlerProps) {
-  const { user } = useAuth();
-  const isCompletingCycleRef = useRef(false);
-  
-  // Timer completion handler
-  const handleTimerComplete = useCallback(() => {
-    // Prevent multiple completions
-    if (isCompletingCycleRef.current) {
-      console.log("Already handling completion - skipping");
-      return;
-    }
+
+  const handleTimerComplete = useCallback(async () => {
+    // Play notification sound or show toast based on current mode
+    const modeLabel = timerMode === 'work' ? 'Focus' : 
+                     timerMode === 'break' ? 'Break' : 'Long Break';
+    toast.success(`${modeLabel} session completed!`);
     
-    isCompletingCycleRef.current = true;
+    console.log(`Timer completed for mode: ${timerMode}`);
+    console.log(`Current session index: ${currentSessionIndex}, completed sessions: ${completedSessions}`);
     
-    try {
-      const currentMode = timerMode;
+    // Reset the session start time for the next session
+    setSessionStartTime(new Date().toISOString());
+    
+    if (timerMode === 'work') {
+      // Update completed session count
+      const newCompletedSessions = completedSessions + 1;
+      setCompletedSessions(newCompletedSessions);
       
-      console.log("Timer completed with mode:", currentMode);
-      toast.success(`${currentMode.charAt(0).toUpperCase() + currentMode.slice(1)} session completed!`);
+      // Add time to today's total
+      setTotalTimeToday(prev => prev + settings.workDuration);
       
-      // Play completion sound
-      playTimerCompletionSound(currentMode);
+      // Update session index (the position in the current cycle)
+      const newSessionIndex = (currentSessionIndex + 1) % settings.sessionsUntilLongBreak;
+      setCurrentSessionIndex(newSessionIndex);
       
-      // Stop the timer
+      console.log(`Completed focus session. Moving to session index ${newSessionIndex}`);
+      
+      // Determine if it's time for a long break or regular break
+      const nextMode: TimerMode = 
+        newSessionIndex === 0 ? 'longBreak' : 'break';
+        
+      setTimerMode(nextMode);
+      resetTimerState();
+      
+      // Auto-start the break
+      setTimeout(() => {
+        setIsRunning(true);
+      }, 500);
+      
+    } else if (timerMode === 'break') {
+      // After a break, go back to focus mode but keep the current session index
+      setTimerMode('work');
+      resetTimerState();
+      
+      // Auto-start the next focus session
+      setTimeout(() => {
+        setIsRunning(true);
+      }, 500);
+      
+    } else if (timerMode === 'longBreak') {
+      // After a long break, go back to focus mode and reset the session index
+      console.log('Long break completed - starting a new cycle');
+      setCurrentSessionIndex(0);
+      setTimerMode('work');
+      resetTimerState();
+      
+      // Do NOT auto-start after a long break - wait for user action
       setIsRunning(false);
-      
-      // Save session data if user is logged in
-      if (user && sessionStartTimeRef.current) {
-        const sessionDuration = currentMode === 'work' 
-          ? settings.workDuration * 60
-          : currentMode === 'break'
-            ? settings.breakDuration * 60
-            : settings.longBreakDuration * 60;
-            
-        saveFocusSession(
-          user.id,
-          currentMode,
-          sessionDuration,
-          true,
-          sessionStartTimeRef.current
-        ).then(() => {
-          console.log(`Session saved to database: ${currentMode} - ${sessionDuration} seconds`);
-        }).catch(err => {
-          console.error("Error saving session:", err);
-        });
-      }
-      
-      if (currentMode === 'work') {
-        // Increment completed sessions counter
-        setCompletedSessions(prev => prev + 1);
-        
-        // Add work time to total time for today
-        const workSeconds = settings.workDuration * 60;
-        setTotalTimeToday(prev => prev + workSeconds);
-        
-        // Calculate next session index
-        const nextIndex = (currentSessionIndex + 1) % settings.sessionsUntilLongBreak;
-        setCurrentSessionIndex(nextIndex);
-        
-        console.log(`Work session completed. Moving from session ${currentSessionIndex} to ${nextIndex}`);
-        
-        // Determine if it's time for a long break
-        const nextMode = nextIndex === 0 ? 'longBreak' : 'break';
-        setTimerMode(nextMode);
-        
-        // Set a new session start time
-        setSessionStartTime(new Date().toISOString());
-        
-        // Reset timer state with correct mode
-        resetTimerState();
-        
-        // Auto-start next session
-        setTimeout(() => setIsRunning(true), 500);
-      } else {
-        // After any break, return to work mode
-        setTimerMode('work');
-        
-        // Set a new session start time
-        setSessionStartTime(new Date().toISOString());
-        
-        // Reset timer state
-        resetTimerState();
-        
-        // For long break, reset the cycle and don't auto-start
-        if (currentMode === 'longBreak') {
-          setIsRunning(false);
-          setCurrentSessionIndex(0);
-          setCompletedSessions(0); // Reset completed sessions counter for new cycle
-        } else {
-          // Auto-start after short break
-          setTimeout(() => setIsRunning(true), 500);
-        }
-      }
-    } finally {
-      // Reset completion flag
-      isCompletingCycleRef.current = false;
     }
-  }, [timerMode, settings, currentSessionIndex, completedSessions, user, sessionStartTimeRef, 
-      setCompletedSessions, setIsRunning, setTimerMode, setCurrentSessionIndex, setTotalTimeToday, 
-      setSessionStartTime, resetTimerState]);
-  
+  }, [
+    timerMode, 
+    settings,
+    completedSessions,
+    currentSessionIndex,
+    setCompletedSessions, 
+    setTimerMode, 
+    setIsRunning,
+    setTotalTimeToday,
+    setCurrentSessionIndex,
+    sessionStartTimeRef,
+    setSessionStartTime,
+    resetTimerState
+  ]);
+
   return { handleTimerComplete };
 }

@@ -1,16 +1,16 @@
 
-import { useCallback } from 'react';
-import { TimerMode } from '@/utils/timerContextUtils';
-import { TimerSettings } from '../useTimerSettings';
+import { useCallback } from "react";
+import { TimerMode, getTotalTime } from "@/utils/timerContextUtils";
+import { TimerSettings } from "../useTimerSettings";
 
 interface UseTimerControlsProps {
   timerMode: TimerMode;
   settings: TimerSettings;
   isRunning: boolean;
   timeRemaining: number;
-  setIsRunning: React.Dispatch<React.SetStateAction<boolean>>;
-  setTimeRemaining: React.Dispatch<React.SetStateAction<number>>;
-  setTimerMode: React.Dispatch<React.SetStateAction<TimerMode>>;
+  setIsRunning: (isRunning: boolean) => void;
+  setTimeRemaining: (timeRemaining: number) => void;
+  setTimerMode: (mode: TimerMode) => void;
   sessionStartTimeRef: React.MutableRefObject<string | null>;
   setSessionStartTime: (time: string | null) => void;
   setCurrentSessionIndex: React.Dispatch<React.SetStateAction<number>>;
@@ -30,32 +30,55 @@ export function useTimerControls({
   setSessionStartTime,
   setCurrentSessionIndex,
   getTotalTimeForMode,
-  saveTimerState
+  saveTimerState,
 }: UseTimerControlsProps) {
-  // Timer control functions
+  // Start the timer
   const handleStart = useCallback(() => {
-    console.log("Starting timer...");
+    console.log("Starting timer with mode:", timerMode, "and time:", timeRemaining);
+    
+    // If timer is already at 0, reset it first
+    if (timeRemaining <= 0) {
+      const newTime = getTotalTimeForMode();
+      setTimeRemaining(newTime);
+    }
+
+    // Set session start time if not already set
     if (!sessionStartTimeRef.current) {
       setSessionStartTime(new Date().toISOString());
     }
+    
     setIsRunning(true);
-  }, [sessionStartTimeRef, setSessionStartTime, setIsRunning]);
+    
+    // Save state with running=true
+    saveTimerState({
+      timerMode,
+      isRunning: true,
+      timeRemaining,
+      currentSessionIndex: 0, // This will be updated in the timer core
+      sessionStartTime: sessionStartTimeRef.current,
+    });
+  }, [timerMode, timeRemaining, setIsRunning, setTimeRemaining, sessionStartTimeRef, setSessionStartTime, saveTimerState, getTotalTimeForMode]);
   
+  // Pause the timer
   const handlePause = useCallback(() => {
-    console.log("Pausing timer...");
+    console.log("Pausing timer with mode:", timerMode, "and time:", timeRemaining);
+    
     setIsRunning(false);
     
-    // Save state immediately on pause
+    // Save state with running=false
     saveTimerState({
       timerMode,
       isRunning: false,
       timeRemaining,
-      currentSessionIndex: 0,
-      sessionStartTime: sessionStartTimeRef.current
+      currentSessionIndex: 0, // This will be updated in the timer core
+      sessionStartTime: sessionStartTimeRef.current,
     });
-  }, [timerMode, timeRemaining, sessionStartTimeRef, saveTimerState, setIsRunning]);
+  }, [timerMode, timeRemaining, setIsRunning, sessionStartTimeRef, saveTimerState]);
   
+  // Reset the timer
   const handleReset = useCallback(() => {
+    console.log("Resetting timer with mode:", timerMode);
+    
     // Stop the timer
     setIsRunning(false);
     
@@ -63,69 +86,55 @@ export function useTimerControls({
     const newTime = getTotalTimeForMode();
     setTimeRemaining(newTime);
     
-    // Reset session start time
+    // Clear session start time
     setSessionStartTime(null);
     
-    console.log("Timer reset to", newTime, "seconds");
-    
-    // Save the reset state
+    // Save state with running=false and reset time
     saveTimerState({
       timerMode,
       isRunning: false,
       timeRemaining: newTime,
       currentSessionIndex: 0,
-      sessionStartTime: null
+      sessionStartTime: null,
     });
-  }, [timerMode, getTotalTimeForMode, setIsRunning, setTimeRemaining, setSessionStartTime, saveTimerState]);
+  }, [timerMode, setIsRunning, setTimeRemaining, setSessionStartTime, saveTimerState, getTotalTimeForMode]);
   
+  // Change timer mode
   const handleModeChange = useCallback((mode: TimerMode) => {
-    // Stop the timer when changing modes
+    console.log("Changing timer mode from", timerMode, "to", mode);
+    
+    // Stop the timer first
     setIsRunning(false);
     
-    // Reset session tracking
-    setSessionStartTime(null);
-    
-    // Change the mode
-    setTimerMode(mode);
-    
-    // Set the appropriate time for the new mode
-    let newTime: number;
-    
-    switch (mode) {
-      case 'work':
-        newTime = settings.workDuration * 60;
-        break;
-      case 'break':
-        newTime = settings.breakDuration * 60;
-        break;
-      case 'longBreak':
-        newTime = settings.longBreakDuration * 60;
-        break;
-      default:
-        newTime = settings.workDuration * 60;
-    }
-    
-    setTimeRemaining(newTime);
-    
-    // If switching to work mode manually, reset the cycle
-    if (mode === 'work') {
+    // Reset session index when switching to work mode from a break
+    if (mode === 'work' && (timerMode === 'break' || timerMode === 'longBreak')) {
       setCurrentSessionIndex(0);
     }
     
-    // Save the new mode state
+    // Set the new mode
+    setTimerMode(mode);
+    
+    // Reset time based on new mode
+    const totalTime = getTotalTime(mode, settings);
+    setTimeRemaining(totalTime);
+    
+    // Clear session start time
+    setSessionStartTime(null);
+    
+    // Save state with new mode and reset time
     saveTimerState({
       timerMode: mode,
       isRunning: false,
-      timeRemaining: newTime,
+      timeRemaining: totalTime,
       currentSessionIndex: mode === 'work' ? 0 : 0,
-      sessionStartTime: null
+      sessionStartTime: null,
     });
-  }, [settings, setIsRunning, setSessionStartTime, setTimerMode, setTimeRemaining, setCurrentSessionIndex, saveTimerState]);
+  }, [timerMode, setIsRunning, setTimerMode, setTimeRemaining, setSessionStartTime, setCurrentSessionIndex, settings, saveTimerState]);
   
   return {
     handleStart,
     handlePause,
     handleReset,
-    handleModeChange
+    handleModeChange,
   };
 }

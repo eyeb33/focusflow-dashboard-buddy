@@ -3,8 +3,8 @@ import { useEffect, useRef } from 'react';
 
 interface UseTimerVisibilityProps {
   isRunning: boolean;
-  setIsRunning: React.Dispatch<React.SetStateAction<boolean>>;
   timeRemaining: number;
+  setIsRunning: React.Dispatch<React.SetStateAction<boolean>>;
   setTimeRemaining: React.Dispatch<React.SetStateAction<number>>;
   handleTimerComplete: () => void;
   lastTickTimeRef: React.MutableRefObject<number>;
@@ -12,76 +12,53 @@ interface UseTimerVisibilityProps {
 
 export function useTimerVisibility({
   isRunning,
-  setIsRunning,
   timeRemaining,
+  setIsRunning,
   setTimeRemaining,
   handleTimerComplete,
   lastTickTimeRef
 }: UseTimerVisibilityProps) {
-  const wasRunningRef = useRef(false);
-
+  // Store the visibility state
+  const isVisibleRef = useRef<boolean>(true);
+  
   useEffect(() => {
+    // Visibility change handler
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // Tab is hidden, store the running state
-        wasRunningRef.current = isRunning;
-        console.log("Tab hidden, timer was running:", wasRunningRef.current);
-        // Record the time when hidden
-        lastTickTimeRef.current = Date.now();
-      } else {
-        // Tab is visible again
-        console.log("Tab visible again, timer was running:", wasRunningRef.current);
+      const isVisible = document.visibilityState === 'visible';
+      isVisibleRef.current = isVisible;
+      console.log("Document visibility changed:", isVisible ? "visible" : "hidden");
+      
+      if (isVisible && isRunning) {
+        // Calculate elapsed time while the page was hidden
+        const now = Date.now();
+        const elapsedMs = now - lastTickTimeRef.current;
+        const elapsedSeconds = Math.floor(elapsedMs / 1000);
         
-        // Check if timer was running before hiding
-        if (wasRunningRef.current && !isRunning) {
-          // Resume the timer
-          setIsRunning(true);
-        }
+        console.log(`Page became visible. ${elapsedSeconds}s elapsed since last tick.`);
         
-        // If timer is running, adjust the time based on how long it was hidden
-        if (isRunning || wasRunningRef.current) {
-          const now = Date.now();
-          const elapsedMs = now - lastTickTimeRef.current;
-          const elapsedSeconds = Math.floor(elapsedMs / 1000);
-          
-          console.log(`Tab was hidden for ${elapsedSeconds} seconds`);
-          
-          if (elapsedSeconds >= 1) {
-            setTimeRemaining(prevTime => {
-              const newTime = Math.max(0, prevTime - elapsedSeconds);
-              console.log(`Adjusting time from ${prevTime} to ${newTime}`);
-              
-              if (newTime <= 0) {
-                setTimeout(() => handleTimerComplete(), 0);
-                return 0;
-              }
-              return newTime;
-            });
-          }
-          
+        // Update the timer
+        if (elapsedSeconds >= 1) {
           lastTickTimeRef.current = now;
+          
+          // Calculate new time remaining
+          const newTimeRemaining = Math.max(0, timeRemaining - elapsedSeconds);
+          setTimeRemaining(newTimeRemaining);
+          
+          // If timer has completed while hidden, handle completion
+          if (newTimeRemaining === 0 && timeRemaining > 0) {
+            console.log("Timer completed while page was hidden");
+            handleTimerComplete();
+          }
         }
       }
     };
     
+    // Register handlers
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
+    // Cleanup
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isRunning, setIsRunning, setTimeRemaining, handleTimerComplete, lastTickTimeRef]);
-
-  // Handle page navigation using the beforeunload event
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      // This ensures state is saved before navigating away
-      console.log("Page unloading - saving current timer state");
-    };
-    
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, []);
+  }, [isRunning, timeRemaining, setTimeRemaining, handleTimerComplete, lastTickTimeRef]);
 }

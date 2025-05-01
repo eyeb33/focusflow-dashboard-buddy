@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { TimerSettings } from '../useTimerSettings';
 
@@ -30,6 +30,7 @@ export function useTimerPersistence(settings: TimerSettings) {
       }
     }
     
+    // Default state when no saved state exists
     return {
       timerMode: 'work' as TimerMode,
       timeRemaining: settings.workDuration * 60,
@@ -38,6 +39,7 @@ export function useTimerPersistence(settings: TimerSettings) {
     };
   }, [settings]);
   
+  // Initialize with correct values
   const initialState = loadInitialState();
   
   const saveTimerState = useCallback((state: TimerState) => {
