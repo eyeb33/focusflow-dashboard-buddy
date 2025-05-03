@@ -45,10 +45,20 @@ const SessionDots: React.FC<SessionDotsProps> = ({
       );
     }
     
-    // Determine which set of circles to show based on mode
-    const dotsToShow = mode === 'work' ? totalSessions : Math.min(totalSessions, 4);
+    if (mode === 'break') {
+      // For break mode, show only one large active green circle
+      return (
+        <Circle
+          key="break-circle"
+          size={24}
+          className={cn("text-transparent stroke-[2.5px]", colors.fill)}
+          fill="none"
+        />
+      );
+    }
     
-    return Array.from({ length: dotsToShow }).map((_, i) => {
+    // For work mode, show dots based on the total sessions and current position
+    return Array.from({ length: totalSessions }).map((_, i) => {
       // A session is filled if its position is less than currentSessionIndex
       const isFilled = i < currentSessionIndex;
       

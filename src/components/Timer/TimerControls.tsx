@@ -1,9 +1,11 @@
 
 import React from 'react';
 import { Pause, Play, RotateCcw } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface TimerControlsProps {
   isRunning: boolean;
+  mode?: 'work' | 'break' | 'longBreak';
   onStart: () => void;
   onPause: () => void;
   onReset: () => void;
@@ -11,10 +13,27 @@ interface TimerControlsProps {
 
 const TimerControls: React.FC<TimerControlsProps> = ({
   isRunning,
+  mode = 'work',
   onStart,
   onPause,
   onReset
 }) => {
+  // Get color based on timer mode
+  const getButtonColor = (mode: string): string => {
+    switch (mode) {
+      case 'work':
+        return "bg-red-500 hover:bg-red-600 active:bg-red-700";
+      case 'break':
+        return "bg-green-500 hover:bg-green-600 active:bg-green-700";
+      case 'longBreak':
+        return "bg-blue-500 hover:bg-blue-600 active:bg-blue-700";
+      default:
+        return "bg-red-500 hover:bg-red-600 active:bg-red-700";
+    }
+  };
+  
+  const buttonColor = getButtonColor(mode);
+
   // Handle play/pause button click
   const handlePlayPauseClick = () => {
     console.log("Play/Pause clicked, isRunning:", isRunning);
@@ -29,7 +48,10 @@ const TimerControls: React.FC<TimerControlsProps> = ({
     <div className="flex gap-5 mt-6 mb-4">
       <button 
         onClick={handlePlayPauseClick}
-        className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center transition-all hover:bg-red-600 active:bg-red-700"
+        className={cn(
+          "w-12 h-12 rounded-full flex items-center justify-center transition-all",
+          buttonColor
+        )}
         aria-label={isRunning ? "Pause timer" : "Start timer"}
         type="button"
       >

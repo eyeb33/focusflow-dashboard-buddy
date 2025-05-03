@@ -132,6 +132,7 @@ const TimerContainer = () => {
 
       <TimerControls 
         isRunning={isRunning}
+        mode={timerMode}
         onStart={handleStart}
         onPause={handlePause}
         onReset={handleReset}
