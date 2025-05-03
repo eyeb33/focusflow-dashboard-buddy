@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { TimerSettings } from '../useTimerSettings';
 
@@ -13,24 +13,11 @@ interface TimerState {
 }
 
 export function useTimerPersistence(settings: TimerSettings) {
-  // Load initial state from localStorage
+  // Always start with a fresh state on page load
   const loadInitialState = useCallback(() => {
-    const savedState = localStorage.getItem('timerState');
-    if (savedState) {
-      try {
-        const parsed = JSON.parse(savedState);
-        return {
-          timerMode: parsed.timerMode || 'work',
-          timeRemaining: parsed.timeRemaining !== undefined ? parsed.timeRemaining : settings.workDuration * 60,
-          currentSessionIndex: parsed.currentSessionIndex !== undefined ? parsed.currentSessionIndex : 0,
-          sessionStartTime: parsed.sessionStartTime || null,
-        };
-      } catch (e) {
-        console.error('Error parsing timer state:', e);
-      }
-    }
+    console.log("Initializing with fresh timer state");
     
-    // Default state when no saved state exists
+    // Default state when no saved state exists or on page refresh
     return {
       timerMode: 'work' as TimerMode,
       timeRemaining: settings.workDuration * 60,
@@ -52,10 +39,7 @@ export function useTimerPersistence(settings: TimerSettings) {
   }, []);
   
   const loadTimerState = useCallback(() => {
-    const savedState = localStorage.getItem('timerState');
-    if (savedState) {
-      return JSON.parse(savedState) as TimerState;
-    }
+    // For this fix, we're not loading saved state on page refresh
     return null;
   }, []);
   

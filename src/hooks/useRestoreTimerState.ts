@@ -17,36 +17,19 @@ export function useRestoreTimerState({
   setTimerMode
 }: UseRestoreTimerStateProps) {
   useEffect(() => {
-    console.log("========== RESTORING TIMER STATE ==========");
-    // CRITICAL: Always ensure we start with isRunning false - user must manually start
+    console.log("========== INITIALIZING TIMER STATE ==========");
+    
+    // CRITICAL: Always ensure we start with isRunning false on page load
     setIsRunning(false);
     
-    // Default to work mode if no stored state
+    // Default to work mode on page refresh
     let initialMode: TimerMode = 'work';
+    setTimerMode(initialMode);
     
-    const storedStateStr = localStorage.getItem('timerState');
-    console.log("Restoring timer state:", storedStateStr ? "found stored state" : "no stored state");
+    // Clear any stored timer state to ensure fresh start on page reload
+    localStorage.removeItem('timerState');
     
-    if (storedStateStr) {
-      try {
-        const storedState = JSON.parse(storedStateStr);
-        console.log("Parsed stored state:", storedState);
-        
-        // Set timer mode from storage, default to work
-        initialMode = (storedState.timerMode || 'work') as TimerMode;
-        console.log("Setting timer mode to:", initialMode);
-        setTimerMode(initialMode);
-
-        // CRITICAL FIX: Always use the stored time, don't reset to default
-        if (storedState.timeRemaining && typeof storedState.timeRemaining === 'number') {
-          console.log(`Restoring timer with exact time: ${storedState.timeRemaining}`);
-          setTimeRemaining(storedState.timeRemaining);
-        }
-      } catch (error) {
-        console.error('Error restoring timer state:', error);
-        localStorage.removeItem('timerState');
-      }
-    }
+    console.log("Timer reset to initial state: mode=work, isRunning=false");
     
     // This must only run on mount
     // eslint-disable-next-line

@@ -34,6 +34,12 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     console.log('Settings loaded:', settings);
   }
   
+  // For debugging, clear any stale timer state on mount
+  React.useEffect(() => {
+    console.log("TimerProvider mounted - Ensuring fresh timer state");
+    localStorage.removeItem('timerState');
+  }, []);
+  
   const {
     timerMode,
     isRunning,
@@ -84,6 +90,3 @@ export const useTimerContext = () => {
   
   return context;
 };
-
-// Export the timer hook for component use
-export const useTimer = useTimerContext;

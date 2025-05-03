@@ -1,15 +1,13 @@
 
-import { useCallback } from 'react';
+import { useMemo } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { TimerSettings } from '../useTimerSettings';
 
-export function useTimerProgress(
-  timerMode: TimerMode, 
-  timeRemaining: number, 
-  settings: TimerSettings
-) {
-  // Calculate total time for current timer mode
-  const getTotalTimeForMode = useCallback((): number => {
+export function useTimerProgress(timerMode: TimerMode, timeRemaining: number, settings: TimerSettings) {
+  // Calculate total time in seconds for the current mode
+  const totalTime = useMemo(() => {
+    if (!settings) return 0; // Guard against undefined settings
+    
     switch (timerMode) {
       case 'work':
         return settings.workDuration * 60;
@@ -21,11 +19,15 @@ export function useTimerProgress(
         return settings.workDuration * 60;
     }
   }, [timerMode, settings]);
-  
-  // Calculate progress (0 to 100)
-  const totalTime = getTotalTimeForMode();
-  const elapsedTime = totalTime - timeRemaining;
-  const progress = totalTime > 0 ? Math.max(0, Math.min(1, elapsedTime / totalTime)) * 100 : 0;
+
+  // Calculate progress percentage (0-100)
+  const progress = useMemo(() => {
+    if (totalTime <= 0) return 0;
+    return ((totalTime - timeRemaining) / totalTime) * 100;
+  }, [timeRemaining, totalTime]);
+
+  // Return total time calculation function for other hooks to use
+  const getTotalTimeForMode = () => totalTime;
 
   return {
     progress,

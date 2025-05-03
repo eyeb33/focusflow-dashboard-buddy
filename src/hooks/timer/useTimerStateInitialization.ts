@@ -12,7 +12,7 @@ export function useTimerStateInitialization(settings: TimerSettings) {
     initialSessionIndex
   } = useTimerPersistence(settings);
 
-  // Core timer state
+  // Core timer state - always start fresh on page load
   const [timerMode, setTimerMode] = useState<TimerMode>(initialTimerMode);
   const [isRunning, setIsRunning] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(initialTimeRemaining);
@@ -20,7 +20,7 @@ export function useTimerStateInitialization(settings: TimerSettings) {
   // Stats tracking
   const [completedSessions, setCompletedSessions] = useState(0);
   const [totalTimeToday, setTotalTimeToday] = useState(0);
-  const [currentSessionIndex, setCurrentSessionIndex] = useState(initialSessionIndex);
+  const [currentSessionIndex, setCurrentSessionIndex] = useState(0);
   
   return {
     timerMode,
