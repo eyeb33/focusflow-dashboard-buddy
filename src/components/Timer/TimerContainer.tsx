@@ -6,7 +6,6 @@ import TimerModeTabs from './TimerModeTabs';
 import TimerControls from './TimerControls';
 import SessionDots from './SessionDots';
 import { useTimer } from '@/hooks/useTimer';
-import { toast } from 'sonner';
 
 const TimerContainer = () => {
   // Get timer context
@@ -86,7 +85,7 @@ const TimerContainer = () => {
     };
   }, []);
 
-  // Handle settings updates
+  // Handle settings updates (removed toast notification)
   const handleSettingsChange = (newDurations: any) => {
     // Map the settings format from the UI component to the timer context format
     const updatedSettings = {
@@ -100,9 +99,6 @@ const TimerContainer = () => {
     
     // Update the timer settings
     updateSettings(updatedSettings);
-    
-    // Show a toast notification
-    toast.success('Timer settings updated');
   };
 
   return (
