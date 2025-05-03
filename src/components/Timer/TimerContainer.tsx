@@ -85,7 +85,7 @@ const TimerContainer = () => {
     };
   }, []);
 
-  // Handle settings updates (removed toast notification)
+  // Handle settings updates
   const handleSettingsChange = (newDurations: any) => {
     // Map the settings format from the UI component to the timer context format
     const updatedSettings = {
