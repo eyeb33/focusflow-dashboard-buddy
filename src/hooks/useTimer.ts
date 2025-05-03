@@ -1,9 +1,6 @@
 
 // Main useTimer hook that pulls all the timer logic together
-import { useTimerCore } from './timer/useTimerCore';
-import { TimerSettings } from './useTimerSettings';
+import { useTimerContext } from '@/contexts/TimerContext';
 
-// Main timer hook that combines all timer logic
-export function useTimer(settings: TimerSettings) {
-  return useTimerCore(settings);
-}
+// Re-export the main hook for component use
+export const useTimer = useTimerContext;

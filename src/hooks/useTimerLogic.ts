@@ -113,7 +113,7 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
   useTimerTickLogic({
     isRunning,
     timerMode,
-    getTotalTime: () => getTotalTimeForMode(),
+    getTotalTime: () => getTotalTimeForMode(), // Use the correct function name
     onTimerComplete: handleTimerComplete,
     setTimeRemaining,
     timeRemaining,

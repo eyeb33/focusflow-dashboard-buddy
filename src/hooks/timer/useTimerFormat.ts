@@ -1,25 +1,30 @@
 
+import { TimerMode } from '@/utils/timerContextUtils';
+
 export function useTimerFormat() {
-  // Format time helper
+  // Format time from seconds to mm:ss
   const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
   
-  // Get mode label helper - now accepts an optional parameter
-  const getModeLabel = (timerMode?: string): string => {
-    // If no mode is provided, return a default
-    const mode = timerMode || 'work';
+  // Get user-friendly label for timer mode
+  const getModeLabel = (mode?: TimerMode): string => {
+    const timerMode = mode || 'work';
     
-    switch (mode) {
-      case 'work': return 'Focus';
-      case 'break': return 'Short Break';
-      case 'longBreak': return 'Long Break';
-      default: return 'Timer';
+    switch(timerMode) {
+      case 'work':
+        return 'Focus Session';
+      case 'break':
+        return 'Short Break';
+      case 'longBreak':
+        return 'Long Break';
+      default:
+        return 'Focus Session';
     }
   };
-  
+
   return {
     formatTime,
     getModeLabel
