@@ -46,7 +46,7 @@ const SessionDots: React.FC<SessionDotsProps> = ({
     }
     
     // Determine which set of circles to show based on mode
-    const dotsToShow = mode === 'work' ? totalSessions : totalSessions - 1;
+    const dotsToShow = mode === 'work' ? totalSessions : Math.min(totalSessions, 4);
     
     return Array.from({ length: dotsToShow }).map((_, i) => {
       // A session is filled if its position is less than currentSessionIndex

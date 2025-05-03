@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useRef } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerSettings } from '@/hooks/useTimerSettings';
 import { useTimerCore } from '@/hooks/timer/useTimerCore';
@@ -26,6 +26,13 @@ const TimerContext = createContext<TimerContextType | undefined>(undefined);
 
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { settings, updateSettings } = useTimerSettings();
+  
+  // Create a ref to track if settings have been loaded
+  const settingsLoadedRef = useRef(false);
+  if (settings.workDuration > 0 && !settingsLoadedRef.current) {
+    settingsLoadedRef.current = true;
+    console.log('Settings loaded:', settings);
+  }
   
   const {
     timerMode,

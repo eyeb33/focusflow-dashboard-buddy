@@ -6,39 +6,27 @@ import TimerModeTabs from './TimerModeTabs';
 import TimerControls from './TimerControls';
 import SessionDots from './SessionDots';
 import { useTimer } from '@/hooks/useTimer';
-import { useTimerSettings } from '@/hooks/useTimerSettings';
 import { toast } from 'sonner';
 
 const TimerContainer = () => {
-  // Get the timer settings
-  const { settings, updateSettings } = useTimerSettings();
-
-  // Pass the settings to useTimer
+  // Get timer context
   const {
     timerMode,
     isRunning,
     timeRemaining,
+    settings,
     completedSessions,
     currentSessionIndex,
     progress,
     handleStart,
     handlePause,
     handleReset,
-    handleModeChange
-  } = useTimer(settings);
+    handleModeChange,
+    updateSettings
+  } = useTimer();
 
   // Store the container element to check if timer is visible
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Map timerMode to the format expected by TimerCircle
-  const getTimerCircleMode = () => {
-    switch(timerMode) {
-      case 'work': return 'focus';
-      case 'break': return 'break';
-      case 'longBreak': return 'longBreak';
-      default: return 'focus';
-    }
-  };
 
   // Calculate total seconds for the current mode
   const getTotalSeconds = () => {
@@ -50,7 +38,29 @@ const TimerContainer = () => {
     }
   };
 
-  // Use IntersetionObserver to detect if timer is visible in the DOM
+  // Map timerMode to the format expected by TimerCircle
+  const getTimerCircleMode = () => {
+    switch(timerMode) {
+      case 'work': return 'focus';
+      case 'break': return 'break';
+      case 'longBreak': return 'longBreak';
+      default: return 'focus';
+    }
+  };
+  
+  // Add debug logging to help track timer state
+  useEffect(() => {
+    console.log('Timer state updated:', { 
+      mode: timerMode, 
+      running: isRunning, 
+      timeRemaining,
+      progress,
+      currentSessionIndex,
+      totalSessions: settings.sessionsUntilLongBreak
+    });
+  }, [timerMode, isRunning, timeRemaining, progress, currentSessionIndex, settings.sessionsUntilLongBreak]);
+
+  // Use IntersectionObserver to detect if timer is visible in the DOM
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -58,14 +68,7 @@ const TimerContainer = () => {
       (entries) => {
         entries.forEach(entry => {
           const isVisible = entry.isIntersecting;
-          console.log("Timer container visibility:", isVisible ? "visible" : "hidden");
-          
-          // Store visibility state in session storage
-          if (isVisible) {
-            sessionStorage.setItem('timerVisible', 'true');
-          } else {
-            sessionStorage.setItem('timerVisible', 'false');
-          }
+          sessionStorage.setItem('timerVisible', isVisible ? 'true' : 'false');
         });
       },
       { threshold: 0.1 }
@@ -98,7 +101,7 @@ const TimerContainer = () => {
       <div className="relative flex flex-col items-center justify-center mt-2">
         <div className="text-center mb-2">
           <div className="text-xs rounded-full bg-black px-3 py-0.5 inline-block">
-            {timerMode === 'work' ? 'Focus' : timerMode === 'break' ? 'Break' : 'Long Break'}
+            {timerMode === 'work' ? 'Focus' : timerMode === 'break' ? 'Short Break' : 'Long Break'}
           </div>
         </div>
         
