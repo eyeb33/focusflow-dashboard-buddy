@@ -82,7 +82,7 @@ export function useTimerControls({
     // Stop the timer
     setIsRunning(false);
     
-    // Reset the time
+    // Reset the time based on current settings
     const newTime = getTotalTimeForMode();
     setTimeRemaining(newTime);
     

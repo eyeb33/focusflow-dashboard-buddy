@@ -30,6 +30,8 @@ const TimerContainer = () => {
 
   // Calculate total seconds for the current mode
   const getTotalSeconds = () => {
+    if (!settings) return 0;
+    
     switch(timerMode) {
       case 'work': return settings.workDuration * 60;
       case 'break': return settings.breakDuration * 60;
@@ -56,9 +58,10 @@ const TimerContainer = () => {
       timeRemaining,
       progress,
       currentSessionIndex,
-      totalSessions: settings.sessionsUntilLongBreak
+      totalSessions: settings?.sessionsUntilLongBreak || 4,
+      settings
     });
-  }, [timerMode, isRunning, timeRemaining, progress, currentSessionIndex, settings.sessionsUntilLongBreak]);
+  }, [timerMode, isRunning, timeRemaining, progress, currentSessionIndex, settings]);
 
   // Use IntersectionObserver to detect if timer is visible in the DOM
   useEffect(() => {
@@ -82,6 +85,25 @@ const TimerContainer = () => {
       }
     };
   }, []);
+
+  // Handle settings updates
+  const handleSettingsChange = (newDurations: any) => {
+    // Map the settings format from the UI component to the timer context format
+    const updatedSettings = {
+      workDuration: newDurations.focus,
+      breakDuration: newDurations.break,
+      longBreakDuration: newDurations.longBreak,
+      sessionsUntilLongBreak: newDurations.sessionsUntilLongBreak
+    };
+    
+    console.log("Updating timer settings:", updatedSettings);
+    
+    // Update the timer settings
+    updateSettings(updatedSettings);
+    
+    // Show a toast notification
+    toast.success('Timer settings updated');
+  };
 
   return (
     <div 
@@ -120,7 +142,7 @@ const TimerContainer = () => {
       />
       
       <SessionDots 
-        totalSessions={settings.sessionsUntilLongBreak} 
+        totalSessions={settings?.sessionsUntilLongBreak || 4} 
         currentSessionIndex={currentSessionIndex}
         mode={timerMode}
       />
@@ -129,23 +151,12 @@ const TimerContainer = () => {
       <div className="absolute top-4 right-4">
         <TimerSettings 
           durations={{
-            focus: settings.workDuration,
-            break: settings.breakDuration,
-            longBreak: settings.longBreakDuration,
-            sessionsUntilLongBreak: settings.sessionsUntilLongBreak
+            focus: settings?.workDuration || 25,
+            break: settings?.breakDuration || 5,
+            longBreak: settings?.longBreakDuration || 15,
+            sessionsUntilLongBreak: settings?.sessionsUntilLongBreak || 4
           }}
-          onChange={(newDurations) => {
-            // Update timer settings when sliders are changed
-            updateSettings({
-              workDuration: newDurations.focus,
-              breakDuration: newDurations.break,
-              longBreakDuration: newDurations.longBreak,
-              sessionsUntilLongBreak: newDurations.sessionsUntilLongBreak
-            });
-            
-            // Show a toast notification
-            toast.success('Timer settings updated');
-          }}
+          onChange={handleSettingsChange}
         />
       </div>
     </div>

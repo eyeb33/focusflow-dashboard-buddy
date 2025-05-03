@@ -12,11 +12,15 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
   totalSeconds,
   mode = 'focus' 
 }) => {
-  const minutes = Math.floor(secondsLeft / 60);
-  const seconds = secondsLeft % 60;
+  // Use safe values to avoid NaN or issues with invalid inputs
+  const safeSecondsLeft = isNaN(secondsLeft) ? 0 : Math.max(0, secondsLeft);
+  const safeTotalSeconds = isNaN(totalSeconds) ? 1 : Math.max(1, totalSeconds);
+  
+  const minutes = Math.floor(safeSecondsLeft / 60);
+  const seconds = safeSecondsLeft % 60;
   
   // Calculate progress percentage (0-100)
-  const progress = totalSeconds > 0 ? ((totalSeconds - secondsLeft) / totalSeconds) * 100 : 0;
+  const progress = safeTotalSeconds > 0 ? ((safeTotalSeconds - safeSecondsLeft) / safeTotalSeconds) * 100 : 0;
   
   // SVG parameters
   const size = 220;

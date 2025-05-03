@@ -6,17 +6,25 @@ import { TimerSettings } from '../useTimerSettings';
 export function useTimerProgress(timerMode: TimerMode, timeRemaining: number, settings: TimerSettings) {
   // Calculate total time in seconds for the current mode
   const totalTime = useMemo(() => {
-    if (!settings) return 0; // Guard against undefined settings
+    if (!settings || typeof settings !== 'object') {
+      console.error("Invalid settings object in useTimerProgress:", settings);
+      return 0;
+    }
     
-    switch (timerMode) {
-      case 'work':
-        return settings.workDuration * 60;
-      case 'break':
-        return settings.breakDuration * 60;
-      case 'longBreak':
-        return settings.longBreakDuration * 60;
-      default:
-        return settings.workDuration * 60;
+    try {
+      switch (timerMode) {
+        case 'work':
+          return settings.workDuration * 60;
+        case 'break':
+          return settings.breakDuration * 60;
+        case 'longBreak':
+          return settings.longBreakDuration * 60;
+        default:
+          return settings.workDuration * 60;
+      }
+    } catch (error) {
+      console.error("Error calculating total time:", error);
+      return 0;
     }
   }, [timerMode, settings]);
 

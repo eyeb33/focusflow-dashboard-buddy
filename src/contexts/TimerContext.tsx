@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useRef } from 'react';
+import React, { createContext, useContext, useRef, useEffect } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerSettings } from '@/hooks/useTimerSettings';
 import { useTimerCore } from '@/hooks/timer/useTimerCore';
@@ -35,7 +35,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }
   
   // For debugging, clear any stale timer state on mount
-  React.useEffect(() => {
+  useEffect(() => {
     console.log("TimerProvider mounted - Ensuring fresh timer state");
     localStorage.removeItem('timerState');
   }, []);
@@ -55,6 +55,17 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     getModeLabel,
     formatTime
   } = useTimerCore(settings);
+
+  // This ensures that when settings change, we log it clearly
+  useEffect(() => {
+    console.log('Timer settings updated in context:', settings);
+  }, [settings]);
+
+  // Create the combined handler for updating settings
+  const handleUpdateSettings = (newSettings: Partial<typeof settings>) => {
+    console.log('Updating timer settings:', newSettings);
+    updateSettings(newSettings);
+  };
   
   const value: TimerContextType = {
     timerMode,
@@ -71,7 +82,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     handleReset,
     handleModeChange,
     getModeLabel,
-    updateSettings
+    updateSettings: handleUpdateSettings
   };
 
   return (
