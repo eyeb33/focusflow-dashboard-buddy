@@ -46,15 +46,30 @@ const SessionDots: React.FC<SessionDotsProps> = ({
     }
     
     if (mode === 'break') {
-      // For break mode, show only one large active green circle
-      return (
-        <Circle
-          key="break-circle"
-          size={24}
-          className={cn("text-transparent stroke-[2.5px]", colors.fill)}
-          fill="none"
-        />
-      );
+      // For break mode, show all break circles (total - 1 since we have totalSessions work sessions)
+      // and highlight the current break
+      const totalBreaks = totalSessions - 1;
+      
+      return Array.from({ length: totalBreaks }).map((_, i) => {
+        // Is this the active position?
+        const isActive = i === currentSessionIndex;
+        
+        // Size the active indicator slightly larger
+        const size = isActive ? 24 : 18;
+        
+        return (
+          <Circle
+            key={`break-${i}`}
+            size={size}
+            className={cn(
+              'transition-all duration-300 text-transparent',
+              isActive ? 'stroke-[2.5px]' : 'stroke-[2px]',
+              isActive ? colors.fill : colors.stroke
+            )}
+            fill="none"
+          />
+        );
+      });
     }
     
     // For work mode, show dots based on the total sessions and current position
