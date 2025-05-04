@@ -23,10 +23,15 @@ const SessionDots: React.FC<SessionDotsProps> = ({
   const getDotColors = () => {
     switch(mode) {
       case 'break':
+        return {
+          active: "#2fc55e", // Green for regular breaks
+          completed: "#2fc55e",
+          inactive: theme === "dark" ? "#444" : "#d1d5db"
+        };
       case 'longBreak':
         return {
-          active: "#2fc55e", // Green for break modes
-          completed: "#2fc55e",
+          active: "#3b81f6", // Blue for long breaks
+          completed: "#3b81f6",
           inactive: theme === "dark" ? "#444" : "#d1d5db"
         };
       case 'work':
@@ -53,13 +58,13 @@ const SessionDots: React.FC<SessionDotsProps> = ({
           isComplete = sessionIndex < currentSessionIndex;
         } else if (mode === 'break') {
           // For regular breaks: highlight the dot at the SAME position as currentSessionIndex
-          // This ensures the first break highlights the first dot
+          // This ensures the break highlights the same dot as the work session it follows
           isActive = currentSessionIndex === sessionIndex;
           isComplete = sessionIndex < currentSessionIndex;
         } else if (mode === 'longBreak') {
-          // For long breaks: reset and activate the first dot
-          isActive = sessionIndex === 0;
-          isComplete = false; // No completed dots at the start of a new cycle
+          // For long breaks: highlight the last dot in the cycle
+          isActive = sessionIndex === totalSessions - 1;
+          isComplete = false; // No completed dots during long break
         }
         
         return (

@@ -53,17 +53,16 @@ export function useTimerCompletionHandler({
       // Add time to today's total
       setTotalTimeToday(prev => prev + settings.workDuration);
       
-      // IMPORTANT CHANGE: Do NOT increment the currentSessionIndex here
+      // IMPORTANT: Do NOT increment the currentSessionIndex here
       // Keep the same index for the break session that follows
       // This ensures the break highlights the same dot as the work session
       
       console.log(`Completed focus session. Current session index remains ${currentSessionIndex}`);
       
       // Determine if it's time for a long break or regular break
-      // We need to check if we've completed all sessions in the cycle
-      const isLastSessionInCycle = 
-        (currentSessionIndex === settings.sessionsUntilLongBreak - 1) || 
-        (newCompletedSessions % settings.sessionsUntilLongBreak === 0);
+      // A long break should happen after completing the last session in a cycle
+      // This is determined by checking if currentSessionIndex is the last one
+      const isLastSessionInCycle = currentSessionIndex === settings.sessionsUntilLongBreak - 1;
       
       const nextMode: TimerMode = isLastSessionInCycle ? 'longBreak' : 'break';
         
