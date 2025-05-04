@@ -47,6 +47,8 @@ export function useTimerTickHandler({
         setSessionStartTime(new Date().toISOString());
       }
       
+      // Important: Update lastTickTimeRef when the timer starts/resumes
+      // This prevents large time jumps when resuming
       lastTickTimeRef.current = Date.now();
       
       timerRef.current = setInterval(() => {

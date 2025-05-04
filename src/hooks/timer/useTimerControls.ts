@@ -53,7 +53,7 @@ export function useTimerControls({
     saveTimerState({
       timerMode,
       isRunning: true,
-      timeRemaining,
+      timeRemaining,  // Use the current timeRemaining to resume from where we paused
       currentSessionIndex: 0, // This will be updated in the timer core
       sessionStartTime: sessionStartTimeRef.current,
     });
