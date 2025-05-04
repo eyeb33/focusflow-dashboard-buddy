@@ -35,10 +35,8 @@ export function useTimerProgress(timerMode: TimerMode, timeRemaining: number, se
     // Calculate what percentage of the timer has elapsed
     const progressPercentage = ((totalTime - timeRemaining) / totalTime) * 100;
     
-    // Debug log for long break mode
-    if (timerMode === 'longBreak') {
-      console.log(`LongBreak progress calculation: totalTime=${totalTime}, timeRemaining=${timeRemaining}, progress=${progressPercentage.toFixed(2)}%`);
-    }
+    // Debug log for checking all timer modes
+    console.log(`Progress calculation for ${timerMode}: totalTime=${totalTime}, timeRemaining=${timeRemaining}, progress=${progressPercentage.toFixed(2)}%`);
     
     // Ensure the progress doesn't go below 0 or above 100
     return Math.max(0, Math.min(100, progressPercentage));
