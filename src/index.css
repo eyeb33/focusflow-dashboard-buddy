@@ -138,6 +138,7 @@
   border: 1px solid #e2e8f0;
 }
 
+/* Mode buttons */
 .mode-button-active {
   background-color: #ff4545;
   color: white;
@@ -158,25 +159,28 @@
 
 /* Session dot styling */
 .session-dot-active {
-  background-color: #ff4545;
+  background-color: #ff4545 !important;
   width: 12px !important;
   height: 12px !important;
 }
 
 .session-dot-completed {
-  background-color: #ff4545;
-  width: 8px;
-  height: 8px;
+  background-color: #ff4545 !important;
+  width: 8px !important;
+  height: 8px !important;
 }
 
 .session-dot {
-  background-color: #444;
-  width: 8px;
-  height: 8px;
+  width: 8px !important;
+  height: 8px !important;
 }
 
 .light .session-dot {
-  background-color: #d1d5db;
+  background-color: #d1d5db !important;
+}
+
+.dark .session-dot {
+  background-color: #444 !important;
 }
 
 /* Cache busting */
@@ -206,4 +210,3 @@ header.border-b {
 .light .TabsList {
   background-color: #e2e8f0 !important;
 }
-

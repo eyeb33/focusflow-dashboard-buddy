@@ -68,7 +68,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
           cy={size / 2}
           r={radius}
           fill="transparent"
-          stroke={theme === "dark" ? "#444" : "#e0e0e0"} // Lighter background for light mode
+          stroke={theme === "dark" ? "#444" : "#e0e0e0"} // Theme-aware background
           strokeWidth={strokeWidth}
         />
         {/* Progress circle */}
@@ -94,7 +94,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
         </div>
         <div className={cn(
           "text-xs mt-1",
-          theme === "dark" ? "text-gray-400" : "text-gray-600" // Darker text for light mode
+          theme === "dark" ? "text-gray-400" : "text-gray-600"
         )}>
           {getStatusText()}
         </div>

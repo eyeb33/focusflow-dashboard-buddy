@@ -1,5 +1,7 @@
+
 import React from "react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/components/Theme/ThemeProvider";
 
 interface CircularProgressProps {
   progress: number; // Value between 0 and 1
@@ -26,6 +28,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - progress);
+  const { theme } = useTheme();
 
   return (
     <div
@@ -42,7 +45,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#e5e7eb" // neutral gray background
+          stroke={theme === "dark" ? "#444" : "#e5e7eb"} // Theme-aware background
           strokeWidth={strokeWidth}
           fill="none"
         />

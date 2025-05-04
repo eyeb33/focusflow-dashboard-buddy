@@ -21,7 +21,7 @@ const SessionDots: React.FC<SessionDotsProps> = ({
 
   // Get color for completed dots based on theme
   const getCompletedDotColor = () => {
-    return theme === "dark" ? "#ff4545" : "#e74c3c";
+    return "#ff4545"; // Keep red for completed dots in both themes
   };
 
   // Get color for inactive dots based on theme
@@ -55,10 +55,10 @@ const SessionDots: React.FC<SessionDotsProps> = ({
             className={cn(
               "rounded-full transition-all duration-300",
               isActive 
-                ? "w-3 h-3 bg-red-500" 
+                ? "w-3 h-3 session-dot-active" 
                 : isComplete 
-                  ? `w-2 h-2`
-                  : "w-2 h-2"
+                  ? "w-2 h-2 session-dot-completed"
+                  : "w-2 h-2 session-dot"
             )}
             style={{
               backgroundColor: isActive 
