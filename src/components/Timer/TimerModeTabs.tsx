@@ -18,7 +18,9 @@ const TimerModeTabs: React.FC<TimerModeTabsProps> = ({
     <div className="w-full mb-2">
       <div className={cn(
         "flex rounded-md p-1",
-        theme === "dark" ? "bg-[#1e293b]" : "bg-gray-100"
+        theme === "dark" 
+          ? "bg-[#1e293b]" 
+          : "bg-gray-200"  // Lighter background for light mode
       )}>
         <button 
           onClick={() => onModeChange('focus')} 
@@ -28,7 +30,7 @@ const TimerModeTabs: React.FC<TimerModeTabsProps> = ({
               ? "bg-red-500 text-white" 
               : theme === "dark" 
                 ? "text-gray-400 hover:text-white" 
-                : "text-gray-500 hover:text-gray-800"
+                : "text-gray-600 hover:text-gray-800" // Darker text for better contrast in light mode
           )}
         >
           Focus
@@ -41,7 +43,7 @@ const TimerModeTabs: React.FC<TimerModeTabsProps> = ({
               ? "bg-green-500 text-white" 
               : theme === "dark" 
                 ? "text-gray-400 hover:text-white" 
-                : "text-gray-500 hover:text-gray-800"
+                : "text-gray-600 hover:text-gray-800" // Darker text for better contrast in light mode
           )}
         >
           Break
@@ -54,7 +56,7 @@ const TimerModeTabs: React.FC<TimerModeTabsProps> = ({
               ? "bg-blue-500 text-white" 
               : theme === "dark" 
                 ? "text-gray-400 hover:text-white" 
-                : "text-gray-500 hover:text-gray-800"
+                : "text-gray-600 hover:text-gray-800" // Darker text for better contrast in light mode
           )}
         >
           Long Break

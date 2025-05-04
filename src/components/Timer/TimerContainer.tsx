@@ -110,8 +110,10 @@ const TimerContainer = () => {
     <div 
       ref={containerRef}
       className={cn(
-        "h-[450px] text-white rounded-lg p-4 flex flex-col items-center",
-        theme === "dark" ? "bg-black" : "bg-white text-gray-900"
+        "h-[450px] rounded-lg p-4 flex flex-col items-center",
+        theme === "dark" 
+          ? "bg-black text-white" 
+          : "bg-white text-gray-900 border border-gray-200" // Proper light mode styling
       )}
       data-testid="timer-container"
     >
@@ -128,7 +130,9 @@ const TimerContainer = () => {
         <div className="text-center mb-2">
           <div className={cn(
             "text-xs rounded-full px-3 py-0.5 inline-block",
-            theme === "dark" ? "bg-black" : "bg-gray-100"
+            theme === "dark" 
+              ? "bg-gray-800 text-gray-200" 
+              : "bg-gray-100 text-gray-700" // Better light mode contrast
           )}>
             {timerMode === 'work' ? 'Focus' : timerMode === 'break' ? 'Short Break' : 'Long Break'}
           </div>

@@ -71,14 +71,14 @@ const TimerControls: React.FC<TimerControlsProps> = ({
           "w-12 h-12 rounded-full flex items-center justify-center transition-all",
           theme === "dark" 
             ? "bg-gray-700 hover:bg-gray-600 active:bg-gray-800" 
-            : "bg-gray-300 hover:bg-gray-400 active:bg-gray-500"
+            : "bg-gray-300 hover:bg-gray-400 active:bg-gray-500" // Lighter gray for light mode
         )}
         aria-label="Reset timer"
         type="button"
       >
         <RotateCcw className={cn(
           "h-5 w-5",
-          theme === "dark" ? "text-white" : "text-gray-700"
+          theme === "dark" ? "text-white" : "text-gray-700" // Darker text for light mode
         )} />
       </button>
     </div>
