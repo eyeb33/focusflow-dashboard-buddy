@@ -47,14 +47,15 @@ export function useTimerControls({
       setSessionStartTime(new Date().toISOString());
     }
     
+    // Just toggle the running state - don't modify timeRemaining
     setIsRunning(true);
     
-    // Save state with running=true
+    // Save state with running=true and current timeRemaining
     saveTimerState({
       timerMode,
       isRunning: true,
       timeRemaining,  // Use the current timeRemaining to resume from where we paused
-      currentSessionIndex: 0, // This will be updated in the timer core
+      currentSessionIndex: 0,
       sessionStartTime: sessionStartTimeRef.current,
     });
   }, [timerMode, timeRemaining, setIsRunning, setTimeRemaining, sessionStartTimeRef, setSessionStartTime, saveTimerState, getTotalTimeForMode]);
@@ -67,12 +68,11 @@ export function useTimerControls({
     setIsRunning(false);
     
     // Critical: Save the exact current time remaining when pausing
-    // Don't reset the time or do any additional state changes
     saveTimerState({
       timerMode,
       isRunning: false,
       timeRemaining: timeRemaining, // Preserve the exact time remaining
-      currentSessionIndex: 0, // This will be updated in the timer core
+      currentSessionIndex: 0,
       sessionStartTime: sessionStartTimeRef.current, // Keep the session start time reference
     });
   }, [timerMode, timeRemaining, setIsRunning, sessionStartTimeRef, saveTimerState]);

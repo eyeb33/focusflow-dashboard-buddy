@@ -70,7 +70,7 @@ export function useTimerTickHandler({
           }
           const newTime = prevTime - elapsedSeconds;
           
-          // Save timer state every 5 seconds
+          // Save timer state periodically
           if (prevTime % 5 === 0 || newTime % 5 === 0) {
             saveTimerState({
               timerMode,
@@ -86,17 +86,15 @@ export function useTimerTickHandler({
         
         lastTickTimeRef.current = now;
       }, 1000);
-    } else {
-      // When paused, make sure we preserve the exact current time
-      // Only save state when isRunning changes from true to false
-      // This prevents unnecessary state updates
+    } else if (!isRunning && timerRef.current) {
+      // When paused, immediately save the exact current time
       console.log("Timer paused at exact time:", timeRemaining);
       
-      // Important: Save the exact paused time to ensure it resumes correctly
+      // Important: Save the exact paused time for resuming correctly
       saveTimerState({
         timerMode,
         isRunning: false,
-        timeRemaining: timeRemaining,  // Use the exact current time
+        timeRemaining: timeRemaining,
         currentSessionIndex,
         sessionStartTime: sessionStartTimeRef.current,
       });
@@ -111,13 +109,15 @@ export function useTimerTickHandler({
   }, [
     isRunning, 
     timerMode, 
-    saveTimerState, 
-    timeRemaining, 
+    handleTimerComplete,
     sessionStartTimeRef, 
     setSessionStartTime, 
     currentSessionIndex, 
-    handleTimerComplete
+    saveTimerState
   ]);
+  
+  // Notice we intentionally removed timeRemaining from the dependency array
+  // This prevents the effect from re-running when timeRemaining changes
   
   return {
     lastTickTimeRef
