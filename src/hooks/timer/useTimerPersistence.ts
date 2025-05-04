@@ -33,12 +33,24 @@ export function useTimerPersistence(settings: TimerSettings) {
             typeof savedState.timeRemaining === 'number' && 
             elapsed < 1800000) { // 30 minutes
           
-          console.log("Restoring timer state with time:", savedState.timeRemaining);
+          // Calculate accurate time if the timer was running
+          let adjustedTimeRemaining = savedState.timeRemaining;
+          
+          // If timer was running when state was saved, account for elapsed time
+          if (savedState.isRunning) {
+            const elapsedSeconds = Math.floor(elapsed / 1000);
+            adjustedTimeRemaining = Math.max(0, savedState.timeRemaining - elapsedSeconds);
+            console.log(`Timer was running: adjusting time by ${elapsedSeconds}s, from ${savedState.timeRemaining} to ${adjustedTimeRemaining}`);
+          } else {
+            console.log(`Timer was paused: keeping exact time of ${savedState.timeRemaining}`);
+          }
+          
+          console.log("Restoring timer state with time:", adjustedTimeRemaining);
           
           // CRITICAL: preserve the exact timeRemaining value
           return {
             timerMode: savedState.timerMode || 'work',
-            timeRemaining: savedState.timeRemaining,
+            timeRemaining: adjustedTimeRemaining,
             currentSessionIndex: savedState.currentSessionIndex || 0,
             sessionStartTime: savedState.sessionStartTime,
             isRunning: false // Always start paused when restoring
@@ -72,7 +84,7 @@ export function useTimerPersistence(settings: TimerSettings) {
     };
     
     // Log the exact time being saved for debugging
-    console.log(`Saving timer state with exact time: ${state.timeRemaining} seconds`);
+    console.log(`Saving timer state with exact time: ${state.timeRemaining} seconds, running: ${state.isRunning}`);
     
     localStorage.setItem('timerState', JSON.stringify(stateWithTimestamp));
   }, []);

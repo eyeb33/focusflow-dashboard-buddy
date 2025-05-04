@@ -62,15 +62,15 @@ export function useTimerControls({
     saveTimerState({
       timerMode,
       isRunning: true,
-      timeRemaining,  // Use the current timeRemaining to resume from where we paused
+      timeRemaining: lastTimeRemainingRef.current,  // Use the current timeRemaining to resume from where we paused
       currentSessionIndex: 0,
       sessionStartTime: sessionStartTimeRef.current,
     });
-  }, [timerMode, timeRemaining, setIsRunning, setTimeRemaining, sessionStartTimeRef, setSessionStartTime, saveTimerState, getTotalTimeForMode]);
+  }, [timerMode, timeRemaining, setIsRunning, setTimeRemaining, sessionStartTimeRef, setSessionStartTime, saveTimerState, getTotalTimeForMode, lastTimeRemainingRef]);
   
   // Pause the timer
   const handlePause = useCallback(() => {
-    console.log("Pausing timer with mode:", timerMode, "and time:", timeRemaining);
+    console.log("Pausing timer with mode:", timerMode, "and time:", timeRemaining, "ref time:", lastTimeRemainingRef.current);
     
     // Critical: ONLY change isRunning state, do NOT modify timeRemaining
     setIsRunning(false);
@@ -83,7 +83,7 @@ export function useTimerControls({
       currentSessionIndex: 0,
       sessionStartTime: sessionStartTimeRef.current, // Keep the session start time reference
     });
-  }, [timerMode, setIsRunning, sessionStartTimeRef, saveTimerState]);
+  }, [timerMode, setIsRunning, sessionStartTimeRef, saveTimerState, timeRemaining, lastTimeRemainingRef]);
   
   // Reset the timer
   const handleReset = useCallback(() => {
@@ -110,6 +110,7 @@ export function useTimerControls({
     
     console.log(`Resetting timer for mode ${timerMode} to ${newTime} seconds (${Math.floor(newTime / 60)}:${(newTime % 60).toString().padStart(2, '0')})`);
     setTimeRemaining(newTime);
+    lastTimeRemainingRef.current = newTime;
     
     // Clear session start time
     setSessionStartTime(null);
@@ -157,6 +158,7 @@ export function useTimerControls({
     
     console.log(`Mode changed to ${mode}, setting time to ${totalTime} seconds (${Math.floor(totalTime / 60)}:${(totalTime % 60).toString().padStart(2, '0')})`);
     setTimeRemaining(totalTime);
+    lastTimeRemainingRef.current = totalTime;
     
     // Clear session start time
     setSessionStartTime(null);

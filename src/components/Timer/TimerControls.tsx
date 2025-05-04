@@ -41,13 +41,16 @@ const TimerControls: React.FC<TimerControlsProps> = ({
   const handlePlayPauseClick = useCallback(() => {
     console.log("Play/Pause clicked, isRunning:", isRunning);
     if (isRunning) {
+      console.log("Pausing timer from controls");
       onPause();
     } else {
+      console.log("Starting timer from controls");
       onStart();
     }
   }, [isRunning, onPause, onStart]);
 
   const handleResetClick = useCallback(() => {
+    console.log("Reset clicked from controls");
     onReset();
   }, [onReset]);
 

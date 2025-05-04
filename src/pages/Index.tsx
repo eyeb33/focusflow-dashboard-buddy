@@ -38,6 +38,9 @@ const Index = () => {
     setActiveTab(value);
   }, []);
   
+  // Console log to help track component rendering
+  console.log("Rendering Index component with activeTab:", activeTab);
+  
   return (
     <div className={cn(
       "min-h-screen flex flex-col",

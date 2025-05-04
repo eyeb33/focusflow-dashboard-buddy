@@ -33,21 +33,28 @@ export function useTimerTickHandler({
   const lastIsRunningRef = useRef<boolean>(isRunning);
   
   // Keep the stored time remaining in sync with the current time remaining
-  // regardless of running state - critical for proper pause/resume
   useEffect(() => {
     storedTimeRemainingRef.current = timeRemaining;
     
     if (!isRunning && lastIsRunningRef.current !== isRunning) {
       console.log("PAUSE detected: Storing exact pause time:", timeRemaining);
+      // Save the current time on pause to ensure we resume from exact time
+      saveTimerState({
+        timerMode,
+        isRunning: false,
+        timeRemaining: timeRemaining,
+        currentSessionIndex,
+        sessionStartTime: sessionStartTimeRef.current,
+      });
     }
     
     // Update the running state ref
     lastIsRunningRef.current = isRunning;
-  }, [timeRemaining, isRunning]);
+  }, [timeRemaining, isRunning, timerMode, currentSessionIndex, sessionStartTimeRef, saveTimerState]);
   
   // Handle timer tick
   useEffect(() => {
-    // Always clear any existing timer first
+    // Always clear any existing timer first to prevent multiple timers
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -68,56 +75,48 @@ export function useTimerTickHandler({
       timerRef.current = setInterval(() => {
         const now = Date.now();
         const elapsedMs = now - lastTickTimeRef.current;
-        const elapsedSeconds = Math.max(1, Math.floor(elapsedMs / 1000));
+        const elapsedSeconds = Math.floor(elapsedMs / 1000);
         
-        setTimeRemaining(prevTime => {
-          // Check if timer completed
-          if (prevTime <= elapsedSeconds) {
-            // Clear the timer and handle completion
-            if (timerRef.current) {
-              clearInterval(timerRef.current);
-              timerRef.current = null;
+        // Only update if at least 1 second has passed
+        if (elapsedSeconds >= 1) {
+          setTimeRemaining(prevTime => {
+            // Check if timer completed
+            if (prevTime <= elapsedSeconds) {
+              // Clear the timer and handle completion
+              if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+              }
+              
+              // We use setTimeout to ensure state updates occur in the next event loop
+              setTimeout(() => handleTimerComplete(), 0);
+              return 0;
             }
             
-            // We use setTimeout to ensure state updates occur in the next event loop
-            setTimeout(() => handleTimerComplete(), 0);
-            return 0;
-          }
-          
-          // Calculate new time remaining
-          const newTime = prevTime - elapsedSeconds;
-          
-          // Save timer state periodically
-          if (prevTime % 5 === 0 || newTime % 5 === 0) {
-            saveTimerState({
-              timerMode,
-              isRunning: true,
-              timeRemaining: newTime,
-              currentSessionIndex,
-              sessionStartTime: sessionStartTimeRef.current,
-            });
-          }
-          
-          // Always update stored reference
-          storedTimeRemainingRef.current = newTime;
-          
-          return newTime;
-        });
-        
-        lastTickTimeRef.current = now;
-      }, 1000);
-    } else if (!isRunning && timeRemaining > 0) {
-      // When paused, immediately save the exact current time
-      console.log("Timer paused at exact time:", storedTimeRemainingRef.current);
-      
-      // Important: Save the exact paused time for resuming correctly
-      saveTimerState({
-        timerMode,
-        isRunning: false,
-        timeRemaining: storedTimeRemainingRef.current, // Use stored value for consistency
-        currentSessionIndex,
-        sessionStartTime: sessionStartTimeRef.current,
-      });
+            // Calculate new time remaining
+            const newTime = prevTime - elapsedSeconds;
+            
+            // Save timer state periodically (every 5 seconds)
+            if (prevTime % 5 === 0 || newTime % 5 === 0) {
+              saveTimerState({
+                timerMode,
+                isRunning: true,
+                timeRemaining: newTime,
+                currentSessionIndex,
+                sessionStartTime: sessionStartTimeRef.current,
+              });
+            }
+            
+            // Always update stored reference
+            storedTimeRemainingRef.current = newTime;
+            
+            // Reset lastTickTimeRef for next interval
+            lastTickTimeRef.current = now;
+            
+            return newTime;
+          });
+        }
+      }, 200); // Check more frequently for smoother updates
     }
 
     return () => {
@@ -134,9 +133,8 @@ export function useTimerTickHandler({
     setSessionStartTime, 
     currentSessionIndex, 
     saveTimerState,
-    setTimeRemaining,
-    timeRemaining // Include timeRemaining in the dependency array
-  ]);
+    setTimeRemaining
+  ]); // Remove timeRemaining from dependency array to prevent reset loops
   
   return {
     lastTickTimeRef,
