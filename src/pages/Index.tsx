@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Header from "@/components/Layout/Header";
 import MobileNav from "@/components/Layout/MobileNav";
@@ -18,21 +18,25 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState('timer');
   const { theme } = useTheme();
   
-  const handleLoginClick = () => {
+  const handleLoginClick = useCallback(() => {
     navigate('/auth', {
       state: {
         mode: 'login'
       }
     });
-  };
+  }, [navigate]);
   
-  const handleSignupClick = () => {
+  const handleSignupClick = useCallback(() => {
     navigate('/auth', {
       state: {
         mode: 'signup'
       }
     });
-  };
+  }, [navigate]);
+  
+  const handleTabChange = useCallback((value: string) => {
+    setActiveTab(value);
+  }, []);
   
   return (
     <div className={cn(
@@ -46,7 +50,7 @@ const Index = () => {
           "relative flex flex-col items-center justify-center flex-1 px-4 py-4",
           theme === "dark" ? "bg-black" : "bg-gray-100"
         )}>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-md">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full max-w-md">
             <TabsList className={cn(
               "grid w-full grid-cols-2 mb-2",
               theme === "dark" ? "bg-[#1e293b]" : "bg-gray-200"

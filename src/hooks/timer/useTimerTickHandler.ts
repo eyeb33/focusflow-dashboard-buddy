@@ -30,14 +30,19 @@ export function useTimerTickHandler({
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastTickTimeRef = useRef<number>(Date.now());
   const storedTimeRemainingRef = useRef<number>(timeRemaining);
+  const lastIsRunningRef = useRef<boolean>(isRunning);
   
   // Keep the stored time remaining in sync with the current time remaining
-  // but only when the timer isn't running to avoid circular updates
+  // regardless of running state - critical for proper pause/resume
   useEffect(() => {
-    if (!isRunning) {
-      storedTimeRemainingRef.current = timeRemaining;
-      console.log("Stored paused time:", timeRemaining);
+    storedTimeRemainingRef.current = timeRemaining;
+    
+    if (!isRunning && lastIsRunningRef.current !== isRunning) {
+      console.log("PAUSE detected: Storing exact pause time:", timeRemaining);
     }
+    
+    // Update the running state ref
+    lastIsRunningRef.current = isRunning;
   }, [timeRemaining, isRunning]);
   
   // Handle timer tick
@@ -66,6 +71,7 @@ export function useTimerTickHandler({
         const elapsedSeconds = Math.max(1, Math.floor(elapsedMs / 1000));
         
         setTimeRemaining(prevTime => {
+          // Check if timer completed
           if (prevTime <= elapsedSeconds) {
             // Clear the timer and handle completion
             if (timerRef.current) {
@@ -77,6 +83,8 @@ export function useTimerTickHandler({
             setTimeout(() => handleTimerComplete(), 0);
             return 0;
           }
+          
+          // Calculate new time remaining
           const newTime = prevTime - elapsedSeconds;
           
           // Save timer state periodically
@@ -90,7 +98,7 @@ export function useTimerTickHandler({
             });
           }
           
-          // Update stored reference
+          // Always update stored reference
           storedTimeRemainingRef.current = newTime;
           
           return newTime;
@@ -98,7 +106,7 @@ export function useTimerTickHandler({
         
         lastTickTimeRef.current = now;
       }, 1000);
-    } else if (!isRunning) {
+    } else if (!isRunning && timeRemaining > 0) {
       // When paused, immediately save the exact current time
       console.log("Timer paused at exact time:", storedTimeRemainingRef.current);
       
@@ -106,7 +114,7 @@ export function useTimerTickHandler({
       saveTimerState({
         timerMode,
         isRunning: false,
-        timeRemaining: storedTimeRemainingRef.current,
+        timeRemaining: storedTimeRemainingRef.current, // Use stored value for consistency
         currentSessionIndex,
         sessionStartTime: sessionStartTimeRef.current,
       });
@@ -120,19 +128,18 @@ export function useTimerTickHandler({
     };
   }, [
     isRunning, 
-    timerMode, 
+    timerMode,
     handleTimerComplete,
     sessionStartTimeRef, 
     setSessionStartTime, 
     currentSessionIndex, 
     saveTimerState,
-    setTimeRemaining
+    setTimeRemaining,
+    timeRemaining // Include timeRemaining in the dependency array
   ]);
   
-  // Notice we intentionally removed timeRemaining from the dependency array
-  // This prevents the effect from re-running when timeRemaining changes
-  
   return {
-    lastTickTimeRef
+    lastTickTimeRef,
+    storedTimeRemainingRef
   };
 }

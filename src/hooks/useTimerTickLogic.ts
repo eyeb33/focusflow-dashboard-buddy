@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import { savePartialSession } from '@/utils/timerContextUtils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,6 +28,12 @@ export function useTimerTickLogic({
 }: UseTimerTickLogicProps) {
   const { user } = useAuth();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastKnownTimeRef = useRef<number>(timeRemaining);
+  
+  // Update the ref whenever timeRemaining changes to keep track of the latest value
+  useEffect(() => {
+    lastKnownTimeRef.current = timeRemaining;
+  }, [timeRemaining]);
   
   // Debug the incoming isRunning state
   console.log(`useTimerTickLogic - isRunning: ${isRunning}, timerMode: ${timerMode}, timeRemaining: ${timeRemaining}`);
@@ -111,19 +116,21 @@ export function useTimerTickLogic({
             sessionStartTime: sessionStartTimeRef.current
           };
           localStorage.setItem('timerState', JSON.stringify(timerState));
-
+          
+          // Keep track of the current time
+          lastKnownTimeRef.current = newTime;
           lastTickTimeRef.current = now;
           return newTime;
         });
       }, 1000);
     } else if (!isRunning) {
       // When pausing, preserve the exact current time
-      console.log("Timer paused - Preserving exact current time:", timeRemaining);
+      console.log("Timer paused - Preserving exact current time:", lastKnownTimeRef.current);
       
       const timerState = {
         isRunning: false,
         timerMode,
-        timeRemaining: timeRemaining,
+        timeRemaining: lastKnownTimeRef.current, // Use the ref to get the most accurate time
         totalTime: getTotalTime(),
         timestamp: Date.now(),
         sessionStartTime: sessionStartTimeRef.current
@@ -148,7 +155,6 @@ export function useTimerTickLogic({
     lastRecordedFullMinutesRef,
     lastTickTimeRef,
     sessionStartTimeRef,
-    timeRemaining
   ]);
 
   return timerRef;

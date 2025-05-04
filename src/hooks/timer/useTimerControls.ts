@@ -33,18 +33,11 @@ export function useTimerControls({
   saveTimerState,
 }: UseTimerControlsProps) {
   // Use a ref to store the last timer state to prevent issues with stale values
-  const lastTimerStateRef = useRef({
-    isRunning,
-    timeRemaining
-  });
+  const lastTimeRemainingRef = useRef<number>(timeRemaining);
   
-  // Update the ref when state changes
-  if (lastTimerStateRef.current.timeRemaining !== timeRemaining || 
-      lastTimerStateRef.current.isRunning !== isRunning) {
-    lastTimerStateRef.current = {
-      isRunning,
-      timeRemaining
-    };
+  // Update the ref when time changes
+  if (lastTimeRemainingRef.current !== timeRemaining) {
+    lastTimeRemainingRef.current = timeRemaining;
   }
   
   // Start the timer
@@ -86,11 +79,11 @@ export function useTimerControls({
     saveTimerState({
       timerMode,
       isRunning: false,
-      timeRemaining: timeRemaining, // Preserve the exact time remaining
+      timeRemaining: lastTimeRemainingRef.current, // Use ref value for consistency
       currentSessionIndex: 0,
       sessionStartTime: sessionStartTimeRef.current, // Keep the session start time reference
     });
-  }, [timerMode, timeRemaining, setIsRunning, sessionStartTimeRef, saveTimerState]);
+  }, [timerMode, setIsRunning, sessionStartTimeRef, saveTimerState]);
   
   // Reset the timer
   const handleReset = useCallback(() => {

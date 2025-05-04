@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Pause, Play, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from '@/components/Theme/ThemeProvider';
@@ -37,15 +37,19 @@ const TimerControls: React.FC<TimerControlsProps> = ({
   
   const buttonColor = getButtonColor(mode);
 
-  // Handle play/pause button click
-  const handlePlayPauseClick = () => {
+  // Use memoized handlers to prevent unnecessary re-renders
+  const handlePlayPauseClick = useCallback(() => {
     console.log("Play/Pause clicked, isRunning:", isRunning);
     if (isRunning) {
       onPause();
     } else {
       onStart();
     }
-  };
+  }, [isRunning, onPause, onStart]);
+
+  const handleResetClick = useCallback(() => {
+    onReset();
+  }, [onReset]);
 
   return (
     <div className="flex gap-5 mt-6 mb-4">
@@ -57,6 +61,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
         )}
         aria-label={isRunning ? "Pause timer" : "Start timer"}
         type="button"
+        data-testid={isRunning ? "pause-button" : "play-button"}
       >
         {isRunning ? (
           <Pause className="h-5 w-5 text-white" />
@@ -66,7 +71,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
       </button>
       
       <button 
-        onClick={onReset}
+        onClick={handleResetClick}
         className={cn(
           "w-12 h-12 rounded-full flex items-center justify-center transition-all",
           theme === "dark" 
@@ -75,6 +80,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
         )}
         aria-label="Reset timer"
         type="button"
+        data-testid="reset-button"
       >
         <RotateCcw className={cn(
           "h-5 w-5",

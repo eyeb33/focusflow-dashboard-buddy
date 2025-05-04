@@ -35,6 +35,7 @@ export function useTimerPersistence(settings: TimerSettings) {
           
           console.log("Restoring timer state with time:", savedState.timeRemaining);
           
+          // CRITICAL: preserve the exact timeRemaining value
           return {
             timerMode: savedState.timerMode || 'work',
             timeRemaining: savedState.timeRemaining,
