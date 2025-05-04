@@ -63,6 +63,7 @@ export function useTimerControls({
   const handlePause = useCallback(() => {
     console.log("Pausing timer with mode:", timerMode, "and time:", timeRemaining);
     
+    // Critical: ONLY change isRunning state, do NOT modify timeRemaining
     setIsRunning(false);
     
     // Critical: Save the exact current time remaining when pausing

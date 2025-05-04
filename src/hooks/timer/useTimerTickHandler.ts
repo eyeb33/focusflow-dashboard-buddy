@@ -91,6 +91,15 @@ export function useTimerTickHandler({
       // Only save state when isRunning changes from true to false
       // This prevents unnecessary state updates
       console.log("Timer paused at exact time:", timeRemaining);
+      
+      // Important: Save the exact paused time to ensure it resumes correctly
+      saveTimerState({
+        timerMode,
+        isRunning: false,
+        timeRemaining: timeRemaining,  // Use the exact current time
+        currentSessionIndex,
+        sessionStartTime: sessionStartTimeRef.current,
+      });
     }
 
     return () => {
