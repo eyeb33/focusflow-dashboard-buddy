@@ -53,8 +53,17 @@ export function useTimerStateInitialization(settings: TimerSettings) {
       });
       
       setTimeRemaining(newTimeRemaining);
+      
+      // Also save this state to ensure persistence
+      saveTimerState({
+        timerMode,
+        isRunning: false,
+        timeRemaining: newTimeRemaining,
+        currentSessionIndex,
+        sessionStartTime: null,
+      });
     }
-  }, [settings, timerMode, isRunning]);
+  }, [settings, timerMode, isRunning, currentSessionIndex, saveTimerState]);
   
   return {
     timerMode,

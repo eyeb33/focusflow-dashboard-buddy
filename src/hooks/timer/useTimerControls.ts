@@ -1,6 +1,6 @@
 
 import { useCallback } from "react";
-import { TimerMode, getTotalTime } from "@/utils/timerContextUtils";
+import { TimerMode } from "@/utils/timerContextUtils";
 import { TimerSettings } from "../useTimerSettings";
 
 interface UseTimerControlsProps {
