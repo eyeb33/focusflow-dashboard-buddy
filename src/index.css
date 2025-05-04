@@ -132,6 +132,12 @@
   border-radius: 0.5rem;
 }
 
+.light .timer-container {
+  background-color: #ffffff;
+  color: #1a1a1a;
+  border: 1px solid #e2e8f0;
+}
+
 .mode-button-active {
   background-color: #ff4545;
   color: white;
@@ -144,6 +150,10 @@
 
 .mode-button:hover {
   color: white;
+}
+
+.light .mode-button:hover {
+  color: #333;
 }
 
 /* Session dot styling */
@@ -165,6 +175,10 @@
   height: 8px;
 }
 
+.light .session-dot {
+  background-color: #d1d5db;
+}
+
 /* Cache busting */
 @media (max-width: 0px) {
   body::after {
@@ -173,13 +187,23 @@
   }
 }
 
-/* Override the header to ensure it has black background */
+/* Override the header to ensure it has correct background based on theme */
 header.border-b {
   background-color: #000000 !important;
   border-color: #333 !important;
+}
+
+.light header.border-b {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
 }
 
 /* Make sure tabslist has correct styling */
 .TabsList {
   background-color: #1e293b !important;
 }
+
+.light .TabsList {
+  background-color: #e2e8f0 !important;
+}
+

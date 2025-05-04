@@ -8,11 +8,14 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
 import TimerContainer from "@/components/Timer/TimerContainer";
 import AuthPrompt from "@/components/Auth/AuthPrompt";
+import { useTheme } from "@/components/Theme/ThemeProvider";
+import { cn } from "@/lib/utils";
 
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('timer');
+  const { theme } = useTheme();
   
   const handleLoginClick = () => {
     navigate('/auth', {
@@ -31,13 +34,22 @@ const Index = () => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col bg-black text-white">
+    <div className={cn(
+      "min-h-screen flex flex-col",
+      theme === "dark" ? "bg-black text-white" : "bg-gray-100 text-gray-900"
+    )}>
       <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
       
       <main className="flex-1 flex flex-col">
-        <div className="relative flex flex-col items-center justify-center flex-1 px-4 py-4 bg-black">
+        <div className={cn(
+          "relative flex flex-col items-center justify-center flex-1 px-4 py-4",
+          theme === "dark" ? "bg-black" : "bg-gray-100"
+        )}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-md">
-            <TabsList className="grid w-full grid-cols-2 mb-2 bg-[#1e293b]">
+            <TabsList className={cn(
+              "grid w-full grid-cols-2 mb-2",
+              theme === "dark" ? "bg-[#1e293b]" : "bg-gray-200"
+            )}>
               <TabsTrigger value="timer">Timer</TabsTrigger>
               <TabsTrigger value="tasks">Tasks</TabsTrigger>
             </TabsList>
