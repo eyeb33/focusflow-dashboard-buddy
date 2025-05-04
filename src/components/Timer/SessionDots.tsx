@@ -77,9 +77,10 @@ const SessionDots: React.FC<SessionDotsProps> = ({
           isActive = dotIndex === currentSessionIndex;
           isComplete = dotIndex < currentSessionIndex;
         } else if (mode === 'break') {
-          // For regular breaks: highlight the current break dot
-          isActive = dotIndex === currentSessionIndex;
-          isComplete = dotIndex < currentSessionIndex;
+          // For regular breaks: only highlight the current break dot (which corresponds to currentSessionIndex)
+          // During breaks, the currentSessionIndex is the index of the NEXT work session
+          isActive = dotIndex === currentSessionIndex - 1; // The break dot that corresponds to the previous work session
+          isComplete = dotIndex < currentSessionIndex - 1;
         } else if (mode === 'longBreak') {
           // For long break: the single dot is always active
           isActive = true;

@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { TimerSettings } from '../useTimerSettings';
@@ -62,9 +63,10 @@ export function useTimerCompletionHandler({
       
       // Determine if it's time for a long break or regular break
       // Only go to long break if we've completed ALL sessions in the cycle
-      // This happens when we've just completed the last focus session and the newSessionIndex is 0
-      const isCompleteSession = newSessionIndex === 0;
-      const nextMode: TimerMode = isCompleteSession ? 'longBreak' : 'break';
+      const shouldGoToLongBreak = newCompletedSessions > 0 && 
+                                  newCompletedSessions % settings.sessionsUntilLongBreak === 0;
+      
+      const nextMode: TimerMode = shouldGoToLongBreak ? 'longBreak' : 'break';
         
       setTimerMode(nextMode);
       resetTimerState();
@@ -76,8 +78,6 @@ export function useTimerCompletionHandler({
       
     } else if (timerMode === 'break') {
       // After a break, we maintain the same index and go back to work mode
-      // We do NOT increment the index here, it was already incremented after work session
-      
       console.log(`Break completed. Continuing with session index ${currentSessionIndex}`);
       
       setTimerMode('work');
@@ -89,9 +89,11 @@ export function useTimerCompletionHandler({
       }, 500);
       
     } else if (timerMode === 'longBreak') {
-      // After a long break, go back to focus mode and keep the session index at 0
-      // It's already at 0 from the completion of the last work session
+      // After a long break, go back to focus mode and reset the session index to 0
       console.log('Long break completed - starting a new cycle');
+      
+      // Reset the session index to 0 for a new cycle
+      setCurrentSessionIndex(0);
       
       setTimerMode('work');
       resetTimerState();
