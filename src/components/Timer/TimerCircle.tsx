@@ -36,7 +36,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
   // Calculate stroke dashoffset (less offset = more circle shown)
   // At 0% progress we want full offset (empty circle)
   // At 100% progress we want 0 offset (full circle)
-  const dashOffset = circumference - (progress / 100) * circumference;
+  const dashOffset = circumference * (1 - progress / 100);
 
   // Determine color based on mode
   const getProgressColor = () => {
