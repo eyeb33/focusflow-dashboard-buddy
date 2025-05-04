@@ -13,22 +13,57 @@ interface TimerState {
 }
 
 export function useTimerPersistence(settings: TimerSettings) {
-  // Always start with a fresh state on page load
+  // Load initial state - critical for proper timer functioning
   const loadInitialState = useCallback(() => {
-    console.log("Initializing with fresh timer state");
+    console.log("Checking for saved timer state");
     
-    // Default state when no saved state exists or on page refresh
+    // Try to load saved state
+    const savedStateJson = localStorage.getItem('timerState');
+    
+    if (savedStateJson) {
+      try {
+        const savedState = JSON.parse(savedStateJson);
+        const now = Date.now();
+        const elapsed = now - (savedState.timestamp || 0);
+        
+        console.log("Found saved timer state:", savedState);
+        
+        // Only restore state if it's valid and recent (< 30 minutes old)
+        if (savedState && 
+            typeof savedState.timeRemaining === 'number' && 
+            elapsed < 1800000) { // 30 minutes
+          
+          console.log("Restoring timer state with time:", savedState.timeRemaining);
+          
+          return {
+            timerMode: savedState.timerMode || 'work',
+            timeRemaining: savedState.timeRemaining,
+            currentSessionIndex: savedState.currentSessionIndex || 0,
+            sessionStartTime: savedState.sessionStartTime,
+            isRunning: false // Always start paused when restoring
+          };
+        } else {
+          console.log("Saved state expired or invalid, using fresh state");
+        }
+      } catch (error) {
+        console.error("Error parsing saved timer state:", error);
+      }
+    }
+    
+    // Default state when no saved state exists or it's invalid
     return {
       timerMode: 'work' as TimerMode,
       timeRemaining: settings.workDuration * 60,
       currentSessionIndex: 0,
-      sessionStartTime: null
+      sessionStartTime: null,
+      isRunning: false
     };
   }, [settings]);
   
   // Initialize with correct values
   const initialState = loadInitialState();
   
+  // Save the timer state
   const saveTimerState = useCallback((state: TimerState) => {
     const stateWithTimestamp = {
       ...state,
@@ -41,8 +76,26 @@ export function useTimerPersistence(settings: TimerSettings) {
     localStorage.setItem('timerState', JSON.stringify(stateWithTimestamp));
   }, []);
   
+  // Load timer state - used for restoring after tab/window refresh
   const loadTimerState = useCallback(() => {
-    // For this fix, we're not loading saved state on page refresh
+    const savedStateJson = localStorage.getItem('timerState');
+    if (savedStateJson) {
+      try {
+        const savedState = JSON.parse(savedStateJson);
+        const now = Date.now();
+        const elapsed = now - (savedState.timestamp || 0);
+        
+        // Only restore if the saved state is recent (< 30 minutes)
+        if (elapsed < 1800000) { // 30 minutes
+          return {
+            ...savedState,
+            isRunning: false // Always start paused when restoring
+          };
+        }
+      } catch (error) {
+        console.error("Error parsing saved timer state:", error);
+      }
+    }
     return null;
   }, []);
   
@@ -52,6 +105,7 @@ export function useTimerPersistence(settings: TimerSettings) {
     initialTimerMode: initialState.timerMode,
     initialTimeRemaining: initialState.timeRemaining,
     initialSessionIndex: initialState.currentSessionIndex,
-    initialSessionStartTime: initialState.sessionStartTime
+    initialSessionStartTime: initialState.sessionStartTime,
+    initialIsRunning: initialState.isRunning
   };
 }
