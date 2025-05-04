@@ -54,6 +54,7 @@ export function useTimerCompletionHandler({
       setTotalTimeToday(prev => prev + settings.workDuration);
       
       // Update session index (the position in the current cycle)
+      // Important: we increment the session index AFTER completing work
       const newSessionIndex = (currentSessionIndex + 1) % settings.sessionsUntilLongBreak;
       setCurrentSessionIndex(newSessionIndex);
       
@@ -73,6 +74,7 @@ export function useTimerCompletionHandler({
       
     } else if (timerMode === 'break') {
       // After a break, go back to focus mode but keep the current session index
+      // DO NOT increment the session index after a break
       setTimerMode('work');
       resetTimerState();
       
