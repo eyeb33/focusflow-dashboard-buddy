@@ -53,16 +53,19 @@ export function useTimerCompletionHandler({
       // Add time to today's total
       setTotalTimeToday(prev => prev + settings.workDuration);
       
-      // Update session index (the position in the current cycle)
-      // Important: we increment the session index AFTER completing work
-      const newSessionIndex = (currentSessionIndex + 1) % settings.sessionsUntilLongBreak;
-      setCurrentSessionIndex(newSessionIndex);
+      // IMPORTANT CHANGE: Do NOT increment the currentSessionIndex here
+      // Keep the same index for the break session that follows
+      // This ensures the break highlights the same dot as the work session
       
-      console.log(`Completed focus session. Moving to session index ${newSessionIndex}`);
+      console.log(`Completed focus session. Current session index remains ${currentSessionIndex}`);
       
       // Determine if it's time for a long break or regular break
-      const nextMode: TimerMode = 
-        newSessionIndex === 0 ? 'longBreak' : 'break';
+      // We need to check if we've completed all sessions in the cycle
+      const isLastSessionInCycle = 
+        (currentSessionIndex === settings.sessionsUntilLongBreak - 1) || 
+        (newCompletedSessions % settings.sessionsUntilLongBreak === 0);
+      
+      const nextMode: TimerMode = isLastSessionInCycle ? 'longBreak' : 'break';
         
       setTimerMode(nextMode);
       resetTimerState();
@@ -73,8 +76,13 @@ export function useTimerCompletionHandler({
       }, 500);
       
     } else if (timerMode === 'break') {
-      // After a break, go back to focus mode but keep the current session index
-      // DO NOT increment the session index after a break
+      // After a break, increment the session index and go back to work mode
+      // This is where we increment the index - AFTER the break completes
+      const newSessionIndex = (currentSessionIndex + 1) % settings.sessionsUntilLongBreak;
+      setCurrentSessionIndex(newSessionIndex);
+      
+      console.log(`Break completed. Moving to session index ${newSessionIndex}`);
+      
       setTimerMode('work');
       resetTimerState();
       
