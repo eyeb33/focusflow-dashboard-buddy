@@ -45,7 +45,11 @@ export function useTimerStateInitialization(settings: TimerSettings) {
       console.log("Updating timer due to settings change:", {
         mode: timerMode,
         newTime: newTimeRemaining,
-        settings
+        settings: {
+          workDuration: settings.workDuration,
+          breakDuration: settings.breakDuration,
+          longBreakDuration: settings.longBreakDuration
+        }
       });
       
       setTimeRemaining(newTimeRemaining);

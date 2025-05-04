@@ -31,12 +31,13 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
   // Calculate the dash offset based on progress (0-100)
   // When progress is 0%, the full circumference should be offset (showing nothing)
   // When progress is 100%, the offset should be 0 (showing the complete circle)
-  const offset = circumference * (1 - Math.max(0, Math.min(100, progress)) / 100);
+  const safeProgress = Math.max(0, Math.min(100, progress));
+  const offset = circumference * (1 - safeProgress / 100);
   
   const { theme } = useTheme();
 
   // For debugging - more detailed to catch edge cases
-  console.log(`CircularProgress - mode: ${mode}, progress: ${progress.toFixed(2)}%, offset: ${offset.toFixed(2)}, circumference: ${circumference.toFixed(2)}`);
+  console.log(`CircularProgress - mode: ${mode}, progress: ${safeProgress.toFixed(2)}%, offset: ${offset.toFixed(2)}, circumference: ${circumference.toFixed(2)}`);
 
   return (
     <div

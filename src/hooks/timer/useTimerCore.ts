@@ -35,7 +35,7 @@ export function useTimerCore(settings: TimerSettings) {
   const { sessionStartTimeRef, setSessionStartTime } = useTimerSessionTracking();
 
   // Calculate progress and get total time
-  const { progress, getTotalTimeForMode } = useTimerProgress(timerMode, timeRemaining, settings);
+  const { progress, getTotalTimeForMode, totalTime } = useTimerProgress(timerMode, timeRemaining, settings);
 
   // Format helpers
   const { formatTime, getModeLabel } = useTimerFormat();
@@ -55,11 +55,30 @@ export function useTimerCore(settings: TimerSettings) {
     setSessionStartTime,
     resetTimerState: () => {
       // Calculate new time based on the mode that's being set
-      const newTime = getTotalTimeForMode();
-      console.log(`resetTimerState for mode ${timerMode}: setting time to ${newTime}`);
+      const newTimerMode = timerMode === 'work' ? 'break' : 
+                          timerMode === 'break' ? 'work' : 
+                          timerMode === 'longBreak' ? 'work' : 'work';
+                          
+      // We need to calculate the time for the NEXT mode, not the current one
+      let newTime;
+      switch (newTimerMode) {
+        case 'work':
+          newTime = settings.workDuration * 60;
+          break;
+        case 'break':
+          newTime = settings.breakDuration * 60;
+          break;
+        case 'longBreak':
+          newTime = settings.longBreakDuration * 60;
+          break;
+        default:
+          newTime = settings.workDuration * 60;
+      }
+      
+      console.log(`resetTimerState for mode ${timerMode} -> ${newTimerMode}: setting time to ${newTime} seconds (${Math.floor(newTime / 60)}:${(newTime % 60).toString().padStart(2, '0')})`);
       setTimeRemaining(newTime);
       saveTimerState({
-        timerMode,
+        timerMode: newTimerMode,
         isRunning: false,
         timeRemaining: newTime,
         currentSessionIndex,

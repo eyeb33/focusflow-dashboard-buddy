@@ -56,15 +56,24 @@ const TimerContainer = () => {
   
   // Add debug logging to help track timer state
   useEffect(() => {
+    const totalSeconds = getTotalSeconds();
+    const minutes = Math.floor(timeRemaining / 60);
+    const seconds = timeRemaining % 60;
+    
     console.log('Timer state updated:', { 
       mode: timerMode, 
       running: isRunning, 
       timeRemaining,
+      formattedTime: `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`,
       progress,
       currentSessionIndex,
       totalSessions: settings?.sessionsUntilLongBreak || 4,
-      settings,
-      totalSeconds: getTotalSeconds()
+      settings: settings ? {
+        workDuration: settings.workDuration,
+        breakDuration: settings.breakDuration,
+        longBreakDuration: settings.longBreakDuration
+      } : null,
+      totalSeconds
     });
   }, [timerMode, isRunning, timeRemaining, progress, currentSessionIndex, settings]);
 

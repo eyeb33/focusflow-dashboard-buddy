@@ -65,7 +65,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
   };
 
   // For debugging with more detail
-  console.log(`TimerCircle - mode: ${mode}, progress: ${progress.toFixed(2)}%, secondsLeft: ${safeSecondsLeft}, totalSeconds: ${safeTotalSeconds}, minutes: ${minutes}, seconds: ${seconds}`);
+  console.log(`TimerCircle - mode: ${mode}, progress: ${progress.toFixed(2)}%, secondsLeft: ${safeSecondsLeft}, totalSeconds: ${safeTotalSeconds}, minutes: ${minutes}, seconds: ${seconds}, formatted: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
 
   return (
     <div className="relative flex items-center justify-center">

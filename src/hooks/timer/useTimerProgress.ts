@@ -36,14 +36,21 @@ export function useTimerProgress(timerMode: TimerMode, timeRemaining: number, se
     const progressPercentage = ((totalTime - timeRemaining) / totalTime) * 100;
     
     // Debug log for checking all timer modes
-    console.log(`Progress calculation for ${timerMode}: totalTime=${totalTime}, timeRemaining=${timeRemaining}, progress=${progressPercentage.toFixed(2)}%`);
+    console.log(`Progress calculation for ${timerMode}: totalTime=${totalTime}, timeRemaining=${timeRemaining}, progress=${progressPercentage.toFixed(2)}%, settings=${JSON.stringify({
+      workDuration: settings.workDuration,
+      breakDuration: settings.breakDuration,
+      longBreakDuration: settings.longBreakDuration
+    })}`);
     
     // Ensure the progress doesn't go below 0 or above 100
     return Math.max(0, Math.min(100, progressPercentage));
-  }, [timeRemaining, totalTime, timerMode]);
+  }, [timeRemaining, totalTime, timerMode, settings]);
 
   // Return total time calculation function for other hooks to use
-  const getTotalTimeForMode = () => totalTime;
+  const getTotalTimeForMode = () => {
+    console.log(`Getting total time for mode: ${timerMode}, result: ${totalTime}`);
+    return totalTime;
+  };
 
   return {
     progress,

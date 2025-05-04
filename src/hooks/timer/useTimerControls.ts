@@ -82,8 +82,23 @@ export function useTimerControls({
     // Stop the timer
     setIsRunning(false);
     
-    // Reset the time based on current settings
-    const newTime = getTotalTimeForMode();
+    // Reset the time based on current settings and mode
+    let newTime;
+    switch (timerMode) {
+      case 'work':
+        newTime = settings.workDuration * 60;
+        break;
+      case 'break':
+        newTime = settings.breakDuration * 60;
+        break;
+      case 'longBreak':
+        newTime = settings.longBreakDuration * 60;
+        break;
+      default:
+        newTime = settings.workDuration * 60;
+    }
+    
+    console.log(`Resetting timer for mode ${timerMode} to ${newTime} seconds (${Math.floor(newTime / 60)}:${(newTime % 60).toString().padStart(2, '0')})`);
     setTimeRemaining(newTime);
     
     // Clear session start time
@@ -97,7 +112,7 @@ export function useTimerControls({
       currentSessionIndex: 0,
       sessionStartTime: null,
     });
-  }, [timerMode, setIsRunning, setTimeRemaining, setSessionStartTime, saveTimerState, getTotalTimeForMode]);
+  }, [timerMode, settings, setIsRunning, setTimeRemaining, setSessionStartTime, saveTimerState]);
   
   // Change timer mode
   const handleModeChange = useCallback((mode: TimerMode) => {
@@ -115,7 +130,22 @@ export function useTimerControls({
     setTimerMode(mode);
     
     // Reset time based on new mode
-    const totalTime = getTotalTime(mode, settings);
+    let totalTime;
+    switch (mode) {
+      case 'work':
+        totalTime = settings.workDuration * 60;
+        break;
+      case 'break':
+        totalTime = settings.breakDuration * 60;
+        break;
+      case 'longBreak':
+        totalTime = settings.longBreakDuration * 60;
+        break;
+      default:
+        totalTime = settings.workDuration * 60;
+    }
+    
+    console.log(`Mode changed to ${mode}, setting time to ${totalTime} seconds (${Math.floor(totalTime / 60)}:${(totalTime % 60).toString().padStart(2, '0')})`);
     setTimeRemaining(totalTime);
     
     // Clear session start time
@@ -129,7 +159,7 @@ export function useTimerControls({
       currentSessionIndex: mode === 'work' ? 0 : 0,
       sessionStartTime: null,
     });
-  }, [timerMode, setIsRunning, setTimerMode, setTimeRemaining, setSessionStartTime, setCurrentSessionIndex, settings, saveTimerState]);
+  }, [timerMode, settings, setIsRunning, setTimerMode, setTimeRemaining, setSessionStartTime, setCurrentSessionIndex, saveTimerState]);
   
   return {
     handleStart,
