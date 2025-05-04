@@ -1,5 +1,7 @@
 
 import React from 'react';
+import { useTheme } from "@/components/Theme/ThemeProvider";
+import { cn } from "@/lib/utils";
 
 interface TimerCircleProps {
   secondsLeft: number;
@@ -12,6 +14,8 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
   totalSeconds,
   mode = 'focus' 
 }) => {
+  const { theme } = useTheme();
+  
   // Use safe values to avoid NaN or issues with invalid inputs
   const safeSecondsLeft = isNaN(secondsLeft) ? 0 : Math.max(0, secondsLeft);
   const safeTotalSeconds = isNaN(totalSeconds) ? 1 : Math.max(1, totalSeconds);
@@ -64,7 +68,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
           cy={size / 2}
           r={radius}
           fill="transparent"
-          stroke="#444"
+          stroke={theme === "dark" ? "#444" : "#e5e5e5"}
           strokeWidth={strokeWidth}
         />
         {/* Progress circle */}
@@ -82,10 +86,18 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
         />
       </svg>
       <div className="absolute flex flex-col items-center">
-        <div className="text-5xl font-bold tracking-wider">
+        <div className={cn(
+          "text-5xl font-bold tracking-wider",
+          theme === "dark" ? "text-white" : "text-gray-800"
+        )}>
           {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
         </div>
-        <div className="text-gray-400 text-xs mt-1">{getStatusText()}</div>
+        <div className={cn(
+          "text-xs mt-1",
+          theme === "dark" ? "text-gray-400" : "text-gray-500"
+        )}>
+          {getStatusText()}
+        </div>
       </div>
     </div>
   );

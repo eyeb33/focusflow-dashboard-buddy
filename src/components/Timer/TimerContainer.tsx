@@ -6,6 +6,8 @@ import TimerModeTabs from './TimerModeTabs';
 import TimerControls from './TimerControls';
 import SessionDots from './SessionDots';
 import { useTimer } from '@/hooks/useTimer';
+import { useTheme } from "@/components/Theme/ThemeProvider";
+import { cn } from "@/lib/utils";
 
 const TimerContainer = () => {
   // Get timer context
@@ -23,6 +25,9 @@ const TimerContainer = () => {
     handleModeChange,
     updateSettings
   } = useTimer();
+  
+  // Get current theme
+  const { theme } = useTheme();
 
   // Store the container element to check if timer is visible
   const containerRef = useRef<HTMLDivElement>(null);
@@ -104,7 +109,10 @@ const TimerContainer = () => {
   return (
     <div 
       ref={containerRef}
-      className="h-[450px] bg-black text-white rounded-lg p-4 flex flex-col items-center"
+      className={cn(
+        "h-[450px] text-white rounded-lg p-4 flex flex-col items-center",
+        theme === "dark" ? "bg-black" : "bg-white text-gray-900"
+      )}
       data-testid="timer-container"
     >
       <TimerModeTabs 
@@ -118,7 +126,10 @@ const TimerContainer = () => {
 
       <div className="relative flex flex-col items-center justify-center mt-2">
         <div className="text-center mb-2">
-          <div className="text-xs rounded-full bg-black px-3 py-0.5 inline-block">
+          <div className={cn(
+            "text-xs rounded-full px-3 py-0.5 inline-block",
+            theme === "dark" ? "bg-black" : "bg-gray-100"
+          )}>
             {timerMode === 'work' ? 'Focus' : timerMode === 'break' ? 'Short Break' : 'Long Break'}
           </div>
         </div>

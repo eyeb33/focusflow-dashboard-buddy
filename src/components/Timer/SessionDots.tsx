@@ -2,6 +2,7 @@
 import React from 'react';
 import { Circle } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import { useTheme } from '@/components/Theme/ThemeProvider';
 
 interface SessionDotsProps {
   totalSessions: number;
@@ -16,17 +17,19 @@ const SessionDots: React.FC<SessionDotsProps> = ({
   mode = 'work',
   className
 }) => {
+  const { theme } = useTheme();
+  
   // Get colors based on timer mode
   const getColor = (mode: string): { fill: string, stroke: string } => {
     switch (mode) {
       case 'work':
-        return { fill: 'text-red-500', stroke: 'text-red-200' };
+        return { fill: 'text-red-500', stroke: theme === "dark" ? 'text-red-200' : 'text-red-300' };
       case 'break':
-        return { fill: 'text-green-500', stroke: 'text-green-200' };
+        return { fill: 'text-green-500', stroke: theme === "dark" ? 'text-green-200' : 'text-green-300' };
       case 'longBreak':
-        return { fill: 'text-blue-500', stroke: 'text-blue-200' };
+        return { fill: 'text-blue-500', stroke: theme === "dark" ? 'text-blue-200' : 'text-blue-300' };
       default:
-        return { fill: 'text-gray-500', stroke: 'text-gray-200' };
+        return { fill: 'text-gray-500', stroke: theme === "dark" ? 'text-gray-200' : 'text-gray-300' };
     }
   };
 

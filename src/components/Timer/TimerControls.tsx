@@ -2,6 +2,7 @@
 import React from 'react';
 import { Pause, Play, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from '@/components/Theme/ThemeProvider';
 
 interface TimerControlsProps {
   isRunning: boolean;
@@ -18,6 +19,8 @@ const TimerControls: React.FC<TimerControlsProps> = ({
   onPause,
   onReset
 }) => {
+  const { theme } = useTheme();
+  
   // Get color based on timer mode
   const getButtonColor = (mode: string): string => {
     switch (mode) {
@@ -64,11 +67,19 @@ const TimerControls: React.FC<TimerControlsProps> = ({
       
       <button 
         onClick={onReset}
-        className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center transition-all hover:bg-gray-600 active:bg-gray-800"
+        className={cn(
+          "w-12 h-12 rounded-full flex items-center justify-center transition-all",
+          theme === "dark" 
+            ? "bg-gray-700 hover:bg-gray-600 active:bg-gray-800" 
+            : "bg-gray-300 hover:bg-gray-400 active:bg-gray-500"
+        )}
         aria-label="Reset timer"
         type="button"
       >
-        <RotateCcw className="h-5 w-5 text-white" />
+        <RotateCcw className={cn(
+          "h-5 w-5",
+          theme === "dark" ? "text-white" : "text-gray-700"
+        )} />
       </button>
     </div>
   );
