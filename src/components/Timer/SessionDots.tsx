@@ -19,35 +19,43 @@ const SessionDots: React.FC<SessionDotsProps> = ({
   // Generate array of session numbers
   const sessions = Array.from({ length: totalSessions }, (_, i) => i);
 
-  // Get color for completed dots based on theme
-  const getCompletedDotColor = () => {
-    return "#ff4545"; // Keep red for completed dots in both themes
+  // Get color for dots based on the current mode
+  const getDotColors = () => {
+    switch(mode) {
+      case 'break':
+      case 'longBreak':
+        return {
+          active: "#2fc55e", // Green for break modes
+          completed: "#2fc55e",
+          inactive: theme === "dark" ? "#444" : "#d1d5db"
+        };
+      case 'work':
+      default:
+        return {
+          active: "#ff4545", // Red for work mode
+          completed: "#ff4545",
+          inactive: theme === "dark" ? "#444" : "#d1d5db"
+        };
+    }
   };
 
-  // Get color for inactive dots based on theme
-  const getInactiveDotColor = () => {
-    return theme === "dark" ? "#444" : "#d1d5db";
-  };
+  const colors = getDotColors();
 
   return (
     <div className="flex justify-center items-center mt-1 space-x-2">
       {sessions.map((sessionIndex) => {
-        // Current working session
-        const isCurrentWork = currentSessionIndex === sessionIndex && mode === 'work';
+        let isActive = false;
+        let isComplete = false;
         
-        // Break that comes after the previous work session
-        const isCurrentBreak = currentSessionIndex - 1 === sessionIndex && 
-                              (mode === 'break' || mode === 'longBreak');
-        
-        // Completed sessions are those before the current work session
-        const isCompleted = sessionIndex < currentSessionIndex && mode === 'work';
-        
-        // For break mode, the completed sessions are those strictly before the session before current
-        const isCompletedDuringBreak = sessionIndex < currentSessionIndex - 1 && 
-                                      (mode === 'break' || mode === 'longBreak');
-        
-        const isActive = isCurrentWork || isCurrentBreak;
-        const isComplete = mode === 'work' ? isCompleted : isCompletedDuringBreak;
+        if (mode === 'work') {
+          // For work mode: current dot is active, previous dots are completed
+          isActive = currentSessionIndex === sessionIndex;
+          isComplete = sessionIndex < currentSessionIndex;
+        } else if (mode === 'break' || mode === 'longBreak') {
+          // For break modes: the dot after the completed work session is active
+          isActive = currentSessionIndex === sessionIndex;
+          isComplete = sessionIndex < currentSessionIndex;
+        }
         
         return (
           <div
@@ -55,17 +63,15 @@ const SessionDots: React.FC<SessionDotsProps> = ({
             className={cn(
               "rounded-full transition-all duration-300",
               isActive 
-                ? "w-3 h-3 session-dot-active" 
-                : isComplete 
-                  ? "w-2 h-2 session-dot-completed"
-                  : "w-2 h-2 session-dot"
+                ? "w-3 h-3" 
+                : "w-2 h-2"
             )}
             style={{
               backgroundColor: isActive 
-                ? "#ff4545" 
+                ? colors.active
                 : isComplete 
-                  ? getCompletedDotColor()
-                  : getInactiveDotColor()
+                  ? colors.completed
+                  : colors.inactive
             }}
           />
         );

@@ -1,3 +1,4 @@
+
 import React from "react";
 import { cn } from "@/lib/utils";
 
@@ -10,9 +11,9 @@ interface SessionRingsProps {
 }
 
 const modeColors = {
-  work: "#ef4343",
-  break: "#2fc55e",
-  longBreak: "#3b81f6",
+  work: "#ef4343", // Red
+  break: "#2fc55e", // Green
+  longBreak: "#3b81f6", // Blue
 };
 
 const SessionRings: React.FC<SessionRingsProps> = ({
