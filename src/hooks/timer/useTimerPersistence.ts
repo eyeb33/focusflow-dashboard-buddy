@@ -34,8 +34,11 @@ export function useTimerPersistence(settings: TimerSettings) {
       ...state,
       timestamp: Date.now()
     };
+    
+    // Always log the exact time being saved for debugging
+    console.log(`Saving timer state with exact time: ${state.timeRemaining} seconds`);
+    
     localStorage.setItem('timerState', JSON.stringify(stateWithTimestamp));
-    console.log("Saved timer state:", stateWithTimestamp);
   }, []);
   
   const loadTimerState = useCallback(() => {

@@ -1,5 +1,5 @@
 
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { TimerMode } from "@/utils/timerContextUtils";
 import { TimerSettings } from "../useTimerSettings";
 
@@ -32,6 +32,21 @@ export function useTimerControls({
   getTotalTimeForMode,
   saveTimerState,
 }: UseTimerControlsProps) {
+  // Use a ref to store the last timer state to prevent issues with stale values
+  const lastTimerStateRef = useRef({
+    isRunning,
+    timeRemaining
+  });
+  
+  // Update the ref when state changes
+  if (lastTimerStateRef.current.timeRemaining !== timeRemaining || 
+      lastTimerStateRef.current.isRunning !== isRunning) {
+    lastTimerStateRef.current = {
+      isRunning,
+      timeRemaining
+    };
+  }
+  
   // Start the timer
   const handleStart = useCallback(() => {
     console.log("Starting timer with mode:", timerMode, "and time:", timeRemaining);

@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 
@@ -30,6 +29,16 @@ export function useTimerTickHandler({
   // Timer refs
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastTickTimeRef = useRef<number>(Date.now());
+  const storedTimeRemainingRef = useRef<number>(timeRemaining);
+  
+  // Keep the stored time remaining in sync with the current time remaining
+  // but only when the timer isn't running to avoid circular updates
+  useEffect(() => {
+    if (!isRunning) {
+      storedTimeRemainingRef.current = timeRemaining;
+      console.log("Stored paused time:", timeRemaining);
+    }
+  }, [timeRemaining, isRunning]);
   
   // Handle timer tick
   useEffect(() => {
@@ -81,20 +90,23 @@ export function useTimerTickHandler({
             });
           }
           
+          // Update stored reference
+          storedTimeRemainingRef.current = newTime;
+          
           return newTime;
         });
         
         lastTickTimeRef.current = now;
       }, 1000);
-    } else if (!isRunning && timerRef.current) {
+    } else if (!isRunning) {
       // When paused, immediately save the exact current time
-      console.log("Timer paused at exact time:", timeRemaining);
+      console.log("Timer paused at exact time:", storedTimeRemainingRef.current);
       
       // Important: Save the exact paused time for resuming correctly
       saveTimerState({
         timerMode,
         isRunning: false,
-        timeRemaining: timeRemaining,
+        timeRemaining: storedTimeRemainingRef.current,
         currentSessionIndex,
         sessionStartTime: sessionStartTimeRef.current,
       });
@@ -113,7 +125,8 @@ export function useTimerTickHandler({
     sessionStartTimeRef, 
     setSessionStartTime, 
     currentSessionIndex, 
-    saveTimerState
+    saveTimerState,
+    setTimeRemaining
   ]);
   
   // Notice we intentionally removed timeRemaining from the dependency array
