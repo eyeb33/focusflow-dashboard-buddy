@@ -51,11 +51,12 @@ const SessionDots: React.FC<SessionDotsProps> = ({
       const totalBreaks = totalSessions - 1;
       
       return Array.from({ length: totalBreaks }).map((_, i) => {
-        // The critical fix: For break mode, we need to directly use the current session index
-        // If we're on the first break after the first focus session, currentSessionIndex will be 0
-        // If we're on the second break after the second focus session, currentSessionIndex will be 1
-        // This correctly matches the visual display with the app's internal state
-        const isActive = i === currentSessionIndex;
+        // Critical fix: We need to adjust how we determine the active break
+        // In break mode, currentSessionIndex represents the NEXT work session, not the current break
+        // So the active break index should be currentSessionIndex - 1 (since breaks come after work sessions)
+        // If we're on the first break (after first focus session), currentSessionIndex will be 1
+        // But we want to highlight the first break circle (index 0)
+        const isActive = i === (currentSessionIndex === 0 ? 0 : currentSessionIndex - 1);
         
         // Size the active indicator slightly larger
         const size = isActive ? 24 : 18;
