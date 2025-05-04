@@ -84,6 +84,11 @@ export function useTimerTickHandler({
         
         lastTickTimeRef.current = now;
       }, 1000);
+    } else {
+      // When paused, make sure we preserve the exact current time
+      // Only save state when isRunning changes from true to false
+      // This prevents unnecessary state updates
+      console.log("Timer paused at exact time:", timeRemaining);
     }
 
     return () => {

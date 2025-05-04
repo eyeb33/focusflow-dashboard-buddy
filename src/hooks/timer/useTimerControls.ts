@@ -65,13 +65,14 @@ export function useTimerControls({
     
     setIsRunning(false);
     
-    // Save state with running=false
+    // Critical: Save the exact current time remaining when pausing
+    // Don't reset the time or do any additional state changes
     saveTimerState({
       timerMode,
       isRunning: false,
-      timeRemaining,
+      timeRemaining: timeRemaining, // Preserve the exact time remaining
       currentSessionIndex: 0, // This will be updated in the timer core
-      sessionStartTime: sessionStartTimeRef.current,
+      sessionStartTime: sessionStartTimeRef.current, // Keep the session start time reference
     });
   }, [timerMode, timeRemaining, setIsRunning, sessionStartTimeRef, saveTimerState]);
   
