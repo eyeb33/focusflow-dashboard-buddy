@@ -68,7 +68,7 @@ export function useTimerCore(settings: TimerSettings) {
       }
                           
       // We need to calculate the time for the NEXT mode, not the current one
-      let newTime;
+      let newTime: number;
       switch (newTimerMode) {
         case 'work':
           newTime = settings.workDuration * 60;
