@@ -17,7 +17,11 @@ const SessionDots: React.FC<SessionDotsProps> = ({
   const { theme } = useTheme();
   
   // Generate array of session numbers
-  const sessions = Array.from({ length: totalSessions }, (_, i) => i);
+  // For focus sessions, we should show totalSessions dots
+  // For break sessions, we should show totalSessions - 1 dots (since there's one less break than focus sessions)
+  const shouldReduceDots = mode === 'break';
+  const displayedSessions = shouldReduceDots ? totalSessions - 1 : totalSessions;
+  const sessions = Array.from({ length: displayedSessions }, (_, i) => i);
 
   // Get color for dots based on the current mode
   const getDotColors = () => {
@@ -63,7 +67,7 @@ const SessionDots: React.FC<SessionDotsProps> = ({
           isComplete = sessionIndex < currentSessionIndex;
         } else if (mode === 'longBreak') {
           // For long breaks: highlight the last dot in the cycle
-          isActive = sessionIndex === totalSessions - 1;
+          isActive = sessionIndex === displayedSessions - 1;
           isComplete = false; // No completed dots during long break
         }
         
