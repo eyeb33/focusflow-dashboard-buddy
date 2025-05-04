@@ -52,9 +52,17 @@ const SessionDots: React.FC<SessionDotsProps> = ({
           isActive = currentSessionIndex === sessionIndex;
           isComplete = sessionIndex < currentSessionIndex;
         } else if (mode === 'break' || mode === 'longBreak') {
-          // For break modes: the dot that matches the current work session index is active
-          // This ensures the first break highlights the first dot
-          isActive = currentSessionIndex === sessionIndex;
+          // For break modes: highlight the same dot as the most recently completed work session
+          // In the pomodoro flow, the first break should highlight the first dot,
+          // the second break should highlight the second dot, and so on
+          if (mode === 'break') {
+            // For regular breaks, active dot is the current session index
+            isActive = currentSessionIndex === sessionIndex;
+          } else {
+            // For long breaks, activate the first dot of the next cycle
+            isActive = sessionIndex === 0;
+          }
+          // Completed dots are those before the active one
           isComplete = sessionIndex < currentSessionIndex;
         }
         
