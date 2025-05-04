@@ -26,7 +26,7 @@ export function useTimerStateInitialization(settings: TimerSettings) {
   useEffect(() => {
     if (!isRunning) {
       // Calculate new time based on current mode and new settings
-      let newTimeRemaining = settings.workDuration * 60;
+      let newTimeRemaining;
       
       switch (timerMode) {
         case 'work':
@@ -38,6 +38,8 @@ export function useTimerStateInitialization(settings: TimerSettings) {
         case 'longBreak':
           newTimeRemaining = settings.longBreakDuration * 60;
           break;
+        default:
+          newTimeRemaining = settings.workDuration * 60;
       }
       
       console.log("Updating timer due to settings change:", {

@@ -63,7 +63,8 @@ const TimerContainer = () => {
       progress,
       currentSessionIndex,
       totalSessions: settings?.sessionsUntilLongBreak || 4,
-      settings
+      settings,
+      totalSeconds: getTotalSeconds()
     });
   }, [timerMode, isRunning, timeRemaining, progress, currentSessionIndex, settings]);
 
