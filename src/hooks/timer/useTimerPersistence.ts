@@ -70,7 +70,7 @@ export function useTimerPersistence(settings: TimerSettings) {
       timestamp: Date.now()
     };
     
-    // Always log the exact time being saved for debugging
+    // Log the exact time being saved for debugging
     console.log(`Saving timer state with exact time: ${state.timeRemaining} seconds`);
     
     localStorage.setItem('timerState', JSON.stringify(stateWithTimestamp));
