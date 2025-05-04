@@ -51,8 +51,10 @@ const SessionDots: React.FC<SessionDotsProps> = ({
       const totalBreaks = totalSessions - 1;
       
       return Array.from({ length: totalBreaks }).map((_, i) => {
-        // Is this the active position? 
-        // For break mode, the first break should have index 0, second break index 1, etc.
+        // The critical fix: For break mode, we need to directly use the current session index
+        // If we're on the first break after the first focus session, currentSessionIndex will be 0
+        // If we're on the second break after the second focus session, currentSessionIndex will be 1
+        // This correctly matches the visual display with the app's internal state
         const isActive = i === currentSessionIndex;
         
         // Size the active indicator slightly larger
