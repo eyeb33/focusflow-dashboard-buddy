@@ -54,6 +54,7 @@ export function useTimerCore(settings: TimerSettings) {
     sessionStartTimeRef,
     setSessionStartTime,
     resetTimerState: () => {
+      // Calculate new time based on the mode that's being set
       const newTime = getTotalTimeForMode();
       console.log(`resetTimerState for mode ${timerMode}: setting time to ${newTime}`);
       setTimeRemaining(newTime);
