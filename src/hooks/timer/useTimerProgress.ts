@@ -31,7 +31,12 @@ export function useTimerProgress(timerMode: TimerMode, timeRemaining: number, se
   // Calculate progress percentage (0-100)
   const progress = useMemo(() => {
     if (totalTime <= 0) return 0;
-    return ((totalTime - timeRemaining) / totalTime) * 100;
+    
+    // Calculate what percentage of the timer has elapsed
+    const progressPercentage = ((totalTime - timeRemaining) / totalTime) * 100;
+    
+    // Ensure the progress doesn't go below 0 or above 100
+    return Math.max(0, Math.min(100, progressPercentage));
   }, [timeRemaining, totalTime]);
 
   // Return total time calculation function for other hooks to use

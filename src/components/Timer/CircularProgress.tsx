@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/Theme/ThemeProvider";
 
 interface CircularProgressProps {
-  progress: number; // Value between 0 and 1
+  progress: number; // Value between 0 and 100
   mode: "work" | "break" | "longBreak";
   size?: number;
   className?: string;
@@ -27,8 +27,16 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
   const strokeWidth = 10;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference * (1 - progress);
+  
+  // Calculate the dash offset based on progress (0-100)
+  // When progress is 0%, the full circumference should be offset (showing nothing)
+  // When progress is 100%, the offset should be 0 (showing the complete circle)
+  const offset = circumference * (1 - progress / 100);
+  
   const { theme } = useTheme();
+
+  // For debugging
+  console.log(`CircularProgress - mode: ${mode}, progress: ${progress}%, offset: ${offset}`);
 
   return (
     <div
@@ -60,6 +68,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
           strokeDashoffset={offset}
           strokeLinecap="round"
           style={{ transition: "stroke-dashoffset 0.3s ease" }}
+          transform={`rotate(-90 ${size/2} ${size/2})`} // Start from the top
         />
       </svg>
       <div className="relative z-10 flex items-center justify-center">

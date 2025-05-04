@@ -24,6 +24,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
   const seconds = safeSecondsLeft % 60;
   
   // Calculate progress percentage (0-100)
+  // This should increase as time decreases (from 0% at start to 100% when done)
   const progress = safeTotalSeconds > 0 ? ((safeTotalSeconds - safeSecondsLeft) / safeTotalSeconds) * 100 : 0;
   
   // SVG parameters
@@ -31,6 +32,10 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
   const strokeWidth = 8;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
+  
+  // Calculate stroke dashoffset (less offset = more circle shown)
+  // At 0% progress we want full offset (empty circle)
+  // At 100% progress we want 0 offset (full circle)
   const dashOffset = circumference - (progress / 100) * circumference;
 
   // Determine color based on mode
@@ -58,6 +63,9 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
         return "Focus on your task";
     }
   };
+
+  // For debugging
+  console.log(`TimerCircle - mode: ${mode}, progress: ${progress}%, secondsLeft: ${safeSecondsLeft}, totalSeconds: ${safeTotalSeconds}`);
 
   return (
     <div className="relative flex items-center justify-center">
