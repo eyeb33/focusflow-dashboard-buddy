@@ -56,8 +56,16 @@ export function useTimerCore(settings: TimerSettings) {
     setSessionStartTime,
     resetTimerState: () => {
       // Calculate new time based on the mode that's being set
-      const newTimerMode = timerMode === 'work' ? 'break' : 
-                          (timerMode === 'break' ? 'work' : 'work');
+      // Fix: Properly handle all timer modes including longBreak
+      let newTimerMode: TimerMode;
+      
+      if (timerMode === 'work') {
+        newTimerMode = 'break';
+      } else if (timerMode === 'break' || timerMode === 'longBreak') {
+        newTimerMode = 'work';
+      } else {
+        newTimerMode = 'work'; // Default fallback
+      }
                           
       // We need to calculate the time for the NEXT mode, not the current one
       let newTime;
