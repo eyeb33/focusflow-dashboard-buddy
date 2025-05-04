@@ -1,5 +1,6 @@
 
 import { useRef } from 'react';
+import { TimerMode } from '@/utils/timerContextUtils';
 import { TimerSettings } from '../useTimerSettings';
 import { useTimerSessionTracking } from './useTimerSessionTracking';
 import { useTimerCompletionHandler } from './useTimerCompletionHandler';
@@ -56,8 +57,7 @@ export function useTimerCore(settings: TimerSettings) {
     resetTimerState: () => {
       // Calculate new time based on the mode that's being set
       const newTimerMode = timerMode === 'work' ? 'break' : 
-                          timerMode === 'break' ? 'work' : 
-                          timerMode === 'longBreak' ? 'work' : 'work';
+                          (timerMode === 'break' ? 'work' : 'work');
                           
       // We need to calculate the time for the NEXT mode, not the current one
       let newTime;
