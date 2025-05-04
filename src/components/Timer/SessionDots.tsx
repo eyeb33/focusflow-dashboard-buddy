@@ -16,12 +16,28 @@ const SessionDots: React.FC<SessionDotsProps> = ({
 }) => {
   const { theme } = useTheme();
   
-  // Generate array of session numbers
-  // For focus sessions, we should show totalSessions dots
-  // For break sessions, we should show totalSessions - 1 dots (since there's one less break than focus sessions)
-  const shouldReduceDots = mode === 'break';
-  const displayedSessions = shouldReduceDots ? totalSessions - 1 : totalSessions;
-  const sessions = Array.from({ length: displayedSessions }, (_, i) => i);
+  // Determine how many dots to display based on mode
+  let dotsConfig = {
+    count: totalSessions,  // Default for work sessions
+    activeDotIndex: currentSessionIndex
+  };
+  
+  if (mode === 'break') {
+    // For regular breaks: show totalSessions - 1 dots (one less than focus sessions)
+    dotsConfig = {
+      count: totalSessions - 1,
+      activeDotIndex: currentSessionIndex
+    };
+  } else if (mode === 'longBreak') {
+    // For long break: show only 1 dot (the long break itself)
+    dotsConfig = {
+      count: 1, 
+      activeDotIndex: 0  // Always highlight this single dot
+    };
+  }
+  
+  // Generate array of session dots
+  const dots = Array.from({ length: dotsConfig.count }, (_, i) => i);
 
   // Get color for dots based on the current mode
   const getDotColors = () => {
@@ -52,28 +68,27 @@ const SessionDots: React.FC<SessionDotsProps> = ({
 
   return (
     <div className="flex justify-center items-center mt-1 space-x-2">
-      {sessions.map((sessionIndex) => {
+      {dots.map((dotIndex) => {
         let isActive = false;
         let isComplete = false;
         
         if (mode === 'work') {
           // For work mode: current dot is active, previous dots are completed
-          isActive = currentSessionIndex === sessionIndex;
-          isComplete = sessionIndex < currentSessionIndex;
+          isActive = dotIndex === currentSessionIndex;
+          isComplete = dotIndex < currentSessionIndex;
         } else if (mode === 'break') {
-          // For regular breaks: highlight the dot at the SAME position as currentSessionIndex
-          // This ensures the break highlights the same dot as the work session it follows
-          isActive = currentSessionIndex === sessionIndex;
-          isComplete = sessionIndex < currentSessionIndex;
+          // For regular breaks: highlight the current break dot
+          isActive = dotIndex === currentSessionIndex;
+          isComplete = dotIndex < currentSessionIndex;
         } else if (mode === 'longBreak') {
-          // For long breaks: highlight the last dot in the cycle
-          isActive = sessionIndex === displayedSessions - 1;
-          isComplete = false; // No completed dots during long break
+          // For long break: the single dot is always active
+          isActive = true;
+          isComplete = false;
         }
         
         return (
           <div
-            key={sessionIndex}
+            key={dotIndex}
             className={cn(
               "rounded-full transition-all duration-300",
               isActive 
