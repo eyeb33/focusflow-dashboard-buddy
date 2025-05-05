@@ -1,10 +1,10 @@
 
 import { useEffect } from 'react';
 
-interface TimerVisibilityParams {
+interface UseTimerVisibilityProps {
   isRunning: boolean;
   timeRemaining: number;
-  setTimeRemaining: (time: number) => void;
+  setTimeRemaining: (time: number | ((prev: number) => number)) => void;
   lastTickTimeRef: React.MutableRefObject<number>;
   pausedTimeRef: React.MutableRefObject<number | null>;
   handleTimerComplete: () => void;
@@ -17,66 +17,50 @@ export function useTimerVisibility({
   lastTickTimeRef,
   pausedTimeRef,
   handleTimerComplete
-}: TimerVisibilityParams) {
-  // Handle visibility changes (tab switching)
+}: UseTimerVisibilityProps) {
+  // Handle visibility changes (tab switching, window focus)
   useEffect(() => {
+    // Only set up visibility handling if timer is running
+    if (!isRunning) return;
+    
+    // Function to handle visibility change
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        // When page becomes hidden
-        if (isRunning) {
-          // Store the current time
-          pausedTimeRef.current = timeRemaining;
-          console.log('Page hidden while timer running - storing time:', timeRemaining);
-        }
-      } else if (document.visibilityState === 'visible') {
-        // When page becomes visible again
-        if (isRunning) {
-          const now = Date.now();
-          const lastTick = lastTickTimeRef.current;
-          const elapsedSeconds = Math.floor((now - lastTick) / 1000);
+      if (document.hidden) {
+        // Tab became hidden, record the current time
+        console.log('Tab hidden, recording time:', Date.now());
+        lastTickTimeRef.current = Date.now();
+      } else {
+        // Tab became visible, calculate elapsed time
+        const now = Date.now();
+        const elapsedSeconds = Math.floor((now - lastTickTimeRef.current) / 1000);
+        console.log('Tab visible after', elapsedSeconds, 'seconds');
+        
+        // Update last tick time
+        lastTickTimeRef.current = now;
+        
+        // Only update if significant time has passed
+        if (elapsedSeconds > 1) {
+          // Calculate new remaining time
+          const newTimeRemaining = Math.max(0, timeRemaining - elapsedSeconds);
+          console.log('Adjusting timer from', timeRemaining, 'to', newTimeRemaining);
           
-          if (elapsedSeconds >= 1) {
-            console.log(`Page visible after ${elapsedSeconds}s - adjusting timer`);
-            
-            // Use stored pause time if available
-            const timeToUse = pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining;
-            pausedTimeRef.current = null;
-            
-            // Calculate new time
-            const newTime = Math.max(0, timeToUse - elapsedSeconds);
-            
-            // If timer completed while away
-            if (newTime <= 0) {
-              setTimeRemaining(0);
-              setTimeout(() => handleTimerComplete(), 0);
-            } else {
-              setTimeRemaining(newTime);
-            }
-            
-            // Update last tick time
-            lastTickTimeRef.current = now;
+          // Update timer
+          setTimeRemaining(newTimeRemaining);
+          
+          // Handle timer completion if needed
+          if (newTimeRemaining === 0) {
+            handleTimerComplete();
           }
         }
       }
     };
     
-    // Register visibility change handler
+    // Add event listener
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Cleanup
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [
-    isRunning, 
-    timeRemaining, 
-    handleTimerComplete, 
-    setTimeRemaining,
-    lastTickTimeRef,
-    pausedTimeRef
-  ]);
-  
-  // Return an empty object with timerVisibilityHandlers property
-  // This ensures compatibility with code that expects this structure
-  return {
-    timerVisibilityHandlers: {}
-  };
+  }, [isRunning, timeRemaining, setTimeRemaining, lastTickTimeRef, handleTimerComplete]);
 }

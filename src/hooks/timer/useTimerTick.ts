@@ -7,7 +7,7 @@ interface TimerTickParams {
   isRunning: boolean;
   timerMode: TimerMode;
   timeRemaining: number;
-  setTimeRemaining: (time: number) => void;
+  setTimeRemaining: (time: number | ((prev: number) => number)) => void;
   timerRef: React.MutableRefObject<ReturnType<typeof setInterval> | null>;
   lastTickTimeRef: React.MutableRefObject<number>;
   sessionStartTimeRef: React.MutableRefObject<string | null>;
@@ -76,7 +76,7 @@ export function useTimerTick({
         lastTickTimeRef.current = now;
         
         if (elapsed > 0) {
-          setTimeRemaining(prevTime => {
+          setTimeRemaining((prevTime: number) => {
             const newTimeRemaining = Math.max(0, prevTime - elapsed);
             
             // Save state periodically (every 5 seconds)
