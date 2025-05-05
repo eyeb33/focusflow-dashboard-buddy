@@ -1,64 +1,77 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 interface UseTimerVisibilityProps {
   isRunning: boolean;
+  setIsRunning: (isRunning: boolean) => void;
   timeRemaining: number;
-  setIsRunning: React.Dispatch<React.SetStateAction<boolean>>;
-  setTimeRemaining: React.Dispatch<React.SetStateAction<number>>;
+  setTimeRemaining: (timeRemaining: number) => void;
   handleTimerComplete: () => void;
   lastTickTimeRef: React.MutableRefObject<number>;
+  pausedTimeRef?: React.MutableRefObject<number | null>;
 }
 
 export function useTimerVisibility({
   isRunning,
-  timeRemaining,
   setIsRunning,
+  timeRemaining,
   setTimeRemaining,
   handleTimerComplete,
-  lastTickTimeRef
+  lastTickTimeRef,
+  pausedTimeRef
 }: UseTimerVisibilityProps) {
-  // Store the visibility state
-  const isVisibleRef = useRef<boolean>(true);
-  
+  // Handle visibility change
   useEffect(() => {
-    // Visibility change handler
+    // Function to handle page visibility changes
     const handleVisibilityChange = () => {
-      const isVisible = document.visibilityState === 'visible';
-      isVisibleRef.current = isVisible;
-      console.log("Document visibility changed:", isVisible ? "visible" : "hidden");
-      
-      if (isVisible && isRunning) {
-        // Calculate elapsed time while the page was hidden
-        const now = Date.now();
-        const elapsedMs = now - lastTickTimeRef.current;
-        const elapsedSeconds = Math.floor(elapsedMs / 1000);
-        
-        console.log(`Page became visible. ${elapsedSeconds}s elapsed since last tick.`);
-        
-        // Update the timer
-        if (elapsedSeconds >= 1) {
-          lastTickTimeRef.current = now;
+      if (document.visibilityState === 'hidden') {
+        // When page becomes hidden, store the time we left
+        if (isRunning) {
+          console.log('Page hidden while timer running - storing time:', timeRemaining);
+          if (pausedTimeRef) {
+            pausedTimeRef.current = timeRemaining;
+          }
+        }
+      } else if (document.visibilityState === 'visible') {
+        // When page becomes visible
+        if (isRunning) {
+          const now = Date.now();
+          const lastTick = lastTickTimeRef.current;
+          const elapsedSeconds = Math.floor((now - lastTick) / 1000);
           
-          // Calculate new time remaining
-          const newTimeRemaining = Math.max(0, timeRemaining - elapsedSeconds);
-          setTimeRemaining(newTimeRemaining);
-          
-          // If timer has completed while hidden, handle completion
-          if (newTimeRemaining === 0 && timeRemaining > 0) {
-            console.log("Timer completed while page was hidden");
-            handleTimerComplete();
+          if (elapsedSeconds >= 1) {
+            console.log(`Page visible after ${elapsedSeconds}s - adjusting timer`);
+            
+            // Use stored pause time if available or calculate new time
+            let newTime;
+            if (pausedTimeRef && pausedTimeRef.current !== null) {
+              newTime = pausedTimeRef.current;
+              pausedTimeRef.current = null;
+            } else {
+              // Calculate new time based on elapsed time
+              newTime = Math.max(0, timeRemaining - elapsedSeconds);
+            }
+            
+            // If timer completed while away
+            if (newTime <= 0) {
+              setTimeRemaining(0);
+              setIsRunning(false);
+              setTimeout(() => handleTimerComplete(), 0);
+            } else {
+              // Update the time remaining
+              setTimeRemaining(newTime);
+              // Update last tick time
+              lastTickTimeRef.current = now;
+            }
           }
         }
       }
     };
     
-    // Register handlers
+    // Add and remove event listener
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    // Cleanup
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isRunning, timeRemaining, setTimeRemaining, handleTimerComplete, lastTickTimeRef]);
+  }, [isRunning, timeRemaining, setTimeRemaining, handleTimerComplete, lastTickTimeRef, setIsRunning, pausedTimeRef]);
 }

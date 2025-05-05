@@ -13,6 +13,8 @@ interface UseTimerTickHandlerProps {
   currentSessionIndex: number;
   saveTimerState: (state: any) => void;
   getTotalTimeForMode: () => number;
+  pausedTimeRef: React.MutableRefObject<number | null>;
+  preventResetOnPauseRef: React.MutableRefObject<boolean>;
 }
 
 export function useTimerTickHandler({
@@ -25,15 +27,14 @@ export function useTimerTickHandler({
   setSessionStartTime,
   currentSessionIndex,
   saveTimerState,
-  getTotalTimeForMode
+  getTotalTimeForMode,
+  pausedTimeRef,
+  preventResetOnPauseRef
 }: UseTimerTickHandlerProps) {
   // Timer refs
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastTickTimeRef = useRef<number>(Date.now());
-  const storedTimeRemainingRef = useRef<number>(timeRemaining);
   const lastIsRunningRef = useRef<boolean>(isRunning);
-  const timeAtPauseRef = useRef<number>(timeRemaining);
-  const pauseInitiatedRef = useRef<boolean>(false);
   const resumeInitiatedRef = useRef<boolean>(false);
   
   // First effect: Track running state changes and store time precisely on pause
@@ -41,10 +42,8 @@ export function useTimerTickHandler({
     // On transition from running to paused
     if (!isRunning && lastIsRunningRef.current) {
       console.log("PAUSE transition detected in useTimerTickHandler: Storing EXACT pause time:", timeRemaining);
-      // Store the exact time when pausing
-      timeAtPauseRef.current = timeRemaining;
-      storedTimeRemainingRef.current = timeRemaining;
-      pauseInitiatedRef.current = true;
+      pausedTimeRef.current = timeRemaining;
+      preventResetOnPauseRef.current = true;
       
       // Save the timer state with the exact time
       saveTimerState({
@@ -58,29 +57,18 @@ export function useTimerTickHandler({
     
     // On transition from paused to running
     if (isRunning && !lastIsRunningRef.current) {
-      console.log("RESUME transition detected in useTimerTickHandler: Using stored time:", timeAtPauseRef.current);
+      console.log("RESUME transition detected in useTimerTickHandler");
       resumeInitiatedRef.current = true;
+      
+      if (pausedTimeRef.current !== null) {
+        console.log("Resuming with stored time:", pausedTimeRef.current);
+        setTimeRemaining(pausedTimeRef.current);
+      }
     }
     
     // Update the running state ref
     lastIsRunningRef.current = isRunning;
-  }, [isRunning, timerMode, currentSessionIndex, sessionStartTimeRef, saveTimerState, timeRemaining]);
-  
-  // Second effect: Apply stored time when resuming (always runs, but only takes action when needed)
-  useEffect(() => {
-    if (resumeInitiatedRef.current) {
-      console.log("Applying saved time on resume:", timeAtPauseRef.current);
-      
-      // Only update if there's a significant difference
-      if (Math.abs(timeRemaining - timeAtPauseRef.current) > 1) {
-        setTimeRemaining(timeAtPauseRef.current);
-      }
-      
-      // Reset the flags
-      resumeInitiatedRef.current = false;
-      pauseInitiatedRef.current = false;
-    }
-  }, [isRunning, setTimeRemaining, timeRemaining]);
+  }, [isRunning, timerMode, currentSessionIndex, sessionStartTimeRef, saveTimerState, timeRemaining, pausedTimeRef, preventResetOnPauseRef, setTimeRemaining]);
   
   // Handle timer tick - this effect manages the actual timer interval
   useEffect(() => {
@@ -138,10 +126,6 @@ export function useTimerTickHandler({
               });
             }
             
-            // Update refs with current values
-            storedTimeRemainingRef.current = newTime;
-            timeAtPauseRef.current = newTime;
-            
             // Reset lastTickTimeRef for next interval
             lastTickTimeRef.current = now;
             
@@ -171,9 +155,5 @@ export function useTimerTickHandler({
   
   return {
     lastTickTimeRef,
-    storedTimeRemainingRef,
-    timeAtPauseRef,
-    pauseInitiatedRef,
-    resumeInitiatedRef
   };
 }

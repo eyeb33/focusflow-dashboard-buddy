@@ -31,6 +31,7 @@ export function useTimerCore(settings: TimerSettings) {
   
   // Timer refs
   const isCompletingCycleRef = useRef(false);
+  const pausedTimeRef = useRef<number | null>(null);
   
   // Session tracking
   const { sessionStartTimeRef, setSessionStartTime } = useTimerSessionTracking();
@@ -102,6 +103,9 @@ export function useTimerCore(settings: TimerSettings) {
     handlePause,
     handleReset,
     handleModeChange,
+    preventResetOnPauseRef,
+    exactPauseTimeRef,
+    pauseInProgressRef
   } = useTimerControls({
     timerMode,
     settings,
@@ -113,9 +117,10 @@ export function useTimerCore(settings: TimerSettings) {
     sessionStartTimeRef,
     setSessionStartTime,
     setCurrentSessionIndex,
-    currentSessionIndex, // Added this to fix the reference error
+    currentSessionIndex,
     getTotalTimeForMode,
-    saveTimerState
+    saveTimerState,
+    pausedTimeRef
   });
 
   // Handle timer tick
@@ -129,7 +134,9 @@ export function useTimerCore(settings: TimerSettings) {
     setSessionStartTime,
     currentSessionIndex,
     saveTimerState,
-    getTotalTimeForMode
+    getTotalTimeForMode,
+    pausedTimeRef,
+    preventResetOnPauseRef
   });
 
   // Handle visibility change
@@ -139,7 +146,8 @@ export function useTimerCore(settings: TimerSettings) {
     timeRemaining,
     setTimeRemaining,
     handleTimerComplete,
-    lastTickTimeRef
+    lastTickTimeRef,
+    pausedTimeRef
   });
   
   return {
@@ -164,5 +172,6 @@ export function useTimerCore(settings: TimerSettings) {
     
     // For advanced usage
     sessionStartTimeRef,
+    pausedTimeRef
   };
 }

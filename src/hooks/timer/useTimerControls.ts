@@ -14,9 +14,10 @@ interface UseTimerControlsProps {
   sessionStartTimeRef: React.MutableRefObject<string | null>;
   setSessionStartTime: (time: string | null) => void;
   setCurrentSessionIndex: React.Dispatch<React.SetStateAction<number>>;
-  currentSessionIndex: number; // Added this prop to fix the reference error
+  currentSessionIndex: number;
   getTotalTimeForMode: () => number;
   saveTimerState: (state: any) => void;
+  pausedTimeRef: React.MutableRefObject<number | null>;
 }
 
 export function useTimerControls({
@@ -30,20 +31,15 @@ export function useTimerControls({
   sessionStartTimeRef,
   setSessionStartTime,
   setCurrentSessionIndex,
-  currentSessionIndex, // Added to the destructuring
+  currentSessionIndex,
   getTotalTimeForMode,
   saveTimerState,
+  pausedTimeRef
 }: UseTimerControlsProps) {
   // Use refs to preserve values between renders
-  const lastTimeRemainingRef = useRef<number>(timeRemaining);
   const preventResetOnPauseRef = useRef<boolean>(false);
   const exactPauseTimeRef = useRef<number | null>(null);
   const pauseInProgressRef = useRef<boolean>(false);
-  
-  // Update the ref when time changes
-  if (lastTimeRemainingRef.current !== timeRemaining) {
-    lastTimeRemainingRef.current = timeRemaining;
-  }
   
   // Start the timer
   const handleStart = useCallback(() => {
@@ -56,9 +52,10 @@ export function useTimerControls({
     }
     
     // If we have a stored pause time, use that instead of current time
-    if (exactPauseTimeRef.current !== null) {
-      console.log("Resuming from stored pause time:", exactPauseTimeRef.current);
-      setTimeRemaining(exactPauseTimeRef.current);
+    if (pausedTimeRef.current !== null) {
+      console.log("Resuming from stored pause time:", pausedTimeRef.current);
+      setTimeRemaining(pausedTimeRef.current);
+      exactPauseTimeRef.current = pausedTimeRef.current;
     }
 
     // Set session start time if not already set
@@ -77,14 +74,14 @@ export function useTimerControls({
     saveTimerState({
       timerMode,
       isRunning: true,
-      timeRemaining: exactPauseTimeRef.current || timeRemaining,
+      timeRemaining: pausedTimeRef.current || timeRemaining,
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current,
     });
     
     // Clear the pause time after using it
-    exactPauseTimeRef.current = null;
-  }, [timerMode, timeRemaining, setIsRunning, setTimeRemaining, sessionStartTimeRef, setSessionStartTime, saveTimerState, getTotalTimeForMode, currentSessionIndex]);
+    pausedTimeRef.current = null;
+  }, [timerMode, timeRemaining, setIsRunning, setTimeRemaining, sessionStartTimeRef, setSessionStartTime, saveTimerState, getTotalTimeForMode, currentSessionIndex, pausedTimeRef]);
   
   // Pause the timer
   const handlePause = useCallback(() => {
@@ -101,6 +98,7 @@ export function useTimerControls({
     
     // Store the exact time before pausing
     exactPauseTimeRef.current = timeRemaining;
+    pausedTimeRef.current = timeRemaining;
     console.log("Stored exact pause time:", exactPauseTimeRef.current);
     
     // Set preventResetOnPauseRef to true to prevent reset
@@ -119,7 +117,7 @@ export function useTimerControls({
     });
     
     console.log("Timer paused at:", timeRemaining, "seconds");
-  }, [timerMode, setIsRunning, sessionStartTimeRef, saveTimerState, timeRemaining, currentSessionIndex]);
+  }, [timerMode, setIsRunning, sessionStartTimeRef, saveTimerState, timeRemaining, currentSessionIndex, pausedTimeRef]);
   
   // Reset the timer
   const handleReset = useCallback(() => {
@@ -134,8 +132,8 @@ export function useTimerControls({
     console.log("Resetting timer to:", newTime, "seconds");
     
     setTimeRemaining(newTime);
-    lastTimeRemainingRef.current = newTime;
     exactPauseTimeRef.current = null;
+    pausedTimeRef.current = null;
     
     // Clear session start time
     setSessionStartTime(null);
@@ -148,7 +146,7 @@ export function useTimerControls({
       currentSessionIndex,
       sessionStartTime: null,
     });
-  }, [timerMode, getTotalTimeForMode, setIsRunning, setTimeRemaining, setSessionStartTime, saveTimerState, currentSessionIndex]);
+  }, [timerMode, getTotalTimeForMode, setIsRunning, setTimeRemaining, setSessionStartTime, saveTimerState, currentSessionIndex, pausedTimeRef]);
   
   // Change timer mode
   const handleModeChange = useCallback((mode: TimerMode) => {
@@ -178,8 +176,8 @@ export function useTimerControls({
     
     console.log("Mode changed to", mode, "with time:", totalTime);
     setTimeRemaining(totalTime);
-    lastTimeRemainingRef.current = totalTime;
     exactPauseTimeRef.current = null;
+    pausedTimeRef.current = null;
     
     // Clear session start time
     setSessionStartTime(null);
@@ -192,7 +190,7 @@ export function useTimerControls({
       currentSessionIndex: mode === 'work' ? 0 : currentSessionIndex,
       sessionStartTime: null,
     });
-  }, [timerMode, settings, setIsRunning, setTimerMode, setTimeRemaining, setSessionStartTime, setCurrentSessionIndex, saveTimerState, currentSessionIndex]);
+  }, [timerMode, settings, setIsRunning, setTimerMode, setTimeRemaining, setSessionStartTime, setCurrentSessionIndex, saveTimerState, currentSessionIndex, pausedTimeRef]);
   
   return {
     handleStart,

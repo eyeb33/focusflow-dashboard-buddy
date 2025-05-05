@@ -39,11 +39,13 @@ const TimerControls: React.FC<TimerControlsProps> = ({
 
   // Use memoized handlers to prevent unnecessary re-renders
   const handlePlayPauseClick = useCallback((e: React.MouseEvent) => {
-    // Prevent any default behavior
+    // Prevent any default behavior and event bubbling
     e.preventDefault();
     e.stopPropagation();
     
-    console.log("Play/Pause button clicked, isRunning:", isRunning);
+    // Log current state for debugging
+    console.log(`Play/Pause button clicked, isRunning: ${isRunning}, mode: ${mode}`);
+    
     if (isRunning) {
       console.log("Calling onPause from TimerControls");
       onPause();
@@ -51,10 +53,13 @@ const TimerControls: React.FC<TimerControlsProps> = ({
       console.log("Calling onStart from TimerControls");
       onStart();
     }
-  }, [isRunning, onPause, onStart]);
+    
+    // Extra logging after button click
+    console.log(`Button action completed: ${isRunning ? 'Pause' : 'Start'}`);
+  }, [isRunning, onPause, onStart, mode]);
 
   const handleResetClick = useCallback((e: React.MouseEvent) => {
-    // Prevent any default behavior
+    // Prevent any default behavior and event bubbling
     e.preventDefault();
     e.stopPropagation();
     
