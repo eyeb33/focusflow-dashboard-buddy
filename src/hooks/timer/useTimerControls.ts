@@ -40,6 +40,7 @@ export function useTimerControls({
   const preventResetOnPauseRef = useRef<boolean>(false);
   const exactPauseTimeRef = useRef<number | null>(null);
   const pauseInProgressRef = useRef<boolean>(false);
+  const resumeWithStoredTimeRef = useRef<boolean>(false);
   
   // Start the timer
   const handleStart = useCallback(() => {
@@ -51,9 +52,10 @@ export function useTimerControls({
       setTimeRemaining(newTime);
     }
     
-    // If we have a stored pause time, use that instead of current time
+    // Critical: Use stored pause time if available
     if (pausedTimeRef.current !== null) {
       console.log("Resuming from stored pause time:", pausedTimeRef.current);
+      resumeWithStoredTimeRef.current = true;
       setTimeRemaining(pausedTimeRef.current);
       exactPauseTimeRef.current = pausedTimeRef.current;
     }
@@ -74,13 +76,17 @@ export function useTimerControls({
     saveTimerState({
       timerMode,
       isRunning: true,
-      timeRemaining: pausedTimeRef.current || timeRemaining,
+      timeRemaining: pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining,
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current,
     });
     
-    // Clear the pause time after using it
-    pausedTimeRef.current = null;
+    // Clear the pause time reference only after we've used it
+    setTimeout(() => {
+      pausedTimeRef.current = null;
+      resumeWithStoredTimeRef.current = false;
+    }, 100);
+    
   }, [timerMode, timeRemaining, setIsRunning, setTimeRemaining, sessionStartTimeRef, setSessionStartTime, saveTimerState, getTotalTimeForMode, currentSessionIndex, pausedTimeRef]);
   
   // Pause the timer
@@ -117,6 +123,12 @@ export function useTimerControls({
     });
     
     console.log("Timer paused at:", timeRemaining, "seconds");
+    
+    // Reset pause in progress state after a small delay
+    setTimeout(() => {
+      pauseInProgressRef.current = false;
+    }, 100);
+    
   }, [timerMode, setIsRunning, sessionStartTimeRef, saveTimerState, timeRemaining, currentSessionIndex, pausedTimeRef]);
   
   // Reset the timer

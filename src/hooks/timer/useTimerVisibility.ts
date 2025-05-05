@@ -8,7 +8,7 @@ interface UseTimerVisibilityProps {
   setTimeRemaining: (timeRemaining: number) => void;
   handleTimerComplete: () => void;
   lastTickTimeRef: React.MutableRefObject<number>;
-  pausedTimeRef?: React.MutableRefObject<number | null>;
+  pausedTimeRef: React.MutableRefObject<number | null>;
 }
 
 export function useTimerVisibility({
@@ -28,9 +28,8 @@ export function useTimerVisibility({
         // When page becomes hidden, store the time we left
         if (isRunning) {
           console.log('Page hidden while timer running - storing time:', timeRemaining);
-          if (pausedTimeRef) {
-            pausedTimeRef.current = timeRemaining;
-          }
+          // Store the current time in the pausedTimeRef for when we return
+          pausedTimeRef.current = timeRemaining;
         }
       } else if (document.visibilityState === 'visible') {
         // When page becomes visible
@@ -42,27 +41,39 @@ export function useTimerVisibility({
           if (elapsedSeconds >= 1) {
             console.log(`Page visible after ${elapsedSeconds}s - adjusting timer`);
             
-            // Use stored pause time if available or calculate new time
-            let newTime;
-            if (pausedTimeRef && pausedTimeRef.current !== null) {
-              newTime = pausedTimeRef.current;
+            // Use stored pause time if available
+            if (pausedTimeRef.current !== null) {
+              console.log("Restoring from stored time:", pausedTimeRef.current);
+              // Calculate new time accounting for elapsed time
+              const newTime = Math.max(0, pausedTimeRef.current - elapsedSeconds);
               pausedTimeRef.current = null;
+              
+              // If timer completed while away
+              if (newTime <= 0) {
+                setTimeRemaining(0);
+                setIsRunning(false);
+                setTimeout(() => handleTimerComplete(), 0);
+              } else {
+                // Update the time remaining
+                setTimeRemaining(newTime);
+              }
             } else {
               // Calculate new time based on elapsed time
-              newTime = Math.max(0, timeRemaining - elapsedSeconds);
+              const newTime = Math.max(0, timeRemaining - elapsedSeconds);
+              
+              // If timer completed while away
+              if (newTime <= 0) {
+                setTimeRemaining(0);
+                setIsRunning(false);
+                setTimeout(() => handleTimerComplete(), 0);
+              } else {
+                // Update the time remaining
+                setTimeRemaining(newTime);
+              }
             }
             
-            // If timer completed while away
-            if (newTime <= 0) {
-              setTimeRemaining(0);
-              setIsRunning(false);
-              setTimeout(() => handleTimerComplete(), 0);
-            } else {
-              // Update the time remaining
-              setTimeRemaining(newTime);
-              // Update last tick time
-              lastTickTimeRef.current = now;
-            }
+            // Update last tick time
+            lastTickTimeRef.current = now;
           }
         }
       }

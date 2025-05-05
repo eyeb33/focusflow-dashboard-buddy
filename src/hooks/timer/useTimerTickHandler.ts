@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 
@@ -35,13 +34,17 @@ export function useTimerTickHandler({
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastTickTimeRef = useRef<number>(Date.now());
   const lastIsRunningRef = useRef<boolean>(isRunning);
-  const resumeInitiatedRef = useRef<boolean>(false);
+  const currentTimeRef = useRef<number>(timeRemaining);
+  
+  // Always keep the current time updated
+  currentTimeRef.current = timeRemaining;
   
   // First effect: Track running state changes and store time precisely on pause
   useEffect(() => {
     // On transition from running to paused
     if (!isRunning && lastIsRunningRef.current) {
       console.log("PAUSE transition detected in useTimerTickHandler: Storing EXACT pause time:", timeRemaining);
+      // Store the exact time when pausing
       pausedTimeRef.current = timeRemaining;
       preventResetOnPauseRef.current = true;
       
@@ -58,8 +61,8 @@ export function useTimerTickHandler({
     // On transition from paused to running
     if (isRunning && !lastIsRunningRef.current) {
       console.log("RESUME transition detected in useTimerTickHandler");
-      resumeInitiatedRef.current = true;
       
+      // If we have a stored pause time, use it to resume
       if (pausedTimeRef.current !== null) {
         console.log("Resuming with stored time:", pausedTimeRef.current);
         setTimeRemaining(pausedTimeRef.current);
@@ -114,8 +117,9 @@ export function useTimerTickHandler({
             
             // Calculate new time remaining
             const newTime = prevTime - elapsedSeconds;
+            currentTimeRef.current = newTime;
             
-            // Save timer state periodically
+            // Save timer state periodically (every 5 seconds)
             if (prevTime % 5 === 0 || newTime % 5 === 0) {
               saveTimerState({
                 timerMode,
