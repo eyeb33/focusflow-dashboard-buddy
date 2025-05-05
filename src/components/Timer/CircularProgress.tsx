@@ -36,9 +36,6 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
   
   const { theme } = useTheme();
 
-  // For debugging - more detailed to catch edge cases
-  console.log(`CircularProgress - mode: ${mode}, progress: ${safeProgress.toFixed(2)}%, offset: ${offset.toFixed(2)}, circumference: ${circumference.toFixed(2)}`);
-
   return (
     <div
       className={cn("relative flex items-center justify-center", className)}
@@ -72,7 +69,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
           transform={`rotate(-90 ${size/2} ${size/2})`} // Start from the top
         />
       </svg>
-      <div className="relative z-10 flex items-center justify-center">
+      <div className="relative z-10 flex items-center justify-center font-mono">
         {children}
       </div>
     </div>

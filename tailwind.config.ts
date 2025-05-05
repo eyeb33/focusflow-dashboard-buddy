@@ -20,7 +20,7 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				mono: ['Consolas', 'Monaco', 'Courier New', 'monospace'],
+				mono: ['Roboto Mono', 'Space Mono', 'Consolas', 'Monaco', 'Courier New', 'monospace'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
