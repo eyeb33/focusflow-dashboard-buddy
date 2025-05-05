@@ -32,7 +32,7 @@ export function useTimerTick({
 }: TimerTickParams) {
   
   // Handle timer visibility changes (tab switching, etc)
-  const { timerVisibilityHandlers } = useTimerVisibility({
+  useTimerVisibility({
     isRunning,
     timeRemaining,
     setTimeRemaining,
@@ -136,7 +136,6 @@ export function useTimerTick({
     currentSessionIndex
   ]);
   
-  return {
-    ...timerVisibilityHandlers
-  };
+  // Return an empty object instead of trying to destructure from useTimerVisibility
+  return {};
 }

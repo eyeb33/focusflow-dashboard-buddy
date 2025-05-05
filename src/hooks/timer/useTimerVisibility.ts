@@ -1,6 +1,5 @@
 
 import { useEffect } from 'react';
-import { TimerMode } from '@/utils/timerContextUtils';
 
 interface TimerVisibilityParams {
   isRunning: boolean;
@@ -74,4 +73,12 @@ export function useTimerVisibility({
     lastTickTimeRef,
     pausedTimeRef
   ]);
+  
+  // Return an object with the handlers so useTimerTick can access them
+  return {
+    timerVisibilityHandlers: {
+      // We're not actually exposing any handlers directly, but providing
+      // this structure to match what useTimerTick expects
+    }
+  };
 }
