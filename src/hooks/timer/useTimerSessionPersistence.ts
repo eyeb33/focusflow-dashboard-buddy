@@ -16,6 +16,14 @@ export function useTimerSessionPersistence({ user }: UseTimerSessionPersistenceP
     if (!user || !sessionStartTime) return;
     
     try {
+      console.log('Saving session to Supabase:', {
+        userId: user.id,
+        timerMode,
+        totalTime,
+        completed: true,
+        sessionStartTime
+      });
+      
       await saveFocusSession(
         user.id, 
         timerMode, 

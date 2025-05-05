@@ -38,16 +38,18 @@ export function useTimerCompletionHandling({
       }
       
       isTransitioning.current = true;
-      console.log(`Timer completion started for mode: ${timerMode}`);
+      console.log(`Timer completion started for mode: ${timerMode}, userId: ${userId ? 'logged-in' : 'not logged-in'}`);
       
       // Play completion sound with the current mode
       await playTimerCompletionSound(timerMode);
       
       // Get total time for this timer mode in seconds
       const totalTime = getTotalTime(timerMode, settings);
+      console.log(`Total time for completed ${timerMode} session: ${totalTime} seconds`);
       
       // Handle completion based on the current timer mode
       if (timerMode === 'work') {
+        console.log(`Completing work session with userId: ${userId ? userId : 'none'}, startTime: ${sessionStartTime}`);
         await handleWorkCompletion(userId, sessionStartTime);
       } 
       else if (timerMode === 'break') {
