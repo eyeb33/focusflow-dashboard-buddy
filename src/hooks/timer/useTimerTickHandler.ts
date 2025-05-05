@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 
@@ -32,13 +31,17 @@ export function useTimerTickHandler({
   const lastTickTimeRef = useRef<number>(Date.now());
   const storedTimeRemainingRef = useRef<number>(timeRemaining);
   const lastIsRunningRef = useRef<boolean>(isRunning);
+  const timeAtPauseRef = useRef<number>(timeRemaining);
   
   // Keep the stored time remaining in sync with the current time remaining
   useEffect(() => {
     storedTimeRemainingRef.current = timeRemaining;
     
+    // When transitioning from running to paused
     if (!isRunning && lastIsRunningRef.current !== isRunning) {
       console.log("PAUSE detected: Storing exact pause time:", timeRemaining);
+      // Store the exact time when pausing
+      timeAtPauseRef.current = timeRemaining;
       // Save the current time on pause to ensure we resume from exact time
       saveTimerState({
         timerMode,
@@ -110,6 +113,7 @@ export function useTimerTickHandler({
             
             // Always update stored reference
             storedTimeRemainingRef.current = newTime;
+            timeAtPauseRef.current = newTime;
             
             // Reset lastTickTimeRef for next interval
             lastTickTimeRef.current = now;
@@ -137,8 +141,23 @@ export function useTimerTickHandler({
     setTimeRemaining
   ]); // Removed timeRemaining from dependency array to prevent reset loops
   
+  // Add another effect to handle transitions between running states
+  useEffect(() => {
+    // When transitioning from paused to running, ensure we use the stored time
+    if (isRunning && !lastIsRunningRef.current) {
+      console.log("RESUME detected: Using stored pause time:", timeAtPauseRef.current);
+      
+      // When resuming, make sure we use the exact time that was stored when pausing
+      if (timeAtPauseRef.current !== timeRemaining) {
+        console.log("Adjusting time remaining from", timeRemaining, "to stored value:", timeAtPauseRef.current);
+        setTimeRemaining(timeAtPauseRef.current);
+      }
+    }
+  }, [isRunning, setTimeRemaining, timeRemaining]);
+  
   return {
     lastTickTimeRef,
-    storedTimeRemainingRef
+    storedTimeRemainingRef,
+    timeAtPauseRef
   };
 }
