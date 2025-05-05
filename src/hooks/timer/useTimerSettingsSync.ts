@@ -25,7 +25,11 @@ export function useTimerSettingsSync({
 }: UseTimerSettingsSyncProps) {
   // Update timer when settings change (when not running)
   useEffect(() => {
-    if (isInitialLoadRef.current) return;
+    if (isInitialLoadRef.current) {
+      console.log("Initial load detected, skipping settings sync");
+      isInitialLoadRef.current = false;
+      return;
+    }
     
     if (!isRunning) {
       const newTime = getTotalTimeForMode();
