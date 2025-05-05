@@ -6,7 +6,7 @@ import { useTimerCompletion } from './useTimerCompletion';
 import { useTimerStatsLogic } from './useTimerStatsLogic';
 import { useTimerProgress } from './timer/useTimerProgress';
 import { useTimerInitialization } from './timer/useTimerInitialization';
-import { useSessionTracking } from './timer/useSessionTracking';
+import { useSessionTracking } from './useSessionTracking';
 import { getTotalTime } from '@/utils/timerContextUtils';
 import { useEffect, useRef } from 'react';
 import { useTimerTickLogic } from './useTimerTickLogic';
