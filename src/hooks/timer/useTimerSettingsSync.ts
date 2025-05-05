@@ -34,6 +34,12 @@ export function useTimerSettingsSync({
     
     // Only update if the timer is not running
     if (!isRunning) {
+      // If we have a paused state, don't reset the timer
+      if (pausedTimeRef.current !== null) {
+        console.log(`Settings changed but timer is paused at ${pausedTimeRef.current}, preserving paused state`);
+        return;
+      }
+      
       const newTime = getTotalTimeForMode();
       console.log(`Settings changed: Updating timer to ${newTime} seconds`);
       

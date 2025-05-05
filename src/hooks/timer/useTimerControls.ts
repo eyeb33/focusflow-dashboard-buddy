@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 
@@ -42,6 +41,13 @@ export function useTimerControls({
   const handleStart = useCallback(() => {
     console.log('START called with mode:', timerMode, 'and time:', timeRemaining, 'pausedTime:', pausedTimeRef.current);
     
+    // If we have a pausedTime value, we should resume from that time
+    if (pausedTimeRef.current !== null) {
+      console.log('Resuming from paused time:', pausedTimeRef.current);
+      setTimeRemaining(pausedTimeRef.current);
+      // Don't clear pausedTimeRef here - we'll keep it for reference
+    }
+    
     // Set timer running state first
     setIsRunning(true);
     
@@ -53,7 +59,7 @@ export function useTimerControls({
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current || new Date().toISOString()
     });
-  }, [timerMode, timeRemaining, currentSessionIndex, saveTimerState, setIsRunning, pausedTimeRef, sessionStartTimeRef]);
+  }, [timerMode, timeRemaining, currentSessionIndex, saveTimerState, setIsRunning, pausedTimeRef, sessionStartTimeRef, setTimeRemaining]);
   
   const handlePause = useCallback(() => {
     console.log('PAUSE called with time:', timeRemaining);
