@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerVisibility } from './useTimerVisibility';
@@ -60,7 +61,9 @@ export function useTimerTick({
       // If we have a paused time, use it to resume from exactly where we left off
       if (pausedTimeRef.current !== null) {
         console.log('Tick effect: Using paused time value for resume:', pausedTimeRef.current);
-        // We don't clear pausedTimeRef here - we'll keep it as a reference point
+        setTimeRemaining(pausedTimeRef.current);
+        // Now clear the pausedTimeRef since we've restored the state
+        pausedTimeRef.current = null;
       }
       
       // Update last tick time

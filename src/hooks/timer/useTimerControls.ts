@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 
@@ -45,7 +46,7 @@ export function useTimerControls({
     if (pausedTimeRef.current !== null) {
       console.log('Resuming from paused time:', pausedTimeRef.current);
       setTimeRemaining(pausedTimeRef.current);
-      // Don't clear pausedTimeRef here - we'll keep it for reference
+      // Don't clear pausedTimeRef here - it will be cleared in the tick effect
     }
     
     // Set timer running state first
