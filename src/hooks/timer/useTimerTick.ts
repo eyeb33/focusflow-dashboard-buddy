@@ -32,6 +32,7 @@ export function useTimerTick({
 }: TimerTickParams) {
   
   // Handle timer visibility changes (tab switching, etc)
+  // No need to destructure timerVisibilityHandlers anymore
   useTimerVisibility({
     isRunning,
     timeRemaining,
@@ -136,6 +137,6 @@ export function useTimerTick({
     currentSessionIndex
   ]);
   
-  // Return an empty object instead of trying to destructure from useTimerVisibility
+  // Return an empty object
   return {};
 }

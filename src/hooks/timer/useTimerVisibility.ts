@@ -74,11 +74,9 @@ export function useTimerVisibility({
     pausedTimeRef
   ]);
   
-  // Return an object with the handlers so useTimerTick can access them
+  // Return an empty object with timerVisibilityHandlers property
+  // This ensures compatibility with code that expects this structure
   return {
-    timerVisibilityHandlers: {
-      // We're not actually exposing any handlers directly, but providing
-      // this structure to match what useTimerTick expects
-    }
+    timerVisibilityHandlers: {}
   };
 }
