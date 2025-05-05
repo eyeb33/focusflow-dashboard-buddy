@@ -1,16 +1,8 @@
 
-// This file re-exports the useTimer hook from TimerContext
-// and adds additional specialized hooks for backward compatibility
-
 import { useTimerContext } from '@/contexts/TimerContext';
-import { TimerMode } from '@/utils/timerContextUtils';
-import { useCallback } from 'react';
 
-// Re-export the main hook
-export const useTimer = () => {
-  const timerContext = useTimerContext();
-  return timerContext;
-};
+// Re-export the main hook for component use
+export const useTimer = useTimerContext;
 
 // Export specialized hooks for backward compatibility
 export const useTimerControls = () => {
@@ -30,35 +22,26 @@ export const useTimerControls = () => {
     currentSessionIndex
   } = timer;
   
-  // Log the timer state to help with debugging
-  console.log("useTimerControls state:", {
-    isRunning,
-    timerMode,
-    timeRemaining,
-    progress,
-    currentSessionIndex
-  });
-  
   // Create wrappers with enhanced logging to maintain compatibility
-  const start = useCallback(() => {
+  const start = () => {
     console.log("START called from useTimerControls - Current time:", timeRemaining);
     handleStart();
-  }, [handleStart, timeRemaining]);
+  };
   
-  const pause = useCallback(() => {
+  const pause = () => {
     console.log("PAUSE called from useTimerControls - Current time:", timeRemaining);
     handlePause();
-  }, [handlePause, timeRemaining]);
+  };
   
-  const reset = useCallback(() => {
+  const reset = () => {
     console.log("RESET called from useTimerControls - Current time:", timeRemaining);
     handleReset();
-  }, [handleReset, timeRemaining]);
+  };
   
-  const changeMode = useCallback((mode: TimerMode) => {
+  const changeMode = (mode: any) => {
     console.log("CHANGE MODE called from useTimerControls - New mode:", mode);
     handleModeChange(mode);
-  }, [handleModeChange]);
+  };
   
   return {
     isRunning,

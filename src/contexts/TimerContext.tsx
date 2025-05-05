@@ -1,8 +1,8 @@
 
-import React, { createContext, useContext, useRef, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerSettings } from '@/hooks/useTimerSettings';
-import { useTimerCore } from '@/hooks/timer/useTimerCore';
+import { useTimer as useTimerHook } from '@/hooks/useTimer.ts';
 
 interface TimerContextType {
   timerMode: TimerMode;
@@ -27,19 +27,7 @@ const TimerContext = createContext<TimerContextType | undefined>(undefined);
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { settings, updateSettings } = useTimerSettings();
   
-  // Create a ref to track if settings have been loaded
-  const settingsLoadedRef = useRef(false);
-  if (settings.workDuration > 0 && !settingsLoadedRef.current) {
-    settingsLoadedRef.current = true;
-    console.log('Settings loaded:', settings);
-  }
-  
-  // For debugging, clear any stale timer state on mount
-  useEffect(() => {
-    console.log("TimerProvider mounted - Ensuring fresh timer state");
-    localStorage.removeItem('timerState');
-  }, []);
-  
+  // Use our new consolidated hook
   const {
     timerMode,
     isRunning,
@@ -54,14 +42,9 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     handleModeChange,
     getModeLabel,
     formatTime
-  } = useTimerCore(settings);
+  } = useTimerHook(settings);
 
-  // This ensures that when settings change, we log it clearly
-  useEffect(() => {
-    console.log('Timer settings updated in context:', settings);
-  }, [settings]);
-
-  // Create the combined handler for updating settings
+  // Handle settings updates
   const handleUpdateSettings = (newSettings: Partial<typeof settings>) => {
     console.log('Updating timer settings:', newSettings);
     updateSettings(newSettings);

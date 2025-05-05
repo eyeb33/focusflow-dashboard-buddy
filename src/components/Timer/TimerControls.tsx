@@ -37,30 +37,30 @@ const TimerControls: React.FC<TimerControlsProps> = ({
   
   const buttonColor = getButtonColor(mode);
 
-  // Use memoized handlers to prevent unnecessary re-renders and ensure stable references
+  // Handle play/pause click with proper debug logging
   const handlePlayPauseClick = useCallback((e: React.MouseEvent) => {
     // Prevent any default behavior and event bubbling
     e.preventDefault();
     e.stopPropagation();
     
-    // Log current state for debugging
     console.log(`Play/Pause button clicked, isRunning: ${isRunning}, mode: ${mode}`);
     
     if (isRunning) {
-      console.log("Calling onPause from TimerControls - preserving current time");
+      console.log("Calling onPause - preserving current time");
       onPause();
     } else {
-      console.log("Calling onStart from TimerControls - should resume from saved time");
+      console.log("Calling onStart - should resume from saved time");
       onStart();
     }
   }, [isRunning, onPause, onStart, mode]);
 
+  // Handle reset click
   const handleResetClick = useCallback((e: React.MouseEvent) => {
     // Prevent any default behavior and event bubbling
     e.preventDefault();
     e.stopPropagation();
     
-    console.log("Reset button clicked from TimerControls");
+    console.log("Reset button clicked");
     onReset();
   }, [onReset]);
 
