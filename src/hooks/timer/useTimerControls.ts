@@ -1,4 +1,3 @@
-
 import { useCallback, useRef } from "react";
 import { TimerMode } from "@/utils/timerContextUtils";
 import { TimerSettings } from "../useTimerSettings";
@@ -35,6 +34,7 @@ export function useTimerControls({
   // Use a ref to store the last timer state to prevent issues with stale values
   const lastTimeRemainingRef = useRef<number>(timeRemaining);
   const preventResetOnPauseRef = useRef<boolean>(false);
+  const exactPauseTimeRef = useRef<number | null>(null);
   
   // Update the ref when time changes
   if (lastTimeRemainingRef.current !== timeRemaining) {
@@ -49,6 +49,14 @@ export function useTimerControls({
     if (timeRemaining <= 0) {
       const newTime = getTotalTimeForMode();
       setTimeRemaining(newTime);
+    }
+    
+    // If we have a stored pause time, use that instead of current time
+    if (exactPauseTimeRef.current !== null) {
+      console.log("Resuming from stored pause time:", exactPauseTimeRef.current);
+      setTimeRemaining(exactPauseTimeRef.current);
+      // Clear the stored pause time after using it
+      exactPauseTimeRef.current = null;
     }
 
     // Set session start time if not already set
@@ -74,7 +82,10 @@ export function useTimerControls({
   
   // Pause the timer
   const handlePause = useCallback(() => {
-    console.log("Pausing timer with mode:", timerMode, "and time:", timeRemaining, "ref time:", lastTimeRemainingRef.current);
+    console.log("Pausing timer with mode:", timerMode, "and time:", timeRemaining);
+    
+    // Store the exact time before pausing to ensure we can resume from exactly here
+    exactPauseTimeRef.current = timeRemaining;
     
     // Critical: Set preventResetOnPauseRef to true to prevent reset
     preventResetOnPauseRef.current = true;
@@ -86,7 +97,7 @@ export function useTimerControls({
     saveTimerState({
       timerMode,
       isRunning: false,
-      timeRemaining: lastTimeRemainingRef.current, // Use ref value for consistency
+      timeRemaining: timeRemaining, // Use current time for maximum accuracy
       currentSessionIndex: 0,
       sessionStartTime: sessionStartTimeRef.current, // Keep the session start time reference
     });
@@ -185,6 +196,7 @@ export function useTimerControls({
     handlePause,
     handleReset,
     handleModeChange,
-    preventResetOnPauseRef
+    preventResetOnPauseRef,
+    exactPauseTimeRef
   };
 }

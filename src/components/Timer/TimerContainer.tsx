@@ -31,6 +31,9 @@ const TimerContainer = () => {
 
   // Store the container element to check if timer is visible
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Ref to prevent timer resets on pause
+  const lastTimeRef = useRef<number>(timeRemaining);
 
   // Calculate total seconds for the current mode
   const getTotalSeconds = () => {
@@ -53,6 +56,11 @@ const TimerContainer = () => {
       default: return 'focus';
     }
   };
+  
+  // Update lastTimeRef whenever timeRemaining changes
+  useEffect(() => {
+    lastTimeRef.current = timeRemaining;
+  }, [timeRemaining]);
   
   // Add debug logging to help track timer state
   useEffect(() => {
@@ -123,8 +131,11 @@ const TimerContainer = () => {
   };
 
   const handleTimerPause = () => {
-    console.log("Timer pause button pressed - current time:", timeRemaining);
+    console.log("Timer pause button pressed - current time:", timeRemaining, "stored in ref:", lastTimeRef.current);
+    // Store the time before pausing to ensure we can reference it if needed
+    const timeBeforePause = timeRemaining;
     handlePause();
+    console.log("After pause handler called - time is now:", timeRemaining, "time before pause was:", timeBeforePause);
   };
 
   const handleTimerReset = () => {
