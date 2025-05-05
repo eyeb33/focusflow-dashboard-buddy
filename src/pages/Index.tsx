@@ -10,7 +10,6 @@ import TimerContainer from "@/components/Timer/TimerContainer";
 import AuthPrompt from "@/components/Auth/AuthPrompt";
 import { useTheme } from "@/components/Theme/ThemeProvider";
 import { cn } from "@/lib/utils";
-import { TimerProvider } from '@/contexts/TimerContext';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -63,9 +62,8 @@ const Index = () => {
             </TabsList>
             
             <TabsContent value="timer" className="w-full">
-              <TimerProvider>
-                <TimerContainer />
-              </TimerProvider>
+              {/* Removed the duplicate TimerProvider wrapper */}
+              <TimerContainer />
             </TabsContent>
             
             <TabsContent value="tasks">
