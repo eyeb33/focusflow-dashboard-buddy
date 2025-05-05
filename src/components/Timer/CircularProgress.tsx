@@ -24,7 +24,8 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
   className,
   children,
 }) => {
-  const strokeWidth = 10;
+  // Increase stroke width by 25%
+  const strokeWidth = 12.5; // Original was 10, increased by 25%
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   

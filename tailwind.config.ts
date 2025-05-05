@@ -21,6 +21,9 @@ export default {
 			fontFamily: {
 				mono: ['Roboto Mono', 'Space Mono', 'Consolas', 'Monaco', 'Courier New', 'monospace'],
 			},
+			fontWeight: {
+				extrabold: '800',
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
