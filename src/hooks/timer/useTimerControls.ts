@@ -14,6 +14,7 @@ interface UseTimerControlsProps {
   sessionStartTimeRef: React.MutableRefObject<string | null>;
   setSessionStartTime: (time: string | null) => void;
   setCurrentSessionIndex: React.Dispatch<React.SetStateAction<number>>;
+  currentSessionIndex: number; // Added this prop to fix the reference error
   getTotalTimeForMode: () => number;
   saveTimerState: (state: any) => void;
 }
@@ -29,6 +30,7 @@ export function useTimerControls({
   sessionStartTimeRef,
   setSessionStartTime,
   setCurrentSessionIndex,
+  currentSessionIndex, // Added to the destructuring
   getTotalTimeForMode,
   saveTimerState,
 }: UseTimerControlsProps) {

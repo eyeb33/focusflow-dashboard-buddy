@@ -113,6 +113,7 @@ export function useTimerCore(settings: TimerSettings) {
     sessionStartTimeRef,
     setSessionStartTime,
     setCurrentSessionIndex,
+    currentSessionIndex, // Added this to fix the reference error
     getTotalTimeForMode,
     saveTimerState
   });
