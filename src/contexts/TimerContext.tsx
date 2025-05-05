@@ -2,7 +2,7 @@
 import React, { createContext, useContext } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerSettings } from '@/hooks/useTimerSettings';
-import { useTimer as useTimerHook } from '@/hooks/useTimer.ts';
+import { useTimer as useTimerHook } from '@/hooks/useTimer';
 
 interface TimerContextType {
   timerMode: TimerMode;
@@ -27,7 +27,7 @@ const TimerContext = createContext<TimerContextType | undefined>(undefined);
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { settings, updateSettings } = useTimerSettings();
   
-  // Use our new consolidated hook
+  // Use our timer hook with settings
   const {
     timerMode,
     isRunning,

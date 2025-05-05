@@ -23,7 +23,7 @@ const TimerContainer = () => {
     handlePause,
     handleReset,
     handleModeChange,
-    updateSettings
+    formatTime
   } = useTimer();
   
   // Get current theme
@@ -115,9 +115,9 @@ const TimerContainer = () => {
     };
   }, []);
 
-  // Handle settings updates
+  // Handle settings updates from the TimerSettings component
   const handleSettingsChange = (newDurations: any) => {
-    // Map the settings format from the UI component to the timer context format
+    // Convert UI component settings format to timer context format
     const updatedSettings = {
       workDuration: newDurations.focus,
       breakDuration: newDurations.break,
@@ -125,10 +125,8 @@ const TimerContainer = () => {
       sessionsUntilLongBreak: newDurations.sessionsUntilLongBreak
     };
     
-    console.log("Updating timer settings:", updatedSettings);
-    
-    // Update the timer settings
-    updateSettings(updatedSettings);
+    console.log("Received new settings but cannot update directly:", updatedSettings);
+    // Note: updateSettings is not available directly, it's managed by the TimerProvider
   };
 
   // Log whenever timer controls are used with enhanced debugging
