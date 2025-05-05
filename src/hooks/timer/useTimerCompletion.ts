@@ -57,8 +57,9 @@ export function useTimerCompletion({
       const newCompletedSessions = completedSessions + 1;
       setCompletedSessions(newCompletedSessions);
       
-      // Add to today's total time
-      setTotalTimeToday(prev => prev + settings.workDuration);
+      // Add to today's total time - Fix: Pass direct value instead of callback
+      const newTotalTime = totalTimeToday + settings.workDuration;
+      setTotalTimeToday(newTotalTime);
       
       // Move to next session in cycle
       const newSessionIndex = (currentSessionIndex + 1) % settings.sessionsUntilLongBreak;
