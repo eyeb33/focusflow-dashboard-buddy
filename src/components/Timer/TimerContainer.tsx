@@ -34,6 +34,7 @@ const TimerContainer = () => {
   
   // Ref to prevent timer resets on pause
   const lastTimeRef = useRef<number>(timeRemaining);
+  const pauseClickedRef = useRef<boolean>(false);
 
   // Calculate total seconds for the current mode
   const getTotalSeconds = () => {
@@ -59,29 +60,35 @@ const TimerContainer = () => {
   
   // Update lastTimeRef whenever timeRemaining changes
   useEffect(() => {
-    lastTimeRef.current = timeRemaining;
+    // Log changes to help debug
+    console.log(`TimerContainer: timeRemaining updated: ${timeRemaining}, previous: ${lastTimeRef.current}`);
+    
+    // Only update the ref if:
+    // 1. The pause button wasn't just clicked, or
+    // 2. The difference is minimal (expected timer tick)
+    if (!pauseClickedRef.current || Math.abs(timeRemaining - lastTimeRef.current) < 2) {
+      lastTimeRef.current = timeRemaining;
+    } else {
+      console.log(`TimerContainer: Pause detected, NOT updating lastTimeRef`);
+      // Reset the pause clicked flag after processing
+      pauseClickedRef.current = false;
+    }
   }, [timeRemaining]);
   
-  // Add debug logging to help track timer state
+  // Debug logging for timer state changes
   useEffect(() => {
     const totalSeconds = getTotalSeconds();
     const minutes = Math.floor(timeRemaining / 60);
     const seconds = timeRemaining % 60;
     
-    console.log('Timer state updated:', { 
+    console.log('TimerContainer state update:', { 
       mode: timerMode, 
       running: isRunning, 
       timeRemaining,
       formattedTime: `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`,
       progress,
       currentSessionIndex,
-      totalSessions: settings?.sessionsUntilLongBreak || 4,
-      settings: settings ? {
-        workDuration: settings.workDuration,
-        breakDuration: settings.breakDuration,
-        longBreakDuration: settings.longBreakDuration
-      } : null,
-      totalSeconds
+      totalSessions: settings?.sessionsUntilLongBreak || 4
     });
   }, [timerMode, isRunning, timeRemaining, progress, currentSessionIndex, settings]);
 
@@ -124,22 +131,44 @@ const TimerContainer = () => {
     updateSettings(updatedSettings);
   };
 
-  // Log whenever timer controls are used
+  // Log whenever timer controls are used with enhanced debugging
   const handleTimerStart = () => {
-    console.log("Timer start button pressed - current time:", timeRemaining);
+    console.log("START button pressed in TimerContainer - current time:", timeRemaining);
+    
+    // Reset pause detection flag
+    pauseClickedRef.current = false;
+    
+    // Call the start function from the context
     handleStart();
+    
+    // Log after action
+    console.log("After START call - time is:", timeRemaining, "isRunning:", isRunning);
   };
 
   const handleTimerPause = () => {
-    console.log("Timer pause button pressed - current time:", timeRemaining, "stored in ref:", lastTimeRef.current);
-    // Store the time before pausing to ensure we can reference it if needed
+    console.log("PAUSE button pressed in TimerContainer - current time:", timeRemaining);
+    
+    // Set flag to indicate pause was clicked
+    pauseClickedRef.current = true;
+    
+    // Store time before pause
     const timeBeforePause = timeRemaining;
+    lastTimeRef.current = timeBeforePause;
+    
+    // Call the pause function from the context
     handlePause();
-    console.log("After pause handler called - time is now:", timeRemaining, "time before pause was:", timeBeforePause);
+    
+    // Log after action
+    console.log("After PAUSE call - time before:", timeBeforePause, "time now:", timeRemaining);
   };
 
   const handleTimerReset = () => {
-    console.log("Timer reset button pressed");
+    console.log("RESET button pressed in TimerContainer");
+    
+    // Reset pause detection flag
+    pauseClickedRef.current = false;
+    
+    // Call the reset function from the context
     handleReset();
   };
 
@@ -150,7 +179,7 @@ const TimerContainer = () => {
         "h-[450px] rounded-lg p-4 flex flex-col items-center",
         theme === "dark" 
           ? "bg-black text-white" 
-          : "bg-white text-gray-900 border border-gray-200" // Proper light mode styling
+          : "bg-white text-gray-900 border border-gray-200"
       )}
       data-testid="timer-container"
     >

@@ -38,19 +38,27 @@ const TimerControls: React.FC<TimerControlsProps> = ({
   const buttonColor = getButtonColor(mode);
 
   // Use memoized handlers to prevent unnecessary re-renders
-  const handlePlayPauseClick = useCallback(() => {
-    console.log("Play/Pause clicked, isRunning:", isRunning);
+  const handlePlayPauseClick = useCallback((e: React.MouseEvent) => {
+    // Prevent any default behavior
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log("Play/Pause button clicked, isRunning:", isRunning);
     if (isRunning) {
-      console.log("Pausing timer from controls");
+      console.log("Calling onPause from TimerControls");
       onPause();
     } else {
-      console.log("Starting timer from controls");
+      console.log("Calling onStart from TimerControls");
       onStart();
     }
   }, [isRunning, onPause, onStart]);
 
-  const handleResetClick = useCallback(() => {
-    console.log("Reset clicked from controls");
+  const handleResetClick = useCallback((e: React.MouseEvent) => {
+    // Prevent any default behavior
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log("Reset button clicked from TimerControls");
     onReset();
   }, [onReset]);
 
@@ -79,7 +87,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
           "w-12 h-12 rounded-full flex items-center justify-center transition-all",
           theme === "dark" 
             ? "bg-gray-700 hover:bg-gray-600 active:bg-gray-800" 
-            : "bg-gray-300 hover:bg-gray-400 active:bg-gray-500" // Lighter gray for light mode
+            : "bg-gray-300 hover:bg-gray-400 active:bg-gray-500"
         )}
         aria-label="Reset timer"
         type="button"
@@ -87,7 +95,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
       >
         <RotateCcw className={cn(
           "h-5 w-5",
-          theme === "dark" ? "text-white" : "text-gray-700" // Darker text for light mode
+          theme === "dark" ? "text-white" : "text-gray-700"
         )} />
       </button>
     </div>
