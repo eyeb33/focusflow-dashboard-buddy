@@ -22,6 +22,14 @@ const TimerHeader: React.FC<TimerHeaderProps> = ({
   settings,
   onSettingsChange,
 }) => {
+  // Map timer context settings to the format expected by TimerSettings
+  const timerSettingsDurations = {
+    focus: settings?.workDuration || 25,
+    break: settings?.breakDuration || 5,
+    longBreak: settings?.longBreakDuration || 15,
+    sessionsUntilLongBreak: settings?.sessionsUntilLongBreak || 4
+  };
+
   return (
     <div className="flex items-center justify-between w-full mb-2">
       <TimerModeTabs 
@@ -34,12 +42,7 @@ const TimerHeader: React.FC<TimerHeaderProps> = ({
       />
       
       <TimerSettings 
-        durations={{
-          focus: settings?.workDuration || 25,
-          break: settings?.breakDuration || 5,
-          longBreak: settings?.longBreakDuration || 15,
-          sessionsUntilLongBreak: settings?.sessionsUntilLongBreak || 4
-        }}
+        durations={timerSettingsDurations}
         onChange={onSettingsChange}
       />
     </div>

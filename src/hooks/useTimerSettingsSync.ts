@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { getTotalTime, TimerMode } from '@/utils/timerContextUtils';
 import { TimerSettings } from './useTimerSettings';
@@ -34,6 +35,14 @@ export function useTimerSettingsSync({
       previousSettingsRef.current?.breakDuration !== settings.breakDuration ||
       previousSettingsRef.current?.longBreakDuration !== settings.longBreakDuration ||
       previousSettingsRef.current?.sessionsUntilLongBreak !== settings.sessionsUntilLongBreak;
+    
+    console.log("Settings sync check:", { 
+      hasSettingsChanged, 
+      isRunning, 
+      skipTimerReset: skipTimerResetRef.current,
+      prev: previousSettingsRef.current,
+      current: settings
+    });
     
     // Check if we need to skip the timer reset (e.g., after a pause)
     if (skipTimerResetRef.current) {
