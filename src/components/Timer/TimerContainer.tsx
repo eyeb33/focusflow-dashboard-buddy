@@ -68,7 +68,9 @@ const TimerContainer = () => {
       sessionsUntilLongBreak: newDurations.sessionsUntilLongBreak
     };
     
-    console.log("Received new settings:", updatedSettings);
+    console.log("Received new settings in TimerContainer:", updatedSettings);
+    
+    // Update the timer settings in the context
     updateSettings(updatedSettings);
   };
 

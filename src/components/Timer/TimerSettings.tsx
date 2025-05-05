@@ -41,8 +41,9 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange }) =>
     const updated = { ...localSettings, [key]: value };
     setLocalSettings(updated);
     
-    // Call onChange immediately to update timer settings
+    // Call onChange immediately to update timer settings in real-time
     onChange(updated);
+    console.log(`Timer setting changed: ${key} = ${value}`, updated);
   };
   
   const settingsConfig = [

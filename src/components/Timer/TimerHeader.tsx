@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import TimerModeTabs from './TimerModeTabs';
 import TimerSettings from './TimerSettings';
 import { TimerMode } from '@/utils/timerContextUtils';
@@ -29,6 +29,14 @@ const TimerHeader: React.FC<TimerHeaderProps> = ({
     longBreak: settings?.longBreakDuration || 15,
     sessionsUntilLongBreak: settings?.sessionsUntilLongBreak || 4
   };
+  
+  // Debug settings mapping
+  useEffect(() => {
+    console.log("TimerHeader settings mapping:", {
+      contextSettings: settings,
+      uiSettings: timerSettingsDurations
+    });
+  }, [settings]);
 
   return (
     <div className="flex items-center justify-between w-full mb-2">

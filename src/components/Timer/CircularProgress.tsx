@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/Theme/ThemeProvider";
 
@@ -24,6 +24,19 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
   className,
   children,
 }) => {
+  // Add loading state to prevent flashing on initial render
+  const [isLoaded, setIsLoaded] = useState(false);
+  
+  // After component mount, mark as loaded to enable animations
+  useEffect(() => {
+    // Small delay to ensure smooth initial render
+    const timer = setTimeout(() => {
+      setIsLoaded(true);
+    }, 50);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
   // Increase stroke width to 15px
   const strokeWidth = 15; // Updated to 15px as requested
   const radius = (size - strokeWidth) / 2;
@@ -64,9 +77,9 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
           strokeWidth={strokeWidth}
           fill="none"
           strokeDasharray={circumference}
-          strokeDashoffset={offset}
+          strokeDashoffset={isLoaded ? offset : circumference} // Start with full offset (empty) if not loaded
           strokeLinecap="round"
-          style={{ transition: "stroke-dashoffset 0.3s ease" }}
+          style={{ transition: isLoaded ? "stroke-dashoffset 0.3s ease" : "none" }} // Only animate after loaded
           transform={`rotate(-90 ${size/2} ${size/2})`} // Start from the top
         />
       </svg>
