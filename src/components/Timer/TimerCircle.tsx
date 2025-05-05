@@ -29,7 +29,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
   
   // SVG parameters
   const size = 220;
-  const strokeWidth = 10; // We're keeping this as is since we updated CircularProgress
+  const strokeWidth = 15; // Updated to 15px to match CircularProgress
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   
@@ -92,7 +92,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
       </svg>
       <div className="absolute flex flex-col items-center">
         <div className={cn(
-          "text-[2.8rem] font-extrabold tracking-wide font-mono tabular-nums font-[800]", // Added font-[800] for extra bold
+          "text-[2.8rem] font-extrabold tracking-wide font-ubuntu-mono tabular-nums font-[800]", // Changed to font-ubuntu-mono
           "w-[7rem] text-center flex justify-center", // Fixed width container for number, centered
           theme === "dark" ? "text-white" : "text-gray-800"
         )}>

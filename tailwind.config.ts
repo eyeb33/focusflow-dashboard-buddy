@@ -19,7 +19,8 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				mono: ['Roboto Mono', 'Space Mono', 'Consolas', 'Monaco', 'Courier New', 'monospace'],
+				mono: ['Ubuntu Mono', 'Roboto Mono', 'Space Mono', 'Consolas', 'Monaco', 'Courier New', 'monospace'],
+				'ubuntu-mono': ['Ubuntu Mono', 'monospace'],
 			},
 			fontWeight: {
 				extrabold: '800',
