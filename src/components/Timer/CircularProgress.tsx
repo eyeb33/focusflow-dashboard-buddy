@@ -37,14 +37,11 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
     return () => clearTimeout(timer);
   }, []);
   
-  // Increase stroke width to 15px
-  const strokeWidth = 15; // Updated to 15px as requested
+  const strokeWidth = 15;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   
   // Calculate the dash offset based on progress (0-100)
-  // When progress is 0%, the full circumference should be offset (showing nothing)
-  // When progress is 100%, the offset should be 0 (showing the complete circle)
   const safeProgress = Math.max(0, Math.min(100, progress));
   const offset = circumference * (1 - safeProgress / 100);
   
@@ -65,7 +62,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={theme === "dark" ? "#444" : "#e5e7eb"} // Theme-aware background
+          stroke={theme === "dark" ? "#444" : "#e5e7eb"}
           strokeWidth={strokeWidth}
           fill="none"
         />

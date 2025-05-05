@@ -37,6 +37,20 @@ const TimerHeader: React.FC<TimerHeaderProps> = ({
       uiSettings: timerSettingsDurations
     });
   }, [settings]);
+  
+  // Handle settings changes from TimerSettings component
+  const handleSettingsChange = (newDurations: any) => {
+    console.log("TimerHeader received settings change:", newDurations);
+    // Map back to the format expected by the timer context
+    const mappedSettings = {
+      workDuration: newDurations.focus,
+      breakDuration: newDurations.break,
+      longBreakDuration: newDurations.longBreak,
+      sessionsUntilLongBreak: newDurations.sessionsUntilLongBreak
+    };
+    // Pass settings up to parent
+    onSettingsChange(mappedSettings);
+  };
 
   return (
     <div className="flex items-center justify-between w-full mb-2">
@@ -51,7 +65,7 @@ const TimerHeader: React.FC<TimerHeaderProps> = ({
       
       <TimerSettings 
         durations={timerSettingsDurations}
-        onChange={onSettingsChange}
+        onChange={handleSettingsChange}
       />
     </div>
   );

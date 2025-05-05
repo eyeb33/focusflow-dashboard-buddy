@@ -68,6 +68,17 @@ export const useTimer = (settings?: typeof DEFAULT_TIMER_SETTINGS) => {
   // Setup persistence
   const { saveTimerState, loadTimerState } = useTimerPersistence();
   
+  // Load initial timer state
+  useTimerStateRestoration({
+    loadTimerState,
+    setTimerMode,
+    setTimeRemaining,
+    setCurrentSessionIndex,
+    pausedTimeRef,
+    sessionStartTimeRef,
+    isInitialLoadRef
+  });
+  
   // Handle timer completion
   const { handleTimerComplete } = useTimerCompletion({
     timerMode,
@@ -105,17 +116,6 @@ export const useTimer = (settings?: typeof DEFAULT_TIMER_SETTINGS) => {
     setCurrentSessionIndex,
     settings: timerSettings,
     saveTimerState
-  });
-  
-  // Load initial timer state
-  useTimerStateRestoration({
-    loadTimerState,
-    setTimerMode,
-    setTimeRemaining,
-    setCurrentSessionIndex,
-    pausedTimeRef,
-    sessionStartTimeRef,
-    isInitialLoadRef
   });
   
   // Sync timer with settings changes

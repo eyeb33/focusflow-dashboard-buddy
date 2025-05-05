@@ -44,6 +44,11 @@ export function useTimerStateRestoration({
         if (savedState.sessionStartTime) {
           sessionStartTimeRef.current = savedState.sessionStartTime;
         }
+      } else {
+        console.log('No saved timer state found, using defaults');
+        // Reset to default state
+        pausedTimeRef.current = null;
+        sessionStartTimeRef.current = null;
       }
       
       // Mark initial load as complete

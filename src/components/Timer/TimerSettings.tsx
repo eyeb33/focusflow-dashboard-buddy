@@ -30,9 +30,10 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange }) =>
     sessionsUntilLongBreak: 4
   });
   
+  // Update local settings when props change (without triggering onChange)
   useEffect(() => {
-    // Update local settings when props change
     if (durations) {
+      console.log("TimerSettings received new durations from parent:", durations);
       setLocalSettings(durations);
     }
   }, [durations]);
@@ -42,8 +43,8 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange }) =>
     setLocalSettings(updated);
     
     // Call onChange immediately to update timer settings in real-time
+    console.log(`Timer setting changed by slider: ${key} = ${value}`, updated);
     onChange(updated);
-    console.log(`Timer setting changed: ${key} = ${value}`, updated);
   };
   
   const settingsConfig = [

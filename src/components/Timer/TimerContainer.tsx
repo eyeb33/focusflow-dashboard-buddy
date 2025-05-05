@@ -60,18 +60,10 @@ const TimerContainer = () => {
 
   // Handle settings updates from the TimerSettings component
   const handleSettingsChange = (newDurations: any) => {
-    // Convert UI component settings format to timer context format
-    const updatedSettings = {
-      workDuration: newDurations.focus,
-      breakDuration: newDurations.break,
-      longBreakDuration: newDurations.longBreak,
-      sessionsUntilLongBreak: newDurations.sessionsUntilLongBreak
-    };
+    console.log("Received new settings in TimerContainer:", newDurations);
     
-    console.log("Received new settings in TimerContainer:", updatedSettings);
-    
-    // Update the timer settings in the context
-    updateSettings(updatedSettings);
+    // Directly update the timer settings in the context
+    updateSettings(newDurations);
   };
 
   // Log whenever timer controls are used with enhanced debugging
@@ -83,15 +75,7 @@ const TimerContainer = () => {
 
   const handleTimerPause = () => {
     console.log("PAUSE button pressed in TimerContainer - current time:", timeRemaining);
-    
-    // Store time before pause
-    const timeBeforePause = timeRemaining;
-    
-    // Call the pause function from the context
     handlePause();
-    
-    // Log after action
-    console.log("After PAUSE call - time before:", timeBeforePause, "time now:", timeRemaining);
   };
 
   const handleTimerReset = () => {
