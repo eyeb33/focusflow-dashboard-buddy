@@ -32,7 +32,6 @@ export function useTimerTick({
 }: TimerTickParams) {
   
   // Handle timer visibility changes (tab switching, etc)
-  // No need to destructure timerVisibilityHandlers anymore
   useTimerVisibility({
     isRunning,
     timeRemaining,
@@ -52,15 +51,20 @@ export function useTimerTick({
     
     // Only set up the timer if it's running
     if (isRunning) {
-      console.log('Starting timer interval');
+      console.log('Starting timer interval with time remaining:', timeRemaining);
       
       // Record session start time if not already set
       if (!sessionStartTimeRef.current) {
         sessionStartTimeRef.current = new Date().toISOString();
       }
       
-      // Reset the paused time reference
-      pausedTimeRef.current = null;
+      // If we have a paused time value, use it to set the timeRemaining
+      if (pausedTimeRef.current !== null) {
+        console.log('Resuming from paused time:', pausedTimeRef.current);
+        setTimeRemaining(pausedTimeRef.current);
+        // Clear the paused time after applying it
+        pausedTimeRef.current = null;
+      }
       
       // Update last tick time
       lastTickTimeRef.current = Date.now();
@@ -72,36 +76,38 @@ export function useTimerTick({
         lastTickTimeRef.current = now;
         
         if (elapsed > 0) {
-          const newTimeRemaining = Math.max(0, timeRemaining - elapsed);
-          
-          // Fix: Use direct value instead of callback function
-          setTimeRemaining(newTimeRemaining);
-          
-          // Save state periodically (every 5 seconds)
-          if (timeRemaining % 5 === 0 || newTimeRemaining === 0) {
-            saveTimerState({
-              timerMode,
-              timeRemaining: newTimeRemaining,
-              isRunning,
-              currentSessionIndex,
-              sessionStartTime: sessionStartTimeRef.current
-            });
-          }
-          
-          // Handle timer completion
-          if (newTimeRemaining === 0) {
-            handleTimerComplete();
+          setTimeRemaining(prevTime => {
+            const newTimeRemaining = Math.max(0, prevTime - elapsed);
             
-            if (timerRef.current) {
-              clearInterval(timerRef.current);
-              timerRef.current = null;
+            // Save state periodically (every 5 seconds)
+            if (prevTime % 5 === 0 || newTimeRemaining === 0) {
+              saveTimerState({
+                timerMode,
+                timeRemaining: newTimeRemaining,
+                isRunning,
+                currentSessionIndex,
+                sessionStartTime: sessionStartTimeRef.current
+              });
             }
-          }
+            
+            // Handle timer completion
+            if (newTimeRemaining === 0) {
+              handleTimerComplete();
+              
+              if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+              }
+            }
+            
+            return newTimeRemaining;
+          });
         }
       }, 1000);
     } else {
       // Timer is stopped, save current timer state
       if (timeRemaining > 0) {
+        // Store the exact time when pausing
         pausedTimeRef.current = timeRemaining;
         console.log('Timer paused at:', timeRemaining);
         

@@ -45,6 +45,12 @@ export function useTimerControls({
     // Set timer running state first
     setIsRunning(true);
     
+    // If we have a pausedTime value, we should resume from that time
+    if (pausedTimeRef.current !== null) {
+      console.log('Resuming from paused time:', pausedTimeRef.current);
+      setTimeRemaining(pausedTimeRef.current);
+    }
+    
     // Save the timer state
     saveTimerState({
       timerMode,
@@ -53,17 +59,17 @@ export function useTimerControls({
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current || new Date().toISOString()
     });
-  }, [timerMode, timeRemaining, currentSessionIndex, saveTimerState, setIsRunning, pausedTimeRef, sessionStartTimeRef]);
+  }, [timerMode, timeRemaining, currentSessionIndex, saveTimerState, setIsRunning, pausedTimeRef, sessionStartTimeRef, setTimeRemaining]);
   
   const handlePause = useCallback(() => {
     console.log('PAUSE called with time:', timeRemaining);
     
-    // Stop the timer immediately
-    setIsRunning(false);
-    
-    // Store the current time when pausing
+    // Store the current time when pausing - BEFORE stopping the timer
     pausedTimeRef.current = timeRemaining;
     console.log('Storing exact pause time:', timeRemaining);
+    
+    // Stop the timer after storing the current time
+    setIsRunning(false);
     
     // Save the timer state with the paused time
     saveTimerState({

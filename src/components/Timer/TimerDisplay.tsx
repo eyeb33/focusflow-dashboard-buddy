@@ -27,12 +27,17 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
     }
   };
 
+  // Check for valid values and calculate progress
+  const validTotalSeconds = totalSeconds > 0 ? totalSeconds : 1;
+  const validTimeRemaining = Math.min(timeRemaining, validTotalSeconds);
+  const progress = Math.round(((validTotalSeconds - validTimeRemaining) / validTotalSeconds) * 100);
+
   // Debug output to check current values
   console.log("TimerDisplay rendering with:", {
     mode: timerMode,
     timeRemaining,
-    totalSeconds,
-    progress: totalSeconds > 0 ? Math.round(((totalSeconds - timeRemaining) / totalSeconds) * 100) : 0
+    totalSeconds: validTotalSeconds,
+    progress: progress
   });
 
   return (
@@ -49,8 +54,8 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
       </div>
       
       <TimerCircle
-        secondsLeft={timeRemaining}
-        totalSeconds={totalSeconds}
+        secondsLeft={validTimeRemaining}
+        totalSeconds={validTotalSeconds}
         mode={getTimerCircleMode()}
       />
     </div>
