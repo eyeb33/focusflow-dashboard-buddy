@@ -6,6 +6,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { LogOut, User } from 'lucide-react';
 import ThemeToggle from '@/components/Theme/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/components/Theme/ThemeProvider';
+import { cn } from '@/lib/utils';
 
 interface HeaderProps {
   isAuthenticated?: boolean;
@@ -20,6 +22,7 @@ const Header: React.FC<HeaderProps> = ({
   const isMobile = useIsMobile();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { theme } = useTheme();
   
   const handleLoginClick = () => {
     if (onLoginClick) {
@@ -38,14 +41,22 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="border-b border-[#333] bg-black">
+    <header className={cn(
+      "border-b",
+      theme === "dark" 
+        ? "bg-black border-[#333]" 
+        : "bg-white border-gray-200"
+    )}>
       <div className="container flex h-16 items-center justify-between py-4">
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-full bg-pomodoro-work flex items-center justify-center">
               <span className="text-white font-semibold text-sm">T</span>
             </div>
-            {!isMobile && <span className="text-lg font-semibold">TimeBubble</span>}
+            {!isMobile && <span className={cn(
+              "text-lg font-semibold",
+              theme === "dark" ? "text-white" : "text-gray-800"
+            )}>TimeBubble</span>}
           </Link>
         </div>
         

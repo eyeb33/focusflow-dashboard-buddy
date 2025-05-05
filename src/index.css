@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -191,17 +190,7 @@
   }
 }
 
-/* Override the header to ensure it has correct background based on theme */
-header.border-b {
-  background-color: #000000 !important;
-  border-color: #333 !important;
-}
-
-.light header.border-b {
-  background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
-}
-
+/* Remove the hardcoded header styles to allow theme-based styling */
 /* Make sure tabslist has correct styling */
 .TabsList {
   background-color: #1e293b !important;
