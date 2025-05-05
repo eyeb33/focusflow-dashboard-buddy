@@ -8,7 +8,7 @@ interface UseTimerSettingsSyncProps {
   timerMode: TimerMode;
   pausedTimeRef: React.MutableRefObject<number | null>;
   getTotalTimeForMode: () => number;
-  setTimeRemaining: (time: number) => void;
+  setTimeRemaining: (time: number | ((prev: number) => number)) => void;
   saveTimerState: (state: any) => void;
   currentSessionIndex: number;
 }
@@ -28,6 +28,7 @@ export function useTimerSettingsSync({
     // Skip the initial render to avoid conflicts with state restoration
     if (isInitialLoadRef.current) {
       console.log("Initial load detected, skipping settings sync");
+      isInitialLoadRef.current = false;
       return;
     }
     

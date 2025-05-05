@@ -58,14 +58,6 @@ export function useTimerTick({
         sessionStartTimeRef.current = new Date().toISOString();
       }
       
-      // If we have a paused time value, use it to set the timeRemaining
-      if (pausedTimeRef.current !== null) {
-        console.log('Resuming from paused time:', pausedTimeRef.current);
-        setTimeRemaining(pausedTimeRef.current);
-        // Clear the paused time after applying it
-        pausedTimeRef.current = null;
-      }
-      
       // Update last tick time
       lastTickTimeRef.current = Date.now();
       

@@ -15,7 +15,7 @@ interface TimerControlsParams {
   isRunning: boolean;
   setIsRunning: (running: boolean) => void;
   timeRemaining: number;
-  setTimeRemaining: (time: number) => void;
+  setTimeRemaining: (time: number | ((prev: number) => number)) => void;
   sessionStartTimeRef: React.MutableRefObject<string | null>;
   pausedTimeRef: React.MutableRefObject<number | null>;
   currentSessionIndex: number;
@@ -45,12 +45,6 @@ export function useTimerControls({
     // Set timer running state first
     setIsRunning(true);
     
-    // If we have a pausedTime value, we should resume from that time
-    if (pausedTimeRef.current !== null) {
-      console.log('Resuming from paused time:', pausedTimeRef.current);
-      setTimeRemaining(pausedTimeRef.current);
-    }
-    
     // Save the timer state
     saveTimerState({
       timerMode,
@@ -59,7 +53,7 @@ export function useTimerControls({
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current || new Date().toISOString()
     });
-  }, [timerMode, timeRemaining, currentSessionIndex, saveTimerState, setIsRunning, pausedTimeRef, sessionStartTimeRef, setTimeRemaining]);
+  }, [timerMode, timeRemaining, currentSessionIndex, saveTimerState, setIsRunning, pausedTimeRef, sessionStartTimeRef]);
   
   const handlePause = useCallback(() => {
     console.log('PAUSE called with time:', timeRemaining);
