@@ -34,6 +34,7 @@ export function useTimerControls({
 }: UseTimerControlsProps) {
   // Use a ref to store the last timer state to prevent issues with stale values
   const lastTimeRemainingRef = useRef<number>(timeRemaining);
+  const preventResetOnPauseRef = useRef<boolean>(false);
   
   // Update the ref when time changes
   if (lastTimeRemainingRef.current !== timeRemaining) {
@@ -55,6 +56,9 @@ export function useTimerControls({
       setSessionStartTime(new Date().toISOString());
     }
     
+    // Set preventResetOnPauseRef to true to prevent reset when pausing
+    preventResetOnPauseRef.current = true;
+    
     // Just toggle the running state - don't modify timeRemaining
     setIsRunning(true);
     
@@ -66,11 +70,14 @@ export function useTimerControls({
       currentSessionIndex: 0,
       sessionStartTime: sessionStartTimeRef.current,
     });
-  }, [timerMode, timeRemaining, setIsRunning, setTimeRemaining, sessionStartTimeRef, setSessionStartTime, saveTimerState, getTotalTimeForMode, lastTimeRemainingRef]);
+  }, [timerMode, timeRemaining, setIsRunning, setTimeRemaining, sessionStartTimeRef, setSessionStartTime, saveTimerState, getTotalTimeForMode]);
   
   // Pause the timer
   const handlePause = useCallback(() => {
     console.log("Pausing timer with mode:", timerMode, "and time:", timeRemaining, "ref time:", lastTimeRemainingRef.current);
+    
+    // Critical: Set preventResetOnPauseRef to true to prevent reset
+    preventResetOnPauseRef.current = true;
     
     // Critical: ONLY change isRunning state, do NOT modify timeRemaining
     setIsRunning(false);
@@ -83,7 +90,7 @@ export function useTimerControls({
       currentSessionIndex: 0,
       sessionStartTime: sessionStartTimeRef.current, // Keep the session start time reference
     });
-  }, [timerMode, setIsRunning, sessionStartTimeRef, saveTimerState, timeRemaining, lastTimeRemainingRef]);
+  }, [timerMode, setIsRunning, sessionStartTimeRef, saveTimerState, timeRemaining]);
   
   // Reset the timer
   const handleReset = useCallback(() => {
@@ -178,5 +185,6 @@ export function useTimerControls({
     handlePause,
     handleReset,
     handleModeChange,
+    preventResetOnPauseRef
   };
 }

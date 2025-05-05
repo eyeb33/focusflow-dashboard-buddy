@@ -30,11 +30,23 @@ export function useTimerTickLogic({
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastKnownTimeRef = useRef<number>(timeRemaining);
   const previousIsRunningRef = useRef<boolean>(false);
+  const isPausingRef = useRef<boolean>(false);
   
   // Update the ref whenever timeRemaining changes to keep track of the latest value
   useEffect(() => {
     lastKnownTimeRef.current = timeRemaining;
-  }, [timeRemaining]);
+    
+    // When pausing (transitioning from running to not running)
+    if (!isRunning && previousIsRunningRef.current) {
+      isPausingRef.current = true;
+      console.log("Timer paused - Preserving exact current time:", lastKnownTimeRef.current);
+    } else {
+      isPausingRef.current = false;
+    }
+    
+    // Update previous running state
+    previousIsRunningRef.current = isRunning;
+  }, [timeRemaining, isRunning]);
   
   // Debug the incoming isRunning state
   console.log(`useTimerTickLogic - isRunning: ${isRunning}, timerMode: ${timerMode}, timeRemaining: ${timeRemaining}`);
@@ -61,10 +73,6 @@ export function useTimerTickLogic({
       };
       
       localStorage.setItem('timerState', JSON.stringify(timerState));
-      
-      // Update previous running state
-      previousIsRunningRef.current = isRunning;
-      return; // Exit early to prevent setting up a new timer
     }
     
     if (isRunning) {
@@ -167,7 +175,7 @@ export function useTimerTickLogic({
     lastRecordedFullMinutesRef,
     lastTickTimeRef,
     sessionStartTimeRef,
-  ]); // Remove timeRemaining from dependencies to prevent reset loops
+  ]); // Removed timeRemaining from dependencies to prevent reset loops
 
   return timerRef;
 }

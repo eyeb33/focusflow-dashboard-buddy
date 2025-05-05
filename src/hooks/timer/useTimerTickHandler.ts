@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 
@@ -134,7 +135,7 @@ export function useTimerTickHandler({
     currentSessionIndex, 
     saveTimerState,
     setTimeRemaining
-  ]); // Remove timeRemaining from dependency array to prevent reset loops
+  ]); // Removed timeRemaining from dependency array to prevent reset loops
   
   return {
     lastTickTimeRef,

@@ -116,6 +116,22 @@ const TimerContainer = () => {
     updateSettings(updatedSettings);
   };
 
+  // Log whenever timer controls are used
+  const handleTimerStart = () => {
+    console.log("Timer start button pressed - current time:", timeRemaining);
+    handleStart();
+  };
+
+  const handleTimerPause = () => {
+    console.log("Timer pause button pressed - current time:", timeRemaining);
+    handlePause();
+  };
+
+  const handleTimerReset = () => {
+    console.log("Timer reset button pressed");
+    handleReset();
+  };
+
   return (
     <div 
       ref={containerRef}
@@ -158,9 +174,9 @@ const TimerContainer = () => {
       <TimerControls 
         isRunning={isRunning}
         mode={timerMode}
-        onStart={handleStart}
-        onPause={handlePause}
-        onReset={handleReset}
+        onStart={handleTimerStart}
+        onPause={handleTimerPause}
+        onReset={handleTimerReset}
       />
       
       <SessionDots 
