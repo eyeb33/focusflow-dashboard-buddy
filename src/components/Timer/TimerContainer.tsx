@@ -5,7 +5,7 @@ import TimerSettings from './TimerSettings';
 import TimerModeTabs from './TimerModeTabs';
 import TimerControls from './TimerControls';
 import SessionDots from './SessionDots';
-import { useTimer } from '@/hooks/useTimer';
+import { useTimerContext } from '@/contexts/TimerContext'; // Use the context instead of the hook directly
 import { useTheme } from "@/components/Theme/ThemeProvider";
 import { cn } from "@/lib/utils";
 
@@ -23,8 +23,9 @@ const TimerContainer = () => {
     handlePause,
     handleReset,
     handleModeChange,
-    formatTime
-  } = useTimer();
+    formatTime,
+    updateSettings
+  } = useTimerContext();
   
   // Get current theme
   const { theme } = useTheme();
@@ -125,8 +126,8 @@ const TimerContainer = () => {
       sessionsUntilLongBreak: newDurations.sessionsUntilLongBreak
     };
     
-    console.log("Received new settings but cannot update directly:", updatedSettings);
-    // Note: updateSettings is not available directly, it's managed by the TimerProvider
+    console.log("Received new settings:", updatedSettings);
+    updateSettings(updatedSettings);
   };
 
   // Log whenever timer controls are used with enhanced debugging

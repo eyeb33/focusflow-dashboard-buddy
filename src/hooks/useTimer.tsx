@@ -15,7 +15,7 @@ const DEFAULT_SETTINGS: TimerSettings = {
 /**
  * Main timer hook that provides all timer functionality
  */
-export const useTimer = (settings: TimerSettings = DEFAULT_SETTINGS) => {
+export const useTimer = (settings?: TimerSettings) => {
   // Use provided settings or defaults if undefined
   const timerSettings = settings || DEFAULT_SETTINGS;
   
@@ -228,7 +228,7 @@ export const useTimer = (settings: TimerSettings = DEFAULT_SETTINGS) => {
         timerRef.current = null;
       }
     };
-  }, [isRunning, timerMode, handleTimerComplete, currentSessionIndex, saveTimerState, timeRemaining]);
+  }, [isRunning, timerMode, handleTimerComplete, currentSessionIndex, saveTimerState]);
   
   // Handle visibility changes (tab switching)
   useEffect(() => {
@@ -306,7 +306,7 @@ export const useTimer = (settings: TimerSettings = DEFAULT_SETTINGS) => {
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current || new Date().toISOString()
     });
-  }, [timerMode, timeRemaining, setIsRunning, currentSessionIndex, saveTimerState]);
+  }, [timerMode, timeRemaining, currentSessionIndex, saveTimerState]);
   
   const handlePause = useCallback(() => {
     console.log('PAUSE called with time:', timeRemaining);
