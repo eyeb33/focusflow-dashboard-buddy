@@ -1,11 +1,10 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
-import { TimerSettings } from './useTimerSettings';
 import { formatTime as formatTimeUtil, getModeLabel as getModeLabelUtil } from '@/utils/timerUtils';
 
 // Default settings to use if none are provided
-const DEFAULT_SETTINGS: TimerSettings = {
+const DEFAULT_SETTINGS = {
   workDuration: 25,
   breakDuration: 5,
   longBreakDuration: 15,
@@ -15,7 +14,9 @@ const DEFAULT_SETTINGS: TimerSettings = {
 /**
  * Main timer hook that provides all timer functionality
  */
-export const useTimer = (settings?: TimerSettings) => {
+export const useTimer = (settings?: typeof DEFAULT_SETTINGS) => {
+  console.log('useTimer hook initializing with settings:', settings);
+  
   // Use provided settings or defaults if undefined
   const timerSettings = settings || DEFAULT_SETTINGS;
   
@@ -32,9 +33,18 @@ export const useTimer = (settings?: TimerSettings) => {
   const lastTickTimeRef = useRef<number>(Date.now());
   const sessionStartTimeRef = useRef<string | null>(null);
   const pausedTimeRef = useRef<number | null>(null);
+  const isInitialLoadRef = useRef(true);
+  
+  console.log('Initial timer state:', { 
+    timerMode, 
+    isRunning, 
+    timeRemaining, 
+    pausedTimeRef: pausedTimeRef.current 
+  });
   
   // Calculate progress
   const getTotalTimeForMode = useCallback(() => {
+    console.log('Getting total time for mode:', timerMode);
     switch (timerMode) {
       case 'work': return timerSettings.workDuration * 60;
       case 'break': return timerSettings.breakDuration * 60;
@@ -68,6 +78,8 @@ export const useTimer = (settings?: TimerSettings) => {
   
   // Load initial timer state
   useEffect(() => {
+    if (!isInitialLoadRef.current) return;
+    
     try {
       const savedStateJson = localStorage.getItem('timerState');
       if (savedStateJson) {
@@ -77,28 +89,47 @@ export const useTimer = (settings?: TimerSettings) => {
         
         // Only restore if recent (< 30 minutes) and valid
         if (elapsed < 1800000 && typeof savedState.timeRemaining === 'number') {
-          console.log('Restoring timer state:', savedState);
+          console.log('Restoring timer state from localStorage:', savedState);
           
           // Restore timer state but don't auto-start
           setTimerMode(savedState.timerMode || 'work');
           setTimeRemaining(savedState.timeRemaining);
           setCurrentSessionIndex(savedState.currentSessionIndex || 0);
           
+          // Explicitly store the paused time
+          if (!savedState.isRunning && savedState.timeRemaining) {
+            console.log('Restoring exact paused time:', savedState.timeRemaining);
+            pausedTimeRef.current = savedState.timeRemaining;
+          }
+          
           if (savedState.sessionStartTime) {
             sessionStartTimeRef.current = savedState.sessionStartTime;
           }
         }
       }
+      
+      // Mark initial load as complete
+      isInitialLoadRef.current = false;
     } catch (error) {
       console.error('Error loading saved timer state:', error);
+      isInitialLoadRef.current = false;
     }
   }, []);
   
   // Update timer when settings change (when not running)
   useEffect(() => {
+    if (isInitialLoadRef.current) return;
+    
     if (!isRunning) {
       const newTime = getTotalTimeForMode();
       console.log(`Settings changed: Updating timer to ${newTime} seconds`);
+      
+      // Don't update if it was just paused (preserve paused time)
+      if (pausedTimeRef.current !== null) {
+        console.log('Not updating time due to recent pause. Keeping:', pausedTimeRef.current);
+        return;
+      }
+      
       setTimeRemaining(newTime);
       
       // Save the updated state
@@ -119,8 +150,9 @@ export const useTimer = (settings?: TimerSettings) => {
     // Always stop the timer first
     setIsRunning(false);
     
-    // Clear session start time
+    // Clear session start time and pause time
     sessionStartTimeRef.current = null;
+    pausedTimeRef.current = null;
     
     if (timerMode === 'work') {
       // After work session
@@ -163,10 +195,13 @@ export const useTimer = (settings?: TimerSettings) => {
   
   // Timer tick effect - THE CORE TIMER LOGIC
   useEffect(() => {
+    console.log('Timer tick effect running. isRunning=', isRunning, 'timeRemaining=', timeRemaining);
+    
     // Clear any existing interval first
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
+      console.log('Cleared existing timer interval');
     }
     
     if (isRunning) {
@@ -175,6 +210,13 @@ export const useTimer = (settings?: TimerSettings) => {
       // Record session start time if not set
       if (!sessionStartTimeRef.current) {
         sessionStartTimeRef.current = new Date().toISOString();
+      }
+      
+      // Reset paused time when timer starts
+      if (pausedTimeRef.current !== null) {
+        console.log('Starting from paused time:', pausedTimeRef.current);
+        setTimeRemaining(pausedTimeRef.current);
+        pausedTimeRef.current = null;
       }
       
       lastTickTimeRef.current = Date.now();
@@ -219,6 +261,18 @@ export const useTimer = (settings?: TimerSettings) => {
           });
         }
       }, 200); // Check more frequently for smoother updates
+    } else {
+      // When timer is stopped/paused, ensure we save the state
+      if (!isInitialLoadRef.current) {
+        console.log('Timer stopped or paused with time:', timeRemaining);
+        saveTimerState({
+          timerMode,
+          isRunning: false,
+          timeRemaining,
+          currentSessionIndex,
+          sessionStartTime: sessionStartTimeRef.current
+        });
+      }
     }
     
     // Cleanup interval on unmount or dependency changes
@@ -226,6 +280,7 @@ export const useTimer = (settings?: TimerSettings) => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
+        console.log('Cleaning up timer interval on effect cleanup');
       }
     };
   }, [isRunning, timerMode, handleTimerComplete, currentSessionIndex, saveTimerState]);
@@ -282,21 +337,13 @@ export const useTimer = (settings?: TimerSettings) => {
   
   // TIMER CONTROLS - START, PAUSE, RESET, MODE CHANGE
   const handleStart = useCallback(() => {
-    console.log('START called with mode:', timerMode, 'and time:', timeRemaining);
+    console.log('START called with mode:', timerMode, 'and time:', timeRemaining, 'pausedTime:', pausedTimeRef.current);
     
-    // If we have a stored pause time, use it
-    if (pausedTimeRef.current !== null) {
-      console.log('Using stored pause time:', pausedTimeRef.current);
-      setTimeRemaining(pausedTimeRef.current);
-      
-      // Clear the pause time after using it
-      setTimeout(() => {
-        pausedTimeRef.current = null;
-      }, 100);
-    }
-    
-    // Start the timer
+    // Set timer running state first
     setIsRunning(true);
+    
+    // The actual time adjustment happens in the timer tick effect
+    // This avoids race conditions with the pausedTimeRef
     
     // Save the timer state
     saveTimerState({
@@ -311,18 +358,18 @@ export const useTimer = (settings?: TimerSettings) => {
   const handlePause = useCallback(() => {
     console.log('PAUSE called with time:', timeRemaining);
     
+    // Stop the timer immediately
+    setIsRunning(false);
+    
     // Store the current time when pausing
     pausedTimeRef.current = timeRemaining;
     console.log('Storing exact pause time:', timeRemaining);
-    
-    // Stop the timer
-    setIsRunning(false);
     
     // Save the timer state with the paused time
     saveTimerState({
       timerMode,
       isRunning: false,
-      timeRemaining: timeRemaining, // Use the current time exactly
+      timeRemaining,
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current
     });
@@ -366,6 +413,9 @@ export const useTimer = (settings?: TimerSettings) => {
       setCurrentSessionIndex(0);
     }
     
+    // Clear pause time on mode change
+    pausedTimeRef.current = null;
+    
     // Set the appropriate time for the new mode
     const newTime = (() => {
       switch(mode) {
@@ -378,9 +428,8 @@ export const useTimer = (settings?: TimerSettings) => {
     
     setTimeRemaining(newTime);
     
-    // Clear session start time and pause time
+    // Clear session start time
     sessionStartTimeRef.current = null;
-    pausedTimeRef.current = null;
     
     // Save the new state
     saveTimerState({

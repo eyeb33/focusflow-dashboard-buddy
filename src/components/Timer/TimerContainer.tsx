@@ -33,10 +33,6 @@ const TimerContainer = () => {
   // Store the container element to check if timer is visible
   const containerRef = useRef<HTMLDivElement>(null);
   
-  // Ref to prevent timer resets on pause
-  const lastTimeRef = useRef<number>(timeRemaining);
-  const pauseClickedRef = useRef<boolean>(false);
-
   // Calculate total seconds for the current mode
   const getTotalSeconds = () => {
     if (!settings) return 0;
@@ -58,23 +54,6 @@ const TimerContainer = () => {
       default: return 'focus';
     }
   };
-  
-  // Update lastTimeRef whenever timeRemaining changes
-  useEffect(() => {
-    // Log changes to help debug
-    console.log(`TimerContainer: timeRemaining updated: ${timeRemaining}, previous: ${lastTimeRef.current}`);
-    
-    // Only update the ref if:
-    // 1. The pause button wasn't just clicked, or
-    // 2. The difference is minimal (expected timer tick)
-    if (!pauseClickedRef.current || Math.abs(timeRemaining - lastTimeRef.current) < 2) {
-      lastTimeRef.current = timeRemaining;
-    } else {
-      console.log(`TimerContainer: Pause detected, NOT updating lastTimeRef`);
-      // Reset the pause clicked flag after processing
-      pauseClickedRef.current = false;
-    }
-  }, [timeRemaining]);
   
   // Debug logging for timer state changes
   useEffect(() => {
@@ -133,26 +112,15 @@ const TimerContainer = () => {
   // Log whenever timer controls are used with enhanced debugging
   const handleTimerStart = () => {
     console.log("START button pressed in TimerContainer - current time:", timeRemaining);
-    
-    // Reset pause detection flag
-    pauseClickedRef.current = false;
-    
-    // Call the start function from the context
     handleStart();
-    
-    // Log after action
     console.log("After START call - time is:", timeRemaining, "isRunning:", isRunning);
   };
 
   const handleTimerPause = () => {
     console.log("PAUSE button pressed in TimerContainer - current time:", timeRemaining);
     
-    // Set flag to indicate pause was clicked
-    pauseClickedRef.current = true;
-    
     // Store time before pause
     const timeBeforePause = timeRemaining;
-    lastTimeRef.current = timeBeforePause;
     
     // Call the pause function from the context
     handlePause();
@@ -163,11 +131,6 @@ const TimerContainer = () => {
 
   const handleTimerReset = () => {
     console.log("RESET button pressed in TimerContainer");
-    
-    // Reset pause detection flag
-    pauseClickedRef.current = false;
-    
-    // Call the reset function from the context
     handleReset();
   };
 

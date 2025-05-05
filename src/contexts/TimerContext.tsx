@@ -27,7 +27,12 @@ const TimerContext = createContext<TimerContextType | undefined>(undefined);
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { settings, updateSettings } = useTimerSettings();
   
+  console.log('TimerProvider: Using settings from useTimerSettings:', settings);
+  
   // Use our timer hook with settings
+  const timerHook = useTimerHook(settings);
+  
+  // Destructure for clarity and debugging
   const {
     timerMode,
     isRunning,
@@ -42,11 +47,11 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     handleModeChange,
     getModeLabel,
     formatTime
-  } = useTimerHook(settings);
+  } = timerHook;
 
   // Handle settings updates
   const handleUpdateSettings = (newSettings: Partial<typeof settings>) => {
-    console.log('Updating timer settings:', newSettings);
+    console.log('TimerContext: Updating timer settings:', newSettings);
     updateSettings(newSettings);
   };
   
@@ -79,7 +84,7 @@ export const useTimerContext = () => {
   const context = useContext(TimerContext);
   
   if (context === undefined) {
-    throw new Error('useTimer must be used within a TimerProvider');
+    throw new Error('useTimerContext must be used within a TimerProvider');
   }
   
   return context;
