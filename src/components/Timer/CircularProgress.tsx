@@ -32,7 +32,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
     // Small delay to ensure smooth initial render
     const timer = setTimeout(() => {
       setIsLoaded(true);
-    }, 50);
+    }, 100); // Increased delay to ensure DOM is ready
     
     return () => clearTimeout(timer);
   }, []);
@@ -58,6 +58,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
         height={size}
         viewBox={`0 0 ${size} ${size}`}
       >
+        {/* Background circle */}
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -66,6 +67,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
           strokeWidth={strokeWidth}
           fill="none"
         />
+        {/* Progress circle */}
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -76,7 +78,10 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
           strokeDasharray={circumference}
           strokeDashoffset={isLoaded ? offset : circumference} // Start with full offset (empty) if not loaded
           strokeLinecap="round"
-          style={{ transition: isLoaded ? "stroke-dashoffset 0.3s ease" : "none" }} // Only animate after loaded
+          style={{ 
+            transition: isLoaded ? "stroke-dashoffset 0.3s ease" : "none",
+            opacity: isLoaded ? 1 : 0.3 // Add opacity transition
+          }} 
           transform={`rotate(-90 ${size/2} ${size/2})`} // Start from the top
         />
       </svg>

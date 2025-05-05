@@ -27,6 +27,14 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
     }
   };
 
+  // Debug output to check current values
+  console.log("TimerDisplay rendering with:", {
+    mode: timerMode,
+    timeRemaining,
+    totalSeconds,
+    progress: totalSeconds > 0 ? Math.round(((totalSeconds - timeRemaining) / totalSeconds) * 100) : 0
+  });
+
   return (
     <div className="relative flex flex-col items-center justify-center mt-2">
       <div className="text-center mb-2">

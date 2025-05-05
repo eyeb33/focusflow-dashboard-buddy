@@ -42,7 +42,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange }) =>
     const updated = { ...localSettings, [key]: value };
     setLocalSettings(updated);
     
-    // Call onChange immediately to update timer settings in real-time
+    // Call onChange immediately with the updated value
     console.log(`Timer setting changed by slider: ${key} = ${value}`, updated);
     onChange(updated);
   };

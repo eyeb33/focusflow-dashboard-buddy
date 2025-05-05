@@ -27,6 +27,10 @@ export function useTimerStateRestoration({
     
     try {
       const savedState = loadTimerState();
+      
+      // Clear the initial load flag immediately to prevent conflicts
+      isInitialLoadRef.current = false;
+      
       if (savedState) {
         console.log('Restoring timer state from localStorage:', savedState);
         
@@ -39,10 +43,14 @@ export function useTimerStateRestoration({
         if (!savedState.isRunning && savedState.timeRemaining) {
           console.log('Restoring exact paused time:', savedState.timeRemaining);
           pausedTimeRef.current = savedState.timeRemaining;
+        } else {
+          pausedTimeRef.current = null;
         }
         
         if (savedState.sessionStartTime) {
           sessionStartTimeRef.current = savedState.sessionStartTime;
+        } else {
+          sessionStartTimeRef.current = null;
         }
       } else {
         console.log('No saved timer state found, using defaults');
@@ -50,9 +58,6 @@ export function useTimerStateRestoration({
         pausedTimeRef.current = null;
         sessionStartTimeRef.current = null;
       }
-      
-      // Mark initial load as complete
-      isInitialLoadRef.current = false;
     } catch (error) {
       console.error('Error loading saved timer state:', error);
       isInitialLoadRef.current = false;
