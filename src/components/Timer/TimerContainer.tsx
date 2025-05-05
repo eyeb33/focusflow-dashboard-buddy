@@ -138,21 +138,34 @@ const TimerContainer = () => {
     <div 
       ref={containerRef}
       className={cn(
-        "h-[450px] rounded-lg p-4 flex flex-col items-center",
+        "h-[450px] rounded-lg p-4 flex flex-col items-center relative",
         theme === "dark" 
           ? "bg-black text-white" 
           : "bg-white text-gray-900 border border-gray-200"
       )}
       data-testid="timer-container"
     >
-      <TimerModeTabs 
-        currentMode={timerMode === 'work' ? 'focus' : timerMode} 
-        onModeChange={(newMode) => {
-          // Convert focus back to work for compatibility
-          const mappedMode = newMode === 'focus' ? 'work' : newMode;
-          handleModeChange(mappedMode);
-        }} 
-      />
+      <div className="flex items-center justify-between w-full mb-2">
+        <TimerModeTabs 
+          currentMode={timerMode === 'work' ? 'focus' : timerMode} 
+          onModeChange={(newMode) => {
+            // Convert focus back to work for compatibility
+            const mappedMode = newMode === 'focus' ? 'work' : newMode;
+            handleModeChange(mappedMode);
+          }} 
+        />
+        
+        {/* Moved settings button into this header area */}
+        <TimerSettings 
+          durations={{
+            focus: settings?.workDuration || 25,
+            break: settings?.breakDuration || 5,
+            longBreak: settings?.longBreakDuration || 15,
+            sessionsUntilLongBreak: settings?.sessionsUntilLongBreak || 4
+          }}
+          onChange={handleSettingsChange}
+        />
+      </div>
 
       <div className="relative flex flex-col items-center justify-center mt-2">
         <div className="text-center mb-2">
@@ -160,7 +173,7 @@ const TimerContainer = () => {
             "text-xs rounded-full px-3 py-0.5 inline-block",
             theme === "dark" 
               ? "bg-gray-800 text-gray-200" 
-              : "bg-gray-100 text-gray-700" // Better light mode contrast
+              : "bg-gray-100 text-gray-700" 
           )}>
             {timerMode === 'work' ? 'Focus' : timerMode === 'break' ? 'Short Break' : 'Long Break'}
           </div>
@@ -186,19 +199,6 @@ const TimerContainer = () => {
         currentSessionIndex={currentSessionIndex}
         mode={timerMode}
       />
-      
-      {/* Position the settings button in the upper right corner */}
-      <div className="absolute top-4 right-4">
-        <TimerSettings 
-          durations={{
-            focus: settings?.workDuration || 25,
-            break: settings?.breakDuration || 5,
-            longBreak: settings?.longBreakDuration || 15,
-            sessionsUntilLongBreak: settings?.sessionsUntilLongBreak || 4
-          }}
-          onChange={handleSettingsChange}
-        />
-      </div>
     </div>
   );
 };

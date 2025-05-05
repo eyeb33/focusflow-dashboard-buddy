@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -94,10 +95,10 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Prevent content from becoming too large */
+  /* Allow content to scroll when needed */
   html, body, #root {
     max-height: 100vh;
-    overflow: hidden;
+    overflow-y: auto;
   }
 }
 
