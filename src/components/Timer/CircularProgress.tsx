@@ -69,7 +69,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
           transform={`rotate(-90 ${size/2} ${size/2})`} // Start from the top
         />
       </svg>
-      <div className="relative z-10 flex items-center justify-center font-mono">
+      <div className="relative z-10 flex items-center justify-center w-full font-mono">
         {children}
       </div>
     </div>
