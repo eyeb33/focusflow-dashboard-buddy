@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 
@@ -48,15 +47,16 @@ export function useTimerControls({
       return;
     }
     
-    // If we have a pausedTime value, we should resume from that time
+    // CRITICAL: If we have a pausedTime value, we should resume from that time
     if (pausedTimeRef.current !== null) {
       console.log('Resuming from paused time:', pausedTimeRef.current);
+      // Set the time remaining to the paused time before starting
       setTimeRemaining(pausedTimeRef.current);
       // Clear pausedTimeRef AFTER setting the time remaining
       pausedTimeRef.current = null;
     }
     
-    // Set running state
+    // Set running state AFTER handling the paused time
     setIsRunning(true);
     
     // Record session start time if not already set

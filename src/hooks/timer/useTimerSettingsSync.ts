@@ -39,9 +39,11 @@ export function useTimerSettingsSync({
       // Update time remaining
       setTimeRemaining(newTime);
       
-      // Important: Set pausedTimeRef to the new time so the timer can be started
-      pausedTimeRef.current = newTime;
-      console.log('Setting paused time to new duration:', newTime);
+      // CRITICAL: Set pausedTimeRef to the new time so the timer can be started
+      // This is the key fix - ensure the pausedTimeRef is set to null so the timer uses
+      // the updated timeRemaining value instead of an old paused value
+      pausedTimeRef.current = null;
+      console.log('Clearing paused time after settings change');
       
       // Save the updated state
       saveTimerState({

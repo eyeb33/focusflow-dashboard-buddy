@@ -58,14 +58,6 @@ export function useTimerTick({
         sessionStartTimeRef.current = new Date().toISOString();
       }
       
-      // If we have a paused time, use it to resume from exactly where we left off
-      if (pausedTimeRef.current !== null) {
-        console.log('Tick effect: Using paused time value for resume:', pausedTimeRef.current);
-        setTimeRemaining(pausedTimeRef.current);
-        // Now clear the pausedTimeRef since we've restored the state
-        pausedTimeRef.current = null;
-      }
-      
       // Update last tick time
       lastTickTimeRef.current = Date.now();
       
@@ -106,7 +98,7 @@ export function useTimerTick({
     } else {
       // Timer is stopped, save current timer state
       if (timeRemaining > 0) {
-        // Store the exact time when pausing
+        // Store the exact time when pausing - this is critical
         pausedTimeRef.current = timeRemaining;
         console.log('Timer paused at:', timeRemaining);
         
@@ -131,16 +123,15 @@ export function useTimerTick({
   }, [
     isRunning, 
     timerMode, 
-    timeRemaining,
-    setTimeRemaining, 
     handleTimerComplete, 
     timerRef, 
     lastTickTimeRef, 
     sessionStartTimeRef, 
     pausedTimeRef, 
     saveTimerState, 
-    currentSessionIndex
-  ]);
+    currentSessionIndex,
+    setTimeRemaining
+  ]); // Removed timeRemaining from deps to prevent reset loops
   
   // Return an empty object
   return {};
