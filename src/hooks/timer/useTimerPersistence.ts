@@ -33,7 +33,11 @@ export function useTimerPersistence() {
       
       // Only restore if recent (< 30 minutes) and valid
       if (elapsed < 1800000 && typeof savedState.timeRemaining === 'number') {
-        return savedState;
+        // Always force isRunning to false when restoring
+        return {
+          ...savedState,
+          isRunning: false
+        };
       }
       return null;
     } catch (error) {

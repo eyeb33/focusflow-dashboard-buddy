@@ -53,6 +53,12 @@ export function useTimerTick({
     if (isRunning) {
       console.log('Starting timer interval with time remaining:', timeRemaining);
       
+      // If we have a paused time, restore it when starting the timer
+      if (pausedTimeRef.current !== null && pausedTimeRef.current !== timeRemaining) {
+        console.log('Restoring from paused time:', pausedTimeRef.current);
+        setTimeRemaining(pausedTimeRef.current);
+      }
+      
       // Record session start time if not already set
       if (!sessionStartTimeRef.current) {
         sessionStartTimeRef.current = new Date().toISOString();
@@ -97,20 +103,8 @@ export function useTimerTick({
         }
       }, 1000);
     } else {
-      // Timer is stopped, save current timer state
-      if (timeRemaining > 0) {
-        // Store the exact time when pausing
-        pausedTimeRef.current = timeRemaining;
-        console.log('Timer paused at:', timeRemaining);
-        
-        saveTimerState({
-          timerMode,
-          timeRemaining,
-          isRunning: false,
-          currentSessionIndex,
-          sessionStartTime: sessionStartTimeRef.current
-        });
-      }
+      // Timer is stopped
+      console.log('Timer is stopped at:', timeRemaining);
     }
     
     // Cleanup interval on unmount or isRunning changes
