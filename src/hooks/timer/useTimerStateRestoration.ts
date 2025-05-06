@@ -41,7 +41,7 @@ export function useTimerStateRestoration({
         setCurrentSessionIndex(savedState.currentSessionIndex || 0);
         
         // Explicitly store the paused time if timer was not running
-        if (!savedState.isRunning && savedState.timeRemaining) {
+        if (!savedState.isRunning && savedState.timeRemaining > 0) {
           debugTimerEvent('useTimerStateRestoration', 'Restoring exact paused time', savedState.timeRemaining);
           pausedTimeRef.current = savedState.timeRemaining;
         } else {

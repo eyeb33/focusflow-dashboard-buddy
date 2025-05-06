@@ -77,7 +77,7 @@ export function useTimerControls({
     const stateToSave = {
       timerMode,
       isRunning: true,
-      timeRemaining: pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining,
+      timeRemaining: timeRemaining,
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current
     };
