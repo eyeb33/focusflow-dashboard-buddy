@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerVisibility } from './useTimerVisibility';
 
@@ -41,7 +41,7 @@ export function useTimerTick({
   });
   
   // Keep track of previous running state to detect pause events
-  const isFirstRender = useEffect.useRef(true);
+  const isFirstRender = useRef(true);
   
   // Set up the timer tick effect
   useEffect(() => {
