@@ -16,9 +16,18 @@ export function useTimerPersistence() {
   const saveTimerState = useCallback((state: SaveTimerStateParams) => {
     const stateWithTimestamp = {
       ...state,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      // Add explicit paused flag to make the state clearer
+      isPaused: !state.isRunning && state.timeRemaining > 0
     };
+    
     debugTimerEvent('useTimerPersistence', 'Saving timer state', stateWithTimestamp);
+    
+    // Check if we're saving an explicit pause state
+    if (stateWithTimestamp.isPaused) {
+      debugTimerEvent('useTimerPersistence', 'Saving PAUSED timer state with time', state.timeRemaining);
+    }
+    
     localStorage.setItem('timerState', JSON.stringify(stateWithTimestamp));
   }, []);
   
@@ -35,6 +44,12 @@ export function useTimerPersistence() {
       // Only restore if recent (< 30 minutes) and valid
       if (elapsed < 1800000 && typeof savedState.timeRemaining === 'number') {
         debugTimerEvent('useTimerPersistence', 'Loaded valid timer state', savedState);
+        
+        // Check if this was a paused timer state
+        if (savedState.isPaused || (!savedState.isRunning && savedState.timeRemaining > 0)) {
+          debugTimerEvent('useTimerPersistence', 'Restoring PAUSED timer with exact time', savedState.timeRemaining);
+        }
+        
         return savedState;
       }
       

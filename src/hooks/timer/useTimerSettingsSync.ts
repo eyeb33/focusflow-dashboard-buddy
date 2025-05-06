@@ -31,6 +31,13 @@ export function useTimerSettingsSync({
       return;
     }
     
+    // CRITICAL FIX: Skip settings sync if we have a paused timer
+    // This prevents losing the paused time when settings are changed or reloaded
+    if (pausedTimeRef.current !== null) {
+      console.log(`[useTimerSettingsSync] Paused timer detected with time ${pausedTimeRef.current}, skipping settings sync`);
+      return;
+    }
+    
     // Only update if the timer is not running
     if (!isRunning) {
       const newTime = getTotalTimeForMode();

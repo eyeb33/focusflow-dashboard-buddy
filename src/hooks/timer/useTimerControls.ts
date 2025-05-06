@@ -77,7 +77,7 @@ export function useTimerControls({
     const stateToSave = {
       timerMode,
       isRunning: true,
-      timeRemaining,
+      timeRemaining: pausedTimeRef.current || timeRemaining,
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current
     };
@@ -101,10 +101,15 @@ export function useTimerControls({
       isRunning: false,
       timeRemaining,
       currentSessionIndex,
-      sessionStartTime: sessionStartTimeRef.current
+      sessionStartTime: sessionStartTimeRef.current,
+      // Add this explicit flag to help with restoring the exact state
+      isPaused: true
     };
     console.log('[useTimerControls] Saving timer state after pause:', stateToSave);
     saveTimerState(stateToSave);
+    
+    // Double check that the pausedTimeRef is still set correctly after state save
+    console.log('[useTimerControls] After pause - pausedTimeRef is:', pausedTimeRef.current);
   }, [timerMode, timeRemaining, currentSessionIndex, saveTimerState, setIsRunning, pausedTimeRef, sessionStartTimeRef]);
   
   const handleReset = useCallback(() => {
