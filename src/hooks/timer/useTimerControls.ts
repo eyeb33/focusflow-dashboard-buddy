@@ -39,7 +39,7 @@ export function useTimerControls({
 }: TimerControlsParams) {
   
   const handleStart = useCallback(() => {
-    console.log('START called with mode:', timerMode, 'and time:', timeRemaining);
+    console.log('START called with mode:', timerMode, 'and time:', timeRemaining, 'pausedTime:', pausedTimeRef.current);
     
     // If timer is already running, don't do anything
     if (isRunning) {
@@ -47,7 +47,15 @@ export function useTimerControls({
       return;
     }
     
-    // Set running state first
+    // If we have a pausedTime value, we should resume from that time
+    if (pausedTimeRef.current !== null) {
+      console.log('Resuming from paused time:', pausedTimeRef.current);
+      setTimeRemaining(pausedTimeRef.current);
+      // Clear pausedTimeRef AFTER setting the time remaining
+      pausedTimeRef.current = null;
+    }
+    
+    // Set running state
     setIsRunning(true);
     
     // Record session start time if not already set
@@ -64,7 +72,7 @@ export function useTimerControls({
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current
     });
-  }, [timerMode, timeRemaining, currentSessionIndex, saveTimerState, setIsRunning, sessionStartTimeRef]);
+  }, [timerMode, timeRemaining, currentSessionIndex, saveTimerState, setIsRunning, pausedTimeRef, sessionStartTimeRef, setTimeRemaining]);
   
   const handlePause = useCallback(() => {
     console.log('PAUSE called with time:', timeRemaining);
