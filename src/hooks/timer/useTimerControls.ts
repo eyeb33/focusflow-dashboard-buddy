@@ -46,6 +46,8 @@ export function useTimerControls({
     if (pausedTimeRef.current !== null) {
       console.log('Resuming from paused time:', pausedTimeRef.current);
       setTimeRemaining(pausedTimeRef.current);
+      // Clear pausedTimeRef AFTER setting the time remaining
+      pausedTimeRef.current = null;
     }
     
     // Record session start time if not already set
@@ -61,7 +63,7 @@ export function useTimerControls({
     saveTimerState({
       timerMode,
       isRunning: true,
-      timeRemaining: pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining,
+      timeRemaining,
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current
     });
