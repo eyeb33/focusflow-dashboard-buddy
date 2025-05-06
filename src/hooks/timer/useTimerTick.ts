@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerVisibility } from './useTimerVisibility';
@@ -52,6 +53,7 @@ export function useTimerTick({
     // Skip first render to avoid side effects during initialization
     if (isFirstRender.current) {
       isFirstRender.current = false;
+      previousIsRunningRef.current = isRunning;
       return;
     }
     
@@ -134,7 +136,6 @@ export function useTimerTick({
   }, [
     isRunning, 
     timerMode, 
-    timeRemaining,
     setTimeRemaining, 
     handleTimerComplete, 
     timerRef, 
@@ -143,7 +144,7 @@ export function useTimerTick({
     pausedTimeRef, 
     saveTimerState, 
     currentSessionIndex
-  ]);
+  ]); // Removed timeRemaining from dependencies to prevent reset loops
   
   // Return an empty object
   return {};

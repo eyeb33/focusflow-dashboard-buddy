@@ -39,7 +39,6 @@ export function useTimerSettingsSync({
     }
     
     // Only update if we're not resuming from a paused state
-    // CRITICAL: Don't update if we have a paused time we're trying to preserve
     if (pausedTimeRef.current !== null) {
       console.log('Paused time exists, preserving:', pausedTimeRef.current);
       return;

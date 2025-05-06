@@ -49,17 +49,18 @@ export function useTimerControls({
       { isRunning: true, timeRemaining, pausedTime: pausedTimeRef.current }
     );
     
-    // Set timer running state first
+    // Important: Do NOT modify the time here, let the tick effect handle it
+    // We just set the running state flag
     setIsRunning(true);
     
-    // We DON'T clear pausedTimeRef here - we need it to restore the time in the tick effect
-    // The tick effect will use pausedTimeRef to restore the exact time when resuming
+    // Save the timer state - use the paused time if available
+    const timeToSave = pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining;
+    console.log('Saving timer state with time:', timeToSave);
     
-    // Save the timer state
     saveTimerState({
       timerMode,
       isRunning: true,
-      timeRemaining: pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining,
+      timeRemaining: timeToSave,
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current || new Date().toISOString()
     });
