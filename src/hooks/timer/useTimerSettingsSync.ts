@@ -23,9 +23,8 @@ export function useTimerSettingsSync({
   saveTimerState,
   currentSessionIndex
 }: UseTimerSettingsSyncProps) {
-  // Update timer when settings change (when not running)
   useEffect(() => {
-    // Skip the initial render to avoid conflicts with state restoration
+    // Skip the initial render
     if (isInitialLoadRef.current) {
       console.log("Initial load detected, skipping settings sync");
       isInitialLoadRef.current = false;
@@ -34,18 +33,15 @@ export function useTimerSettingsSync({
     
     // Only update if the timer is not running
     if (!isRunning) {
-      // If we have a paused state, don't reset the timer
-      if (pausedTimeRef.current !== null) {
-        console.log(`Settings changed but timer is paused at ${pausedTimeRef.current}, preserving paused state`);
-        return;
-      }
-      
       const newTime = getTotalTimeForMode();
       console.log(`Settings changed: Updating timer to ${newTime} seconds`);
       
-      // Important: Always update the timer value when settings change 
-      // and the timer is not running, regardless of pause state
+      // Update time remaining
       setTimeRemaining(newTime);
+      
+      // Important: Set pausedTimeRef to the new time so the timer can be started
+      pausedTimeRef.current = newTime;
+      console.log('Setting paused time to new duration:', newTime);
       
       // Save the updated state
       saveTimerState({
@@ -59,7 +55,8 @@ export function useTimerSettingsSync({
       console.log("Timer values updated after settings change:", { 
         mode: timerMode,
         newTime,
-        isRunning
+        isRunning,
+        pausedTime: pausedTimeRef.current
       });
     }
   }, [
