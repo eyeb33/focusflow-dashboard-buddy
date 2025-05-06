@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerVisibility } from './useTimerVisibility';
@@ -70,10 +69,6 @@ export function useTimerTick({
       if (pausedTimeRef.current !== null && pausedTimeRef.current !== timeRemaining) {
         console.log('Restoring from paused time:', pausedTimeRef.current);
         setTimeRemaining(pausedTimeRef.current);
-        
-        // Important: Clear the pausedTimeRef after restoring
-        // This prevents issues with subsequent timer starts
-        // pausedTimeRef.current = null;
       }
       
       // Record session start time if not already set
@@ -122,7 +117,6 @@ export function useTimerTick({
       }, 1000);
     } else {
       // Timer is stopped - Don't modify timeRemaining or pausedTimeRef here
-      // This is critical - we should respect the pause time set by handlePause
       console.log('Timer is stopped at:', timeRemaining, 'with pausedTime:', pausedTimeRef.current);
     }
     

@@ -8,7 +8,6 @@ import { useTimerPersistence } from './timer/useTimerPersistence';
 import { useTimerControls } from './timer/useTimerControls';
 import { useTimerCompletion } from './timer/useTimerCompletion';
 import { useTimerTick } from './timer/useTimerTick';
-import { useTimerVisibility } from './timer/useTimerVisibility';
 import { DEFAULT_TIMER_SETTINGS } from './timer/useTimerDefaults';
 import { useTimerStateRestoration } from './timer/useTimerStateRestoration';
 import { useTimerSettingsSync } from './timer/useTimerSettingsSync';
@@ -79,24 +78,6 @@ export const useTimer = (settings?: typeof DEFAULT_TIMER_SETTINGS) => {
     isInitialLoadRef
   });
   
-  // Handle timer completion
-  const { handleTimerComplete } = useTimerCompletion({
-    timerMode,
-    setTimerMode,
-    isRunning,
-    setIsRunning,
-    completedSessions,
-    setCompletedSessions,
-    totalTimeToday,
-    setTotalTimeToday,
-    currentSessionIndex,
-    setCurrentSessionIndex,
-    sessionStartTimeRef,
-    pausedTimeRef,
-    settings: timerSettings,
-    setTimeRemaining
-  });
-  
   // Setup timer controls
   const {
     handleStart,
@@ -116,6 +97,24 @@ export const useTimer = (settings?: typeof DEFAULT_TIMER_SETTINGS) => {
     setCurrentSessionIndex,
     settings: timerSettings,
     saveTimerState
+  });
+  
+  // Handle timer completion
+  const { handleTimerComplete } = useTimerCompletion({
+    timerMode,
+    setTimerMode,
+    isRunning,
+    setIsRunning,
+    completedSessions,
+    setCompletedSessions,
+    totalTimeToday,
+    setTotalTimeToday,
+    currentSessionIndex,
+    setCurrentSessionIndex,
+    sessionStartTimeRef,
+    pausedTimeRef,
+    settings: timerSettings,
+    setTimeRemaining
   });
   
   // Sync timer with settings changes
@@ -143,16 +142,6 @@ export const useTimer = (settings?: typeof DEFAULT_TIMER_SETTINGS) => {
     handleTimerComplete,
     saveTimerState,
     currentSessionIndex
-  });
-  
-  // Handle visibility changes
-  useTimerVisibility({
-    isRunning,
-    timeRemaining,
-    setTimeRemaining,
-    lastTickTimeRef,
-    pausedTimeRef,
-    handleTimerComplete
   });
   
   return {
