@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 
@@ -31,27 +30,20 @@ export function useTimerSettingsSync({
       return;
     }
     
-    // CRITICAL FIX: Skip settings sync if we have a paused timer
-    // This prevents losing the paused time when settings are changed or reloaded
-    if (pausedTimeRef.current !== null) {
-      console.log(`[useTimerSettingsSync] Paused timer detected with time ${pausedTimeRef.current}, skipping settings sync`);
-      return;
-    }
-    
     // Only update if the timer is not running
     if (!isRunning) {
+      // CRITICAL FIX: We should NOT keep the paused time when settings change
+      // This was causing the timer to not update after changing settings
+      if (pausedTimeRef.current !== null) {
+        console.log('[useTimerSettingsSync] Clearing paused time reference to allow settings to take effect');
+        pausedTimeRef.current = null;
+      }
+      
       const newTime = getTotalTimeForMode();
       console.log(`[useTimerSettingsSync] Settings changed: Updating timer to ${newTime} seconds`);
-      console.log(`[useTimerSettingsSync] BEFORE update: pausedTimeRef =`, pausedTimeRef.current);
       
       // Update time remaining
       setTimeRemaining(newTime);
-      
-      // CRITICAL: Set pausedTimeRef to null so the timer uses
-      // the updated timeRemaining value instead of an old paused value
-      const previousPausedTime = pausedTimeRef.current;
-      pausedTimeRef.current = null;
-      console.log('[useTimerSettingsSync] Clearing paused time after settings change, was:', previousPausedTime);
       
       // Save the updated state
       const stateToSave = {

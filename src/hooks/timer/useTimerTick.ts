@@ -75,10 +75,10 @@ export function useTimerTick({
         
         // Only update if at least 1 second has passed
         if (elapsed > 0) {
-          console.log('[useTimerTick] Tick: elapsed =', elapsed, 'seconds, current time =', timeRemaining);
           lastTickTimeRef.current = now;
           
           setTimeRemaining((prevTime) => {
+            console.log('[useTimerTick] Tick: elapsed =', elapsed, 'seconds, current time =', prevTime);
             const newTimeRemaining = Math.max(0, prevTime - elapsed);
             console.log(`[useTimerTick] Updating time: ${prevTime} -> ${newTimeRemaining}`);
             
@@ -91,11 +91,6 @@ export function useTimerTick({
                 currentSessionIndex,
                 sessionStartTime: sessionStartTimeRef.current
               };
-              
-              // Log less frequently to avoid console spam
-              if (prevTime % 10 === 0 || newTimeRemaining === 0) {
-                console.log('[useTimerTick] Periodic save during tick:', stateToSave);
-              }
               
               saveTimerState(stateToSave);
             }
@@ -113,7 +108,7 @@ export function useTimerTick({
             return newTimeRemaining;
           });
         }
-      }, 200); // Check more frequently for smoother updates, but still only update once per second
+      }, 100); // Check more frequently for smoother updates
     } else {
       // Timer is stopped, ensure pausedTimeRef is set if needed
       if (timeRemaining > 0 && pausedTimeRef.current === null) {
@@ -152,6 +147,6 @@ export function useTimerTick({
     saveTimerState, 
     currentSessionIndex,
     setTimeRemaining,
-    timeRemaining // Added timeRemaining back to dependencies to detect changes in time
+    timeRemaining // Keep timeRemaining in dependencies to respond to changes
   ]);
 }

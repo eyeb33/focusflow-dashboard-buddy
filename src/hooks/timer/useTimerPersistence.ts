@@ -9,7 +9,7 @@ interface SaveTimerStateParams {
   timeRemaining: number;
   currentSessionIndex: number;
   sessionStartTime: string | null;
-  isPaused?: boolean; // Added explicit isPaused flag
+  isPaused?: boolean;
 }
 
 export function useTimerPersistence() {
@@ -45,6 +45,10 @@ export function useTimerPersistence() {
       // Only restore if recent (< 30 minutes) and valid
       if (elapsed < 1800000 && typeof savedState.timeRemaining === 'number') {
         debugTimerEvent('useTimerPersistence', 'Loaded valid timer state', savedState);
+        
+        // Force the isRunning state to false when loading saved state
+        // This prevents auto-resume issues after changing settings
+        savedState.isRunning = false;
         
         // Check if this was a paused timer state
         if (savedState.isPaused || (!savedState.isRunning && savedState.timeRemaining > 0)) {
