@@ -92,12 +92,11 @@ export function useTimerTick({
             
             // Handle timer completion
             if (newTimeRemaining === 0) {
-              handleTimerComplete();
-              
               if (timerRef.current) {
                 clearInterval(timerRef.current);
                 timerRef.current = null;
               }
+              setTimeout(() => handleTimerComplete(), 0);
             }
             
             return newTimeRemaining;

@@ -46,10 +46,15 @@ export function useTimerControls({
     if (pausedTimeRef.current !== null) {
       console.log('Resuming from paused time:', pausedTimeRef.current);
       setTimeRemaining(pausedTimeRef.current);
-      // Don't clear pausedTimeRef here - it will be cleared in the tick effect
     }
     
-    // Set timer running state first
+    // Record session start time if not already set
+    if (!sessionStartTimeRef.current) {
+      sessionStartTimeRef.current = new Date().toISOString();
+      console.log('Setting new session start time:', sessionStartTimeRef.current);
+    }
+    
+    // Set timer running state
     setIsRunning(true);
     
     // Save the timer state
@@ -58,18 +63,18 @@ export function useTimerControls({
       isRunning: true,
       timeRemaining: pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining,
       currentSessionIndex,
-      sessionStartTime: sessionStartTimeRef.current || new Date().toISOString()
+      sessionStartTime: sessionStartTimeRef.current
     });
   }, [timerMode, timeRemaining, currentSessionIndex, saveTimerState, setIsRunning, pausedTimeRef, sessionStartTimeRef, setTimeRemaining]);
   
   const handlePause = useCallback(() => {
     console.log('PAUSE called with time:', timeRemaining);
     
-    // Store the current time when pausing - BEFORE stopping the timer
+    // Store the current time when pausing
     pausedTimeRef.current = timeRemaining;
     console.log('Storing exact pause time:', timeRemaining);
     
-    // Stop the timer after storing the current time
+    // Stop the timer
     setIsRunning(false);
     
     // Save the timer state with the paused time

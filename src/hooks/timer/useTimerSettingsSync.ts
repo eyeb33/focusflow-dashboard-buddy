@@ -46,7 +46,6 @@ export function useTimerSettingsSync({
       // Important: Always update the timer value when settings change 
       // and the timer is not running, regardless of pause state
       setTimeRemaining(newTime);
-      pausedTimeRef.current = null; // Reset the pause state
       
       // Save the updated state
       saveTimerState({
