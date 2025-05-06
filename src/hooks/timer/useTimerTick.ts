@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerVisibility } from './useTimerVisibility';
@@ -42,11 +43,12 @@ export function useTimerTick({
   
   // Keep track of previous running state to detect pause events
   const isFirstRender = useRef(true);
+  const previousIsRunningRef = useRef(isRunning);
   
   // Set up the timer tick effect
   useEffect(() => {
     // Debug the current state
-    console.log(`Timer tick effect: isRunning=${isRunning}, time=${timeRemaining}, pausedTime=${pausedTimeRef.current}`);
+    console.log(`Timer tick effect: isRunning=${isRunning}, time=${timeRemaining}, pausedTime=${pausedTimeRef.current}, previousIsRunning=${previousIsRunningRef.current}`);
     
     // Skip first render to avoid side effects during initialization
     if (isFirstRender.current) {
@@ -62,17 +64,22 @@ export function useTimerTick({
     
     // Only set up the timer if it's running
     if (isRunning) {
-      console.log('Starting timer interval with time remaining:', timeRemaining);
+      console.log('Starting timer interval with time remaining:', timeRemaining, 'paused time:', pausedTimeRef.current);
       
       // If we have a paused time, restore it when starting the timer
       if (pausedTimeRef.current !== null && pausedTimeRef.current !== timeRemaining) {
         console.log('Restoring from paused time:', pausedTimeRef.current);
         setTimeRemaining(pausedTimeRef.current);
+        
+        // Important: Clear the pausedTimeRef after restoring
+        // This prevents issues with subsequent timer starts
+        // pausedTimeRef.current = null;
       }
       
       // Record session start time if not already set
       if (!sessionStartTimeRef.current) {
         sessionStartTimeRef.current = new Date().toISOString();
+        console.log('New session start time set:', sessionStartTimeRef.current);
       }
       
       // Update last tick time
@@ -118,6 +125,9 @@ export function useTimerTick({
       // This is critical - we should respect the pause time set by handlePause
       console.log('Timer is stopped at:', timeRemaining, 'with pausedTime:', pausedTimeRef.current);
     }
+    
+    // Update previous running state for next render
+    previousIsRunningRef.current = isRunning;
     
     // Cleanup interval on unmount or isRunning changes
     return () => {

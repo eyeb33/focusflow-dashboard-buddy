@@ -52,6 +52,9 @@ export function useTimerControls({
     // Set timer running state first
     setIsRunning(true);
     
+    // We DON'T clear pausedTimeRef here - we need it to restore the time in the tick effect
+    // The tick effect will use pausedTimeRef to restore the exact time when resuming
+    
     // Save the timer state
     saveTimerState({
       timerMode,
