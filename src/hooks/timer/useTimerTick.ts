@@ -75,10 +75,12 @@ export function useTimerTick({
         
         // Only update if at least 1 second has passed
         if (elapsed > 0) {
+          console.log('[useTimerTick] Tick: elapsed =', elapsed, 'seconds, current time =', timeRemaining);
           lastTickTimeRef.current = now;
           
           setTimeRemaining((prevTime) => {
             const newTimeRemaining = Math.max(0, prevTime - elapsed);
+            console.log(`[useTimerTick] Updating time: ${prevTime} -> ${newTimeRemaining}`);
             
             // Save state periodically (every 5 seconds)
             if (prevTime % 5 === 0 || newTimeRemaining === 0) {
@@ -149,6 +151,7 @@ export function useTimerTick({
     pausedTimeRef, 
     saveTimerState, 
     currentSessionIndex,
-    setTimeRemaining
-  ]); // Removed timeRemaining from deps to prevent reset loops
+    setTimeRemaining,
+    timeRemaining // Added timeRemaining back to dependencies to detect changes in time
+  ]);
 }

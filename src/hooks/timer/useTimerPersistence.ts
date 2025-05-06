@@ -9,6 +9,7 @@ interface SaveTimerStateParams {
   timeRemaining: number;
   currentSessionIndex: number;
   sessionStartTime: string | null;
+  isPaused?: boolean; // Added explicit isPaused flag
 }
 
 export function useTimerPersistence() {
@@ -18,7 +19,7 @@ export function useTimerPersistence() {
       ...state,
       timestamp: Date.now(),
       // Add explicit paused flag to make the state clearer
-      isPaused: !state.isRunning && state.timeRemaining > 0
+      isPaused: state.isPaused || (!state.isRunning && state.timeRemaining > 0)
     };
     
     debugTimerEvent('useTimerPersistence', 'Saving timer state', stateWithTimestamp);
