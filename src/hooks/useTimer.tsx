@@ -12,13 +12,12 @@ import { useTimerVisibility } from './timer/useTimerVisibility';
 import { DEFAULT_TIMER_SETTINGS } from './timer/useTimerDefaults';
 import { useTimerStateRestoration } from './timer/useTimerStateRestoration';
 import { useTimerSettingsSync } from './timer/useTimerSettingsSync';
-import { checkTimerStateConsistency } from '@/utils/timerDebugUtils';
 
 /**
  * Main timer hook that provides all timer functionality
  */
 export const useTimer = (settings?: typeof DEFAULT_TIMER_SETTINGS) => {
-  console.log('[useTimer] Hook initializing with settings:', settings);
+  console.log('useTimer hook initializing with settings:', settings);
   
   // Use provided settings or defaults if undefined
   const timerSettings = settings || DEFAULT_TIMER_SETTINGS;
@@ -47,7 +46,7 @@ export const useTimer = (settings?: typeof DEFAULT_TIMER_SETTINGS) => {
     initialTime: timerSettings.workDuration * 60
   });
   
-  console.log('[useTimer] Initial timer state:', { 
+  console.log('Initial timer state:', { 
     timerMode, 
     isRunning, 
     timeRemaining, 
@@ -155,11 +154,6 @@ export const useTimer = (settings?: typeof DEFAULT_TIMER_SETTINGS) => {
     pausedTimeRef,
     handleTimerComplete
   });
-  
-  // Check timer state consistency
-  useCallback(() => {
-    checkTimerStateConsistency(isRunning, timeRemaining, pausedTimeRef.current, 'useTimer');
-  }, [isRunning, timeRemaining, pausedTimeRef]);
   
   return {
     // Timer state

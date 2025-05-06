@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 
@@ -22,45 +23,38 @@ export function useTimerSettingsSync({
   saveTimerState,
   currentSessionIndex
 }: UseTimerSettingsSyncProps) {
+  // Update timer when settings change (when not running)
   useEffect(() => {
-    // Skip the initial render
+    // Skip the initial render to avoid conflicts with state restoration
     if (isInitialLoadRef.current) {
-      console.log("[useTimerSettingsSync] Initial load detected, skipping settings sync");
+      console.log("Initial load detected, skipping settings sync");
       isInitialLoadRef.current = false;
       return;
     }
     
     // Only update if the timer is not running
     if (!isRunning) {
-      // CRITICAL FIX: We should NOT keep the paused time when settings change
-      // This was causing the timer to not update after changing settings
-      if (pausedTimeRef.current !== null) {
-        console.log('[useTimerSettingsSync] Clearing paused time reference to allow settings to take effect');
-        pausedTimeRef.current = null;
-      }
-      
       const newTime = getTotalTimeForMode();
-      console.log(`[useTimerSettingsSync] Settings changed: Updating timer to ${newTime} seconds`);
+      console.log(`Settings changed: Updating timer to ${newTime} seconds`);
       
-      // Update time remaining
+      // Important: Always update the timer value when settings change 
+      // and the timer is not running, regardless of pause state
       setTimeRemaining(newTime);
+      pausedTimeRef.current = null; // Reset the pause state
       
       // Save the updated state
-      const stateToSave = {
+      saveTimerState({
         timerMode,
         isRunning: false,
         timeRemaining: newTime,
         currentSessionIndex,
         sessionStartTime: null
-      };
-      console.log('[useTimerSettingsSync] Saving timer state after settings change:', stateToSave);
-      saveTimerState(stateToSave);
+      });
       
-      console.log("[useTimerSettingsSync] Timer values updated after settings change:", { 
+      console.log("Timer values updated after settings change:", { 
         mode: timerMode,
         newTime,
-        isRunning,
-        pausedTime: pausedTimeRef.current
+        isRunning
       });
     }
   }, [

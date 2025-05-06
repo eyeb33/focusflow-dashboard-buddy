@@ -16,8 +16,8 @@ export const useDashboardData = () => {
   // Track tab visibility changes
   const wasDocumentHidden = useRef<boolean>(false);
   const lastRefreshTime = useRef<number>(Date.now());
-  // Set a shorter refresh interval to catch updates more regularly
-  const refreshInterval = 30 * 1000; // 30 seconds - more frequent updates for better UX
+  // Increase refresh interval to reduce database calls
+  const refreshInterval = 60 * 1000; // 60 seconds - less frequent updates
   
   // Use current date for consistency
   const today = new Date().toISOString().split('T')[0];
@@ -62,7 +62,6 @@ export const useDashboardData = () => {
         // Always check if enough time has passed since last refresh
         const now = Date.now();
         if (now - lastRefreshTime.current >= refreshInterval) {
-          console.log('Dashboard became visible after being hidden, refreshing data');
           refetchData();
         }
         wasDocumentHidden.current = false;

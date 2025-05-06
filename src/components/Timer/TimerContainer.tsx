@@ -47,7 +47,7 @@ const TimerContainer = () => {
     const minutes = Math.floor(timeRemaining / 60);
     const seconds = timeRemaining % 60;
     
-    console.log('[TimerContainer] State update:', { 
+    console.log('TimerContainer state update:', { 
       mode: timerMode, 
       running: isRunning, 
       timeRemaining,
@@ -60,7 +60,7 @@ const TimerContainer = () => {
 
   // Handle settings updates from the TimerSettings component
   const handleSettingsChange = (newDurations: any) => {
-    console.log("[TimerContainer] Received new settings:", newDurations);
+    console.log("Received new settings in TimerContainer:", newDurations);
     
     // Directly update the timer settings in the context
     updateSettings(newDurations);
@@ -68,19 +68,18 @@ const TimerContainer = () => {
 
   // Log whenever timer controls are used with enhanced debugging
   const handleTimerStart = () => {
-    console.log("[TimerContainer] START button pressed - current time:", timeRemaining, "isRunning:", isRunning);
+    console.log("START button pressed in TimerContainer - current time:", timeRemaining);
     handleStart();
-    console.log("[TimerContainer] After START call - time is:", timeRemaining, "isRunning:", isRunning);
+    console.log("After START call - time is:", timeRemaining, "isRunning:", isRunning);
   };
 
   const handleTimerPause = () => {
-    console.log("[TimerContainer] PAUSE button pressed - current time:", timeRemaining, "isRunning:", isRunning);
+    console.log("PAUSE button pressed in TimerContainer - current time:", timeRemaining);
     handlePause();
-    console.log("[TimerContainer] After PAUSE call - time is:", timeRemaining);
   };
 
   const handleTimerReset = () => {
-    console.log("[TimerContainer] RESET button pressed");
+    console.log("RESET button pressed in TimerContainer");
     handleReset();
   };
 

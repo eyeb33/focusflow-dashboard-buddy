@@ -3,7 +3,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { TimerSettings } from './useTimerSettings';
 import { useRef } from 'react';
-import { useTimerSessionPersistence } from './timer/useTimerSessionPersistence';
 
 interface UseTimerCompletionProps {
   timerMode: TimerMode;
@@ -34,9 +33,6 @@ export function useTimerCompletion({
   const isTransitioningRef = useRef<boolean>(false);
   const sessionStartTimeRef = useRef<string | null>(null);
   
-  // Initialize session persistence hook
-  const { saveSession } = useTimerSessionPersistence({ user });
-  
   // Set session start time
   const setSessionStartTime = (time: string | null) => {
     sessionStartTimeRef.current = time;
@@ -46,6 +42,28 @@ export function useTimerCompletion({
       localStorage.setItem('sessionStartTime', time);
     } else {
       localStorage.removeItem('sessionStartTime');
+    }
+  };
+  
+  // Function to save completed session
+  const saveSession = async (
+    timerMode: TimerMode,
+    totalTime: number,
+    sessionStartTime: string | null
+  ): Promise<void> => {
+    if (!user || !sessionStartTime) return;
+    
+    try {
+      // For now, just log the session data
+      console.log('Session completed:', {
+        userId: user.id,
+        timerMode,
+        totalTime,
+        completed: true,
+        sessionStartTime
+      });
+    } catch (error) {
+      console.error('Error saving session:', error);
     }
   };
   
@@ -74,12 +92,7 @@ export function useTimerCompletion({
         setTotalTimeToday(prev => prev + settings.workDuration);
         
         // Save the completed session
-        if (user) {
-          console.log(`Saving work session for user ${user.id} with duration ${settings.workDuration * 60} seconds`);
-          await saveSession('work', settings.workDuration * 60, sessionStartTime);
-        } else {
-          console.log('No user logged in, skipping session save');
-        }
+        await saveSession('work', settings.workDuration * 60, sessionStartTime);
         
         // Move to next session in cycle
         const newSessionIndex = (currentSessionIndex + 1) % settings.sessionsUntilLongBreak;
@@ -95,12 +108,10 @@ export function useTimerCompletion({
         }, 500);
       } else {
         // After a break
-        if (user) {
-          if (timerMode === 'break') {
-            await saveSession('break', settings.breakDuration * 60, sessionStartTime);
-          } else {
-            await saveSession('longBreak', settings.longBreakDuration * 60, sessionStartTime);
-          }
+        if (timerMode === 'break') {
+          await saveSession('break', settings.breakDuration * 60, sessionStartTime);
+        } else {
+          await saveSession('longBreak', settings.longBreakDuration * 60, sessionStartTime);
         }
         
         // Go back to work mode
@@ -114,15 +125,11 @@ export function useTimerCompletion({
         }
       }
     } finally {
-      // Reset transition flag and set a new session start time
+      // Reset transition flag and session start time
       isTransitioningRef.current = false;
       sessionStartTimeRef.current = new Date().toISOString();
     }
   };
 
-  return { 
-    handleTimerComplete, 
-    sessionStartTimeRef,
-    setSessionStartTime 
-  };
+  return { handleTimerComplete, sessionStartTimeRef };
 }

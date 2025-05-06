@@ -1,6 +1,5 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { updateDailyStats } from './productivityStats';
 
 export interface FocusSession {
   user_id: string;
@@ -18,28 +17,17 @@ export const saveFocusSession = async (
   startTime?: string // Optional parameter for start time
 ) => {
   try {
-    if (!userId) {
-      console.error('Cannot save session: No user ID provided');
-      return false;
-    }
+    if (!userId) return;
     
     // Use provided start time or current timestamp
     const sessionStartTime = startTime || new Date().toISOString();
-    const sessionDate = sessionStartTime.split('T')[0]; // YYYY-MM-DD
-    
-    console.log(`Saving ${sessionType} session to Supabase:`, {
-      userId,
-      sessionType,
-      duration,
-      completed,
-      created_at: sessionStartTime
-    });
     
     // For work sessions, ensure duration is reasonable
     // Standard pomodoro is 25 minutes (1500 seconds)
     if (sessionType === 'work' && completed) {
       // Add a sanity check - cap at 60 minutes (3600 seconds) as maximum
       const normalizedDuration = Math.min(duration, 3600);
+      console.log(`Saving ${sessionType} session with normalized duration: ${normalizedDuration} seconds`);
       
       const { error } = await supabase.from('focus_sessions').insert({
         user_id: userId,
@@ -50,25 +38,11 @@ export const saveFocusSession = async (
       });
       
       if (error) {
-        console.error('Error saving session to Supabase:', error);
+        console.error('Error saving session:', error);
         return false;
       } 
       
-      console.log('Session saved successfully to Supabase', { 
-        sessionType, 
-        normalizedDuration, 
-        completed, 
-        created_at: sessionStartTime 
-      });
-      
-      // Also update the daily stats for work sessions
-      if (completed) {
-        // Convert seconds to minutes for stats
-        const durationMinutes = Math.floor(normalizedDuration / 60);
-        console.log(`Updating daily stats with ${durationMinutes} minutes`);
-        await updateDailyStats(userId, durationMinutes, 'work', sessionDate);
-      }
-      
+      console.log('Session saved successfully', { sessionType, normalizedDuration, completed, created_at: sessionStartTime });
       return true;
     } else {
       // For non-work sessions or incomplete sessions, save as-is
@@ -81,13 +55,11 @@ export const saveFocusSession = async (
       });
       
       if (error) {
-        console.error('Error saving session to Supabase:', error);
+        console.error('Error saving session:', error);
         return false;
       }
       
-      console.log('Non-work session saved successfully to Supabase', { 
-        sessionType, duration, completed, created_at: sessionStartTime 
-      });
+      console.log('Session saved successfully', { sessionType, duration, completed, created_at: sessionStartTime });
       return true;
     }
   } catch (error) {

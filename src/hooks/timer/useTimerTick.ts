@@ -43,22 +43,15 @@ export function useTimerTick({
   
   // Set up the timer tick effect
   useEffect(() => {
-    console.log('[useTimerTick] Effect triggered with:', { 
-      isRunning, 
-      timeRemaining, 
-      pausedTimeRef: pausedTimeRef.current 
-    });
-    
     // Clear any existing timer
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
-      console.log("[useTimerTick] Cleared existing timer interval");
     }
     
     // Only set up the timer if it's running
     if (isRunning) {
-      console.log('[useTimerTick] Starting timer interval with time remaining:', timeRemaining);
+      console.log('Starting timer interval with time remaining:', timeRemaining);
       
       // Record session start time if not already set
       if (!sessionStartTimeRef.current) {
@@ -68,70 +61,62 @@ export function useTimerTick({
       // Update last tick time
       lastTickTimeRef.current = Date.now();
       
-      // Set up the timer interval - Use a faster interval for smoother updates
+      // Set up the timer interval
       timerRef.current = setInterval(() => {
         const now = Date.now();
         const elapsed = Math.floor((now - lastTickTimeRef.current) / 1000);
+        lastTickTimeRef.current = now;
         
-        // Only update if at least 1 second has passed
         if (elapsed > 0) {
-          lastTickTimeRef.current = now;
-          
-          setTimeRemaining((prevTime) => {
-            console.log('[useTimerTick] Tick: elapsed =', elapsed, 'seconds, current time =', prevTime);
+          setTimeRemaining((prevTime: number) => {
             const newTimeRemaining = Math.max(0, prevTime - elapsed);
-            console.log(`[useTimerTick] Updating time: ${prevTime} -> ${newTimeRemaining}`);
             
             // Save state periodically (every 5 seconds)
             if (prevTime % 5 === 0 || newTimeRemaining === 0) {
-              const stateToSave = {
+              saveTimerState({
                 timerMode,
                 timeRemaining: newTimeRemaining,
                 isRunning,
                 currentSessionIndex,
                 sessionStartTime: sessionStartTimeRef.current
-              };
-              
-              saveTimerState(stateToSave);
+              });
             }
             
             // Handle timer completion
             if (newTimeRemaining === 0) {
+              handleTimerComplete();
+              
               if (timerRef.current) {
                 clearInterval(timerRef.current);
                 timerRef.current = null;
-                console.log('[useTimerTick] Timer completed, cleared interval');
               }
-              setTimeout(() => handleTimerComplete(), 0);
             }
             
             return newTimeRemaining;
           });
         }
-      }, 100); // Check more frequently for smoother updates
+      }, 1000);
     } else {
-      // Timer is stopped, ensure pausedTimeRef is set if needed
-      if (timeRemaining > 0 && pausedTimeRef.current === null) {
+      // Timer is stopped, save current timer state
+      if (timeRemaining > 0) {
+        // Store the exact time when pausing
         pausedTimeRef.current = timeRemaining;
-        console.log('[useTimerTick] Timer stopped with remaining time, setting pausedTimeRef:', timeRemaining);
+        console.log('Timer paused at:', timeRemaining);
         
-        const stateToSave = {
+        saveTimerState({
           timerMode,
           timeRemaining,
           isRunning: false,
           currentSessionIndex,
-          sessionStartTime: sessionStartTimeRef.current,
-          isPaused: true
-        };
-        console.log('[useTimerTick] Saving paused timer state:', stateToSave);
-        saveTimerState(stateToSave);
+          sessionStartTime: sessionStartTimeRef.current
+        });
       }
     }
     
     // Cleanup interval on unmount or isRunning changes
     return () => {
       if (timerRef.current) {
-        console.log('[useTimerTick] Cleanup: clearing timer interval');
+        console.log('Clearing timer interval');
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
@@ -139,14 +124,17 @@ export function useTimerTick({
   }, [
     isRunning, 
     timerMode, 
+    timeRemaining,
+    setTimeRemaining, 
     handleTimerComplete, 
     timerRef, 
     lastTickTimeRef, 
     sessionStartTimeRef, 
     pausedTimeRef, 
     saveTimerState, 
-    currentSessionIndex,
-    setTimeRemaining,
-    timeRemaining // Keep timeRemaining in dependencies to respond to changes
+    currentSessionIndex
   ]);
+  
+  // Return an empty object
+  return {};
 }
