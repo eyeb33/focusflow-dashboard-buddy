@@ -68,13 +68,15 @@ export function useTimerTick({
       // Update last tick time
       lastTickTimeRef.current = Date.now();
       
-      // Set up the timer interval
+      // Set up the timer interval - Use a faster interval for smoother updates
       timerRef.current = setInterval(() => {
         const now = Date.now();
         const elapsed = Math.floor((now - lastTickTimeRef.current) / 1000);
-        lastTickTimeRef.current = now;
         
+        // Only update if at least 1 second has passed
         if (elapsed > 0) {
+          lastTickTimeRef.current = now;
+          
           setTimeRemaining((prevTime) => {
             const newTimeRemaining = Math.max(0, prevTime - elapsed);
             
@@ -109,26 +111,22 @@ export function useTimerTick({
             return newTimeRemaining;
           });
         }
-      }, 1000);
+      }, 200); // Check more frequently for smoother updates, but still only update once per second
     } else {
-      // Timer is stopped, save current timer state
-      if (timeRemaining > 0) {
-        // Store the exact time when pausing - this is critical
-        if (pausedTimeRef.current === null) {
-          pausedTimeRef.current = timeRemaining;
-          console.log('[useTimerTick] Timer paused at:', timeRemaining, '- setting pausedTimeRef');
-        } else {
-          console.log('[useTimerTick] Timer already paused at:', pausedTimeRef.current, '- not changing pausedTimeRef');
-        }
+      // Timer is stopped, ensure pausedTimeRef is set if needed
+      if (timeRemaining > 0 && pausedTimeRef.current === null) {
+        pausedTimeRef.current = timeRemaining;
+        console.log('[useTimerTick] Timer stopped with remaining time, setting pausedTimeRef:', timeRemaining);
         
         const stateToSave = {
           timerMode,
           timeRemaining,
           isRunning: false,
           currentSessionIndex,
-          sessionStartTime: sessionStartTimeRef.current
+          sessionStartTime: sessionStartTimeRef.current,
+          isPaused: true
         };
-        console.log('[useTimerTick] Saving timer state after pause:', stateToSave);
+        console.log('[useTimerTick] Saving paused timer state:', stateToSave);
         saveTimerState(stateToSave);
       }
     }
@@ -153,7 +151,4 @@ export function useTimerTick({
     currentSessionIndex,
     setTimeRemaining
   ]); // Removed timeRemaining from deps to prevent reset loops
-  
-  // Return an empty object
-  return {};
 }
