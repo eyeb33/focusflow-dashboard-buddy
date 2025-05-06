@@ -1,6 +1,7 @@
 
 import { useCallback } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
+import { debugTimerEvent } from '@/utils/timerDebugUtils';
 
 interface SaveTimerStateParams {
   timerMode: TimerMode;
@@ -17,7 +18,7 @@ export function useTimerPersistence() {
       ...state,
       timestamp: Date.now()
     };
-    console.log(`Saving timer state:`, stateWithTimestamp);
+    debugTimerEvent('useTimerPersistence', 'Saving timer state', stateWithTimestamp);
     localStorage.setItem('timerState', JSON.stringify(stateWithTimestamp));
   }, []);
   
@@ -33,11 +34,17 @@ export function useTimerPersistence() {
       
       // Only restore if recent (< 30 minutes) and valid
       if (elapsed < 1800000 && typeof savedState.timeRemaining === 'number') {
+        debugTimerEvent('useTimerPersistence', 'Loaded valid timer state', savedState);
         return savedState;
       }
+      
+      debugTimerEvent('useTimerPersistence', 'Saved state expired or invalid', { 
+        elapsed, 
+        valid: typeof savedState.timeRemaining === 'number' 
+      });
       return null;
     } catch (error) {
-      console.error('Error loading saved timer state:', error);
+      console.error('[useTimerPersistence] Error loading saved timer state:', error);
       return null;
     }
   }, []);

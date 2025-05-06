@@ -26,7 +26,7 @@ export function useTimerSettingsSync({
   useEffect(() => {
     // Skip the initial render
     if (isInitialLoadRef.current) {
-      console.log("Initial load detected, skipping settings sync");
+      console.log("[useTimerSettingsSync] Initial load detected, skipping settings sync");
       isInitialLoadRef.current = false;
       return;
     }
@@ -34,27 +34,30 @@ export function useTimerSettingsSync({
     // Only update if the timer is not running
     if (!isRunning) {
       const newTime = getTotalTimeForMode();
-      console.log(`Settings changed: Updating timer to ${newTime} seconds`);
+      console.log(`[useTimerSettingsSync] Settings changed: Updating timer to ${newTime} seconds`);
+      console.log(`[useTimerSettingsSync] BEFORE update: pausedTimeRef =`, pausedTimeRef.current);
       
       // Update time remaining
       setTimeRemaining(newTime);
       
-      // CRITICAL: Set pausedTimeRef to the new time so the timer can be started
-      // This is the key fix - ensure the pausedTimeRef is set to null so the timer uses
+      // CRITICAL: Set pausedTimeRef to null so the timer uses
       // the updated timeRemaining value instead of an old paused value
+      const previousPausedTime = pausedTimeRef.current;
       pausedTimeRef.current = null;
-      console.log('Clearing paused time after settings change');
+      console.log('[useTimerSettingsSync] Clearing paused time after settings change, was:', previousPausedTime);
       
       // Save the updated state
-      saveTimerState({
+      const stateToSave = {
         timerMode,
         isRunning: false,
         timeRemaining: newTime,
         currentSessionIndex,
         sessionStartTime: null
-      });
+      };
+      console.log('[useTimerSettingsSync] Saving timer state after settings change:', stateToSave);
+      saveTimerState(stateToSave);
       
-      console.log("Timer values updated after settings change:", { 
+      console.log("[useTimerSettingsSync] Timer values updated after settings change:", { 
         mode: timerMode,
         newTime,
         isRunning,

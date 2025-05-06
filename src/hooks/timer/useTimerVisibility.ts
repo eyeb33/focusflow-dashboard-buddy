@@ -18,49 +18,65 @@ export function useTimerVisibility({
   pausedTimeRef,
   handleTimerComplete
 }: UseTimerVisibilityProps) {
-  // Handle visibility changes (tab switching, window focus)
+  // Handle tab visibility changes
   useEffect(() => {
-    // Only set up visibility handling if timer is running
-    if (!isRunning) return;
-    
-    // Function to handle visibility change
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // Tab became hidden, record the current time
-        console.log('Tab hidden, recording time:', Date.now());
-        lastTickTimeRef.current = Date.now();
-      } else {
-        // Tab became visible, calculate elapsed time
+    // Only set up the visibility handler if the timer is running
+    if (isRunning) {
+      console.log('[useTimerVisibility] Setting up visibility change handler');
+      
+      const handleVisibilityChange = () => {
         const now = Date.now();
-        const elapsedSeconds = Math.floor((now - lastTickTimeRef.current) / 1000);
-        console.log('Tab visible after', elapsedSeconds, 'seconds');
         
-        // Update last tick time
-        lastTickTimeRef.current = now;
-        
-        // Only update if significant time has passed
-        if (elapsedSeconds > 1) {
-          // Calculate new remaining time
-          const newTimeRemaining = Math.max(0, timeRemaining - elapsedSeconds);
-          console.log('Adjusting timer from', timeRemaining, 'to', newTimeRemaining);
+        if (document.visibilityState === 'visible') {
+          console.log('[useTimerVisibility] Tab became visible');
           
-          // Update timer
-          setTimeRemaining(newTimeRemaining);
+          // Calculate elapsed time while away
+          const elapsed = Math.floor((now - lastTickTimeRef.current) / 1000);
+          lastTickTimeRef.current = now;
           
-          // Handle timer completion if needed
-          if (newTimeRemaining === 0) {
-            handleTimerComplete();
+          if (elapsed > 0) {
+            console.log(`[useTimerVisibility] ${elapsed} seconds elapsed while away`);
+            
+            setTimeRemaining((prevTime) => {
+              const newTime = Math.max(0, prevTime - elapsed);
+              console.log(`[useTimerVisibility] Updating time: ${prevTime} -> ${newTime}`);
+              
+              // Check if timer completed while away
+              if (newTime === 0) {
+                console.log('[useTimerVisibility] Timer completed while away, triggering completion handler');
+                setTimeout(() => handleTimerComplete(), 0);
+              }
+              
+              return newTime;
+            });
           }
+        } else {
+          console.log('[useTimerVisibility] Tab became hidden, recording time');
+          lastTickTimeRef.current = now;
         }
+      };
+      
+      // Add visibility change event listener
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      // Clean up event listener
+      return () => {
+        console.log('[useTimerVisibility] Removing visibility change handler');
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
+    }
+  }, [isRunning, setTimeRemaining, lastTickTimeRef, handleTimerComplete]);
+  
+  // When this hook unmounts, we want to make sure we preserve the current time if paused
+  useEffect(() => {
+    return () => {
+      if (!isRunning && timeRemaining > 0 && pausedTimeRef.current === null) {
+        console.log('[useTimerVisibility] Component unmounting while paused, saving current time:', timeRemaining);
+        pausedTimeRef.current = timeRemaining;
       }
     };
-    
-    // Add event listener
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    // Cleanup
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [isRunning, timeRemaining, setTimeRemaining, lastTickTimeRef, handleTimerComplete]);
+  }, [isRunning, timeRemaining, pausedTimeRef]);
+  
+  // Return nothing
+  return null;
 }

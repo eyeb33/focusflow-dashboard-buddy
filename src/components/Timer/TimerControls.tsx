@@ -43,13 +43,13 @@ const TimerControls: React.FC<TimerControlsProps> = ({
     e.preventDefault();
     e.stopPropagation();
     
-    console.log(`Play/Pause button clicked, isRunning: ${isRunning}, mode: ${mode}`);
+    console.log(`[TimerControls] Play/Pause button clicked, isRunning: ${isRunning}, mode: ${mode}`);
     
     if (isRunning) {
-      console.log("Calling onPause - preserving current time");
+      console.log("[TimerControls] Calling onPause - preserving current time");
       onPause();
     } else {
-      console.log("Calling onStart - should resume from saved time");
+      console.log("[TimerControls] Calling onStart - should resume from saved time");
       onStart();
     }
   }, [isRunning, onPause, onStart, mode]);
@@ -60,7 +60,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
     e.preventDefault();
     e.stopPropagation();
     
-    console.log("Reset button clicked");
+    console.log("[TimerControls] Reset button clicked");
     onReset();
   }, [onReset]);
 

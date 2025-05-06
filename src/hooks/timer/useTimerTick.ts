@@ -43,15 +43,22 @@ export function useTimerTick({
   
   // Set up the timer tick effect
   useEffect(() => {
+    console.log('[useTimerTick] Effect triggered with:', { 
+      isRunning, 
+      timeRemaining, 
+      pausedTimeRef: pausedTimeRef.current 
+    });
+    
     // Clear any existing timer
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
+      console.log("[useTimerTick] Cleared existing timer interval");
     }
     
     // Only set up the timer if it's running
     if (isRunning) {
-      console.log('Starting timer interval with time remaining:', timeRemaining);
+      console.log('[useTimerTick] Starting timer interval with time remaining:', timeRemaining);
       
       // Record session start time if not already set
       if (!sessionStartTimeRef.current) {
@@ -73,13 +80,20 @@ export function useTimerTick({
             
             // Save state periodically (every 5 seconds)
             if (prevTime % 5 === 0 || newTimeRemaining === 0) {
-              saveTimerState({
+              const stateToSave = {
                 timerMode,
                 timeRemaining: newTimeRemaining,
                 isRunning,
                 currentSessionIndex,
                 sessionStartTime: sessionStartTimeRef.current
-              });
+              };
+              
+              // Log less frequently to avoid console spam
+              if (prevTime % 10 === 0 || newTimeRemaining === 0) {
+                console.log('[useTimerTick] Periodic save during tick:', stateToSave);
+              }
+              
+              saveTimerState(stateToSave);
             }
             
             // Handle timer completion
@@ -87,6 +101,7 @@ export function useTimerTick({
               if (timerRef.current) {
                 clearInterval(timerRef.current);
                 timerRef.current = null;
+                console.log('[useTimerTick] Timer completed, cleared interval');
               }
               setTimeout(() => handleTimerComplete(), 0);
             }
@@ -99,23 +114,29 @@ export function useTimerTick({
       // Timer is stopped, save current timer state
       if (timeRemaining > 0) {
         // Store the exact time when pausing - this is critical
-        pausedTimeRef.current = timeRemaining;
-        console.log('Timer paused at:', timeRemaining);
+        if (pausedTimeRef.current === null) {
+          pausedTimeRef.current = timeRemaining;
+          console.log('[useTimerTick] Timer paused at:', timeRemaining, '- setting pausedTimeRef');
+        } else {
+          console.log('[useTimerTick] Timer already paused at:', pausedTimeRef.current, '- not changing pausedTimeRef');
+        }
         
-        saveTimerState({
+        const stateToSave = {
           timerMode,
           timeRemaining,
           isRunning: false,
           currentSessionIndex,
           sessionStartTime: sessionStartTimeRef.current
-        });
+        };
+        console.log('[useTimerTick] Saving timer state after pause:', stateToSave);
+        saveTimerState(stateToSave);
       }
     }
     
     // Cleanup interval on unmount or isRunning changes
     return () => {
       if (timerRef.current) {
-        console.log('Clearing timer interval');
+        console.log('[useTimerTick] Cleanup: clearing timer interval');
         clearInterval(timerRef.current);
         timerRef.current = null;
       }

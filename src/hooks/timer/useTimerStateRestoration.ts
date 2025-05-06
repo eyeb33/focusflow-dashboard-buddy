@@ -1,6 +1,7 @@
 
 import { useEffect } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
+import { debugTimerEvent } from '@/utils/timerDebugUtils';
 
 interface UseTimerStateRestorationProps {
   loadTimerState: () => any;
@@ -32,34 +33,36 @@ export function useTimerStateRestoration({
       isInitialLoadRef.current = false;
       
       if (savedState) {
-        console.log('Restoring timer state from localStorage:', savedState);
+        debugTimerEvent('useTimerStateRestoration', 'Restoring timer state', savedState);
         
         // Restore timer state but don't auto-start
         setTimerMode(savedState.timerMode || 'work');
         setTimeRemaining(savedState.timeRemaining);
         setCurrentSessionIndex(savedState.currentSessionIndex || 0);
         
-        // Explicitly store the paused time
+        // Explicitly store the paused time if timer was not running
         if (!savedState.isRunning && savedState.timeRemaining) {
-          console.log('Restoring exact paused time:', savedState.timeRemaining);
+          debugTimerEvent('useTimerStateRestoration', 'Restoring exact paused time', savedState.timeRemaining);
           pausedTimeRef.current = savedState.timeRemaining;
         } else {
           pausedTimeRef.current = null;
+          debugTimerEvent('useTimerStateRestoration', 'No paused time to restore, setting to null', null);
         }
         
         if (savedState.sessionStartTime) {
           sessionStartTimeRef.current = savedState.sessionStartTime;
+          debugTimerEvent('useTimerStateRestoration', 'Restored session start time', savedState.sessionStartTime);
         } else {
           sessionStartTimeRef.current = null;
         }
       } else {
-        console.log('No saved timer state found, using defaults');
+        debugTimerEvent('useTimerStateRestoration', 'No saved timer state found, using defaults', null);
         // Reset to default state
         pausedTimeRef.current = null;
         sessionStartTimeRef.current = null;
       }
     } catch (error) {
-      console.error('Error loading saved timer state:', error);
+      console.error('[useTimerStateRestoration] Error loading saved timer state:', error);
       isInitialLoadRef.current = false;
     }
   }, [loadTimerState, setTimerMode, setTimeRemaining, setCurrentSessionIndex, pausedTimeRef, sessionStartTimeRef, isInitialLoadRef]);
