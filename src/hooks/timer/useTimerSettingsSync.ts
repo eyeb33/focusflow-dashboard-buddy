@@ -8,7 +8,7 @@ interface UseTimerSettingsSyncProps {
   timerMode: TimerMode;
   pausedTimeRef: React.MutableRefObject<number | null>;
   getTotalTimeForMode: () => number;
-  setTimeRemaining: (time: number | ((prev: number) => number)) => void;
+  setTimeRemaining: (time: number) => void;
   saveTimerState: (state: any) => void;
   currentSessionIndex: number;
 }
@@ -23,48 +23,58 @@ export function useTimerSettingsSync({
   saveTimerState,
   currentSessionIndex
 }: UseTimerSettingsSyncProps) {
-  // Update timer when settings change (when not running)
+  
+  // Effect to sync timer with settings changes
   useEffect(() => {
-    // Skip the initial render to avoid conflicts with state restoration
+    // Skip during initial load to prevent overriding restored state
     if (isInitialLoadRef.current) {
-      console.log("Initial load detected, skipping settings sync");
       isInitialLoadRef.current = false;
       return;
     }
     
-    // Only update if the timer is not running
-    if (!isRunning) {
-      const newTime = getTotalTimeForMode();
-      console.log(`Settings changed: Updating timer to ${newTime} seconds`);
-      
-      // Important: Always update the timer value when settings change 
-      // and the timer is not running, regardless of pause state
-      setTimeRemaining(newTime);
-      pausedTimeRef.current = null; // Reset the pause state
-      
-      // Save the updated state
-      saveTimerState({
-        timerMode,
-        isRunning: false,
-        timeRemaining: newTime,
-        currentSessionIndex,
-        sessionStartTime: null
-      });
-      
-      console.log("Timer values updated after settings change:", { 
-        mode: timerMode,
-        newTime,
-        isRunning
-      });
+    // Don't update time if timer is running
+    if (isRunning) {
+      console.log('Timer is running, not updating time after settings change');
+      return;
     }
+    
+    // Only update if we're not resuming from a paused state
+    // CRITICAL: Don't update if we have a paused time we're trying to preserve
+    if (pausedTimeRef.current !== null) {
+      console.log('Paused time exists, preserving:', pausedTimeRef.current);
+      return;
+    }
+    
+    // Calculate new timer duration based on current mode
+    const newTime = getTotalTimeForMode();
+    console.log('Settings changed: Updating timer to', newTime, 'seconds');
+    
+    // Update the timer
+    setTimeRemaining(newTime);
+    
+    // Save the updated state
+    saveTimerState({
+      timerMode,
+      isRunning: false,
+      timeRemaining: newTime,
+      currentSessionIndex,
+      sessionStartTime: null
+    });
+    
+    console.log('Timer values updated after settings change:', {
+      mode: timerMode,
+      newTime,
+      isRunning
+    });
+    
   }, [
-    timerMode, 
-    isRunning, 
-    currentSessionIndex, 
     getTotalTimeForMode, 
-    saveTimerState, 
     isInitialLoadRef, 
+    isRunning, 
+    saveTimerState, 
     setTimeRemaining, 
+    currentSessionIndex, 
+    timerMode,
     pausedTimeRef
   ]);
 }

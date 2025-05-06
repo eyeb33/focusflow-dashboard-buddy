@@ -1,6 +1,7 @@
 
 import { useCallback } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
+import { logTimerStateChange } from '@/utils/timerDebugUtils';
 
 interface TimerSettings {
   workDuration: number;
@@ -42,6 +43,12 @@ export function useTimerControls({
   const handleStart = useCallback(() => {
     console.log('START called with mode:', timerMode, 'and time:', timeRemaining, 'pausedTime:', pausedTimeRef.current);
     
+    // Log state before change
+    logTimerStateChange('start', 
+      { isRunning, timeRemaining, pausedTime: pausedTimeRef.current },
+      { isRunning: true, timeRemaining, pausedTime: pausedTimeRef.current }
+    );
+    
     // Set timer running state first
     setIsRunning(true);
     
@@ -57,6 +64,12 @@ export function useTimerControls({
   
   const handlePause = useCallback(() => {
     console.log('PAUSE called with time:', timeRemaining);
+    
+    // Log state before change
+    logTimerStateChange('pause',
+      { isRunning, timeRemaining, pausedTime: pausedTimeRef.current },
+      { isRunning: false, timeRemaining, pausedTime: timeRemaining }
+    );
     
     // Store the current time when pausing - BEFORE stopping the timer
     pausedTimeRef.current = timeRemaining;
@@ -77,6 +90,12 @@ export function useTimerControls({
   
   const handleReset = useCallback(() => {
     console.log('RESET called for mode:', timerMode);
+    
+    // Log state before change
+    logTimerStateChange('reset',
+      { isRunning, timeRemaining, pausedTime: pausedTimeRef.current },
+      { isRunning: false, timeRemaining: settings[timerMode === 'work' ? 'workDuration' : timerMode === 'break' ? 'breakDuration' : 'longBreakDuration'] * 60, pausedTime: null }
+    );
     
     // Stop the timer
     setIsRunning(false);

@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerVisibility } from './useTimerVisibility';
@@ -41,8 +40,20 @@ export function useTimerTick({
     handleTimerComplete
   });
   
+  // Keep track of previous running state to detect pause events
+  const isFirstRender = useEffect.useRef(true);
+  
   // Set up the timer tick effect
   useEffect(() => {
+    // Debug the current state
+    console.log(`Timer tick effect: isRunning=${isRunning}, time=${timeRemaining}, pausedTime=${pausedTimeRef.current}`);
+    
+    // Skip first render to avoid side effects during initialization
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    
     // Clear any existing timer
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -103,8 +114,9 @@ export function useTimerTick({
         }
       }, 1000);
     } else {
-      // Timer is stopped
-      console.log('Timer is stopped at:', timeRemaining);
+      // Timer is stopped - Don't modify timeRemaining or pausedTimeRef here
+      // This is critical - we should respect the pause time set by handlePause
+      console.log('Timer is stopped at:', timeRemaining, 'with pausedTime:', pausedTimeRef.current);
     }
     
     // Cleanup interval on unmount or isRunning changes
