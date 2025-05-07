@@ -28,6 +28,7 @@ export function useTimerSettingsSync({
   useEffect(() => {
     // Skip during initial load to prevent overriding restored state
     if (isInitialLoadRef.current) {
+      console.log('Initial load detected, skipping settings sync');
       isInitialLoadRef.current = false;
       return;
     }

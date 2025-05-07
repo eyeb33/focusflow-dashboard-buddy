@@ -56,6 +56,11 @@ export function useTimerControls({
     const timeToSave = pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining;
     console.log('Saving timer state with time:', timeToSave);
     
+    // Ensure we have a session start time
+    if (!sessionStartTimeRef.current) {
+      sessionStartTimeRef.current = new Date().toISOString();
+    }
+    
     saveTimerState({
       timerMode,
       isRunning: true,
@@ -91,6 +96,8 @@ export function useTimerControls({
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current
     });
+    
+    console.log("Timer paused at:", timeRemaining);
   }, [timerMode, timeRemaining, currentSessionIndex, saveTimerState, setIsRunning, pausedTimeRef, sessionStartTimeRef, isRunning]);
   
   const handleReset = useCallback(() => {
@@ -128,6 +135,8 @@ export function useTimerControls({
       currentSessionIndex,
       sessionStartTime: null
     });
+    
+    console.log("Timer reset to:", newTime, "seconds");
   }, [timerMode, settings, currentSessionIndex, saveTimerState, setIsRunning, setTimeRemaining, sessionStartTimeRef, pausedTimeRef, isRunning, timeRemaining]);
   
   const handleModeChange = useCallback((mode: TimerMode) => {
@@ -170,6 +179,8 @@ export function useTimerControls({
       currentSessionIndex: mode === 'work' ? 0 : currentSessionIndex,
       sessionStartTime: null
     });
+    
+    console.log("Mode changed to:", mode, "with time:", newTime);
   }, [timerMode, settings, currentSessionIndex, setTimerMode, setCurrentSessionIndex, saveTimerState, setIsRunning, setTimeRemaining, sessionStartTimeRef, pausedTimeRef]);
   
   return {

@@ -44,6 +44,10 @@ export function useTimerTick({
   // Keep track of previous running state to detect pause events
   const isFirstRender = useRef(true);
   const previousIsRunningRef = useRef(isRunning);
+  const pauseRestoredRef = useRef(false);
+  
+  // Debug logging
+  console.log(`useTimerTick - Current state: isRunning=${isRunning}, time=${timeRemaining}, pausedTime=${pausedTimeRef.current}`);
   
   // Set up the timer tick effect
   useEffect(() => {
@@ -59,20 +63,32 @@ export function useTimerTick({
     
     // Clear any existing timer
     if (timerRef.current) {
+      console.log("Clearing existing timer interval");
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
     
     // Only set up the timer if it's running
     if (isRunning) {
-      console.log('Starting timer interval with time remaining:', timeRemaining, 'paused time:', pausedTimeRef.current);
+      console.log("Starting timer interval with time remaining:", timeRemaining, "paused time:", pausedTimeRef.current);
       
       // If we have a paused time, restore it when starting the timer
-      if (pausedTimeRef.current !== null) {
+      if (pausedTimeRef.current !== null && !pauseRestoredRef.current) {
         console.log('Restoring from paused time:', pausedTimeRef.current);
-        setTimeRemaining(pausedTimeRef.current);
+        const pausedTime = pausedTimeRef.current;
+        setTimeRemaining(pausedTime);
+        // Set flag to prevent duplicate restoration
+        pauseRestoredRef.current = true;
         // Clear the paused time once we've restored it
         pausedTimeRef.current = null;
+        
+        // Exit early - the effect will run again with the restored time
+        return;
+      }
+      
+      // Reset the restoration flag when we're not restoring from pause
+      if (pauseRestoredRef.current && pausedTimeRef.current === null) {
+        pauseRestoredRef.current = false;
       }
       
       // Record session start time if not already set
@@ -84,16 +100,19 @@ export function useTimerTick({
       // Update last tick time
       lastTickTimeRef.current = Date.now();
       
-      // Set up the timer interval
+      // Set up the timer interval - use a shorter interval for smoother updates
+      console.log("Creating new timer interval");
       timerRef.current = setInterval(() => {
         const now = Date.now();
-        const elapsed = Math.floor((now - lastTickTimeRef.current) / 1000);
+        const elapsedSeconds = Math.floor((now - lastTickTimeRef.current) / 1000);
         
-        if (elapsed > 0) {
+        if (elapsedSeconds > 0) {
+          console.log(`Tick: elapsed=${elapsedSeconds}s, current time=${timeRemaining}s`);
           lastTickTimeRef.current = now;
           
           setTimeRemaining((prevTime: number) => {
-            const newTimeRemaining = Math.max(0, prevTime - elapsed);
+            const newTimeRemaining = Math.max(0, prevTime - elapsedSeconds);
+            console.log(`Updating timer: ${prevTime}s -> ${newTimeRemaining}s`);
             
             // Save state periodically (every 5 seconds)
             if (prevTime % 5 === 0 || newTimeRemaining === 0) {
@@ -109,6 +128,7 @@ export function useTimerTick({
             // Handle timer completion
             if (newTimeRemaining === 0) {
               if (timerRef.current) {
+                console.log("Timer completed - clearing interval");
                 clearInterval(timerRef.current);
                 timerRef.current = null;
               }
@@ -118,9 +138,9 @@ export function useTimerTick({
             return newTimeRemaining;
           });
         }
-      }, 1000);
+      }, 500); // Check more frequently for smoother updates
     } else {
-      // Timer is stopped - Don't modify timeRemaining here
+      // Timer is stopped
       console.log('Timer is stopped at:', timeRemaining);
     }
     
@@ -130,7 +150,7 @@ export function useTimerTick({
     // Cleanup interval on unmount or isRunning changes
     return () => {
       if (timerRef.current) {
-        console.log('Clearing timer interval');
+        console.log('Cleaning up timer interval on effect cleanup');
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
