@@ -29,8 +29,7 @@ export function useTimerSettingsSync({
     // Skip during initial load to prevent overriding restored state
     if (isInitialLoadRef.current) {
       console.log('Initial load detected, skipping settings sync');
-      isInitialLoadRef.current = false;
-      return;
+      return; // Don't reset the flag yet - let the restoration process handle it
     }
     
     // Don't update time if timer is running

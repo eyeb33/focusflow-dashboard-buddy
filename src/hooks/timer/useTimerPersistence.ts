@@ -43,8 +43,8 @@ export function useTimerPersistence() {
       const now = Date.now();
       const elapsed = now - (savedState.timestamp || 0);
       
-      // Only restore if recent (< 30 minutes) and valid
-      if (elapsed < 1800000) {
+      // Only restore if recent (< 5 minutes) and valid
+      if (elapsed < 300000) {
         // Always force isRunning to false when restoring
         return {
           ...savedState,
@@ -68,6 +68,7 @@ export function useTimerPersistence() {
     localStorage.removeItem('timerState');
     localStorage.removeItem('sessionStartTime');
     localStorage.removeItem('timerStateBeforeUnload');
+    localStorage.removeItem('pausedTime');
   }, []);
   
   return {

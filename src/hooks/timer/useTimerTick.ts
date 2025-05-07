@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerVisibility } from './useTimerVisibility';
@@ -52,7 +51,7 @@ export function useTimerTick({
   // Set up the timer tick effect
   useEffect(() => {
     // Debug the current state
-    console.log(`Timer tick effect: isRunning=${isRunning}, time=${timeRemaining}, pausedTime=${pausedTimeRef.current}, previousIsRunning=${previousIsRunningRef.current}`);
+    console.log(`Timer tick effect running: isRunning=${isRunning}, time=${timeRemaining}, pausedTime=${pausedTimeRef.current}, previousIsRunning=${previousIsRunningRef.current}`);
     
     // Skip first render to avoid side effects during initialization
     if (isFirstRender.current) {
@@ -82,13 +81,14 @@ export function useTimerTick({
         // Clear the paused time once we've restored it
         pausedTimeRef.current = null;
         
-        // Exit early - the effect will run again with the restored time
-        return;
-      }
-      
-      // Reset the restoration flag when we're not restoring from pause
-      if (pauseRestoredRef.current && pausedTimeRef.current === null) {
+        // Update last tick time to now to ensure proper timing
+        lastTickTimeRef.current = Date.now();
+      } else {
+        // Reset the restoration flag when we're not restoring from pause
         pauseRestoredRef.current = false;
+        
+        // Update last tick time
+        lastTickTimeRef.current = Date.now();
       }
       
       // Record session start time if not already set
@@ -97,9 +97,6 @@ export function useTimerTick({
         console.log('New session start time set:', sessionStartTimeRef.current);
       }
       
-      // Update last tick time
-      lastTickTimeRef.current = Date.now();
-      
       // Set up the timer interval - use a shorter interval for smoother updates
       console.log("Creating new timer interval");
       timerRef.current = setInterval(() => {
@@ -107,19 +104,18 @@ export function useTimerTick({
         const elapsedSeconds = Math.floor((now - lastTickTimeRef.current) / 1000);
         
         if (elapsedSeconds > 0) {
-          console.log(`Tick: elapsed=${elapsedSeconds}s, current time=${timeRemaining}s`);
+          console.log(`Timer tick: elapsed=${elapsedSeconds}s, current time=${timeRemaining}s`);
           lastTickTimeRef.current = now;
           
           setTimeRemaining((prevTime: number) => {
             const newTimeRemaining = Math.max(0, prevTime - elapsedSeconds);
-            console.log(`Updating timer: ${prevTime}s -> ${newTimeRemaining}s`);
             
             // Save state periodically (every 5 seconds)
             if (prevTime % 5 === 0 || newTimeRemaining === 0) {
               saveTimerState({
                 timerMode,
                 timeRemaining: newTimeRemaining,
-                isRunning,
+                isRunning: true,
                 currentSessionIndex,
                 sessionStartTime: sessionStartTimeRef.current
               });
@@ -138,10 +134,7 @@ export function useTimerTick({
             return newTimeRemaining;
           });
         }
-      }, 500); // Check more frequently for smoother updates
-    } else {
-      // Timer is stopped
-      console.log('Timer is stopped at:', timeRemaining);
+      }, 250); // Check frequently for smoother updates
     }
     
     // Update previous running state for next render
@@ -157,7 +150,7 @@ export function useTimerTick({
     };
   }, [
     isRunning, 
-    timerMode, 
+    timerMode,
     setTimeRemaining, 
     handleTimerComplete, 
     timerRef, 
@@ -166,7 +159,5 @@ export function useTimerTick({
     pausedTimeRef, 
     saveTimerState, 
     currentSessionIndex
-  ]); // Removed timeRemaining from dependencies to prevent reset loops
-  
-  return {};
+  ]); // Important: timeRemaining is not in dependencies to prevent reset loops
 }

@@ -41,36 +41,41 @@ export function useTimerControls({
 }: TimerControlsParams) {
   
   const handleStart = useCallback(() => {
-    console.log('START called with mode:', timerMode, 'and time:', timeRemaining, 'pausedTime:', pausedTimeRef.current);
+    console.log('START called with mode:', timerMode, 'time:', timeRemaining, 'pausedTime:', pausedTimeRef.current);
     
     // Log state before change
     logTimerStateChange('start', 
       { isRunning, timeRemaining, pausedTime: pausedTimeRef.current },
-      { isRunning: true, timeRemaining, pausedTime: pausedTimeRef.current }
+      { isRunning: true, timeRemaining, pausedTime: null }
     );
     
-    // Set the timer running state
-    setIsRunning(true);
+    // If timer is already running, do nothing
+    if (isRunning) {
+      console.log('Timer already running, ignoring start call');
+      return;
+    }
     
-    // Save the timer state - use the paused time if available
-    const timeToSave = pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining;
-    console.log('Saving timer state with time:', timeToSave);
+    // Critical: Set running state first
+    setIsRunning(true);
     
     // Ensure we have a session start time
     if (!sessionStartTimeRef.current) {
       sessionStartTimeRef.current = new Date().toISOString();
     }
     
+    // Save the timer state with the current time
     saveTimerState({
       timerMode,
       isRunning: true,
-      timeRemaining: timeToSave,
+      timeRemaining: pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining,
       currentSessionIndex,
-      sessionStartTime: sessionStartTimeRef.current || new Date().toISOString()
+      sessionStartTime: sessionStartTimeRef.current
     });
     
-    console.log("Timer started with mode:", timerMode, "and time:", timeToSave);
-  }, [timerMode, timeRemaining, currentSessionIndex, saveTimerState, setIsRunning, pausedTimeRef, sessionStartTimeRef, isRunning]);
+    console.log("Timer started with mode:", timerMode, "and time:", 
+      pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining);
+  }, [timerMode, isRunning, timeRemaining, currentSessionIndex, pausedTimeRef, 
+      sessionStartTimeRef, setIsRunning, saveTimerState]);
   
   const handlePause = useCallback(() => {
     console.log('PAUSE called with time remaining:', timeRemaining);
@@ -81,11 +86,11 @@ export function useTimerControls({
       { isRunning: false, timeRemaining, pausedTime: timeRemaining }
     );
     
-    // Store the current time when pausing - BEFORE stopping the timer
+    // Store the current time when pausing
     pausedTimeRef.current = timeRemaining;
     console.log('Storing exact pause time:', timeRemaining);
     
-    // Stop the timer after storing the current time
+    // Stop the timer
     setIsRunning(false);
     
     // Save the timer state with the paused time
@@ -98,21 +103,13 @@ export function useTimerControls({
     });
     
     console.log("Timer paused at:", timeRemaining);
-  }, [timerMode, timeRemaining, currentSessionIndex, saveTimerState, setIsRunning, pausedTimeRef, sessionStartTimeRef, isRunning]);
+  }, [timerMode, isRunning, timeRemaining, currentSessionIndex, saveTimerState, 
+      setIsRunning, pausedTimeRef, sessionStartTimeRef]);
   
   const handleReset = useCallback(() => {
     console.log('RESET called for mode:', timerMode);
     
-    // Log state before change
-    logTimerStateChange('reset',
-      { isRunning, timeRemaining, pausedTime: pausedTimeRef.current },
-      { isRunning: false, timeRemaining: settings[timerMode === 'work' ? 'workDuration' : timerMode === 'break' ? 'breakDuration' : 'longBreakDuration'] * 60, pausedTime: null }
-    );
-    
-    // Stop the timer
-    setIsRunning(false);
-    
-    // Reset to the full time for current mode
+    // Calculate the new time based on the current mode
     const newTime = (() => {
       switch(timerMode) {
         case 'work': return settings.workDuration * 60;
@@ -121,6 +118,17 @@ export function useTimerControls({
         default: return settings.workDuration * 60;
       }
     })();
+    
+    // Log state before change
+    logTimerStateChange('reset',
+      { isRunning, timeRemaining, pausedTime: pausedTimeRef.current },
+      { isRunning: false, timeRemaining: newTime, pausedTime: null }
+    );
+    
+    // Stop the timer
+    setIsRunning(false);
+    
+    // Reset to the full time for current mode
     setTimeRemaining(newTime);
     
     // Clear session start time and pause time
@@ -137,7 +145,8 @@ export function useTimerControls({
     });
     
     console.log("Timer reset to:", newTime, "seconds");
-  }, [timerMode, settings, currentSessionIndex, saveTimerState, setIsRunning, setTimeRemaining, sessionStartTimeRef, pausedTimeRef, isRunning, timeRemaining]);
+  }, [timerMode, settings, isRunning, timeRemaining, currentSessionIndex, saveTimerState, 
+      setIsRunning, setTimeRemaining, sessionStartTimeRef, pausedTimeRef]);
   
   const handleModeChange = useCallback((mode: TimerMode) => {
     console.log('MODE CHANGE called from', timerMode, 'to', mode);
@@ -153,10 +162,7 @@ export function useTimerControls({
       setCurrentSessionIndex(0);
     }
     
-    // Clear pause time on mode change
-    pausedTimeRef.current = null;
-    
-    // Set the appropriate time for the new mode
+    // Calculate the appropriate time for the new mode
     const newTime = (() => {
       switch(mode) {
         case 'work': return settings.workDuration * 60;
@@ -166,6 +172,10 @@ export function useTimerControls({
       }
     })();
     
+    // Clear paused time
+    pausedTimeRef.current = null;
+    
+    // Set new time
     setTimeRemaining(newTime);
     
     // Clear session start time
@@ -181,7 +191,8 @@ export function useTimerControls({
     });
     
     console.log("Mode changed to:", mode, "with time:", newTime);
-  }, [timerMode, settings, currentSessionIndex, setTimerMode, setCurrentSessionIndex, saveTimerState, setIsRunning, setTimeRemaining, sessionStartTimeRef, pausedTimeRef]);
+  }, [timerMode, settings, currentSessionIndex, setTimerMode, setCurrentSessionIndex, saveTimerState, 
+      setIsRunning, setTimeRemaining, sessionStartTimeRef, pausedTimeRef]);
   
   return {
     handleStart,
