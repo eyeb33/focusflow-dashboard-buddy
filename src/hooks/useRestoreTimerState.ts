@@ -19,17 +19,19 @@ export function useRestoreTimerState({
   useEffect(() => {
     console.log("========== INITIALIZING TIMER STATE ==========");
     
-    // CRITICAL: Always ensure we start with isRunning false on page load
+    // Always ensure we start with isRunning false on page load
     setIsRunning(false);
     
-    // Default to work mode on page refresh
-    let initialMode: TimerMode = 'work';
-    setTimerMode(initialMode);
-    
-    // Clear any stored timer state to ensure fresh start on page reload
+    // Clear stored timer states to prevent persistence issues
     localStorage.removeItem('timerState');
+    localStorage.removeItem('sessionStartTime');
+    localStorage.removeItem('timerStateBeforeUnload');
     
-    console.log("Timer reset to initial state: mode=work, isRunning=false");
+    // Default to work mode with standard duration on page refresh
+    setTimerMode('work');
+    setTimeRemaining(25 * 60); // Default 25 minutes
+    
+    console.log("Timer reset to initial state: mode=work, isRunning=false, time=25:00");
     
     // This must only run on mount
     // eslint-disable-next-line

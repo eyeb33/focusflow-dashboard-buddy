@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from 'react';
 import { savePartialSession } from '@/utils/timerContextUtils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -52,6 +53,8 @@ export function useTimerTickLogic({
   console.log(`useTimerTickLogic - isRunning: ${isRunning}, timerMode: ${timerMode}, timeRemaining: ${timeRemaining}`);
 
   useEffect(() => {
+    console.log(`Timer tick effect running - isRunning: ${isRunning}, time: ${timeRemaining}`);
+    
     // Critical: Always clear any existing timer first to prevent multiple timers
     if (timerRef.current) {
       clearInterval(timerRef.current);

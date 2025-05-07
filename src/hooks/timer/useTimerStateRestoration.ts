@@ -25,42 +25,74 @@ export function useTimerStateRestoration({
   useEffect(() => {
     if (!isInitialLoadRef.current) return;
     
+    console.log("==== TIMER STATE RESTORATION: Initial load detected ====");
+    
     try {
       const savedState = loadTimerState();
       
       // Clear the initial load flag immediately to prevent conflicts
       isInitialLoadRef.current = false;
       
-      if (savedState) {
-        console.log('Restoring timer state from localStorage:', savedState);
+      if (savedState && savedState.timestamp) {
+        const now = Date.now();
+        const elapsed = now - savedState.timestamp;
         
-        // Restore timer state but don't auto-start
-        setTimerMode(savedState.timerMode || 'work');
-        setTimeRemaining(savedState.timeRemaining);
-        setCurrentSessionIndex(savedState.currentSessionIndex || 0);
-        
-        // Explicitly store the paused time
-        if (!savedState.isRunning && savedState.timeRemaining) {
-          console.log('Restoring exact paused time:', savedState.timeRemaining);
-          pausedTimeRef.current = savedState.timeRemaining;
+        // Only restore if the saved state is recent (less than 30 minutes old)
+        if (elapsed < 1800000) {
+          console.log('Restoring timer state from localStorage:', savedState);
+          
+          // Restore timer state but don't auto-start
+          setTimerMode(savedState.timerMode || 'work');
+          setTimeRemaining(savedState.timeRemaining);
+          setCurrentSessionIndex(savedState.currentSessionIndex || 0);
+          
+          // Explicitly store the paused time
+          if (!savedState.isRunning && savedState.timeRemaining) {
+            console.log('Restoring exact paused time:', savedState.timeRemaining);
+            pausedTimeRef.current = savedState.timeRemaining;
+          } else {
+            pausedTimeRef.current = null;
+          }
+          
+          if (savedState.sessionStartTime) {
+            sessionStartTimeRef.current = savedState.sessionStartTime;
+          } else {
+            sessionStartTimeRef.current = null;
+          }
         } else {
-          pausedTimeRef.current = null;
-        }
-        
-        if (savedState.sessionStartTime) {
-          sessionStartTimeRef.current = savedState.sessionStartTime;
-        } else {
-          sessionStartTimeRef.current = null;
+          console.log('Saved state is too old, using defaults');
+          resetToDefaults(setTimerMode, setTimeRemaining, setCurrentSessionIndex, pausedTimeRef, sessionStartTimeRef);
         }
       } else {
-        console.log('No saved timer state found, using defaults');
-        // Reset to default state
-        pausedTimeRef.current = null;
-        sessionStartTimeRef.current = null;
+        console.log('No valid saved timer state found, using defaults');
+        resetToDefaults(setTimerMode, setTimeRemaining, setCurrentSessionIndex, pausedTimeRef, sessionStartTimeRef);
       }
     } catch (error) {
       console.error('Error loading saved timer state:', error);
       isInitialLoadRef.current = false;
+      resetToDefaults(setTimerMode, setTimeRemaining, setCurrentSessionIndex, pausedTimeRef, sessionStartTimeRef);
     }
   }, [loadTimerState, setTimerMode, setTimeRemaining, setCurrentSessionIndex, pausedTimeRef, sessionStartTimeRef, isInitialLoadRef]);
+}
+
+function resetToDefaults(
+  setTimerMode: (mode: TimerMode) => void,
+  setTimeRemaining: (time: number) => void,
+  setCurrentSessionIndex: (index: number) => void,
+  pausedTimeRef: React.MutableRefObject<number | null>,
+  sessionStartTimeRef: React.MutableRefObject<string | null>
+) {
+  // Reset to default state
+  setTimerMode('work');
+  setTimeRemaining(25 * 60); // Default 25 minutes
+  setCurrentSessionIndex(0);
+  pausedTimeRef.current = null;
+  sessionStartTimeRef.current = null;
+  
+  // Clear all timer state from localStorage
+  localStorage.removeItem('timerState');
+  localStorage.removeItem('sessionStartTime');
+  localStorage.removeItem('timerStateBeforeUnload');
+  
+  console.log('Timer reset to default values');
 }

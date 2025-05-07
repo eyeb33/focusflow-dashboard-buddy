@@ -25,29 +25,54 @@ export function useTimerPersistence() {
   const loadTimerState = useCallback(() => {
     try {
       const savedStateJson = localStorage.getItem('timerState');
-      if (!savedStateJson) return null;
+      if (!savedStateJson) {
+        console.log("No timer state found in localStorage");
+        return null;
+      }
       
       const savedState = JSON.parse(savedStateJson);
+      console.log("Loaded timer state from localStorage:", savedState);
+      
+      // Verify that loaded state has essential properties
+      if (!savedState || typeof savedState.timeRemaining !== 'number') {
+        console.log("Invalid timer state format, clearing");
+        localStorage.removeItem('timerState');
+        return null;
+      }
+      
       const now = Date.now();
       const elapsed = now - (savedState.timestamp || 0);
       
       // Only restore if recent (< 30 minutes) and valid
-      if (elapsed < 1800000 && typeof savedState.timeRemaining === 'number') {
+      if (elapsed < 1800000) {
         // Always force isRunning to false when restoring
         return {
           ...savedState,
           isRunning: false
         };
       }
+      
+      console.log("Timer state too old, clearing");
+      localStorage.removeItem('timerState');
       return null;
     } catch (error) {
       console.error('Error loading saved timer state:', error);
+      localStorage.removeItem('timerState');
       return null;
     }
   }, []);
   
+  // Clear all timer state - useful for debugging and resetting
+  const clearTimerState = useCallback(() => {
+    console.log("Clearing all timer state from localStorage");
+    localStorage.removeItem('timerState');
+    localStorage.removeItem('sessionStartTime');
+    localStorage.removeItem('timerStateBeforeUnload');
+  }, []);
+  
   return {
     saveTimerState,
-    loadTimerState
+    loadTimerState,
+    clearTimerState
   };
 }
