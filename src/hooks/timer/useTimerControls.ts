@@ -54,7 +54,7 @@ export function useTimerControls({
       console.log('Timer already running, ignoring start call');
       return;
     }
-    
+
     // Critical: Set running state first
     setIsRunning(true);
     
@@ -63,17 +63,19 @@ export function useTimerControls({
       sessionStartTimeRef.current = new Date().toISOString();
     }
     
+    // Important: Clear pausedTimeRef when starting to prevent issues with subsequent setting changes
+    pausedTimeRef.current = null;
+    
     // Save the timer state with the current time
     saveTimerState({
       timerMode,
       isRunning: true,
-      timeRemaining: pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining,
+      timeRemaining,
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current
     });
     
-    console.log("Timer started with mode:", timerMode, "and time:", 
-      pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining);
+    console.log("Timer started with mode:", timerMode, "and time:", timeRemaining);
   }, [timerMode, isRunning, timeRemaining, currentSessionIndex, pausedTimeRef, 
       sessionStartTimeRef, setIsRunning, saveTimerState]);
   

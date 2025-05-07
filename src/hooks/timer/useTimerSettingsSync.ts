@@ -38,18 +38,16 @@ export function useTimerSettingsSync({
       return;
     }
     
-    // If we have paused time, respect it
-    if (pausedTimeRef.current !== null) {
-      console.log('Paused time exists, preserving:', pausedTimeRef.current);
-      return;
-    }
-    
     // Calculate new timer duration based on current mode
     const newTime = getTotalTimeForMode();
     console.log('Settings changed: Updating timer to', newTime, 'seconds');
     
-    // Update the timer
+    // Update the timer - always update when settings change and timer is not running
     setTimeRemaining(newTime);
+    
+    // Clear the paused time reference when settings change
+    pausedTimeRef.current = null;
+    console.log('Cleared pausedTimeRef due to settings change');
     
     // Save the updated state
     saveTimerState({

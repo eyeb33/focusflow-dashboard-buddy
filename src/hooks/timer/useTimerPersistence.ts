@@ -34,7 +34,10 @@ export function useTimerPersistence() {
       console.log("Loaded timer state from localStorage:", savedState);
       
       // Verify that loaded state has essential properties
-      if (!savedState || typeof savedState.timeRemaining !== 'number') {
+      if (!savedState || 
+          typeof savedState.timeRemaining !== 'number' || 
+          !savedState.timerMode ||
+          !savedState.timestamp) {
         console.log("Invalid timer state format, clearing");
         localStorage.removeItem('timerState');
         return null;

@@ -22,7 +22,7 @@ export function useRestoreTimerState({
     // Always ensure we start with isRunning false on page load
     setIsRunning(false);
     
-    // Important: Clear ALL stored timer states to prevent persistence issues
+    // IMPORTANT: Clear ALL stored timer states to prevent persistence issues
     localStorage.removeItem('timerState');
     localStorage.removeItem('sessionStartTime');
     localStorage.removeItem('timerStateBeforeUnload');
