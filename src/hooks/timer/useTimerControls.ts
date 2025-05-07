@@ -49,8 +49,7 @@ export function useTimerControls({
       { isRunning: true, timeRemaining, pausedTime: pausedTimeRef.current }
     );
     
-    // Important: Do NOT modify the time here, let the tick effect handle it
-    // We just set the running state flag
+    // Set the timer running state
     setIsRunning(true);
     
     // Save the timer state - use the paused time if available
@@ -64,10 +63,12 @@ export function useTimerControls({
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current || new Date().toISOString()
     });
-  }, [timerMode, timeRemaining, currentSessionIndex, saveTimerState, setIsRunning, pausedTimeRef, sessionStartTimeRef]);
+    
+    console.log("Timer started with mode:", timerMode, "and time:", timeToSave);
+  }, [timerMode, timeRemaining, currentSessionIndex, saveTimerState, setIsRunning, pausedTimeRef, sessionStartTimeRef, isRunning]);
   
   const handlePause = useCallback(() => {
-    console.log('PAUSE called with time:', timeRemaining);
+    console.log('PAUSE called with time remaining:', timeRemaining);
     
     // Log state before change
     logTimerStateChange('pause',
@@ -90,7 +91,7 @@ export function useTimerControls({
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current
     });
-  }, [timerMode, timeRemaining, currentSessionIndex, saveTimerState, setIsRunning, pausedTimeRef, sessionStartTimeRef]);
+  }, [timerMode, timeRemaining, currentSessionIndex, saveTimerState, setIsRunning, pausedTimeRef, sessionStartTimeRef, isRunning]);
   
   const handleReset = useCallback(() => {
     console.log('RESET called for mode:', timerMode);
@@ -127,7 +128,7 @@ export function useTimerControls({
       currentSessionIndex,
       sessionStartTime: null
     });
-  }, [timerMode, settings, currentSessionIndex, saveTimerState, setIsRunning, setTimeRemaining, sessionStartTimeRef, pausedTimeRef]);
+  }, [timerMode, settings, currentSessionIndex, saveTimerState, setIsRunning, setTimeRemaining, sessionStartTimeRef, pausedTimeRef, isRunning, timeRemaining]);
   
   const handleModeChange = useCallback((mode: TimerMode) => {
     console.log('MODE CHANGE called from', timerMode, 'to', mode);

@@ -68,9 +68,11 @@ export function useTimerTick({
       console.log('Starting timer interval with time remaining:', timeRemaining, 'paused time:', pausedTimeRef.current);
       
       // If we have a paused time, restore it when starting the timer
-      if (pausedTimeRef.current !== null && pausedTimeRef.current !== timeRemaining) {
+      if (pausedTimeRef.current !== null) {
         console.log('Restoring from paused time:', pausedTimeRef.current);
         setTimeRemaining(pausedTimeRef.current);
+        // Clear the paused time once we've restored it
+        pausedTimeRef.current = null;
       }
       
       // Record session start time if not already set
@@ -86,9 +88,10 @@ export function useTimerTick({
       timerRef.current = setInterval(() => {
         const now = Date.now();
         const elapsed = Math.floor((now - lastTickTimeRef.current) / 1000);
-        lastTickTimeRef.current = now;
         
         if (elapsed > 0) {
+          lastTickTimeRef.current = now;
+          
           setTimeRemaining((prevTime: number) => {
             const newTimeRemaining = Math.max(0, prevTime - elapsed);
             
@@ -105,12 +108,11 @@ export function useTimerTick({
             
             // Handle timer completion
             if (newTimeRemaining === 0) {
-              handleTimerComplete();
-              
               if (timerRef.current) {
                 clearInterval(timerRef.current);
                 timerRef.current = null;
               }
+              setTimeout(() => handleTimerComplete(), 0);
             }
             
             return newTimeRemaining;
@@ -118,8 +120,8 @@ export function useTimerTick({
         }
       }, 1000);
     } else {
-      // Timer is stopped - Don't modify timeRemaining or pausedTimeRef here
-      console.log('Timer is stopped at:', timeRemaining, 'with pausedTime:', pausedTimeRef.current);
+      // Timer is stopped - Don't modify timeRemaining here
+      console.log('Timer is stopped at:', timeRemaining);
     }
     
     // Update previous running state for next render
@@ -146,6 +148,5 @@ export function useTimerTick({
     currentSessionIndex
   ]); // Removed timeRemaining from dependencies to prevent reset loops
   
-  // Return an empty object
   return {};
 }
