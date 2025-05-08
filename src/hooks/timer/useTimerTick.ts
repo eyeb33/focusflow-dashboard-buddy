@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerVisibility } from './useTimerVisibility';
@@ -43,9 +44,28 @@ export function useTimerTick({
   // Keep track of previous running state
   const isFirstRender = useRef(true);
   const previousIsRunningRef = useRef(isRunning);
+  const resumedFromPauseRef = useRef(false);
   
   // Debug logging
   console.log(`useTimerTick - Current state: isRunning=${isRunning}, time=${timeRemaining}, pausedTime=${pausedTimeRef.current}`);
+  
+  // Effect to handle pausing and resuming
+  useEffect(() => {
+    // When going from paused to running, check if we need to restore from pausedTimeRef
+    if (isRunning && !previousIsRunningRef.current && pausedTimeRef.current !== null) {
+      console.log('Resuming from paused state with time:', pausedTimeRef.current);
+      setTimeRemaining(pausedTimeRef.current);
+      resumedFromPauseRef.current = true;
+      pausedTimeRef.current = null;
+    }
+    
+    previousIsRunningRef.current = isRunning;
+    
+    // This cleanup function runs when isRunning changes
+    return () => {
+      console.log('isRunning changed, cleanup function executed');
+    };
+  }, [isRunning, pausedTimeRef, setTimeRemaining]);
   
   // Set up the timer tick effect
   useEffect(() => {
@@ -120,7 +140,7 @@ export function useTimerTick({
     } 
     else if (previousIsRunningRef.current && !isRunning) {
       // This is a pause event (was running, now stopped)
-      console.log("Pause detected - current time:", timeRemaining);
+      console.log("Pause detected - preserving current time:", timeRemaining);
     }
     
     // Update previous running state for next render
@@ -146,4 +166,11 @@ export function useTimerTick({
     saveTimerState, 
     currentSessionIndex
   ]); // Important: timeRemaining is not in dependencies to prevent reset loops
+
+  // Reset resumedFromPauseRef when needed
+  useEffect(() => {
+    if (resumedFromPauseRef.current) {
+      resumedFromPauseRef.current = false;
+    }
+  }, [timeRemaining]);
 }

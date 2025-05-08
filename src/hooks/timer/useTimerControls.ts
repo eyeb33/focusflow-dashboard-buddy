@@ -63,8 +63,8 @@ export function useTimerControls({
       sessionStartTimeRef.current = new Date().toISOString();
     }
     
-    // Important: Clear pausedTimeRef when starting to prevent issues with subsequent setting changes
-    pausedTimeRef.current = null;
+    // Don't clear pausedTimeRef here - we'll use it in the timer tick effect
+    // to restore the correct time when starting after a pause
     
     // Save the timer state with the current time
     saveTimerState({
