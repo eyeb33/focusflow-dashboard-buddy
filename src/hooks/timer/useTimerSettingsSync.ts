@@ -39,16 +39,18 @@ export function useTimerSettingsSync({
       return;
     }
     
+    // Don't update time if we have a valid pause time - this preserves the paused state
+    if (pausedTimeRef.current !== null) {
+      console.log('Timer is paused with time:', pausedTimeRef.current, '- not updating time after settings change');
+      return;
+    }
+    
     // Calculate new timer duration based on current mode
     const newTime = getTotalTimeForMode();
     console.log('Settings changed: Updating timer to', newTime, 'seconds');
     
-    // Update the timer - always update when settings change and timer is not running
+    // Update the timer - only update when settings change, timer is not running, and not paused
     setTimeRemaining(newTime);
-    
-    // Clear the paused time reference when settings change
-    pausedTimeRef.current = null;
-    console.log('Cleared pausedTimeRef due to settings change');
     
     // Save the updated state
     saveTimerState({

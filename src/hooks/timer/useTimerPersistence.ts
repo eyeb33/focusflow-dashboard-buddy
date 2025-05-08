@@ -19,6 +19,15 @@ export function useTimerPersistence() {
     };
     console.log(`Saving timer state:`, stateWithTimestamp);
     localStorage.setItem('timerState', JSON.stringify(stateWithTimestamp));
+    
+    // Additionally, if timer is paused, explicitly store the paused time
+    if (!state.isRunning && state.timeRemaining > 0) {
+      console.log(`Storing paused time in localStorage:`, state.timeRemaining);
+      localStorage.setItem('pausedTime', state.timeRemaining.toString());
+    } else if (state.isRunning) {
+      // Clear paused time if timer is running
+      localStorage.removeItem('pausedTime');
+    }
   }, []);
   
   // Load timer state from localStorage
@@ -48,6 +57,16 @@ export function useTimerPersistence() {
       
       // Only restore if recent (< 1 minute) and valid
       if (elapsed < 60000) {
+        // Check if we have a paused time stored separately
+        const pausedTimeStr = localStorage.getItem('pausedTime');
+        if (pausedTimeStr && !savedState.isRunning) {
+          const pausedTime = parseInt(pausedTimeStr, 10);
+          if (!isNaN(pausedTime) && pausedTime > 0) {
+            console.log("Found stored paused time:", pausedTime);
+            savedState.timeRemaining = pausedTime;
+          }
+        }
+        
         // Always force isRunning to false when restoring
         return {
           ...savedState,
@@ -57,10 +76,12 @@ export function useTimerPersistence() {
       
       console.log("Timer state too old, clearing");
       localStorage.removeItem('timerState');
+      localStorage.removeItem('pausedTime');
       return null;
     } catch (error) {
       console.error('Error loading saved timer state:', error);
       localStorage.removeItem('timerState');
+      localStorage.removeItem('pausedTime');
       return null;
     }
   }, []);

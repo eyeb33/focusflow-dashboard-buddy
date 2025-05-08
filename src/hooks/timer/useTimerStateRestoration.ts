@@ -46,18 +46,32 @@ export function useTimerStateRestoration({
           setTimeRemaining(savedState.timeRemaining);
           setCurrentSessionIndex(savedState.currentSessionIndex || 0);
           
-          // Explicitly store the paused time
+          // Explicitly store the paused time if the timer was paused
           if (!savedState.isRunning && savedState.timeRemaining) {
             console.log('Restoring exact paused time:', savedState.timeRemaining);
             pausedTimeRef.current = savedState.timeRemaining;
+            
+            // Also store in localStorage for redundancy
+            localStorage.setItem('pausedTime', savedState.timeRemaining.toString());
           } else {
             pausedTimeRef.current = null;
+            localStorage.removeItem('pausedTime');
           }
           
           if (savedState.sessionStartTime) {
             sessionStartTimeRef.current = savedState.sessionStartTime;
           } else {
             sessionStartTimeRef.current = null;
+          }
+          
+          // Double-check that if we restored a paused time, isRunning is false
+          if (pausedTimeRef.current !== null) {
+            const updatedState = {
+              ...savedState,
+              isRunning: false,
+              timeRemaining: pausedTimeRef.current
+            };
+            localStorage.setItem('timerState', JSON.stringify(updatedState));
           }
         } else {
           console.log('Saved state is too old, using defaults');
@@ -93,6 +107,7 @@ function resetToDefaults(
   localStorage.removeItem('timerState');
   localStorage.removeItem('sessionStartTime');
   localStorage.removeItem('timerStateBeforeUnload');
+  localStorage.removeItem('pausedTime');
   
   console.log('Timer reset to default values');
 }
