@@ -107,7 +107,8 @@ export function useTimerControls({
       isRunning: false,
       timeRemaining,
       currentSessionIndex,
-      sessionStartTime: sessionStartTimeRef.current
+      sessionStartTime: sessionStartTimeRef.current,
+      pausedTime: timeRemaining // Explicitly include pausedTime in saved state
     });
     
     console.log("Timer paused at:", timeRemaining);
@@ -149,7 +150,8 @@ export function useTimerControls({
       isRunning: false,
       timeRemaining: newTime,
       currentSessionIndex,
-      sessionStartTime: null
+      sessionStartTime: null,
+      pausedTime: null // Explicitly set pausedTime to null when resetting
     });
     
     console.log("Timer reset to:", newTime, "seconds");
@@ -195,7 +197,8 @@ export function useTimerControls({
       isRunning: false,
       timeRemaining: newTime,
       currentSessionIndex: mode === 'work' ? 0 : currentSessionIndex,
-      sessionStartTime: null
+      sessionStartTime: null,
+      pausedTime: null // Explicitly set pausedTime to null when changing mode
     });
     
     console.log("Mode changed to:", mode, "with time:", newTime);

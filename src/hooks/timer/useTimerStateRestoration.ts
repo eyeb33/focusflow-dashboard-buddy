@@ -46,13 +46,14 @@ export function useTimerStateRestoration({
           setTimeRemaining(savedState.timeRemaining);
           setCurrentSessionIndex(savedState.currentSessionIndex || 0);
           
-          // Explicitly store the paused time if the timer was paused
-          if (!savedState.isRunning && savedState.timeRemaining) {
-            console.log('Restoring exact paused time:', savedState.timeRemaining);
-            pausedTimeRef.current = savedState.timeRemaining;
+          // Explicitly store the paused time if the timer was paused or if pausedTime is present in state
+          if ((!savedState.isRunning && savedState.timeRemaining) || savedState.pausedTime) {
+            const pausedTimeToUse = savedState.pausedTime || savedState.timeRemaining;
+            console.log('Restoring exact paused time:', pausedTimeToUse);
+            pausedTimeRef.current = pausedTimeToUse;
             
             // Also store in localStorage for redundancy
-            localStorage.setItem('pausedTime', savedState.timeRemaining.toString());
+            localStorage.setItem('pausedTime', pausedTimeToUse.toString());
           } else {
             pausedTimeRef.current = null;
             localStorage.removeItem('pausedTime');
@@ -69,7 +70,8 @@ export function useTimerStateRestoration({
             const updatedState = {
               ...savedState,
               isRunning: false,
-              timeRemaining: pausedTimeRef.current
+              timeRemaining: pausedTimeRef.current,
+              pausedTime: pausedTimeRef.current
             };
             localStorage.setItem('timerState', JSON.stringify(updatedState));
           }

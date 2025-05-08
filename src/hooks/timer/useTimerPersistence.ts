@@ -8,6 +8,7 @@ interface SaveTimerStateParams {
   timeRemaining: number;
   currentSessionIndex: number;
   sessionStartTime: string | null;
+  pausedTime?: number | null;
 }
 
 export function useTimerPersistence() {
@@ -22,8 +23,9 @@ export function useTimerPersistence() {
     
     // Additionally, if timer is paused, explicitly store the paused time
     if (!state.isRunning && state.timeRemaining > 0) {
-      console.log(`Storing paused time in localStorage:`, state.timeRemaining);
-      localStorage.setItem('pausedTime', state.timeRemaining.toString());
+      const pausedTime = state.pausedTime || state.timeRemaining;
+      console.log(`Storing paused time in localStorage:`, pausedTime);
+      localStorage.setItem('pausedTime', pausedTime.toString());
     } else if (state.isRunning) {
       // Clear paused time if timer is running
       localStorage.removeItem('pausedTime');
@@ -64,6 +66,7 @@ export function useTimerPersistence() {
           if (!isNaN(pausedTime) && pausedTime > 0) {
             console.log("Found stored paused time:", pausedTime);
             savedState.timeRemaining = pausedTime;
+            savedState.pausedTime = pausedTime;
           }
         }
         
