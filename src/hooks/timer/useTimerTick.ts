@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerVisibility } from './useTimerVisibility';
@@ -45,9 +44,15 @@ export function useTimerTick({
   const isFirstRender = useRef(true);
   const previousIsRunningRef = useRef(isRunning);
   const resumedFromPauseRef = useRef(false);
+  const lastTimeRemainingRef = useRef(timeRemaining);
   
   // Debug logging
   console.log(`useTimerTick - Current state: isRunning=${isRunning}, time=${timeRemaining}, pausedTime=${pausedTimeRef.current}`);
+  
+  // Always keep track of the latest time remaining value
+  useEffect(() => {
+    lastTimeRemainingRef.current = timeRemaining;
+  }, [timeRemaining]);
   
   // Effect to handle pausing and resuming
   useEffect(() => {
@@ -59,13 +64,19 @@ export function useTimerTick({
       pausedTimeRef.current = null;
     }
     
+    // When pausing, ensure we capture the exact current time
+    if (!isRunning && previousIsRunningRef.current) {
+      console.log('Just paused - storing current exact time:', lastTimeRemainingRef.current);
+      pausedTimeRef.current = lastTimeRemainingRef.current;
+    }
+    
     previousIsRunningRef.current = isRunning;
     
     // This cleanup function runs when isRunning changes
     return () => {
       console.log('isRunning changed, cleanup function executed');
     };
-  }, [isRunning, pausedTimeRef, setTimeRemaining]);
+  }, [isRunning, pausedTimeRef, setTimeRemaining, lastTimeRemainingRef]);
   
   // Set up the timer tick effect
   useEffect(() => {
@@ -111,6 +122,9 @@ export function useTimerTick({
           
           setTimeRemaining((prevTime: number) => {
             const newTimeRemaining = Math.max(0, prevTime - elapsedSeconds);
+            
+            // Update last known time
+            lastTimeRemainingRef.current = newTimeRemaining;
             
             // Save state periodically (every 5 seconds)
             if (prevTime % 5 === 0 || newTimeRemaining === 0) {

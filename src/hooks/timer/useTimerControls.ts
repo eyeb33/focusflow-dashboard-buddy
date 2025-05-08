@@ -63,19 +63,25 @@ export function useTimerControls({
       sessionStartTimeRef.current = new Date().toISOString();
     }
     
-    // Don't clear pausedTimeRef here - we'll use it in the timer tick effect
-    // to restore the correct time when starting after a pause
+    // Check if we're resuming from a paused state
+    let timeToUse = timeRemaining;
+    if (pausedTimeRef.current !== null) {
+      console.log('Resuming from paused time:', pausedTimeRef.current);
+      timeToUse = pausedTimeRef.current;
+      // Clear the paused time after using it
+      pausedTimeRef.current = null;
+    }
     
     // Save the timer state with the current time
     saveTimerState({
       timerMode,
       isRunning: true,
-      timeRemaining,
+      timeRemaining: timeToUse,
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current
     });
     
-    console.log("Timer started with mode:", timerMode, "and time:", timeRemaining);
+    console.log("Timer started with mode:", timerMode, "and time:", timeToUse);
   }, [timerMode, isRunning, timeRemaining, currentSessionIndex, pausedTimeRef, 
       sessionStartTimeRef, setIsRunning, saveTimerState]);
   
