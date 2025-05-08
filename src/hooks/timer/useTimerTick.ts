@@ -40,10 +40,9 @@ export function useTimerTick({
     handleTimerComplete
   });
   
-  // Keep track of previous running state to detect pause events
+  // Keep track of previous running state
   const isFirstRender = useRef(true);
   const previousIsRunningRef = useRef(isRunning);
-  const pauseRestoredRef = useRef(false);
   
   // Debug logging
   console.log(`useTimerTick - Current state: isRunning=${isRunning}, time=${timeRemaining}, pausedTime=${pausedTimeRef.current}`);
@@ -69,27 +68,10 @@ export function useTimerTick({
     
     // Only set up the timer if it's running
     if (isRunning) {
-      console.log("Starting timer interval with time remaining:", timeRemaining, "paused time:", pausedTimeRef.current);
+      console.log("Starting timer interval with time remaining:", timeRemaining);
       
-      // If we have a paused time, restore it when starting the timer
-      if (pausedTimeRef.current !== null && !pauseRestoredRef.current) {
-        console.log('Restoring from paused time:', pausedTimeRef.current);
-        const pausedTime = pausedTimeRef.current;
-        setTimeRemaining(pausedTime);
-        // Set flag to prevent duplicate restoration
-        pauseRestoredRef.current = true;
-        // Clear the paused time once we've restored it
-        pausedTimeRef.current = null;
-        
-        // Update last tick time to now to ensure proper timing
-        lastTickTimeRef.current = Date.now();
-      } else {
-        // Reset the restoration flag when we're not restoring from pause
-        pauseRestoredRef.current = false;
-        
-        // Update last tick time
-        lastTickTimeRef.current = Date.now();
-      }
+      // Update last tick time
+      lastTickTimeRef.current = Date.now();
       
       // Record session start time if not already set
       if (!sessionStartTimeRef.current) {
@@ -135,6 +117,10 @@ export function useTimerTick({
           });
         }
       }, 250); // Check frequently for smoother updates
+    } 
+    else if (previousIsRunningRef.current && !isRunning) {
+      // This is a pause event (was running, now stopped)
+      console.log("Pause detected - current time:", timeRemaining);
     }
     
     // Update previous running state for next render

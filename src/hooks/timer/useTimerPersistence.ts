@@ -46,8 +46,8 @@ export function useTimerPersistence() {
       const now = Date.now();
       const elapsed = now - (savedState.timestamp || 0);
       
-      // Only restore if recent (< 5 minutes) and valid
-      if (elapsed < 300000) {
+      // Only restore if recent (< 1 minute) and valid
+      if (elapsed < 60000) {
         // Always force isRunning to false when restoring
         return {
           ...savedState,
