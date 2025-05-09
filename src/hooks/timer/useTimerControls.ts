@@ -56,6 +56,7 @@ export function useTimerControls({
     }
 
     // Check if we're resuming from a paused state and use that time if available
+    // CRITICAL: We must preserve the exact paused time when resuming
     if (pausedTimeRef.current !== null) {
       console.log('Resuming from paused time:', pausedTimeRef.current);
       setTimeRemaining(pausedTimeRef.current);
@@ -71,22 +72,28 @@ export function useTimerControls({
       sessionStartTimeRef.current = new Date().toISOString();
     }
     
-    // Get final time to use for logging and state saving
-    const finalTimeToUse = pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining;
-    
-    // Clear the paused time after using it
-    pausedTimeRef.current = null;
+    // Store the current time as the pausedTime temporarily
+    // This prevents any settings sync from modifying the time
+    const currentPausedTime = pausedTimeRef.current;
     
     // Save the timer state with the current time
     saveTimerState({
       timerMode,
       isRunning: true,
-      timeRemaining: finalTimeToUse,
+      timeRemaining: currentPausedTime !== null ? currentPausedTime : timeRemaining,
       currentSessionIndex,
-      sessionStartTime: sessionStartTimeRef.current
+      sessionStartTime: sessionStartTimeRef.current,
+      pausedTime: currentPausedTime // Keep track of pausedTime for a moment
     });
     
-    console.log("Timer started with mode:", timerMode, "and time:", finalTimeToUse);
+    // Clear the paused time AFTER saving state
+    setTimeout(() => {
+      pausedTimeRef.current = null;
+      console.log("Cleared pausedTimeRef after timer start");
+    }, 100);
+    
+    console.log("Timer started with mode:", timerMode, "and time:", 
+      currentPausedTime !== null ? currentPausedTime : timeRemaining);
   }, [timerMode, isRunning, timeRemaining, currentSessionIndex, pausedTimeRef, 
       sessionStartTimeRef, setIsRunning, setTimeRemaining, saveTimerState]);
   
@@ -105,7 +112,8 @@ export function useTimerControls({
       { isRunning: false, timeRemaining, pausedTime: timeRemaining }
     );
     
-    // Store the current time when pausing - this is CRITICAL
+    // CRITICAL: Store the current time when pausing
+    // This ensures we resume from exactly this point
     pausedTimeRef.current = timeRemaining;
     console.log('Storing exact pause time:', timeRemaining);
     
@@ -122,7 +130,7 @@ export function useTimerControls({
       pausedTime: timeRemaining // Explicitly include pausedTime in saved state
     });
     
-    console.log("Timer paused at:", timeRemaining);
+    console.log("Timer paused at exact time:", timeRemaining);
   }, [timerMode, isRunning, timeRemaining, currentSessionIndex, saveTimerState, 
       setIsRunning, pausedTimeRef, sessionStartTimeRef]);
   
