@@ -55,7 +55,15 @@ export function useTimerControls({
       return;
     }
 
-    // Critical: Set running state first
+    // Check if we're resuming from a paused state and use that time if available
+    if (pausedTimeRef.current !== null) {
+      console.log('Resuming from paused time:', pausedTimeRef.current);
+      setTimeRemaining(pausedTimeRef.current);
+    } else {
+      console.log('No paused time available, using current time:', timeRemaining);
+    }
+    
+    // Critical: Set running state AFTER updating time if needed
     setIsRunning(true);
     
     // Ensure we have a session start time
@@ -63,30 +71,33 @@ export function useTimerControls({
       sessionStartTimeRef.current = new Date().toISOString();
     }
     
-    // Check if we're resuming from a paused state
-    let timeToUse = timeRemaining;
-    if (pausedTimeRef.current !== null) {
-      console.log('Resuming from paused time:', pausedTimeRef.current);
-      timeToUse = pausedTimeRef.current;
-      // Clear the paused time after using it
-      pausedTimeRef.current = null;
-    }
+    // Get final time to use for logging and state saving
+    const finalTimeToUse = pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining;
+    
+    // Clear the paused time after using it
+    pausedTimeRef.current = null;
     
     // Save the timer state with the current time
     saveTimerState({
       timerMode,
       isRunning: true,
-      timeRemaining: timeToUse,
+      timeRemaining: finalTimeToUse,
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current
     });
     
-    console.log("Timer started with mode:", timerMode, "and time:", timeToUse);
+    console.log("Timer started with mode:", timerMode, "and time:", finalTimeToUse);
   }, [timerMode, isRunning, timeRemaining, currentSessionIndex, pausedTimeRef, 
-      sessionStartTimeRef, setIsRunning, saveTimerState]);
+      sessionStartTimeRef, setIsRunning, setTimeRemaining, saveTimerState]);
   
   const handlePause = useCallback(() => {
     console.log('PAUSE called with time remaining:', timeRemaining);
+    
+    // If timer is not running, do nothing
+    if (!isRunning) {
+      console.log('Timer not running, ignoring pause call');
+      return;
+    }
     
     // Log state before change
     logTimerStateChange('pause',
@@ -94,7 +105,7 @@ export function useTimerControls({
       { isRunning: false, timeRemaining, pausedTime: timeRemaining }
     );
     
-    // Store the current time when pausing
+    // Store the current time when pausing - this is CRITICAL
     pausedTimeRef.current = timeRemaining;
     console.log('Storing exact pause time:', timeRemaining);
     

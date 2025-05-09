@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerVisibility } from './useTimerVisibility';
@@ -43,7 +44,7 @@ export function useTimerTick({
   // Keep track of previous running state
   const isFirstRender = useRef(true);
   const previousIsRunningRef = useRef(isRunning);
-  const resumedFromPauseRef = useRef(false);
+  const justResumedRef = useRef(false);
   const lastTimeRemainingRef = useRef(timeRemaining);
   
   // Debug logging
@@ -54,34 +55,37 @@ export function useTimerTick({
     lastTimeRemainingRef.current = timeRemaining;
   }, [timeRemaining]);
   
-  // Effect to handle pausing and resuming
+  // Effect to handle running state changes (start/pause)
   useEffect(() => {
-    // When going from paused to running, check if we need to restore from pausedTimeRef
-    if (isRunning && !previousIsRunningRef.current && pausedTimeRef.current !== null) {
-      console.log('Resuming from paused state with time:', pausedTimeRef.current);
-      setTimeRemaining(pausedTimeRef.current);
-      resumedFromPauseRef.current = true;
-      pausedTimeRef.current = null;
+    // When transitioning from paused to running
+    if (isRunning && !previousIsRunningRef.current) {
+      console.log('State changed from paused to running');
+      justResumedRef.current = true;
+      
+      // We'll use pausedTimeRef in the main timer effect if it exists
+      if (pausedTimeRef.current !== null) {
+        console.log(`Found pausedTime ${pausedTimeRef.current}, will use it for resuming`);
+      }
     }
     
-    // When pausing, ensure we capture the exact current time
+    // When transitioning from running to paused
     if (!isRunning && previousIsRunningRef.current) {
-      console.log('Just paused - storing current exact time:', lastTimeRemainingRef.current);
-      pausedTimeRef.current = lastTimeRemainingRef.current;
+      console.log('State changed from running to paused');
+      // Store current time if pausedTimeRef isn't already set
+      if (pausedTimeRef.current === null) {
+        pausedTimeRef.current = lastTimeRemainingRef.current;
+        console.log(`Setting pausedTime to ${pausedTimeRef.current}`);
+      }
     }
     
+    // Update previous running state for next render
     previousIsRunningRef.current = isRunning;
-    
-    // This cleanup function runs when isRunning changes
-    return () => {
-      console.log('isRunning changed, cleanup function executed');
-    };
-  }, [isRunning, pausedTimeRef, setTimeRemaining, lastTimeRemainingRef]);
+  }, [isRunning, pausedTimeRef]);
   
   // Set up the timer tick effect
   useEffect(() => {
     // Debug the current state
-    console.log(`Timer tick effect running: isRunning=${isRunning}, time=${timeRemaining}, pausedTime=${pausedTimeRef.current}, previousIsRunning=${previousIsRunningRef.current}`);
+    console.log(`Timer tick effect running: isRunning=${isRunning}, time=${timeRemaining}, pausedTime=${pausedTimeRef.current}`);
     
     // Skip first render to avoid side effects during initialization
     if (isFirstRender.current) {
@@ -100,6 +104,14 @@ export function useTimerTick({
     // Only set up the timer if it's running
     if (isRunning) {
       console.log("Starting timer interval with time remaining:", timeRemaining);
+      
+      // If we've just resumed and have a pausedTime, use it
+      if (justResumedRef.current && pausedTimeRef.current !== null) {
+        console.log("Resuming with pausedTime:", pausedTimeRef.current);
+        setTimeRemaining(pausedTimeRef.current);
+        pausedTimeRef.current = null;
+        justResumedRef.current = false;
+      }
       
       // Update last tick time
       lastTickTimeRef.current = Date.now();
@@ -152,13 +164,6 @@ export function useTimerTick({
         }
       }, 250); // Check frequently for smoother updates
     } 
-    else if (previousIsRunningRef.current && !isRunning) {
-      // This is a pause event (was running, now stopped)
-      console.log("Pause detected - preserving current time:", timeRemaining);
-    }
-    
-    // Update previous running state for next render
-    previousIsRunningRef.current = isRunning;
     
     // Cleanup interval on unmount or isRunning changes
     return () => {
@@ -181,10 +186,10 @@ export function useTimerTick({
     currentSessionIndex
   ]); // Important: timeRemaining is not in dependencies to prevent reset loops
 
-  // Reset resumedFromPauseRef when needed
+  // Reset justResumedRef when needed
   useEffect(() => {
-    if (resumedFromPauseRef.current) {
-      resumedFromPauseRef.current = false;
+    if (justResumedRef.current && isRunning) {
+      justResumedRef.current = false;
     }
-  }, [timeRemaining]);
+  }, [timeRemaining, isRunning]);
 }

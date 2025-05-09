@@ -46,10 +46,10 @@ export function useTimerSettingsSync({
     // Update the timer - only update when settings change, timer is not running
     setTimeRemaining(newTime);
     
-    // Also clear pausedTimeRef when settings change and timer is not running
-    // This is critical as it prevents the stale paused time from being used
-    pausedTimeRef.current = null;
-    console.log('Cleared paused time reference after settings change');
+    // Update pausedTimeRef to match new time when settings change
+    // This ensures that when we pause/resume after settings change, we use the correct time
+    pausedTimeRef.current = newTime;
+    console.log('Updated pausedTimeRef to match new time after settings change:', newTime);
     
     // Save the updated state
     saveTimerState({
@@ -57,13 +57,15 @@ export function useTimerSettingsSync({
       isRunning: false,
       timeRemaining: newTime,
       currentSessionIndex,
-      sessionStartTime: null
+      sessionStartTime: null,
+      pausedTime: newTime // Explicitly include pausedTime in saved state
     });
     
     console.log('Timer values updated after settings change:', {
       mode: timerMode,
       newTime,
-      isRunning
+      isRunning,
+      pausedTime: pausedTimeRef.current
     });
     
   }, [

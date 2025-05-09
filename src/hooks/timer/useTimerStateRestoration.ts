@@ -46,17 +46,15 @@ export function useTimerStateRestoration({
           setTimeRemaining(savedState.timeRemaining);
           setCurrentSessionIndex(savedState.currentSessionIndex || 0);
           
-          // Explicitly store the paused time if the timer was paused or if pausedTime is present in state
-          if ((!savedState.isRunning && savedState.timeRemaining) || savedState.pausedTime) {
-            const pausedTimeToUse = savedState.pausedTime || savedState.timeRemaining;
-            console.log('Restoring exact paused time:', pausedTimeToUse);
-            pausedTimeRef.current = pausedTimeToUse;
-            
-            // Also store in localStorage for redundancy
-            localStorage.setItem('pausedTime', pausedTimeToUse.toString());
+          // Handle paused time restoration
+          if (savedState.pausedTime !== undefined && savedState.pausedTime !== null) {
+            console.log('Restoring explicit paused time:', savedState.pausedTime);
+            pausedTimeRef.current = savedState.pausedTime;
+          } else if (!savedState.isRunning && savedState.timeRemaining) {
+            console.log('Restoring timeRemaining as paused time:', savedState.timeRemaining);
+            pausedTimeRef.current = savedState.timeRemaining;
           } else {
             pausedTimeRef.current = null;
-            localStorage.removeItem('pausedTime');
           }
           
           if (savedState.sessionStartTime) {
@@ -65,16 +63,12 @@ export function useTimerStateRestoration({
             sessionStartTimeRef.current = null;
           }
           
-          // Double-check that if we restored a paused time, isRunning is false
-          if (pausedTimeRef.current !== null) {
-            const updatedState = {
-              ...savedState,
-              isRunning: false,
-              timeRemaining: pausedTimeRef.current,
-              pausedTime: pausedTimeRef.current
-            };
-            localStorage.setItem('timerState', JSON.stringify(updatedState));
-          }
+          // Double-check that restored state is correct
+          console.log('State restoration complete:', {
+            timeRemaining: savedState.timeRemaining,
+            pausedTime: pausedTimeRef.current,
+            isRunning: false
+          });
         } else {
           console.log('Saved state is too old, using defaults');
           resetToDefaults(setTimerMode, setTimeRemaining, setCurrentSessionIndex, pausedTimeRef, sessionStartTimeRef);
