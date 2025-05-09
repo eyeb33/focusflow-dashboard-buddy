@@ -55,15 +55,18 @@ export function useTimerControls({
       return;
     }
     
-    // Save the current time as the pausedTime temporarily if we don't have a paused time
-    // This prevents any settings sync from modifying the time
-    if (pausedTimeRef.current === null) {
+    // Use paused time if available, otherwise use current time
+    // This is CRITICAL for ensuring the timer resumes from the correct time after settings changes
+    let timeToUse = timeRemaining;
+    
+    if (pausedTimeRef.current !== null) {
+      console.log(`Using stored paused time for resume: ${pausedTimeRef.current}`);
+      timeToUse = pausedTimeRef.current;
+    } else {
+      // If no paused time, store current time temporarily to prevent settings sync issues
       pausedTimeRef.current = timeRemaining;
       console.log(`No paused time found, setting to current time: ${timeRemaining}`);
     }
-    
-    // Critical: Set running state AFTER updating time if needed
-    setIsRunning(true);
     
     // Ensure we have a session start time
     if (!sessionStartTimeRef.current) {
@@ -74,16 +77,18 @@ export function useTimerControls({
     saveTimerState({
       timerMode,
       isRunning: true,
-      timeRemaining: pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining,
+      timeRemaining: timeToUse,
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current,
-      pausedTime: pausedTimeRef.current // Keep track of pausedTime for restoration
+      pausedTime: timeToUse // Keep track of pausedTime for restoration
     });
     
-    console.log("Timer started with mode:", timerMode, "and time:", 
-      pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining);
+    // Critical: Set running state AFTER updating time and state
+    setIsRunning(true);
+    
+    console.log("Timer started with mode:", timerMode, "and time:", timeToUse);
   }, [timerMode, isRunning, timeRemaining, currentSessionIndex, pausedTimeRef, 
-      sessionStartTimeRef, setIsRunning, setTimeRemaining, saveTimerState]);
+      sessionStartTimeRef, setIsRunning, saveTimerState]);
   
   const handlePause = useCallback(() => {
     console.log('PAUSE called with time remaining:', timeRemaining);

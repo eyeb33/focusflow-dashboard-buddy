@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerVisibility } from './useTimerVisibility';
@@ -105,7 +106,7 @@ export function useTimerTick({
         setTimeout(() => {
           pausedTimeRef.current = null;
           console.log("Cleared pausedTimeRef after resuming timer");
-        }, 100);
+        }, 300); // Increased delay time for better reliability
         
         justResumedRef.current = false;
       }

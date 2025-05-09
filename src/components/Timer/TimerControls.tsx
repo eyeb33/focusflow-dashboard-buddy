@@ -65,7 +65,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
   }, [onReset]);
 
   return (
-    <div className="flex gap-5 mt-6 mb-4">
+    <div className="flex gap-5 mt-6 mb-4" data-testid="timer-controls">
       <button 
         onClick={handlePlayPauseClick}
         className={cn(
