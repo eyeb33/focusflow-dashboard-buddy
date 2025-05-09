@@ -47,11 +47,6 @@ export function useTimerSettingsSync({
     // Update the timer - only update when settings change, timer is not running and not paused
     setTimeRemaining(newTime);
     
-    // Update pausedTimeRef to match new time when settings change
-    // This ensures that when we pause/resume after settings change, we use the correct time
-    pausedTimeRef.current = null; // Clear pausedTime when settings change and timer is reset
-    console.log('Cleared pausedTimeRef after settings change');
-    
     // Save the updated state
     saveTimerState({
       timerMode,

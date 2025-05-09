@@ -44,15 +44,9 @@ export function useTimerTick({
   const isFirstRender = useRef(true);
   const previousIsRunningRef = useRef(isRunning);
   const justResumedRef = useRef(false);
-  const lastKnownTimeRef = useRef(timeRemaining);
   
   // Debug logging
   console.log(`useTimerTick - Current state: isRunning=${isRunning}, time=${timeRemaining}, pausedTime=${pausedTimeRef.current}`);
-  
-  // Always keep track of the latest time remaining value
-  useEffect(() => {
-    lastKnownTimeRef.current = timeRemaining;
-  }, [timeRemaining]);
   
   // Effect to handle running state changes (start/pause)
   useEffect(() => {
@@ -70,16 +64,13 @@ export function useTimerTick({
     // When transitioning from running to paused
     if (!isRunning && previousIsRunningRef.current) {
       console.log('State changed from running to paused');
-      // Store current time if pausedTimeRef isn't already set
-      if (pausedTimeRef.current === null) {
-        pausedTimeRef.current = lastKnownTimeRef.current;
-        console.log(`Setting pausedTime to ${pausedTimeRef.current}`);
-      }
+      pausedTimeRef.current = timeRemaining;
+      console.log(`Setting pausedTime to ${pausedTimeRef.current}`);
     }
     
     // Update previous running state for next render
     previousIsRunningRef.current = isRunning;
-  }, [isRunning, pausedTimeRef]);
+  }, [isRunning, timeRemaining, pausedTimeRef]);
   
   // Set up the timer tick effect
   useEffect(() => {
@@ -109,12 +100,12 @@ export function useTimerTick({
         console.log("Resuming with pausedTime:", pausedTimeRef.current);
         setTimeRemaining(pausedTimeRef.current);
         
-        // CRITICAL: Keep pausedTimeRef value for a short period to prevent settings sync from resetting
-        // But clear it shortly after so normal timer operation can continue
+        // CRITICAL: Clear pausedTimeRef after a short delay to allow the timer to resume
+        // This prevents settings sync from resetting the timer right after resuming
         setTimeout(() => {
           pausedTimeRef.current = null;
           console.log("Cleared pausedTimeRef after resuming timer");
-        }, 200);
+        }, 100);
         
         justResumedRef.current = false;
       }
@@ -140,9 +131,6 @@ export function useTimerTick({
           
           setTimeRemaining((prevTime: number) => {
             const newTimeRemaining = Math.max(0, prevTime - elapsedSeconds);
-            
-            // Update last known time
-            lastKnownTimeRef.current = newTimeRemaining;
             
             // Save state periodically (every 5 seconds)
             if (prevTime % 5 === 0 || newTimeRemaining === 0) {

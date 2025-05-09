@@ -21,21 +21,14 @@ export function useTimerPersistence() {
     console.log(`Saving timer state:`, stateWithTimestamp);
     localStorage.setItem('timerState', JSON.stringify(stateWithTimestamp));
     
-    // Explicitly manage pausedTime in a separate storage key
+    // When pausing, store the current timeRemaining as pausedTime
     if (!state.isRunning) {
-      // When pausing, use the explicit pausedTime or current timeRemaining
-      const pausedTime = state.pausedTime !== undefined ? state.pausedTime : state.timeRemaining;
-      console.log(`Storing paused time in localStorage:`, pausedTime);
-      if (pausedTime !== null) {
-        localStorage.setItem('pausedTime', pausedTime.toString());
-      }
-    } else if (state.isRunning) {
-      // When the timer is running, we don't need a paused time
-      // But DON'T clear it if we're just starting after pause
-      if (state.pausedTime === null) {
-        console.log('Timer is running and not resuming from pause, clearing paused time');
-        localStorage.removeItem('pausedTime');
-      }
+      localStorage.setItem('pausedTime', state.timeRemaining.toString());
+      console.log(`Storing paused time in localStorage:`, state.timeRemaining);
+    } else if (state.isRunning && state.pausedTime === null) {
+      // Only clear pausedTime when we're running and not resuming from pause
+      localStorage.removeItem('pausedTime');
+      console.log('Timer is running, clearing paused time');
     }
   }, []);
   

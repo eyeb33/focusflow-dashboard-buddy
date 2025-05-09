@@ -54,14 +54,12 @@ export function useTimerControls({
       console.log('Timer already running, ignoring start call');
       return;
     }
-
-    // Check if we're resuming from a paused state and use that time if available
-    // CRITICAL: We must preserve the exact paused time when resuming
-    if (pausedTimeRef.current !== null) {
-      console.log('Resuming from paused time:', pausedTimeRef.current);
-      setTimeRemaining(pausedTimeRef.current);
-    } else {
-      console.log('No paused time available, using current time:', timeRemaining);
+    
+    // Save the current time as the pausedTime temporarily if we don't have a paused time
+    // This prevents any settings sync from modifying the time
+    if (pausedTimeRef.current === null) {
+      pausedTimeRef.current = timeRemaining;
+      console.log(`No paused time found, setting to current time: ${timeRemaining}`);
     }
     
     // Critical: Set running state AFTER updating time if needed
@@ -72,28 +70,18 @@ export function useTimerControls({
       sessionStartTimeRef.current = new Date().toISOString();
     }
     
-    // Store the current time as the pausedTime temporarily
-    // This prevents any settings sync from modifying the time
-    const currentPausedTime = pausedTimeRef.current;
-    
     // Save the timer state with the current time
     saveTimerState({
       timerMode,
       isRunning: true,
-      timeRemaining: currentPausedTime !== null ? currentPausedTime : timeRemaining,
+      timeRemaining: pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining,
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current,
-      pausedTime: currentPausedTime // Keep track of pausedTime for a moment
+      pausedTime: pausedTimeRef.current // Keep track of pausedTime for restoration
     });
     
-    // Clear the paused time AFTER saving state
-    setTimeout(() => {
-      pausedTimeRef.current = null;
-      console.log("Cleared pausedTimeRef after timer start");
-    }, 100);
-    
     console.log("Timer started with mode:", timerMode, "and time:", 
-      currentPausedTime !== null ? currentPausedTime : timeRemaining);
+      pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining);
   }, [timerMode, isRunning, timeRemaining, currentSessionIndex, pausedTimeRef, 
       sessionStartTimeRef, setIsRunning, setTimeRemaining, saveTimerState]);
   
