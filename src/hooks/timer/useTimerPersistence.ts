@@ -21,9 +21,13 @@ export function useTimerPersistence() {
     console.log(`Saving timer state:`, stateWithTimestamp);
     localStorage.setItem('timerState', JSON.stringify(stateWithTimestamp));
     
-    // Always store the current timeRemaining as pausedTime when stopping
+    // Store pausedTime separately when not running
     if (!state.isRunning) {
-      const timeToStore = state.pausedTime !== undefined ? state.pausedTime : state.timeRemaining;
+      // Use explicit pausedTime if provided, otherwise use timeRemaining
+      const timeToStore = state.pausedTime !== undefined && state.pausedTime !== null 
+        ? state.pausedTime 
+        : state.timeRemaining;
+        
       localStorage.setItem('pausedTime', timeToStore.toString());
       console.log(`Storing paused time in localStorage:`, timeToStore);
     } else if (state.isRunning) {
@@ -60,9 +64,12 @@ export function useTimerPersistence() {
       
       // Only restore if recent (< 1 minute) and valid
       if (elapsed < 60000) {
+        // Always load timer in paused state for safety
+        savedState.isRunning = false;
+        
         // Check if we have a paused time stored separately
         const pausedTimeStr = localStorage.getItem('pausedTime');
-        if (pausedTimeStr && !savedState.isRunning) {
+        if (pausedTimeStr) {
           const pausedTime = parseInt(pausedTimeStr, 10);
           if (!isNaN(pausedTime) && pausedTime > 0) {
             console.log("Found stored paused time:", pausedTime);
@@ -71,11 +78,7 @@ export function useTimerPersistence() {
           }
         }
         
-        // Always force isRunning to false when restoring
-        return {
-          ...savedState,
-          isRunning: false
-        };
+        return savedState;
       }
       
       console.log("Timer state too old, clearing");

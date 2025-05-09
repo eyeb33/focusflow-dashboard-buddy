@@ -46,10 +46,10 @@ const TimerControls: React.FC<TimerControlsProps> = ({
     console.log(`Play/Pause button clicked, isRunning: ${isRunning}, mode: ${mode}`);
     
     if (isRunning) {
-      console.log("Calling onPause - preserving current time");
+      console.log("Calling onPause to preserve current time");
       onPause();
     } else {
-      console.log("Calling onStart - should resume from saved time");
+      console.log("Calling onStart to resume from saved time");
       onStart();
     }
   }, [isRunning, onPause, onStart, mode]);

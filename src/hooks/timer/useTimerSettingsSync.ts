@@ -39,19 +39,17 @@ export function useTimerSettingsSync({
       return;
     }
     
-    // Critical: Store the new time in pausedTimeRef when settings change and we're paused
+    // Calculate the new time based on current mode and settings
     const newTime = getTotalTimeForMode();
     console.log('Settings changed: Updating timer to', newTime, 'seconds');
     
-    // Update the timer
+    // Update the timer display
     setTimeRemaining(newTime);
     
     // IMPORTANT: When settings change while paused, update the pausedTimeRef to match
     // This ensures that when play is pressed, it will use this new time
-    if (pausedTimeRef.current !== null) {
-      console.log('Timer was paused, updating pausedTimeRef to new time:', newTime);
-      pausedTimeRef.current = newTime;
-    }
+    pausedTimeRef.current = newTime;
+    console.log('Updating pausedTimeRef to match new settings time:', newTime);
     
     // Save the updated state
     saveTimerState({

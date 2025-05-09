@@ -45,6 +45,7 @@ export function useTimerTick({
   const isFirstRender = useRef(true);
   const previousIsRunningRef = useRef(isRunning);
   const justResumedRef = useRef(false);
+  const preservePausedTimeRef = useRef(false);
   
   // Debug logging
   console.log(`useTimerTick - Current state: isRunning=${isRunning}, time=${timeRemaining}, pausedTime=${pausedTimeRef.current}`);
@@ -66,7 +67,8 @@ export function useTimerTick({
     if (!isRunning && previousIsRunningRef.current) {
       console.log('State changed from running to paused');
       pausedTimeRef.current = timeRemaining;
-      console.log(`Setting pausedTime to ${pausedTimeRef.current}`);
+      preservePausedTimeRef.current = true; // Mark that we should preserve this time
+      console.log(`Setting pausedTime to ${timeRemaining} and preserving it`);
     }
     
     // Update previous running state for next render
@@ -101,13 +103,9 @@ export function useTimerTick({
         console.log("Resuming with pausedTime:", pausedTimeRef.current);
         setTimeRemaining(pausedTimeRef.current);
         
-        // CRITICAL: Clear pausedTimeRef after a short delay to allow the timer to resume
-        // This prevents settings sync from resetting the timer right after resuming
-        setTimeout(() => {
-          pausedTimeRef.current = null;
-          console.log("Cleared pausedTimeRef after resuming timer");
-        }, 300); // Increased delay time for better reliability
-        
+        // Don't clear pausedTimeRef immediately to prevent issues with settings sync
+        // We'll preserve it until we've actually started counting down
+        preservePausedTimeRef.current = false;
         justResumedRef.current = false;
       }
       
@@ -127,8 +125,14 @@ export function useTimerTick({
         const elapsedSeconds = Math.floor((now - lastTickTimeRef.current) / 1000);
         
         if (elapsedSeconds > 0) {
-          console.log(`Timer tick: elapsed=${elapsedSeconds}s, current time=${timeRemaining}s`);
           lastTickTimeRef.current = now;
+          
+          // Only clear pausedTimeRef after we've actually started counting down
+          // This ensures we use the correct time when resuming
+          if (pausedTimeRef.current !== null && !preservePausedTimeRef.current) {
+            pausedTimeRef.current = null;
+            console.log("Cleared pausedTimeRef after timer has started counting down");
+          }
           
           setTimeRemaining((prevTime: number) => {
             const newTimeRemaining = Math.max(0, prevTime - elapsedSeconds);

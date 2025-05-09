@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { logTimerStateChange } from '@/utils/timerDebugUtils';
@@ -56,16 +55,13 @@ export function useTimerControls({
     }
     
     // Use paused time if available, otherwise use current time
-    // This is CRITICAL for ensuring the timer resumes from the correct time after settings changes
-    let timeToUse = timeRemaining;
+    let timeToUse = pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining;
+    console.log(`Using time for resume: ${timeToUse}`);
     
-    if (pausedTimeRef.current !== null) {
-      console.log(`Using stored paused time for resume: ${pausedTimeRef.current}`);
-      timeToUse = pausedTimeRef.current;
-    } else {
-      // If no paused time, store current time temporarily to prevent settings sync issues
-      pausedTimeRef.current = timeRemaining;
-      console.log(`No paused time found, setting to current time: ${timeRemaining}`);
+    // If the time is different than what's displayed, update it
+    if (timeToUse !== timeRemaining) {
+      console.log(`Updating displayed time to match pausedTime: ${timeToUse}`);
+      setTimeRemaining(timeToUse);
     }
     
     // Ensure we have a session start time
@@ -80,15 +76,15 @@ export function useTimerControls({
       timeRemaining: timeToUse,
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current,
-      pausedTime: timeToUse // Keep track of pausedTime for restoration
+      pausedTime: null // No need for pausedTime when running
     });
     
-    // Critical: Set running state AFTER updating time and state
+    // Set running state AFTER updating time and state
     setIsRunning(true);
     
     console.log("Timer started with mode:", timerMode, "and time:", timeToUse);
   }, [timerMode, isRunning, timeRemaining, currentSessionIndex, pausedTimeRef, 
-      sessionStartTimeRef, setIsRunning, saveTimerState]);
+      sessionStartTimeRef, setIsRunning, setTimeRemaining, saveTimerState]);
   
   const handlePause = useCallback(() => {
     console.log('PAUSE called with time remaining:', timeRemaining);
@@ -106,7 +102,6 @@ export function useTimerControls({
     );
     
     // CRITICAL: Store the current time when pausing
-    // This ensures we resume from exactly this point
     pausedTimeRef.current = timeRemaining;
     console.log('Storing exact pause time:', timeRemaining);
     
