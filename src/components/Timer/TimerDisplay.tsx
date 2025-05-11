@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import TimerCircle from './TimerCircle';
 import { cn } from "@/lib/utils";
 import { TimerMode } from '@/utils/timerContextUtils';
@@ -36,9 +36,15 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
   console.log("TimerDisplay rendering with:", {
     mode: timerMode,
     timeRemaining,
+    formattedTime: `${Math.floor(validTimeRemaining / 60)}:${String(validTimeRemaining % 60).padStart(2, '0')}`,
     totalSeconds: validTotalSeconds,
     progress: progress
   });
+
+  // Add effect to log when time changes
+  useEffect(() => {
+    console.log(`Timer display updated - showing time: ${timeRemaining} seconds`);
+  }, [timeRemaining]);
 
   return (
     <div className="relative flex flex-col items-center justify-center mt-2">

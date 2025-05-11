@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerVisibility } from './useTimerVisibility';
@@ -46,6 +45,7 @@ export function useTimerTick({
   const previousIsRunningRef = useRef(isRunning);
   const justResumedRef = useRef(false);
   const preservePausedTimeRef = useRef(false);
+  const timerStartedRef = useRef(false);
   
   // Debug logging
   console.log(`useTimerTick - Current state: isRunning=${isRunning}, time=${timeRemaining}, pausedTime=${pausedTimeRef.current}`);
@@ -60,6 +60,9 @@ export function useTimerTick({
       // We'll use pausedTimeRef in the main timer effect if it exists
       if (pausedTimeRef.current !== null) {
         console.log(`Found pausedTime ${pausedTimeRef.current}, will use it for resuming`);
+        
+        // Critical: Update the displayed time to match the actual paused time
+        setTimeRemaining(pausedTimeRef.current);
       }
     }
     
@@ -73,7 +76,7 @@ export function useTimerTick({
     
     // Update previous running state for next render
     previousIsRunningRef.current = isRunning;
-  }, [isRunning, timeRemaining, pausedTimeRef]);
+  }, [isRunning, timeRemaining, pausedTimeRef, setTimeRemaining]);
   
   // Set up the timer tick effect
   useEffect(() => {

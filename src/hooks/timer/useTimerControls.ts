@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { logTimerStateChange } from '@/utils/timerDebugUtils';
@@ -58,9 +59,10 @@ export function useTimerControls({
     let timeToUse = pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining;
     console.log(`Using time for resume: ${timeToUse}`);
     
-    // If the time is different than what's displayed, update it
+    // Make sure the displayed time matches the actual time we're using
+    // This ensures the UI shows the correct paused time
     if (timeToUse !== timeRemaining) {
-      console.log(`Updating displayed time to match pausedTime: ${timeToUse}`);
+      console.log(`Updating displayed time to match actual time: ${timeToUse}`);
       setTimeRemaining(timeToUse);
     }
     

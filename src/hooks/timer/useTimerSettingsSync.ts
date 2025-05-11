@@ -11,6 +11,7 @@ interface UseTimerSettingsSyncProps {
   setTimeRemaining: (time: number) => void;
   saveTimerState: (state: any) => void;
   currentSessionIndex: number;
+  timeRemaining: number; // Added to track current displayed time
 }
 
 export function useTimerSettingsSync({
@@ -21,7 +22,8 @@ export function useTimerSettingsSync({
   getTotalTimeForMode,
   setTimeRemaining,
   saveTimerState,
-  currentSessionIndex
+  currentSessionIndex,
+  timeRemaining // Added parameter
 }: UseTimerSettingsSyncProps) {
   
   // Effect to sync timer with settings changes
@@ -43,19 +45,27 @@ export function useTimerSettingsSync({
     const newTime = getTotalTimeForMode();
     console.log('Settings changed: Updating timer to', newTime, 'seconds');
     
-    // Update the timer display
-    setTimeRemaining(newTime);
-    
-    // IMPORTANT: When settings change while paused, update the pausedTimeRef to match
-    // This ensures that when play is pressed, it will use this new time
+    // Update the pausedTimeRef to match new settings time
     pausedTimeRef.current = newTime;
     console.log('Updating pausedTimeRef to match new settings time:', newTime);
+    
+    // Only update the timer display if we don't have an active paused time
+    // or if displayed time doesn't match the mode duration (likely after settings change)
+    const shouldUpdateDisplay = timeRemaining === getTotalTimeForMode();
+    
+    if (shouldUpdateDisplay) {
+      // Update the timer display
+      setTimeRemaining(newTime);
+      console.log('Updating displayed time to match new settings:', newTime);
+    } else {
+      console.log('Keeping displayed time at current value:', timeRemaining);
+    }
     
     // Save the updated state
     saveTimerState({
       timerMode,
       isRunning: false,
-      timeRemaining: newTime,
+      timeRemaining: shouldUpdateDisplay ? newTime : timeRemaining,
       currentSessionIndex,
       sessionStartTime: null,
       pausedTime: newTime // Critical: Use new time as pausedTime to ensure it resumes from this time
@@ -65,7 +75,8 @@ export function useTimerSettingsSync({
       mode: timerMode,
       newTime,
       isRunning,
-      pausedTime: pausedTimeRef.current
+      pausedTime: pausedTimeRef.current,
+      displayedTime: shouldUpdateDisplay ? newTime : timeRemaining
     });
     
   }, [
@@ -76,6 +87,7 @@ export function useTimerSettingsSync({
     setTimeRemaining, 
     currentSessionIndex, 
     timerMode,
-    pausedTimeRef
+    pausedTimeRef,
+    timeRemaining // Added dependency
   ]);
 }
