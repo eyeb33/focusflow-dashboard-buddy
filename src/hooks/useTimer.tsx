@@ -126,7 +126,8 @@ export const useTimer = (settings?: typeof DEFAULT_TIMER_SETTINGS) => {
     getTotalTimeForMode,
     setTimeRemaining,
     saveTimerState,
-    currentSessionIndex
+    currentSessionIndex,
+    timeRemaining // Add the missing timeRemaining property
   });
   
   // Setup timer tick

@@ -11,7 +11,7 @@ interface UseTimerSettingsSyncProps {
   setTimeRemaining: (time: number) => void;
   saveTimerState: (state: any) => void;
   currentSessionIndex: number;
-  timeRemaining: number; // Added to track current displayed time
+  timeRemaining: number; // Required property based on the error
 }
 
 export function useTimerSettingsSync({
@@ -23,7 +23,7 @@ export function useTimerSettingsSync({
   setTimeRemaining,
   saveTimerState,
   currentSessionIndex,
-  timeRemaining // Added parameter
+  timeRemaining // Add this parameter
 }: UseTimerSettingsSyncProps) {
   
   // Effect to sync timer with settings changes
