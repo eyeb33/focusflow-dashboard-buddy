@@ -33,6 +33,17 @@ export function useTimerTick({
   currentSessionIndex
 }: TimerTickParams) {
   
+  // Performance monitoring for debugging
+  const renderTimestampRef = useRef(Date.now());
+  const renderCount = useRef(0);
+  
+  // Debug logging with performance info
+  renderCount.current++;
+  const now = Date.now();
+  const elapsed = now - renderTimestampRef.current;
+  console.log(`useTimerTick - Render #${renderCount.current} after ${elapsed}ms - Current state: isRunning=${isRunning}, time=${timeRemaining}, pausedTime=${pausedTimeRef.current}`);
+  renderTimestampRef.current = now;
+  
   // Handle timer visibility changes (tab switching, etc)
   useTimerVisibilityHandler({
     isRunning,
@@ -50,7 +61,7 @@ export function useTimerTick({
     setTimeRemaining
   });
   
-  // Setup core timer interval
+  // Setup core timer interval with improved accuracy
   useTimerInterval({
     isRunning,
     timeRemaining,
@@ -63,9 +74,6 @@ export function useTimerTick({
     currentSessionIndex,
     sessionStartTimeRef
   });
-  
-  // Debug logging
-  console.log(`useTimerTick - Current state: isRunning=${isRunning}, time=${timeRemaining}, pausedTime=${pausedTimeRef.current}`);
   
   return;
 }

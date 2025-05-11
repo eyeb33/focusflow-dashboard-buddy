@@ -1,5 +1,4 @@
-
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface UseTimerVisibilityHandlerProps {
   isRunning: boolean;
@@ -16,6 +15,9 @@ export function useTimerVisibilityHandler({
   lastTickTimeRef,
   handleTimerComplete
 }: UseTimerVisibilityHandlerProps) {
+  // Keep track of when the visibility changed
+  const visibilityChangedAtRef = useRef<number | null>(null);
+  
   // Handle visibility changes (tab switching, window focus)
   useEffect(() => {
     // Only set up visibility handling if timer is running
@@ -25,19 +27,21 @@ export function useTimerVisibilityHandler({
     const handleVisibilityChange = () => {
       if (document.hidden) {
         // Tab became hidden, record the current time
-        console.log('Tab hidden, recording time:', Date.now());
-        lastTickTimeRef.current = Date.now();
-      } else {
-        // Tab became visible, calculate elapsed time
+        visibilityChangedAtRef.current = Date.now();
+        console.log('Tab hidden, recording exact time:', visibilityChangedAtRef.current);
+      } else if (visibilityChangedAtRef.current !== null) {
+        // Tab became visible, calculate elapsed time precisely
         const now = Date.now();
-        const elapsedSeconds = Math.floor((now - lastTickTimeRef.current) / 1000);
-        console.log('Tab visible after', elapsedSeconds, 'seconds');
+        const elapsedMs = now - visibilityChangedAtRef.current;
+        const elapsedSeconds = Math.floor(elapsedMs / 1000);
+        console.log('Tab visible after precisely', elapsedSeconds, 'seconds (', elapsedMs, 'ms)');
         
-        // Update last tick time
+        // Update last tick time for the main timer
         lastTickTimeRef.current = now;
+        visibilityChangedAtRef.current = null;
         
         // Only update if significant time has passed
-        if (elapsedSeconds > 1) {
+        if (elapsedSeconds > 0) {
           // Calculate new remaining time
           const newTimeRemaining = Math.max(0, timeRemaining - elapsedSeconds);
           console.log('Adjusting timer from', timeRemaining, 'to', newTimeRemaining);

@@ -41,6 +41,7 @@ export function useTimerControlPause({
     );
     
     // CRITICAL: Store the current time when pausing
+    // This exact time is what we'll resume from
     pausedTimeRef.current = timeRemaining;
     console.log('Storing exact pause time:', timeRemaining);
     
@@ -51,7 +52,7 @@ export function useTimerControlPause({
     saveTimerState({
       timerMode,
       isRunning: false,
-      timeRemaining,
+      timeRemaining, // Save the exact time remaining
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current,
       pausedTime: timeRemaining // Explicitly include pausedTime in saved state

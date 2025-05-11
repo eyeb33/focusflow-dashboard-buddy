@@ -54,3 +54,32 @@ export const trackTimerAction = (
 export const getTimerActionHistory = () => {
   return JSON.parse(localStorage.getItem('timerActions') || '[]');
 };
+
+// Track tick timing accuracy for debugging
+export const trackTimerTick = (
+  prevTime: number,
+  newTime: number,
+  mode: string,
+  timestamp: number
+) => {
+  const timerAccuracy = JSON.parse(localStorage.getItem('timerAccuracy') || '[]');
+  
+  // Keep only recent samples
+  if (timerAccuracy.length > 100) {
+    timerAccuracy.shift();
+  }
+  
+  // Only record data every 5 seconds to avoid too much data
+  if (newTime % 5 === 0 || newTime <= 5) {
+    timerAccuracy.push({
+      from: prevTime,
+      to: newTime,
+      mode,
+      timestamp,
+      expected: prevTime - 1, // We expect to decrease by 1 second
+      drift: (prevTime - 1) - newTime // Positive = too fast, negative = too slow
+    });
+    
+    localStorage.setItem('timerAccuracy', JSON.stringify(timerAccuracy));
+  }
+};

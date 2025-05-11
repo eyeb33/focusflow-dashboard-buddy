@@ -1,16 +1,15 @@
 
 import { useCallback } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
-import { logTimerStateChange } from '@/utils/timerDebugUtils';
+import { logTimerStateChange, trackTimerAction } from '@/utils/timerDebugUtils';
 
 interface UseTimerControlStartProps {
   timerMode: TimerMode;
   isRunning: boolean;
   timeRemaining: number;
   setIsRunning: (running: boolean) => void;
-  setTimeRemaining: (time: number) => void;
-  sessionStartTimeRef: React.MutableRefObject<string | null>;
   pausedTimeRef: React.MutableRefObject<number | null>;
+  sessionStartTimeRef: React.MutableRefObject<string | null>;
   currentSessionIndex: number;
   saveTimerState: (state: any) => void;
 }
@@ -20,21 +19,14 @@ export function useTimerControlStart({
   isRunning,
   timeRemaining,
   setIsRunning,
-  setTimeRemaining,
-  sessionStartTimeRef,
   pausedTimeRef,
+  sessionStartTimeRef,
   currentSessionIndex,
   saveTimerState
 }: UseTimerControlStartProps) {
   
   return useCallback(() => {
-    console.log('START called with mode:', timerMode, 'time:', timeRemaining, 'pausedTime:', pausedTimeRef.current);
-    
-    // Log state before change
-    logTimerStateChange('start', 
-      { isRunning, timeRemaining, pausedTime: pausedTimeRef.current },
-      { isRunning: true, timeRemaining, pausedTime: null }
-    );
+    console.log('START called with isRunning:', isRunning, 'and time remaining:', timeRemaining);
     
     // If timer is already running, do nothing
     if (isRunning) {
@@ -42,36 +34,46 @@ export function useTimerControlStart({
       return;
     }
     
-    // Use paused time if available, otherwise use current time
-    let timeToUse = pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining;
-    console.log(`Using time for resume: ${timeToUse}`);
+    // If timer is paused, use the exact paused time
+    const startTime = pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining;
     
-    // Make sure the displayed time matches the actual time we're using
-    // This ensures the UI shows the correct paused time
-    if (timeToUse !== timeRemaining) {
-      console.log(`Updating displayed time to match actual time: ${timeToUse}`);
-      setTimeRemaining(timeToUse);
-    }
+    console.log('Starting timer with time:', startTime);
     
-    // Ensure we have a session start time
+    // Log state before change
+    logTimerStateChange('start',
+      { isRunning, timeRemaining, pausedTime: pausedTimeRef.current },
+      { isRunning: true, timeRemaining: startTime, pausedTime: null }
+    );
+    
+    // Record session start time if not already set
     if (!sessionStartTimeRef.current) {
       sessionStartTimeRef.current = new Date().toISOString();
+      console.log('Setting session start time:', sessionStartTimeRef.current);
     }
     
-    // Save the timer state with the current time
+    // Start the timer
+    setIsRunning(true);
+    
+    // Save the timer state without paused time
     saveTimerState({
       timerMode,
       isRunning: true,
-      timeRemaining: timeToUse,
+      timeRemaining: startTime,
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current,
-      pausedTime: null // No need for pausedTime when running
+      pausedTime: null // Clear paused time on resume
     });
     
-    // Set running state AFTER updating time and state
-    setIsRunning(true);
+    // Clear paused time reference
+    pausedTimeRef.current = null;
+    console.log('Timer started, cleared pausedTimeRef');
     
-    console.log("Timer started with mode:", timerMode, "and time:", timeToUse);
-  }, [timerMode, isRunning, timeRemaining, currentSessionIndex, pausedTimeRef, 
-      sessionStartTimeRef, setIsRunning, setTimeRemaining, saveTimerState]);
+    // Track action for analytics
+    trackTimerAction('start', { 
+      mode: timerMode, 
+      timeRemaining: startTime, 
+      sessionIndex: currentSessionIndex 
+    });
+  }, [timerMode, isRunning, timeRemaining, currentSessionIndex, saveTimerState, 
+      setIsRunning, pausedTimeRef, sessionStartTimeRef]);
 }

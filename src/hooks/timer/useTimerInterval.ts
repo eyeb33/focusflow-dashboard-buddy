@@ -29,6 +29,9 @@ export function useTimerInterval({
   // Track if this is the first render
   const isFirstRender = useRef(true);
   
+  // Reference for target end time when timer is running
+  const targetEndTimeRef = useRef<number | null>(null);
+  
   // Debug logging
   console.log(`useTimerInterval - Current state: isRunning=${isRunning}, time=${timeRemaining}`);
   
@@ -51,8 +54,14 @@ export function useTimerInterval({
     if (isRunning) {
       console.log("Starting timer interval with time remaining:", timeRemaining);
       
-      // Update last tick time
-      lastTickTimeRef.current = Date.now();
+      // Update last tick time to now
+      const now = Date.now();
+      lastTickTimeRef.current = now;
+      
+      // Calculate target end time based on current time and remaining seconds
+      // This is crucial for accurate timing - we calculate exactly when the timer should end
+      targetEndTimeRef.current = now + (timeRemaining * 1000);
+      console.log("Target end time set:", new Date(targetEndTimeRef.current).toISOString());
       
       // Record session start time if not already set
       if (!sessionStartTimeRef.current) {
@@ -60,44 +69,55 @@ export function useTimerInterval({
         console.log('New session start time set:', sessionStartTimeRef.current);
       }
       
-      // Set up the timer interval - use a shorter interval for smoother updates
+      // Set up the timer interval with a high-precision approach
       console.log("Creating new timer interval");
       timerRef.current = setInterval(() => {
         const now = Date.now();
-        const elapsedSeconds = Math.floor((now - lastTickTimeRef.current) / 1000);
         
-        if (elapsedSeconds > 0) {
-          lastTickTimeRef.current = now;
+        // Calculate remaining time based on target end time, not by decrementing
+        // This prevents drift and ensures accuracy
+        if (targetEndTimeRef.current !== null) {
+          const remainingMs = targetEndTimeRef.current - now;
+          const newSecondsRemaining = Math.ceil(remainingMs / 1000);
           
-          setTimeRemaining((prevTime: number) => {
-            const newTimeRemaining = Math.max(0, prevTime - elapsedSeconds);
-            
-            // Save state periodically (every 5 seconds)
-            if (prevTime % 5 === 0 || newTimeRemaining === 0) {
-              saveTimerState({
-                timerMode,
-                timeRemaining: newTimeRemaining,
-                isRunning: true,
-                currentSessionIndex,
-                sessionStartTime: sessionStartTimeRef.current,
-                pausedTime: null // Make sure pausedTime is null when running
-              });
-            }
-            
-            // Handle timer completion
-            if (newTimeRemaining === 0) {
-              if (timerRef.current) {
-                console.log("Timer completed - clearing interval");
-                clearInterval(timerRef.current);
-                timerRef.current = null;
+          setTimeRemaining((prevTime) => {
+            // If the new calculated time differs from previous, update it
+            if (newSecondsRemaining !== prevTime) {
+              console.log(`Timer tick: updating from ${prevTime} to ${newSecondsRemaining}`);
+              
+              // Save state periodically (every 5 seconds)
+              if (prevTime % 5 === 0 || newSecondsRemaining <= 0) {
+                saveTimerState({
+                  timerMode,
+                  timeRemaining: Math.max(0, newSecondsRemaining),
+                  isRunning: true,
+                  currentSessionIndex,
+                  sessionStartTime: sessionStartTimeRef.current,
+                  pausedTime: null // Make sure pausedTime is null when running
+                });
               }
-              setTimeout(() => handleTimerComplete(), 0);
+              
+              // Handle timer completion
+              if (newSecondsRemaining <= 0) {
+                if (timerRef.current) {
+                  console.log("Timer completed - clearing interval");
+                  clearInterval(timerRef.current);
+                  timerRef.current = null;
+                  targetEndTimeRef.current = null; // Reset target time
+                }
+                setTimeout(() => handleTimerComplete(), 0);
+                return 0;
+              }
+              
+              return newSecondsRemaining;
             }
-            
-            return newTimeRemaining;
+            return prevTime;
           });
         }
-      }, 250); // Check frequently for smoother updates
+      }, 100); // Check more frequently (10 times per second) for smoother updates
+    } else {
+      // Timer not running, reset target end time
+      targetEndTimeRef.current = null;
     }
     
     // Cleanup interval on unmount or isRunning changes
