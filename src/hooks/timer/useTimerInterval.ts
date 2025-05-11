@@ -32,9 +32,6 @@ export function useTimerInterval({
   // Reference for target end time when timer is running
   const targetEndTimeRef = useRef<number | null>(null);
   
-  // Debug logging
-  console.log(`useTimerInterval - Current state: isRunning=${isRunning}, time=${timeRemaining}`);
-  
   // Set up the timer interval effect
   useEffect(() => {
     // Skip first render to avoid side effects during initialization
@@ -45,7 +42,6 @@ export function useTimerInterval({
     
     // Clear any existing timer
     if (timerRef.current) {
-      console.log("Clearing existing timer interval");
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
@@ -70,7 +66,6 @@ export function useTimerInterval({
       }
       
       // Set up the timer interval with a high-precision approach
-      console.log("Creating new timer interval");
       timerRef.current = setInterval(() => {
         const now = Date.now();
         
@@ -100,7 +95,6 @@ export function useTimerInterval({
               // Handle timer completion
               if (newSecondsRemaining <= 0) {
                 if (timerRef.current) {
-                  console.log("Timer completed - clearing interval");
                   clearInterval(timerRef.current);
                   timerRef.current = null;
                   targetEndTimeRef.current = null; // Reset target time
@@ -123,7 +117,6 @@ export function useTimerInterval({
     // Cleanup interval on unmount or isRunning changes
     return () => {
       if (timerRef.current) {
-        console.log('Cleaning up timer interval on effect cleanup');
         clearInterval(timerRef.current);
         timerRef.current = null;
       }

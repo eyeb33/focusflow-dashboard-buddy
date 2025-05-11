@@ -34,7 +34,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
 
   // Debug output to check current values
   console.log("TimerDisplay rendering with:", {
-    mode: timerMode,
+    mode: timerMode, 
     timeRemaining,
     formattedTime: `${Math.floor(validTimeRemaining / 60)}:${String(validTimeRemaining % 60).padStart(2, '0')}`,
     totalSeconds: validTotalSeconds,
