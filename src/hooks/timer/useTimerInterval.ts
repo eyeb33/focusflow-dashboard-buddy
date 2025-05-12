@@ -41,10 +41,11 @@ export function useTimerInterval({
   useEffect(() => {
     console.log(`useTimerInterval effect: isRunning=${isRunning}, timeRemaining=${timeRemaining}, pausedTime=${pausedTimeRef.current}`);
     
-    // Detect if timeRemaining has changed significantly (manual adjustment)
+    // CRITICAL: Always check if timeRemaining has changed (from sliders or other sources)
     if (Math.abs(lastTimeRemainingRef.current - timeRemaining) > 1 && !isFirstRender.current) {
-      console.log(`Detected manual time change from ${lastTimeRemainingRef.current} to ${timeRemaining}. Updating target time.`);
-      // If timer is running, we need to update the target end time
+      console.log(`Detected time change from ${lastTimeRemainingRef.current} to ${timeRemaining}. Updating target time.`);
+      
+      // If timer is running, update the target end time to reflect new duration
       if (isRunning && timerRef.current) {
         const now = Date.now();
         targetEndTimeRef.current = now + (timeRemaining * 1000);
@@ -52,7 +53,7 @@ export function useTimerInterval({
       }
     }
     
-    // Update the reference
+    // Always update the reference regardless of whether timer is running
     lastTimeRemainingRef.current = timeRemaining;
   }, [isRunning, timeRemaining, pausedTimeRef]);
   
@@ -81,7 +82,8 @@ export function useTimerInterval({
       const now = Date.now();
       lastTickTimeRef.current = now;
       
-      // Calculate target end time based on current time and remaining seconds
+      // CRITICAL FIX: Always initialize target end time with current timeRemaining
+      // This ensures slider changes are respected
       targetEndTimeRef.current = now + (timeRemaining * 1000);
       console.log("Target end time set:", new Date(targetEndTimeRef.current).toISOString());
       
@@ -156,6 +158,6 @@ export function useTimerInterval({
     saveTimerState, 
     currentSessionIndex,
     pausedTimeRef,
-    timeRemaining // Added timeRemaining as a dependency to detect changes from sliders
+    timeRemaining // Keep timeRemaining in dependencies to respond to slider changes
   ]); 
 }
