@@ -36,11 +36,11 @@ export function useTimerControlStart({
       return;
     }
     
-    // CRITICAL: Always use the timeRemaining value directly from props
+    // CRITICAL FIX: Always use the most current timeRemaining value when starting
     // This ensures we respect slider changes made while paused
     const startTime = timeRemaining;
     
-    console.log('Starting timer with time:', startTime);
+    console.log('Starting timer with current time:', startTime);
     
     // Log state before change
     logTimerStateChange('start',
@@ -57,11 +57,11 @@ export function useTimerControlStart({
     // Start the timer
     setIsRunning(true);
     
-    // Save the timer state
+    // Save the timer state with the CURRENT time value
     saveTimerState({
       timerMode,
       isRunning: true,
-      timeRemaining: startTime,
+      timeRemaining: startTime, // Use current time value
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current,
       pausedTime: null // Clear paused time on resume

@@ -29,7 +29,11 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
 
   // Check for valid values and calculate progress
   const validTotalSeconds = totalSeconds > 0 ? totalSeconds : 1;
+  
+  // CRITICAL FIX: Ensure timeRemaining is capped by totalSeconds
+  // This prevents displaying time higher than the intended duration
   const validTimeRemaining = Math.min(Math.max(0, timeRemaining), validTotalSeconds);
+  
   const progress = Math.round(((validTotalSeconds - validTimeRemaining) / validTotalSeconds) * 100);
 
   // Format time for more readable logs
@@ -39,21 +43,18 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
     return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
   };
   
-  // Enhanced debugging output
+  // Enhanced debugging output with more useful information
   useEffect(() => {
     console.log("TimerDisplay rendering with:", {
       mode: timerMode, 
-      timeRemaining,
+      actualTimeRemaining: timeRemaining,
+      validatedTimeRemaining: validTimeRemaining,
       formattedTime: formatTimeForDisplay(validTimeRemaining),
-      totalSeconds: validTotalSeconds,
+      actualTotalSeconds: totalSeconds,
+      validatedTotalSeconds: validTotalSeconds,
       progress: progress
     });
-  }, [timerMode, timeRemaining, validTimeRemaining, validTotalSeconds, progress]);
-
-  // Log when time changes for debugging
-  useEffect(() => {
-    console.log(`Timer display updated - showing time: ${timeRemaining} seconds (${formatTimeForDisplay(timeRemaining)})`);
-  }, [timeRemaining]);
+  }, [timerMode, timeRemaining, validTimeRemaining, totalSeconds, validTotalSeconds, progress]);
 
   return (
     <div className="relative flex flex-col items-center justify-center mt-2">

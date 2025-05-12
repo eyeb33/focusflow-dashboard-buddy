@@ -34,9 +34,26 @@ export function useTimerInterval({
   // Reference for target end time when timer is running
   const targetEndTimeRef = useRef<number | null>(null);
   
+  // Store the last timeRemaining value for change detection
+  const lastTimeRemainingRef = useRef<number>(timeRemaining);
+  
   // Debug when timer state changes
   useEffect(() => {
     console.log(`useTimerInterval effect: isRunning=${isRunning}, timeRemaining=${timeRemaining}, pausedTime=${pausedTimeRef.current}`);
+    
+    // Detect if timeRemaining has changed significantly (manual adjustment)
+    if (Math.abs(lastTimeRemainingRef.current - timeRemaining) > 1 && !isFirstRender.current) {
+      console.log(`Detected manual time change from ${lastTimeRemainingRef.current} to ${timeRemaining}. Updating target time.`);
+      // If timer is running, we need to update the target end time
+      if (isRunning && timerRef.current) {
+        const now = Date.now();
+        targetEndTimeRef.current = now + (timeRemaining * 1000);
+        console.log(`Updated target end time to ${new Date(targetEndTimeRef.current).toISOString()}`);
+      }
+    }
+    
+    // Update the reference
+    lastTimeRemainingRef.current = timeRemaining;
   }, [isRunning, timeRemaining, pausedTimeRef]);
   
   // Set up the timer interval effect
@@ -138,6 +155,7 @@ export function useTimerInterval({
     sessionStartTimeRef, 
     saveTimerState, 
     currentSessionIndex,
-    pausedTimeRef // Added this dependency to catch pause state changes
-  ]); // Keeping timeRemaining out of dependencies to prevent reset loops
+    pausedTimeRef,
+    timeRemaining // Added timeRemaining as a dependency to detect changes from sliders
+  ]); 
 }
