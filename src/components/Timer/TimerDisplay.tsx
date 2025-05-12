@@ -29,7 +29,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
 
   // Check for valid values and calculate progress
   const validTotalSeconds = totalSeconds > 0 ? totalSeconds : 1;
-  const validTimeRemaining = Math.min(timeRemaining, validTotalSeconds);
+  const validTimeRemaining = Math.min(Math.max(0, timeRemaining), validTotalSeconds);
   const progress = Math.round(((validTotalSeconds - validTimeRemaining) / validTotalSeconds) * 100);
 
   // Format time for more readable logs
@@ -39,16 +39,18 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
     return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
   };
   
-  // Debug output to check current values
-  console.log("TimerDisplay rendering with:", {
-    mode: timerMode, 
-    timeRemaining,
-    formattedTime: formatTimeForDisplay(validTimeRemaining),
-    totalSeconds: validTotalSeconds,
-    progress: progress
-  });
+  // Enhanced debugging output
+  useEffect(() => {
+    console.log("TimerDisplay rendering with:", {
+      mode: timerMode, 
+      timeRemaining,
+      formattedTime: formatTimeForDisplay(validTimeRemaining),
+      totalSeconds: validTotalSeconds,
+      progress: progress
+    });
+  }, [timerMode, timeRemaining, validTimeRemaining, validTotalSeconds, progress]);
 
-  // Add effect to log when time changes
+  // Log when time changes for debugging
   useEffect(() => {
     console.log(`Timer display updated - showing time: ${timeRemaining} seconds (${formatTimeForDisplay(timeRemaining)})`);
   }, [timeRemaining]);

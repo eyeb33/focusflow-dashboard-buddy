@@ -12,6 +12,7 @@ interface UseTimerIntervalProps {
   timerMode: string;
   currentSessionIndex: number;
   sessionStartTimeRef: React.MutableRefObject<string | null>;
+  pausedTimeRef: React.MutableRefObject<number | null>;
 }
 
 export function useTimerInterval({
@@ -24,13 +25,19 @@ export function useTimerInterval({
   saveTimerState,
   timerMode,
   currentSessionIndex,
-  sessionStartTimeRef
+  sessionStartTimeRef,
+  pausedTimeRef
 }: UseTimerIntervalProps) {
   // Track if this is the first render
   const isFirstRender = useRef(true);
   
   // Reference for target end time when timer is running
   const targetEndTimeRef = useRef<number | null>(null);
+  
+  // Debug when timer state changes
+  useEffect(() => {
+    console.log(`useTimerInterval effect: isRunning=${isRunning}, timeRemaining=${timeRemaining}, pausedTime=${pausedTimeRef.current}`);
+  }, [isRunning, timeRemaining, pausedTimeRef]);
   
   // Set up the timer interval effect
   useEffect(() => {
@@ -40,10 +47,13 @@ export function useTimerInterval({
       return;
     }
     
+    console.log(`Timer interval setup: isRunning=${isRunning}, timeRemaining=${timeRemaining}`);
+    
     // Clear any existing timer
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
+      console.log("Cleared existing timer interval");
     }
     
     // Only set up the timer if it's running
@@ -55,7 +65,6 @@ export function useTimerInterval({
       lastTickTimeRef.current = now;
       
       // Calculate target end time based on current time and remaining seconds
-      // This is crucial for accurate timing - we calculate exactly when the timer should end
       targetEndTimeRef.current = now + (timeRemaining * 1000);
       console.log("Target end time set:", new Date(targetEndTimeRef.current).toISOString());
       
@@ -69,8 +78,7 @@ export function useTimerInterval({
       timerRef.current = setInterval(() => {
         const now = Date.now();
         
-        // Calculate remaining time based on target end time, not by decrementing
-        // This prevents drift and ensures accuracy
+        // Calculate remaining time based on target end time
         if (targetEndTimeRef.current !== null) {
           const remainingMs = targetEndTimeRef.current - now;
           const newSecondsRemaining = Math.ceil(remainingMs / 1000);
@@ -80,7 +88,7 @@ export function useTimerInterval({
             if (newSecondsRemaining !== prevTime) {
               console.log(`Timer tick: updating from ${prevTime} to ${newSecondsRemaining}`);
               
-              // Save state periodically (every 5 seconds)
+              // Save state periodically
               if (prevTime % 5 === 0 || newSecondsRemaining <= 0) {
                 saveTimerState({
                   timerMode,
@@ -88,7 +96,7 @@ export function useTimerInterval({
                   isRunning: true,
                   currentSessionIndex,
                   sessionStartTime: sessionStartTimeRef.current,
-                  pausedTime: null // Make sure pausedTime is null when running
+                  pausedTime: null
                 });
               }
               
@@ -97,7 +105,7 @@ export function useTimerInterval({
                 if (timerRef.current) {
                   clearInterval(timerRef.current);
                   timerRef.current = null;
-                  targetEndTimeRef.current = null; // Reset target time
+                  targetEndTimeRef.current = null;
                 }
                 setTimeout(() => handleTimerComplete(), 0);
                 return 0;
@@ -108,13 +116,12 @@ export function useTimerInterval({
             return prevTime;
           });
         }
-      }, 100); // Check more frequently (10 times per second) for smoother updates
+      }, 100);
     } else {
       // Timer not running, reset target end time
       targetEndTimeRef.current = null;
     }
     
-    // Cleanup interval on unmount or isRunning changes
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -122,7 +129,7 @@ export function useTimerInterval({
       }
     };
   }, [
-    isRunning, 
+    isRunning, // This dependency is critical - we must re-run when isRunning changes
     timerMode,
     setTimeRemaining, 
     handleTimerComplete, 
@@ -130,6 +137,7 @@ export function useTimerInterval({
     lastTickTimeRef, 
     sessionStartTimeRef, 
     saveTimerState, 
-    currentSessionIndex
-  ]); // timeRemaining is intentionally omitted to prevent reset loops
+    currentSessionIndex,
+    pausedTimeRef // Added this dependency to catch pause state changes
+  ]); // Keeping timeRemaining out of dependencies to prevent reset loops
 }

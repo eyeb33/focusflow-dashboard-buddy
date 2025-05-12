@@ -26,7 +26,9 @@ export function useTimerControlStart({
 }: UseTimerControlStartProps) {
   
   return useCallback(() => {
+    // Detailed logging to understand current state
     console.log('START called with isRunning:', isRunning, 'and time remaining:', timeRemaining);
+    console.log('pausedTimeRef value:', pausedTimeRef.current);
     
     // If timer is already running, do nothing
     if (isRunning) {
@@ -34,7 +36,7 @@ export function useTimerControlStart({
       return;
     }
     
-    // CRITICAL FIX: Always use the timeRemaining value directly
+    // CRITICAL: Always use the timeRemaining value directly from props
     // This ensures we respect slider changes made while paused
     const startTime = timeRemaining;
     
@@ -55,7 +57,7 @@ export function useTimerControlStart({
     // Start the timer
     setIsRunning(true);
     
-    // Save the timer state without paused time
+    // Save the timer state
     saveTimerState({
       timerMode,
       isRunning: true,
