@@ -11,7 +11,7 @@ interface UseTimerSettingsSyncProps {
   setTimeRemaining: (time: number) => void;
   saveTimerState: (state: any) => void;
   currentSessionIndex: number;
-  timeRemaining: number; // Required property based on the error
+  timeRemaining: number; 
 }
 
 export function useTimerSettingsSync({
@@ -23,7 +23,7 @@ export function useTimerSettingsSync({
   setTimeRemaining,
   saveTimerState,
   currentSessionIndex,
-  timeRemaining // Add this parameter
+  timeRemaining
 }: UseTimerSettingsSyncProps) {
   
   // Effect to sync timer with settings changes
@@ -45,13 +45,11 @@ export function useTimerSettingsSync({
     const newTime = getTotalTimeForMode();
     console.log('Settings changed: Updating timer to', newTime, 'seconds');
     
-    // Update the pausedTimeRef to match new settings time
-    pausedTimeRef.current = newTime;
-    console.log('Updating pausedTimeRef to match new settings time:', newTime);
-    
-    // Only update the timer display if we don't have an active paused time
-    // or if displayed time doesn't match the mode duration (likely after settings change)
-    const shouldUpdateDisplay = timeRemaining === getTotalTimeForMode();
+    // CRITICAL FIX: Don't override timeRemaining here - we want to preserve manually set times
+    // This ensures settings changes don't interfere with slider adjustments
+    // Only update if we're at the default time for this mode
+    const currentDefaultTime = getTotalTimeForMode();
+    const shouldUpdateDisplay = Math.abs(timeRemaining - currentDefaultTime) < 2; // Allow 1 second difference due to rounding
     
     if (shouldUpdateDisplay) {
       // Update the timer display
@@ -61,14 +59,17 @@ export function useTimerSettingsSync({
       console.log('Keeping displayed time at current value:', timeRemaining);
     }
     
+    // Always update pausedTimeRef to match current time
+    pausedTimeRef.current = timeRemaining;
+    
     // Save the updated state
     saveTimerState({
       timerMode,
       isRunning: false,
-      timeRemaining: shouldUpdateDisplay ? newTime : timeRemaining,
+      timeRemaining: timeRemaining, // Use current time, not necessarily the new settings time
       currentSessionIndex,
       sessionStartTime: null,
-      pausedTime: newTime // Critical: Use new time as pausedTime to ensure it resumes from this time
+      pausedTime: timeRemaining // Match pausedTime with current display
     });
     
     console.log('Timer values updated after settings change:', {
@@ -76,7 +77,7 @@ export function useTimerSettingsSync({
       newTime,
       isRunning,
       pausedTime: pausedTimeRef.current,
-      displayedTime: shouldUpdateDisplay ? newTime : timeRemaining
+      displayedTime: timeRemaining
     });
     
   }, [
@@ -88,6 +89,6 @@ export function useTimerSettingsSync({
     currentSessionIndex, 
     timerMode,
     pausedTimeRef,
-    timeRemaining // Added dependency
+    timeRemaining
   ]);
 }

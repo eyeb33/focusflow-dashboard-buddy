@@ -34,8 +34,9 @@ export function useTimerControlStart({
       return;
     }
     
-    // If timer is paused, use the exact paused time
-    const startTime = pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining;
+    // CRITICAL FIX: Always use the timeRemaining value directly
+    // This ensures we respect slider changes made while paused
+    const startTime = timeRemaining;
     
     console.log('Starting timer with time:', startTime);
     
