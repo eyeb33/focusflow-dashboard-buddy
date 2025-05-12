@@ -45,31 +45,22 @@ export function useTimerSettingsSync({
     const newTime = getTotalTimeForMode();
     console.log('Settings changed: Updating timer to', newTime, 'seconds');
     
-    // CRITICAL FIX: Don't override timeRemaining here - we want to preserve manually set times
-    // This ensures settings changes don't interfere with slider adjustments
-    // Only update if we're at the default time for this mode
-    const currentDefaultTime = getTotalTimeForMode();
-    const shouldUpdateDisplay = Math.abs(timeRemaining - currentDefaultTime) < 2; // Allow 1 second difference due to rounding
+    // CRITICAL FIX: Always update displayed time to match new settings
+    // This ensures settings changes are immediately reflected
+    setTimeRemaining(newTime);
+    console.log('Updating displayed time to match new settings:', newTime);
     
-    if (shouldUpdateDisplay) {
-      // Update the timer display
-      setTimeRemaining(newTime);
-      console.log('Updating displayed time to match new settings:', newTime);
-    } else {
-      console.log('Keeping displayed time at current value:', timeRemaining);
-    }
-    
-    // Always update pausedTimeRef to match current time
-    pausedTimeRef.current = timeRemaining;
+    // Reset pausedTimeRef to null to ensure we use the new time when starting
+    pausedTimeRef.current = null;
     
     // Save the updated state
     saveTimerState({
       timerMode,
       isRunning: false,
-      timeRemaining: timeRemaining, // Use current time, not necessarily the new settings time
+      timeRemaining: newTime, // Use new settings time
       currentSessionIndex,
       sessionStartTime: null,
-      pausedTime: timeRemaining // Match pausedTime with current display
+      pausedTime: null // Important: Reset pausedTime to null
     });
     
     console.log('Timer values updated after settings change:', {
@@ -77,7 +68,7 @@ export function useTimerSettingsSync({
       newTime,
       isRunning,
       pausedTime: pausedTimeRef.current,
-      displayedTime: timeRemaining
+      displayedTime: newTime
     });
     
   }, [

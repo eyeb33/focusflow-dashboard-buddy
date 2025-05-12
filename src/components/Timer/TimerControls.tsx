@@ -49,7 +49,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
       console.log("Calling onPause to preserve current time");
       onPause();
     } else {
-      console.log("Calling onStart to resume from saved time");
+      console.log("Calling onStart to resume with current time");
       onStart();
     }
   }, [isRunning, onPause, onStart, mode]);

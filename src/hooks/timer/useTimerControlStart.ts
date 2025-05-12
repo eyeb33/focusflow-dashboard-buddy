@@ -36,16 +36,14 @@ export function useTimerControlStart({
       return;
     }
     
-    // CRITICAL FIX: Always use the most current timeRemaining value when starting
-    // This ensures we respect slider changes made while paused
-    const startTime = timeRemaining;
-    
-    console.log('Starting timer with current time:', startTime);
+    // CRITICAL FIX: Explicitly null pausedTimeRef to force the timer to use the current time
+    // This ensures that after slider changes, the play button will respect the new value
+    pausedTimeRef.current = null;
     
     // Log state before change
     logTimerStateChange('start',
       { isRunning, timeRemaining, pausedTime: pausedTimeRef.current },
-      { isRunning: true, timeRemaining: startTime, pausedTime: null }
+      { isRunning: true, timeRemaining, pausedTime: null }
     );
     
     // Record session start time if not already set
@@ -61,20 +59,18 @@ export function useTimerControlStart({
     saveTimerState({
       timerMode,
       isRunning: true,
-      timeRemaining: startTime, // Use current time value
+      timeRemaining, // Use current time value
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current,
       pausedTime: null // Clear paused time on resume
     });
     
-    // Clear paused time reference
-    pausedTimeRef.current = null;
-    console.log('Timer started, cleared pausedTimeRef');
+    console.log('Timer started with current time:', timeRemaining);
     
     // Track action for analytics
     trackTimerAction('start', { 
       mode: timerMode, 
-      timeRemaining: startTime, 
+      timeRemaining, 
       sessionIndex: currentSessionIndex 
     });
   }, [timerMode, isRunning, timeRemaining, currentSessionIndex, saveTimerState, 
