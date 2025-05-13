@@ -40,9 +40,10 @@ export function useTimerPausedState({
     // When transitioning from running to paused
     if (!isRunning && previousIsRunningRef.current) {
       console.log('State changed from running to paused');
-      pausedTimeRef.current = timeRemaining;
+      // Since useTimerControlPause.ts already sets pausedTimeRef,
+      // we don't need to set it again here, just preserve what we have
       preservePausedTimeRef.current = true; // Mark that we should preserve this time
-      console.log(`Setting pausedTime to ${timeRemaining} and preserving it`);
+      console.log(`Preserving pausedTime: ${pausedTimeRef.current}`);
     }
     
     // Update previous running state for next render
