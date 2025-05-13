@@ -41,7 +41,11 @@ export function useTimerPausedState({
     if (!isRunning && previousIsRunningRef.current) {
       console.log('State changed from running to paused');
       // Since useTimerControlPause.ts already sets pausedTimeRef,
-      // we don't need to set it again here, just preserve what we have
+      // we just need to ensure the UI reflects this paused time
+      if (pausedTimeRef.current !== null) {
+        console.log(`Ensuring UI shows paused time: ${pausedTimeRef.current}`);
+        setTimeRemaining(pausedTimeRef.current);
+      }
       preservePausedTimeRef.current = true; // Mark that we should preserve this time
       console.log(`Preserving pausedTime: ${pausedTimeRef.current}`);
     }
