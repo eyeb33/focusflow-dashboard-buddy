@@ -137,8 +137,13 @@ export function useTimerInterval({
         }
       }, 100);
     } else {
-      // Timer not running, reset target end time
-      targetEndTimeRef.current = null;
+      // Timer not running, but ensure we don't reset target end time
+      // This allows us to resume from the same point
+      if (!isRunning && pausedTimeRef.current !== null) {
+        console.log('Timer paused, preserving target end time for future resume');
+      } else {
+        targetEndTimeRef.current = null;
+      }
     }
     
     return () => {
