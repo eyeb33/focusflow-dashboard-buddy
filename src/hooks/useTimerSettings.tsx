@@ -6,12 +6,12 @@ export interface TimerSettings {
   breakDuration: number;
   longBreakDuration: number;
   sessionsUntilLongBreak: number;
-  autoStartBreaks?: boolean;
-  autoStartFocus?: boolean;
-  showNotifications?: boolean;
-  soundEnabled?: boolean;
-  soundVolume?: number;
-  soundId?: string;
+  autoStartBreaks: boolean;
+  autoStartFocus: boolean;
+  showNotifications: boolean;
+  soundEnabled: boolean;
+  soundVolume: number;
+  soundId: string;
 }
 
 const DEFAULT_SETTINGS: TimerSettings = {

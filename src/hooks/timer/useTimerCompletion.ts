@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTaskStats } from '@/hooks/useTaskStats';
@@ -10,12 +9,12 @@ interface TimerSettings {
   breakDuration: number;
   longBreakDuration: number;
   sessionsUntilLongBreak: number;
-  autoStartBreaks?: boolean;
-  autoStartFocus?: boolean;
-  showNotifications?: boolean;
-  soundEnabled?: boolean;
-  soundVolume?: number;
-  soundId?: string;
+  autoStartBreaks: boolean;
+  autoStartFocus: boolean;
+  showNotifications: boolean;
+  soundEnabled: boolean;
+  soundVolume: number;
+  soundId: string;
 }
 
 interface UseTimerCompletionProps {
