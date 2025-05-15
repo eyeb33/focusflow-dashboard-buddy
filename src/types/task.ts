@@ -5,4 +5,6 @@ export interface Task {
   estimatedPomodoros: number;
   completed: boolean;
   createdAt: string;
+  completedPomodoros?: number;
+  isActive?: boolean;
 }

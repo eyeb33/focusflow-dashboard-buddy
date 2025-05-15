@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -68,7 +69,8 @@ export function useTimerCompletion({
       setCompletedSessions(newCompletedSessions);
       
       // Update total time today
-      setTotalTimeToday(prevTotalTime => prevTotalTime + settings.workDuration * 60);
+      const newTotalTime = totalTimeToday + settings.workDuration * 60;
+      setTotalTimeToday(newTotalTime);
       
       // Persist work session
       handleWorkCompletion(user?.id, sessionStartTime);
@@ -83,10 +85,12 @@ export function useTimerCompletion({
       }
       
       // Update current session index
-      setCurrentSessionIndex(prevIndex => prevIndex + 1);
+      const newIndex = currentSessionIndex + 1;
+      setCurrentSessionIndex(newIndex);
     } else if (timerMode === 'break') {
       // Update total time today
-      setTotalTimeToday(prevTotalTime => prevTotalTime + settings.breakDuration * 60);
+      const newTotalTime = totalTimeToday + settings.breakDuration * 60;
+      setTotalTimeToday(newTotalTime);
       
       // Persist break session
       handleBreakCompletion(user?.id, sessionStartTime);
@@ -96,7 +100,8 @@ export function useTimerCompletion({
       setTimeRemaining(settings.workDuration * 60);
     } else if (timerMode === 'longBreak') {
       // Update total time today
-      setTotalTimeToday(prevTotalTime => prevTotalTime + settings.longBreakDuration * 60);
+      const newTotalTime = totalTimeToday + settings.longBreakDuration * 60;
+      setTotalTimeToday(newTotalTime);
       
       // Persist long break session
       handleLongBreakCompletion(user?.id, sessionStartTime);
