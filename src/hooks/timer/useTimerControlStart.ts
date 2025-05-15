@@ -56,6 +56,7 @@ export function useTimerControlStart({
     // CRITICAL: Update the displayed time to match the pause time before starting
     if (pausedTimeRef.current !== null && pausedTimeRef.current !== timeRemaining) {
       console.log(`Restoring paused time ${pausedTimeRef.current} before starting`);
+      setTimeRemaining(pausedTimeRef.current);
     }
     
     // Start the timer
@@ -68,7 +69,8 @@ export function useTimerControlStart({
       timeRemaining: timeToUse, // Use the determined time
       currentSessionIndex,
       sessionStartTime: sessionStartTimeRef.current,
-      pausedTime: null // Clear paused time on resume
+      pausedTime: null, // Clear paused time on resume
+      timestamp: Date.now()
     });
     
     console.log("Timer started with time:", timeToUse);
@@ -83,5 +85,5 @@ export function useTimerControlStart({
     // Clear pausedTimeRef after we've used it
     pausedTimeRef.current = null;
   }, [timerMode, isRunning, timeRemaining, currentSessionIndex, saveTimerState, 
-      setIsRunning, pausedTimeRef, sessionStartTimeRef]);
+      setIsRunning, setTimeRemaining, pausedTimeRef, sessionStartTimeRef]);
 }

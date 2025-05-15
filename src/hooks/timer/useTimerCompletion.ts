@@ -5,6 +5,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTaskStats } from '@/hooks/useTaskStats';
 import { playTimerCompletionSound } from '@/utils/audioUtils';
 
+interface TimerSettings {
+  workDuration: number;
+  breakDuration: number;
+  longBreakDuration: number;
+  sessionsUntilLongBreak: number;
+}
+
 interface UseTimerCompletionProps {
   timerMode: TimerMode;
   setTimerMode: (mode: TimerMode) => void;
@@ -18,7 +25,7 @@ interface UseTimerCompletionProps {
   setCurrentSessionIndex: (index: number) => void;
   sessionStartTimeRef: React.MutableRefObject<string | null>;
   pausedTimeRef: React.MutableRefObject<number | null>;
-  settings: any;
+  settings: TimerSettings;
   setTimeRemaining: (time: number) => void;
 }
 
@@ -40,7 +47,7 @@ export function useTimerCompletion({
 }: UseTimerCompletionProps) {
   const { user } = useAuth();
   const { handleWorkCompletion, handleBreakCompletion, handleLongBreakCompletion } = useTaskStats();
-
+  
   const handleTimerComplete = useCallback(() => {
     // Stop the timer if it's running
     if (isRunning) {
@@ -87,6 +94,13 @@ export function useTimerCompletion({
       // Update current session index
       const newIndex = currentSessionIndex + 1;
       setCurrentSessionIndex(newIndex);
+      
+      // Auto-start the break session after a short delay
+      setTimeout(() => {
+        setIsRunning(true);
+        sessionStartTimeRef.current = new Date().toISOString();
+      }, 500);
+      
     } else if (timerMode === 'break') {
       // Update total time today
       const newTotalTime = totalTimeToday + settings.breakDuration * 60;
@@ -95,9 +109,16 @@ export function useTimerCompletion({
       // Persist break session
       handleBreakCompletion(user?.id, sessionStartTime);
       
-      // After any break, return to focus mode
+      // After a break, return to focus mode
       setTimerMode('work');
       setTimeRemaining(settings.workDuration * 60);
+      
+      // Auto-start the next focus session after a short delay
+      setTimeout(() => {
+        setIsRunning(true);
+        sessionStartTimeRef.current = new Date().toISOString();
+      }, 500);
+      
     } else if (timerMode === 'longBreak') {
       // Update total time today
       const newTotalTime = totalTimeToday + settings.longBreakDuration * 60;
@@ -106,9 +127,12 @@ export function useTimerCompletion({
       // Persist long break session
       handleLongBreakCompletion(user?.id, sessionStartTime);
       
-      // After any break, return to focus mode
+      // After long break, return to focus mode but DON'T auto-start
+      // The user needs to manually start the next session after a long break
       setTimerMode('work');
       setTimeRemaining(settings.workDuration * 60);
+      
+      // Don't auto-start after a long break - user must manually start
     }
   }, [
     timerMode,

@@ -72,7 +72,8 @@ export function useTimerControlReset({
       timeRemaining: newTime,
       currentSessionIndex,
       sessionStartTime: null,
-      pausedTime: null // Explicitly set pausedTime to null when resetting
+      pausedTime: null, // Explicitly set pausedTime to null when resetting
+      timestamp: Date.now()
     });
     
     console.log("Timer reset to:", newTime, "seconds");

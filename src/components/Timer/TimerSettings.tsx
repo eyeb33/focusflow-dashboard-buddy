@@ -19,9 +19,10 @@ interface TimerSettingsProps {
     longBreak: number;
     sessionsUntilLongBreak: number;
   }) => void;
+  onReset?: () => void; // Add optional reset handler
 }
 
-const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange }) => {
+const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange, onReset }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [localSettings, setLocalSettings] = useState(durations || {
     focus: 25,
@@ -45,6 +46,12 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange }) =>
     // Call onChange immediately with the updated value
     console.log(`Timer setting changed by slider: ${key} = ${value}`, updated);
     onChange(updated);
+    
+    // Call reset handler if provided to simulate Reset button behavior
+    if (onReset) {
+      console.log('Calling reset handler after settings change');
+      onReset();
+    }
   };
   
   const settingsConfig = [

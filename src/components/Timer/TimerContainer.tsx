@@ -83,6 +83,15 @@ const TimerContainer = () => {
     handleReset();
   };
 
+  // We'll pass the header timer settings to TimerHeader
+  const headerProps = {
+    timerMode,
+    handleModeChange,
+    settings,
+    onSettingsChange: handleSettingsChange,
+    onReset: handleTimerReset, // Pass reset handler to settings
+  };
+
   return (
     <TimerObserver>
       <div 
@@ -95,10 +104,7 @@ const TimerContainer = () => {
         data-testid="timer-container"
       >
         <TimerHeader 
-          timerMode={timerMode}
-          handleModeChange={handleModeChange}
-          settings={settings}
-          onSettingsChange={handleSettingsChange}
+          {...headerProps}
         />
 
         <TimerDisplay 
