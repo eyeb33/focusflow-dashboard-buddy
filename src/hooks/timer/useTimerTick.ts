@@ -23,6 +23,9 @@ export function useTimerTick(props: UseTimerTickProps) {
   const renderTimestampRef = useRef(Date.now());
   const renderCount = useRef(0);
   
+  // Reference to track if visibility handling has set up onVisibilityChange
+  const visibilityHandlerSetupRef = useRef(false);
+  
   // Debug logging with performance info
   useEffect(() => {
     renderCount.current++;
@@ -36,7 +39,41 @@ export function useTimerTick(props: UseTimerTickProps) {
   useTimerInterval(props);
   
   // Handle visibility change (tab switching)
-  useTimerVisibilityHandler(props);
+  useTimerVisibilityHandler({
+    isRunning: props.isRunning,
+    timeRemaining: props.timeRemaining,
+    setTimeRemaining: props.setTimeRemaining,
+    lastTickTimeRef: props.lastTickTimeRef,
+    handleTimerComplete: props.handleTimerComplete,
+    timerMode: props.timerMode
+  });
+  
+  // Set up visibility change handler in window context
+  useEffect(() => {
+    if (!visibilityHandlerSetupRef.current) {
+      window.timerContext = {
+        ...window.timerContext,
+        onVisibilityChange: () => {
+          console.log('Visibility change handler called. Current running state:', props.isRunning);
+          // This handler can be called to force updates when visibility changes
+          if (props.isRunning) {
+            // Force a re-render by updating last tick time
+            props.lastTickTimeRef.current = Date.now();
+          }
+        }
+      };
+      visibilityHandlerSetupRef.current = true;
+    }
+    
+    return () => {
+      if (visibilityHandlerSetupRef.current) {
+        if (window.timerContext) {
+          window.timerContext.onVisibilityChange = undefined;
+        }
+        visibilityHandlerSetupRef.current = false;
+      }
+    };
+  }, [props.isRunning, props.lastTickTimeRef]);
   
   // Handle paused state persistence
   useTimerPausedState(props);

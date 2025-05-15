@@ -26,11 +26,11 @@ export const useDocumentTitle = ({
     const getCircleColor = () => {
       switch (timerMode) {
         case 'work':
-          return '🔴';
+          return '🔴'; // Red circle for focus
         case 'break':
-          return '🟢';
+          return '🟢'; // Green circle for break
         case 'longBreak':
-          return '🔵';
+          return '🔵'; // Blue circle for long break
         default:
           return '⚪';
       }
@@ -39,38 +39,13 @@ export const useDocumentTitle = ({
     const baseTitle = 'FocusFlow';
     const circle = getCircleColor();
     
-    // Helper function to get total time based on mode
-    const getTotalTime = () => {
-      if (settings) {
-        switch (timerMode) {
-          case 'work':
-            return settings.workDuration * 60;
-          case 'break':
-            return settings.breakDuration * 60;
-          case 'longBreak':
-            return settings.longBreakDuration * 60;
-          default:
-            return 0;
-        }
-      } else {
-        // Fallback to default values if settings aren't provided
-        switch (timerMode) {
-          case 'work':
-            return 25 * 60; // Default work time
-          case 'break':
-            return 5 * 60;  // Default break time
-          case 'longBreak':
-            return 15 * 60; // Default long break time
-          default:
-            return 0;
-        }
-      }
-    };
+    // Format time for display
+    const formattedTime = formatTime(timeRemaining);
     
     // When timer is running or has time remaining, show the circle and time
     // When idle, show the app name
-    document.title = (isRunning || timeRemaining < getTotalTime())
-      ? `${circle} ${formatTime(timeRemaining)}`
+    document.title = (isRunning || timeRemaining > 0)
+      ? `${circle} ${formattedTime}`
       : baseTitle;
 
     // Cleanup - restore original title when component unmounts

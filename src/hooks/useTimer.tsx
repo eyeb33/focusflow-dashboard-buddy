@@ -11,6 +11,8 @@ import { useTimerTick } from './timer/useTimerTick';
 import { DEFAULT_TIMER_SETTINGS } from './timer/useTimerDefaults';
 import { useTimerStateRestoration } from './timer/useTimerStateRestoration';
 import { useTimerSettingsSync } from './timer/useTimerSettingsSync';
+import { useDocumentTitle } from './useDocumentTitle';
+import { useTimerAudio } from './useTimerAudio';
 
 /**
  * Main timer hook that provides all timer functionality
@@ -20,6 +22,9 @@ export const useTimer = (settings?: typeof DEFAULT_TIMER_SETTINGS) => {
   
   // Use provided settings or defaults if undefined
   const timerSettings = settings || DEFAULT_TIMER_SETTINGS;
+  
+  // Initialize audio context for timer sounds
+  useTimerAudio();
   
   // Initialize core timer state
   const {
@@ -127,7 +132,7 @@ export const useTimer = (settings?: typeof DEFAULT_TIMER_SETTINGS) => {
     setTimeRemaining,
     saveTimerState,
     currentSessionIndex,
-    timeRemaining // Add the missing timeRemaining property
+    timeRemaining
   });
   
   // Setup timer tick
@@ -143,6 +148,15 @@ export const useTimer = (settings?: typeof DEFAULT_TIMER_SETTINGS) => {
     handleTimerComplete,
     saveTimerState,
     currentSessionIndex
+  });
+  
+  // Update document title based on timer state
+  useDocumentTitle({
+    timeRemaining,
+    timerMode,
+    isRunning,
+    formatTime,
+    settings: timerSettings
   });
   
   return {
