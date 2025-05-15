@@ -5,12 +5,12 @@ import { TimerMode } from '@/utils/timerContextUtils';
 
 // Updated interface to use proper TimerMode type
 interface TimerModeTabsProps {
-  mode: TimerMode;
+  currentMode: TimerMode;  // Changed from 'mode' to 'currentMode' to match TimerHeader usage
   onModeChange: (mode: TimerMode) => void;
 }
 
 const TimerModeTabs: React.FC<TimerModeTabsProps> = ({ 
-  mode, 
+  currentMode, // Updated prop name to match what's passed in TimerHeader
   onModeChange 
 }) => {
   // Map internal mode values to user-friendly labels
@@ -31,7 +31,7 @@ const TimerModeTabs: React.FC<TimerModeTabsProps> = ({
           onClick={() => onModeChange(tabMode)}
           className={cn(
             "flex-1 py-1 px-3 text-sm rounded transition-colors",
-            mode === tabMode 
+            currentMode === tabMode 
               ? tabMode === 'work' 
                 ? "bg-red-500 text-white" 
                 : tabMode === 'break' 

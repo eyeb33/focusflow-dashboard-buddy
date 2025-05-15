@@ -24,14 +24,39 @@ export const getTotalTime = (
   }
 };
 
+// Add loadTodayStats function that was missing
+export const loadTodayStats = async (userId: string): Promise<{ 
+  completedSessions: number;
+  totalTimeToday: number;
+} | null> => {
+  if (!userId) return null;
+  
+  try {
+    // For now just returning a placeholder
+    // In a production app, this would typically fetch from a database
+    console.log('Loading stats for user:', userId);
+    return {
+      completedSessions: 0,
+      totalTimeToday: 0
+    };
+  } catch (error) {
+    console.error('Error loading today stats:', error);
+    return null;
+  }
+};
+
 // Function to save partial session data
 export const savePartialSession = async (
   userId: string | undefined,
   mode: TimerMode,
   totalTime: number,
   remainingTime: number,
-  lastRecordedMinutes: number
-): Promise<void> => {
+  lastRecordedMinutes: number,
+  startDate?: string
+): Promise<{ 
+  success: boolean;
+  newFullMinutes?: number;
+} | void> => {
   if (!userId) return;
   
   try {
@@ -42,8 +67,15 @@ export const savePartialSession = async (
       totalTime,
       remainingTime,
       lastRecordedMinutes,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      startDate
     });
+    
+    // Return success with the updated minutes count
+    return {
+      success: true,
+      newFullMinutes: Math.floor((totalTime - remainingTime) / 60)
+    };
   } catch (error) {
     console.error('Error saving partial session:', error);
   }

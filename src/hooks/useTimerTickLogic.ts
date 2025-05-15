@@ -123,20 +123,28 @@ export function useTimerTickLogic({
                 ? new Date(sessionStartTimeRef.current).toISOString().split('T')[0]
                 : new Date().toISOString().split('T')[0];
 
-              savePartialSession(
+              const result = savePartialSession(
                 user.id, 
                 timerMode,
                 totalTime,
                 newTime,
                 lastRecordedFullMinutesRef.current,
                 startDate
-              ).then((result) => {
-                if (result && typeof result === 'object' && 'newFullMinutes' in result) {
-                  lastRecordedFullMinutesRef.current = result.newFullMinutes;
-                } else {
-                  lastRecordedFullMinutesRef.current = newFullMinutes;
-                }
-              });
+              );
+              
+              // Corrected: Check if result exists and has the right property before using it
+              if (result) {
+                // We need to handle this properly since savePartialSession returns a Promise
+                Promise.resolve(result).then((resolvedResult) => {
+                  if (resolvedResult && 'newFullMinutes' in resolvedResult) {
+                    lastRecordedFullMinutesRef.current = resolvedResult.newFullMinutes;
+                  } else {
+                    lastRecordedFullMinutesRef.current = newFullMinutes;
+                  }
+                });
+              } else {
+                lastRecordedFullMinutesRef.current = newFullMinutes;
+              }
             }
 
             // Update timer state in localStorage (for tab switching/visibility)
