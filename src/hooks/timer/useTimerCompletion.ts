@@ -12,6 +12,10 @@ interface TimerSettings {
   sessionsUntilLongBreak: number;
   autoStartBreaks?: boolean;
   autoStartFocus?: boolean;
+  showNotifications?: boolean;
+  soundEnabled?: boolean;
+  soundVolume?: number;
+  soundId?: string;
 }
 
 interface UseTimerCompletionProps {
@@ -77,8 +81,9 @@ export function useTimerCompletion({
       const newCompletedSessions = completedSessions + 1;
       setCompletedSessions(newCompletedSessions);
       
-      // Update total time today
-      setTotalTimeToday(prevTotalTime => prevTotalTime + settings.workDuration * 60);
+      // Update total time today - fixed type issue by using direct value
+      const newTotalTime = totalTimeToday + settings.workDuration * 60;
+      setTotalTimeToday(newTotalTime);
       
       // Persist work session
       handleWorkCompletion(user?.id, sessionStartTime);
@@ -110,11 +115,13 @@ export function useTimerCompletion({
         }
       }
       
-      // Update current session index
-      setCurrentSessionIndex(prevIndex => prevIndex + 1);
+      // Update current session index - fixed type issue by using direct value
+      const newIndex = currentSessionIndex + 1;
+      setCurrentSessionIndex(newIndex);
     } else if (timerMode === 'break') {
-      // Update total time today
-      setTotalTimeToday(prevTotalTime => prevTotalTime + settings.breakDuration * 60);
+      // Update total time today - fixed type issue by using direct value
+      const newTotalTime = totalTimeToday + settings.breakDuration * 60;
+      setTotalTimeToday(newTotalTime);
       
       // Persist break session
       handleBreakCompletion(user?.id, sessionStartTime);
@@ -132,8 +139,9 @@ export function useTimerCompletion({
         }, 100);
       }
     } else if (timerMode === 'longBreak') {
-      // Update total time today
-      setTotalTimeToday(prevTotalTime => prevTotalTime + settings.longBreakDuration * 60);
+      // Update total time today - fixed type issue by using direct value
+      const newTotalTime = totalTimeToday + settings.longBreakDuration * 60;
+      setTotalTimeToday(newTotalTime);
       
       // Persist long break session
       handleLongBreakCompletion(user?.id, sessionStartTime);

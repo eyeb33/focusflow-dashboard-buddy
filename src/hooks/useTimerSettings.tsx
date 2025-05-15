@@ -6,6 +6,12 @@ export interface TimerSettings {
   breakDuration: number;
   longBreakDuration: number;
   sessionsUntilLongBreak: number;
+  autoStartBreaks?: boolean;
+  autoStartFocus?: boolean;
+  showNotifications?: boolean;
+  soundEnabled?: boolean;
+  soundVolume?: number;
+  soundId?: string;
 }
 
 const DEFAULT_SETTINGS: TimerSettings = {
@@ -13,6 +19,12 @@ const DEFAULT_SETTINGS: TimerSettings = {
   breakDuration: 5, // 5 minutes
   longBreakDuration: 15, // 15 minutes
   sessionsUntilLongBreak: 4,
+  autoStartBreaks: true,
+  autoStartFocus: false,
+  showNotifications: true,
+  soundEnabled: true,
+  soundVolume: 0.75,
+  soundId: 'zen-bell'
 };
 
 export function useTimerSettings() {
