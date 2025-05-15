@@ -27,11 +27,13 @@ const TimerHeader: React.FC<TimerHeaderProps> = ({
   };
 
   return (
-    <div className="w-full flex justify-between items-center mb-4">
-      <TimerModeTabs
-        currentMode={timerMode}
-        onModeChange={handleModeChange}
-      />
+    <div className="w-full flex flex-col md:flex-row justify-between items-center mb-4">
+      <div className="w-full mb-2 md:mb-0 md:flex-1">
+        <TimerModeTabs
+          currentMode={timerMode}
+          onModeChange={handleModeChange}
+        />
+      </div>
       
       <div className="ml-auto">
         <TimerSettings 

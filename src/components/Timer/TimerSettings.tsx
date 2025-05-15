@@ -87,7 +87,11 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange, onRe
                 max={max}
                 step={1}
                 value={[localSettings[key as keyof typeof localSettings]]}
-                onValueChange={(values) => handleChange(key as keyof typeof localSettings, values[0])}
+                onValueChange={(values) => {
+                  if (values.length > 0) {
+                    handleChange(key as keyof typeof localSettings, values[0]);
+                  }
+                }}
               />
             </div>
           ))}
