@@ -45,10 +45,8 @@ export function useTimerControlPause({
     pausedTimeRef.current = timeRemaining;
     console.log('Storing exact pause time:', timeRemaining);
     
-    // Stop the timer
-    setIsRunning(false);
-    
-    // Save the timer state with the paused time
+    // Save the timer state with the paused time BEFORE stopping the timer
+    // This ensures we capture the exact time
     saveTimerState({
       timerMode,
       isRunning: false,
@@ -57,6 +55,10 @@ export function useTimerControlPause({
       sessionStartTime: sessionStartTimeRef.current,
       pausedTime: timeRemaining // Explicitly include pausedTime in saved state
     });
+    console.log("Saving timer state with paused time:", timeRemaining);
+    
+    // Stop the timer AFTER saving state
+    setIsRunning(false);
     
     console.log("Timer paused at exact time:", timeRemaining);
   }, [timerMode, isRunning, timeRemaining, currentSessionIndex, saveTimerState, 

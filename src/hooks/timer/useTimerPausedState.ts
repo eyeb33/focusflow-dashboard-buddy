@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from 'react';
 
 interface UseTimerPausedStateProps {
@@ -45,8 +46,10 @@ export function useTimerPausedState({
       if (pausedTimeRef.current !== null) {
         console.log(`Ensuring UI shows paused time: ${pausedTimeRef.current}`);
         setTimeRemaining(pausedTimeRef.current);
+        
+        // CRITICAL: Set preservePausedTimeRef to true to prevent other hooks from resetting the time
+        preservePausedTimeRef.current = true;
       }
-      preservePausedTimeRef.current = true; // Mark that we should preserve this time
       console.log(`Preserving pausedTime: ${pausedTimeRef.current}`);
     }
     

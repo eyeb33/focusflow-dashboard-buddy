@@ -37,6 +37,7 @@ export function useTimerControlStart({
     }
     
     // Determine which time to use (pausedTime or current timeRemaining)
+    // CRITICAL: Always prioritize pausedTimeRef if it exists
     const timeToUse = pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining;
     console.log('Using time for start:', timeToUse, '(pausedTime:', pausedTimeRef.current, ')');
     
@@ -50,6 +51,11 @@ export function useTimerControlStart({
     if (!sessionStartTimeRef.current) {
       sessionStartTimeRef.current = new Date().toISOString();
       console.log('Setting session start time:', sessionStartTimeRef.current);
+    }
+    
+    // CRITICAL: Update the displayed time to match the pause time before starting
+    if (pausedTimeRef.current !== null && pausedTimeRef.current !== timeRemaining) {
+      console.log(`Restoring paused time ${pausedTimeRef.current} before starting`);
     }
     
     // Start the timer

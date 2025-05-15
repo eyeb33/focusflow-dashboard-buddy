@@ -35,9 +35,15 @@ export function useTimerSettingsSync({
       return;
     }
     
-    // Critical: Don't update time if timer is running
+    // Critical: Don't update time if timer is running or if we have a valid paused time
     if (isRunning) {
       console.log('Timer is running, not updating time after settings change');
+      return;
+    }
+    
+    // CRITICAL: Do not override paused time with settings changes
+    if (pausedTimeRef.current !== null) {
+      console.log('Preserving paused time after settings change:', pausedTimeRef.current);
       return;
     }
     
@@ -45,13 +51,9 @@ export function useTimerSettingsSync({
     const newTime = getTotalTimeForMode();
     console.log('Settings changed: Updating timer to', newTime, 'seconds');
     
-    // CRITICAL FIX: Always update displayed time to match new settings
-    // This ensures settings changes are immediately reflected
+    // CRITICAL FIX: Only update displayed time if we don't have a paused time
     setTimeRemaining(newTime);
     console.log('Updating displayed time to match new settings:', newTime);
-    
-    // Reset pausedTimeRef to null to ensure we use the new time when starting
-    pausedTimeRef.current = null;
     
     // Save the updated state
     saveTimerState({

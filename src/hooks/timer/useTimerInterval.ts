@@ -83,7 +83,7 @@ export function useTimerInterval({
       lastTickTimeRef.current = now;
       
       // CRITICAL FIX: Always initialize target end time with current timeRemaining
-      // This ensures slider changes are respected
+      // This ensures slider changes and paused times are respected
       targetEndTimeRef.current = now + (timeRemaining * 1000);
       console.log("Target end time set:", new Date(targetEndTimeRef.current).toISOString());
       
@@ -137,11 +137,11 @@ export function useTimerInterval({
         }
       }, 100);
     } else {
-      // Timer not running, but ensure we don't reset target end time
-      // This allows us to resume from the same point
+      // Timer not running, preserve target end time if we have a paused time
       if (!isRunning && pausedTimeRef.current !== null) {
         console.log('Timer paused, preserving target end time for future resume');
-      } else {
+      } else if (!pausedTimeRef.current) {
+        // Only clear target end time if we don't have a paused time
         targetEndTimeRef.current = null;
       }
     }
@@ -153,7 +153,7 @@ export function useTimerInterval({
       }
     };
   }, [
-    isRunning, // This dependency is critical - we must re-run when isRunning changes
+    isRunning,
     timerMode,
     setTimeRemaining, 
     handleTimerComplete, 
@@ -163,6 +163,6 @@ export function useTimerInterval({
     saveTimerState, 
     currentSessionIndex,
     pausedTimeRef,
-    timeRemaining // Keep timeRemaining in dependencies to respond to slider changes
+    timeRemaining
   ]); 
 }
