@@ -26,6 +26,21 @@ const TimerHeader: React.FC<TimerHeaderProps> = ({
     sessionsUntilLongBreak: settings?.sessionsUntilLongBreak || 4
   };
 
+  const handleSettingsChange = (newDurations: typeof durations) => {
+    console.log("TimerHeader: Settings changed:", newDurations);
+    
+    // Map the durations back to the settings structure
+    const updatedSettings = {
+      ...settings,
+      workDuration: newDurations.focus,
+      breakDuration: newDurations.break,
+      longBreakDuration: newDurations.longBreak,
+      sessionsUntilLongBreak: newDurations.sessionsUntilLongBreak
+    };
+    
+    onSettingsChange(updatedSettings);
+  };
+
   return (
     <div className="w-full flex flex-col md:flex-row justify-between items-center mb-4">
       <div className="w-full mb-2 md:mb-0 md:flex-1">
@@ -38,7 +53,7 @@ const TimerHeader: React.FC<TimerHeaderProps> = ({
       <div className="ml-auto">
         <TimerSettings 
           durations={durations} 
-          onChange={onSettingsChange} 
+          onChange={handleSettingsChange} 
           onReset={onReset} // Pass reset handler to TimerSettings
         />
       </div>
