@@ -1,67 +1,48 @@
 
 import React from 'react';
 import { cn } from "@/lib/utils";
-import { useTheme } from "@/components/Theme/ThemeProvider";
+import { TimerMode } from '@/utils/timerContextUtils';
 
+// Updated interface to use proper TimerMode type
 interface TimerModeTabsProps {
-  currentMode: 'focus' | 'break' | 'longBreak';
-  onModeChange: (mode: 'focus' | 'break' | 'longBreak') => void;
+  mode: TimerMode;
+  onModeChange: (mode: TimerMode) => void;
 }
 
-const TimerModeTabs: React.FC<TimerModeTabsProps> = ({
-  currentMode,
-  onModeChange
+const TimerModeTabs: React.FC<TimerModeTabsProps> = ({ 
+  mode, 
+  onModeChange 
 }) => {
-  const { theme } = useTheme();
-  
+  // Map internal mode values to user-friendly labels
+  const getModeLabel = (mode: TimerMode) => {
+    switch(mode) {
+      case 'work': return 'Focus';
+      case 'break': return 'Break';
+      case 'longBreak': return 'Long Break';
+      default: return 'Focus';
+    }
+  };
+
   return (
-    <div className="w-full mb-2">
-      <div className={cn(
-        "flex rounded-md p-1",
-        theme === "dark" 
-          ? "bg-[#1e293b]" 
-          : "bg-gray-200"  // Lighter background for light mode
-      )}>
-        <button 
-          onClick={() => onModeChange('focus')} 
+    <div className="flex bg-gray-100 dark:bg-gray-800 rounded-md p-1 mb-4">
+      {(['work', 'break', 'longBreak'] as TimerMode[]).map((tabMode) => (
+        <button
+          key={tabMode}
+          onClick={() => onModeChange(tabMode)}
           className={cn(
-            "flex-1 py-1.5 text-sm rounded-sm text-center transition-colors",
-            currentMode === 'focus' 
-              ? "bg-red-500 text-white" 
-              : theme === "dark" 
-                ? "text-gray-400 hover:text-white" 
-                : "text-gray-600 hover:text-gray-800" // Darker text for better contrast in light mode
+            "flex-1 py-1 px-3 text-sm rounded transition-colors",
+            mode === tabMode 
+              ? tabMode === 'work' 
+                ? "bg-red-500 text-white" 
+                : tabMode === 'break' 
+                  ? "bg-green-500 text-white" 
+                  : "bg-blue-500 text-white"
+              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
           )}
         >
-          Focus
+          {getModeLabel(tabMode)}
         </button>
-        <button 
-          onClick={() => onModeChange('break')} 
-          className={cn(
-            "flex-1 py-1.5 text-sm rounded-sm text-center transition-colors",
-            currentMode === 'break' 
-              ? "bg-green-500 text-white" 
-              : theme === "dark" 
-                ? "text-gray-400 hover:text-white" 
-                : "text-gray-600 hover:text-gray-800" // Darker text for better contrast in light mode
-          )}
-        >
-          Break
-        </button>
-        <button 
-          onClick={() => onModeChange('longBreak')} 
-          className={cn(
-            "flex-1 py-1.5 text-sm rounded-sm text-center transition-colors",
-            currentMode === 'longBreak' 
-              ? "bg-blue-500 text-white" 
-              : theme === "dark" 
-                ? "text-gray-400 hover:text-white" 
-                : "text-gray-600 hover:text-gray-800" // Darker text for better contrast in light mode
-          )}
-        >
-          Long Break
-        </button>
-      </div>
+      ))}
     </div>
   );
 };

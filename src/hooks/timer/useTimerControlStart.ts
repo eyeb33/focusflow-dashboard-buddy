@@ -8,6 +8,7 @@ interface UseTimerControlStartProps {
   isRunning: boolean;
   timeRemaining: number;
   setIsRunning: (running: boolean) => void;
+  setTimeRemaining: (time: number) => void; // Added missing setTimeRemaining prop
   pausedTimeRef: React.MutableRefObject<number | null>;
   sessionStartTimeRef: React.MutableRefObject<string | null>;
   currentSessionIndex: number;
@@ -19,6 +20,7 @@ export function useTimerControlStart({
   isRunning,
   timeRemaining,
   setIsRunning,
+  setTimeRemaining, // Added to function params
   pausedTimeRef,
   sessionStartTimeRef,
   currentSessionIndex,
