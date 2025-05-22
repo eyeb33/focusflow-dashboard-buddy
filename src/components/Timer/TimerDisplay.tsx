@@ -27,6 +27,16 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
     }
   };
 
+  // Get a user-friendly mode label
+  const getModeLabel = () => {
+    switch(timerMode) {
+      case 'work': return 'Focus';
+      case 'break': return 'Short Break';
+      case 'longBreak': return 'Long Break';
+      default: return 'Focus';
+    }
+  };
+
   // Check for valid values and calculate progress
   const validTotalSeconds = totalSeconds > 0 ? totalSeconds : 1;
   
@@ -61,11 +71,12 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
       <div className="text-center mb-2">
         <div className={cn(
           "text-xs rounded-full px-3 py-0.5 inline-block",
-          theme === "dark" 
-            ? "bg-gray-800 text-gray-200" 
-            : "bg-gray-100 text-gray-700" 
+          timerMode === 'work' ? "bg-red-500 text-white" : 
+          timerMode === 'break' ? "bg-green-500 text-white" : 
+          "bg-blue-500 text-white",
+          theme === "dark" ? "opacity-90" : "opacity-100"
         )}>
-          {timerMode === 'work' ? 'Focus' : timerMode === 'break' ? 'Short Break' : 'Long Break'}
+          {getModeLabel()}
         </div>
       </div>
       

@@ -1,8 +1,10 @@
+
 import { useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTaskStats } from '@/hooks/useTaskStats';
 import { playTimerCompletionSound } from '@/utils/audioUtils';
 import { TimerMode } from '@/utils/timerContextUtils';
+import { toast } from 'sonner';
 
 interface TimerSettings {
   workDuration: number;
@@ -68,6 +70,11 @@ export function useTimerCompletion({
       console.error('Failed to play timer completion sound:', e);
     }
     
+    // Show completion notification
+    const modeLabel = timerMode === 'work' ? 'Focus' : 
+                      timerMode === 'break' ? 'Break' : 'Long Break';
+    toast.success(`${modeLabel} session completed!`);
+    
     // Persist session start time
     const sessionStartTime = sessionStartTimeRef.current;
     
@@ -80,77 +87,73 @@ export function useTimerCompletion({
       const newCompletedSessions = completedSessions + 1;
       setCompletedSessions(newCompletedSessions);
       
-      // Update total time today - fixed type issue by using direct value
+      // Update total time today
       const newTotalTime = totalTimeToday + settings.workDuration * 60;
       setTotalTimeToday(newTotalTime);
       
       // Persist work session
       handleWorkCompletion(user?.id, sessionStartTime);
       
+      // Increment session index for tracking progress toward long break
+      const nextSessionIndex = (currentSessionIndex + 1) % settings.sessionsUntilLongBreak;
+      setCurrentSessionIndex(nextSessionIndex);
+      
       // Check if it's time for a long break
-      if (newCompletedSessions % settings.sessionsUntilLongBreak === 0) {
+      // Only transition to long break after completing the full cycle
+      if (nextSessionIndex === 0) {
         setTimerMode('longBreak');
         setTimeRemaining(settings.longBreakDuration * 60);
-        
-        // Auto-start breaks if enabled in settings
-        if (settings.autoStartBreaks) {
-          // Set a small timeout to make sure UI updates first
-          setTimeout(() => {
-            setIsRunning(true);
-            sessionStartTimeRef.current = new Date().toISOString();
-          }, 100);
-        }
+        console.log("Transitioning to long break after completing focus cycle");
       } else {
         setTimerMode('break');
         setTimeRemaining(settings.breakDuration * 60);
-        
-        // Auto-start breaks if enabled in settings
-        if (settings.autoStartBreaks) {
-          // Set a small timeout to make sure UI updates first
-          setTimeout(() => {
-            setIsRunning(true);
-            sessionStartTimeRef.current = new Date().toISOString();
-          }, 100);
-        }
+        console.log("Transitioning to short break");
       }
       
-      // Update current session index - fixed type issue by using direct value
-      const newIndex = currentSessionIndex + 1;
-      setCurrentSessionIndex(newIndex);
+      // Always auto-start breaks
+      setTimeout(() => {
+        setIsRunning(true);
+        sessionStartTimeRef.current = new Date().toISOString();
+        console.log("Auto-starting break session");
+      }, 300);
+      
     } else if (timerMode === 'break') {
-      // Update total time today - fixed type issue by using direct value
+      // After short break, always go back to focus mode
+      // Update total time today
       const newTotalTime = totalTimeToday + settings.breakDuration * 60;
       setTotalTimeToday(newTotalTime);
       
       // Persist break session
       handleBreakCompletion(user?.id, sessionStartTime);
       
-      // After any break, return to focus mode
+      // Return to focus mode
       setTimerMode('work');
       setTimeRemaining(settings.workDuration * 60);
       
-      // Auto-start focus if enabled in settings
-      if (settings.autoStartFocus) {
-        // Set a small timeout to make sure UI updates first
-        setTimeout(() => {
-          setIsRunning(true);
-          sessionStartTimeRef.current = new Date().toISOString();
-        }, 100);
-      }
+      // Auto-start next focus session
+      setTimeout(() => {
+        setIsRunning(true);
+        sessionStartTimeRef.current = new Date().toISOString();
+        console.log("Auto-starting next focus session after break");
+      }, 300);
+      
     } else if (timerMode === 'longBreak') {
-      // Update total time today - fixed type issue by using direct value
+      // After long break, return to focus mode but don't auto-start
+      // Update total time today
       const newTotalTime = totalTimeToday + settings.longBreakDuration * 60;
       setTotalTimeToday(newTotalTime);
       
       // Persist long break session
       handleLongBreakCompletion(user?.id, sessionStartTime);
       
-      // After any break, return to focus mode
+      // Return to focus mode
       setTimerMode('work');
       setTimeRemaining(settings.workDuration * 60);
+      console.log("Long break completed. Focus session ready but not auto-started.");
       
-      // Long break completed - don't auto-start the next focus session
-      // User needs to manually start the next work session after a long break
+      // Do NOT auto-start after long break
+      // User needs to manually start the next work session
+      toast.info("Long break completed! Start your next focus session when ready.");
     }
   }, [
     timerMode,

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 interface TimerSettingsProps {
   durations: {
@@ -96,6 +97,28 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange, onRe
               />
             </div>
           ))}
+        </div>
+        
+        <div className="pt-4 border-t">
+          <p className="text-sm text-muted-foreground mb-2">Timer Sequence:</p>
+          <div className="flex flex-wrap gap-1 text-xs">
+            <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded">Focus</span>
+            <span className="text-gray-500">→</span>
+            <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded">Break</span>
+            <span className="text-gray-500">→</span>
+            <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded">Focus</span>
+            <span className="text-gray-500">→</span>
+            <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded">Break</span>
+            <span className="text-gray-500">→</span>
+            <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded">Focus</span>
+            <span className="text-gray-500">→</span>
+            <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded">Break</span>
+            <span className="text-gray-500">→</span>
+            <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded">Focus</span>
+            <span className="text-gray-500">→</span>
+            <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Long Break</span>
+          </div>
+          <p className="text-xs mt-2 text-muted-foreground">The timer automatically advances through the sequence. After a long break, you'll need to manually start the next focus session.</p>
         </div>
       </DialogContent>
     </Dialog>
