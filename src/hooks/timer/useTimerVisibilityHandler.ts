@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from 'react';
 
 interface UseTimerVisibilityHandlerProps {
@@ -71,7 +72,7 @@ export function useTimerVisibilityHandler({
           setTimeRemaining(newTimeRemaining);
           
           // CRITICAL: If timer should have completed, handle it
-          // Also handle the case where mode has changed while tab was hidden - resume the timer
+          // Also handle the case where mode changed while tab was hidden - resume the timer
           if (newTimeRemaining === 0 || modeChanged) {
             // Force timer to resume if it changed modes while tab was hidden
             if (modeChanged && isRunning) {
