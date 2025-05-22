@@ -42,15 +42,28 @@ export const useDocumentTitle = ({
     // Format time for display
     const formattedTime = formatTime(timeRemaining);
     
-    // When timer is running or has time remaining, show the circle and time
-    // When idle, show the app name
-    document.title = (isRunning || timeRemaining > 0)
-      ? `${circle} ${formattedTime}`
-      : baseTitle;
+    // Create a function to update the document title that can be called from visibility handlers
+    const updateTitle = () => {
+      // When timer is running or has time remaining, show the circle and time
+      // When idle, show the app name
+      document.title = (isRunning || timeRemaining > 0)
+        ? `${circle} ${formattedTime}`
+        : baseTitle;
+    };
+    
+    // Update title initially
+    updateTitle();
+    
+    // Expose the update function to window context for other hooks to access
+    if (!window.timerContext) window.timerContext = {};
+    window.timerContext.updateDocumentTitle = updateTitle;
 
     // Cleanup - restore original title when component unmounts
     return () => {
       document.title = 'FocusFlow';
+      if (window.timerContext) {
+        window.timerContext.updateDocumentTitle = undefined;
+      }
     };
   }, [timeRemaining, timerMode, isRunning, formatTime, settings]);
 };

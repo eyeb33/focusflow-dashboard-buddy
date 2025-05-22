@@ -5,9 +5,10 @@
 
 interface Window {
   timerContext?: {
-    timeRemaining: number;
-    isRunning: boolean;
-    timerMode: string;
+    timeRemaining?: number;
+    isRunning?: boolean;
+    timerMode?: string;
     onVisibilityChange?: () => void;
+    updateDocumentTitle?: () => void;
   };
 }

@@ -59,6 +59,11 @@ export function useTimerTick(props: UseTimerTickProps) {
           if (props.isRunning) {
             // Force a re-render by updating last tick time
             props.lastTickTimeRef.current = Date.now();
+            
+            // Also update document title to match current time
+            if (window.timerContext && typeof window.timerContext.updateDocumentTitle === 'function') {
+              window.timerContext.updateDocumentTitle();
+            }
           }
         }
       };

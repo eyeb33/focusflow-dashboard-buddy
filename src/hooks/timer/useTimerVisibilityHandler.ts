@@ -36,6 +36,7 @@ export function useTimerVisibilityHandler({
         
         // Store timer context in window object for cross-tab synchronization
         window.timerContext = {
+          ...window.timerContext,
           timeRemaining,
           isRunning,
           timerMode
@@ -70,6 +71,13 @@ export function useTimerVisibilityHandler({
           
           // Update timer
           setTimeRemaining(newTimeRemaining);
+          
+          // Update document title immediately to match current time
+          if (window.timerContext && typeof window.timerContext.updateDocumentTitle === 'function') {
+            setTimeout(() => {
+              window.timerContext.updateDocumentTitle();
+            }, 0);
+          }
           
           // CRITICAL: If timer should have completed, handle it
           // Also handle the case where mode changed while tab was hidden - resume the timer
