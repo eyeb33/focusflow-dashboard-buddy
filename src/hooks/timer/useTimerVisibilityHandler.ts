@@ -52,8 +52,8 @@ export function useTimerVisibilityHandler({
         lastTickTimeRef.current = now;
         visibilityChangedAtRef.current = null;
         
-        // Only update if significant time has passed
-        if (elapsedSeconds > 0) {
+        // Only update if significant time has passed and timer is running
+        if (elapsedSeconds > 0 && isRunning) {
           // Check if mode changed while tab was hidden
           const modeChanged = hiddenModeRef.current !== timerMode;
           console.log('Mode check on tab return:', { 
@@ -72,12 +72,12 @@ export function useTimerVisibilityHandler({
           // Update timer
           setTimeRemaining(newTimeRemaining);
           
-          // Update document title immediately to match current time
-          if (window.timerContext && typeof window.timerContext.updateDocumentTitle === 'function') {
-            setTimeout(() => {
+          // Force document title update immediately to match current time
+          setTimeout(() => {
+            if (window.timerContext && typeof window.timerContext.updateDocumentTitle === 'function') {
               window.timerContext.updateDocumentTitle();
-            }, 0);
-          }
+            }
+          }, 0);
           
           // CRITICAL: If timer should have completed, handle it
           // Also handle the case where mode changed while tab was hidden - resume the timer
@@ -96,6 +96,14 @@ export function useTimerVisibilityHandler({
               handleTimerComplete();
             }
           }
+        } else {
+          // Even if no significant time has passed, still update the document title
+          // to ensure synchronization between UI and title
+          setTimeout(() => {
+            if (window.timerContext && typeof window.timerContext.updateDocumentTitle === 'function') {
+              window.timerContext.updateDocumentTitle();
+            }
+          }, 0);
         }
       }
     };

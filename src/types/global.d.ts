@@ -10,5 +10,10 @@ interface Window {
     timerMode?: string;
     onVisibilityChange?: () => void;
     updateDocumentTitle?: () => void;
+    currentTitle?: {
+      time: number;
+      mode: string;
+      running: boolean;
+    };
   };
 }

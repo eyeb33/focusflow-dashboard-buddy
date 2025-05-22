@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 
@@ -49,6 +48,15 @@ export const useDocumentTitle = ({
       document.title = (isRunning || timeRemaining > 0)
         ? `${circle} ${formattedTime}`
         : baseTitle;
+      
+      // Store the current title information in the window context
+      if (window.timerContext) {
+        window.timerContext.currentTitle = {
+          time: timeRemaining,
+          mode: timerMode,
+          running: isRunning
+        };
+      }
     };
     
     // Update title initially
@@ -58,11 +66,23 @@ export const useDocumentTitle = ({
     if (!window.timerContext) window.timerContext = {};
     window.timerContext.updateDocumentTitle = updateTitle;
 
+    // Set up an interval to update the title when tab is inactive
+    // This helps ensure the title keeps updating even when the tab isn't focused
+    const titleUpdateInterval = setInterval(() => {
+      if (isRunning && document.hidden) {
+        // Only update if we're running and the tab is hidden
+        updateTitle();
+      }
+    }, 1000); // Update every second when tab is inactive
+
     // Cleanup - restore original title when component unmounts
     return () => {
       document.title = 'FocusFlow';
+      clearInterval(titleUpdateInterval);
+      
       if (window.timerContext) {
         window.timerContext.updateDocumentTitle = undefined;
+        window.timerContext.currentTitle = undefined;
       }
     };
   }, [timeRemaining, timerMode, isRunning, formatTime, settings]);

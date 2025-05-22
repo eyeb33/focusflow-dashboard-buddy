@@ -69,6 +69,17 @@ export function useTimerTick(props: UseTimerTickProps) {
       };
       visibilityHandlerSetupRef.current = true;
     }
+
+    // Update document title on each tick when timer is running
+    let titleUpdateInterval: ReturnType<typeof setInterval> | null = null;
+    
+    if (props.isRunning) {
+      titleUpdateInterval = setInterval(() => {
+        if (window.timerContext && typeof window.timerContext.updateDocumentTitle === 'function') {
+          window.timerContext.updateDocumentTitle();
+        }
+      }, 1000);
+    }
     
     return () => {
       if (visibilityHandlerSetupRef.current) {
@@ -77,8 +88,12 @@ export function useTimerTick(props: UseTimerTickProps) {
         }
         visibilityHandlerSetupRef.current = false;
       }
+      
+      if (titleUpdateInterval) {
+        clearInterval(titleUpdateInterval);
+      }
     };
-  }, [props.isRunning, props.lastTickTimeRef]);
+  }, [props.isRunning, props.lastTickTimeRef, props.timeRemaining]);
   
   // Handle paused state persistence
   useTimerPausedState(props);
