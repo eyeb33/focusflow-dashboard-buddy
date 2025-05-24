@@ -108,10 +108,12 @@ export function useTimerTickLogic({
 
             const newTime = Math.max(0, prevTime - secondsToSubtract);
             
-            // Update document title to match current time
-            if (window.timerContext && typeof window.timerContext.updateDocumentTitle === 'function') {
-              window.timerContext.updateDocumentTitle();
-            }
+            // Update document title immediately after timer tick
+            setTimeout(() => {
+              if (window.timerContext && typeof window.timerContext.updateDocumentTitle === 'function') {
+                window.timerContext.updateDocumentTitle();
+              }
+            }, 0);
             
             // Track this tick for debugging purposes
             trackTimerTick(prevTime, newTime, timerMode, now);

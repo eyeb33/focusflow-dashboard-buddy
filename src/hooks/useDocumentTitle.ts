@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 
@@ -41,49 +42,33 @@ export const useDocumentTitle = ({
     // Format time for display
     const formattedTime = formatTime(timeRemaining);
     
-    // Create a function to update the document title that can be called from visibility handlers
+    // Update document title immediately
     const updateTitle = () => {
-      // When timer is running or has time remaining, show the circle and time
-      // When idle, show the app name
       document.title = (isRunning || timeRemaining > 0)
         ? `${circle} ${formattedTime}`
         : baseTitle;
       
-      // Store the current title information in the window context
-      if (window.timerContext) {
-        window.timerContext.currentTitle = {
-          time: timeRemaining,
-          mode: timerMode,
-          running: isRunning
-        };
-      }
+      console.log(`Document title updated: ${document.title} (running: ${isRunning}, time: ${timeRemaining})`);
     };
     
-    // Update title initially
+    // Update title immediately when state changes
     updateTitle();
     
-    // Expose the update function to window context for other hooks to access
+    // Store the update function globally for other components to use
     if (!window.timerContext) window.timerContext = {};
     window.timerContext.updateDocumentTitle = updateTitle;
-
-    // Set up an interval to update the title when tab is inactive
-    // This helps ensure the title keeps updating even when the tab isn't focused
-    const titleUpdateInterval = setInterval(() => {
-      if (isRunning && document.hidden) {
-        // Only update if we're running and the tab is hidden
-        updateTitle();
-      }
-    }, 1000); // Update every second when tab is inactive
+    window.timerContext.currentTitle = {
+      time: timeRemaining,
+      mode: timerMode,
+      running: isRunning
+    };
 
     // Cleanup - restore original title when component unmounts
     return () => {
-      document.title = 'FocusFlow';
-      clearInterval(titleUpdateInterval);
-      
       if (window.timerContext) {
         window.timerContext.updateDocumentTitle = undefined;
         window.timerContext.currentTitle = undefined;
       }
     };
-  }, [timeRemaining, timerMode, isRunning, formatTime, settings]);
+  }, [timeRemaining, timerMode, isRunning, formatTime]);
 };
