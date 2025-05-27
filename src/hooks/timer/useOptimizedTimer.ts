@@ -4,6 +4,7 @@ import { TimerMode } from '@/utils/timerContextUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import { savePartialSession } from '@/utils/timerContextUtils';
 import { trackTimerTick } from '@/utils/debugUtils';
+import { toast } from 'sonner';
 
 interface TimerSettings {
   workDuration: number;
@@ -46,6 +47,7 @@ export function useOptimizedTimer({ settings, onTimerComplete }: UseOptimizedTim
   const lastRecordedFullMinutesRef = useRef<number>(0);
   const targetEndTimeRef = useRef<number | null>(null);
   const isInitializedRef = useRef(false);
+  const isTransitioningRef = useRef(false);
 
   // Calculate total time for current mode
   const getTotalTimeForMode = useCallback(() => {
@@ -59,6 +61,93 @@ export function useOptimizedTimer({ settings, onTimerComplete }: UseOptimizedTim
 
   // Progress calculation
   const progress = (getTotalTimeForMode() - state.timeRemaining) / getTotalTimeForMode() * 100;
+
+  // Handle timer completion with automatic transitions
+  const handleTimerCompletion = useCallback(async () => {
+    if (isTransitioningRef.current) return;
+    isTransitioningRef.current = true;
+
+    try {
+      console.log('Timer completed for mode:', state.timerMode);
+      
+      // Show completion toast
+      const modeLabel = state.timerMode === 'work' ? 'Focus' : 
+                       state.timerMode === 'break' ? 'Break' : 'Long Break';
+      toast.success(`${modeLabel} session completed!`);
+
+      // Call external completion handler if provided
+      if (onTimerComplete) {
+        onTimerComplete();
+      }
+
+      if (state.timerMode === 'work') {
+        // After work session - increment counters and determine next mode
+        const newCompletedSessions = state.completedSessions + 1;
+        const newSessionIndex = (state.currentSessionIndex + 1) % settings.sessionsUntilLongBreak;
+        const shouldTakeLongBreak = newCompletedSessions % settings.sessionsUntilLongBreak === 0;
+        const nextMode: TimerMode = shouldTakeLongBreak ? 'longBreak' : 'break';
+        const nextTime = nextMode === 'longBreak' 
+          ? settings.longBreakDuration * 60 
+          : settings.breakDuration * 60;
+
+        console.log(`Work completed. Sessions: ${newCompletedSessions}, Next mode: ${nextMode}`);
+
+        setState(prev => ({
+          ...prev,
+          timerMode: nextMode,
+          isRunning: true, // Auto-start break
+          timeRemaining: nextTime,
+          completedSessions: newCompletedSessions,
+          totalTimeToday: prev.totalTimeToday + settings.workDuration,
+          currentSessionIndex: newSessionIndex
+        }));
+
+        // Reset session tracking
+        sessionStartTimeRef.current = new Date().toISOString();
+        lastRecordedFullMinutesRef.current = 0;
+
+      } else if (state.timerMode === 'break') {
+        // After break - go back to work and auto-start
+        const nextTime = settings.workDuration * 60;
+        
+        console.log('Break completed. Returning to work mode');
+
+        setState(prev => ({
+          ...prev,
+          timerMode: 'work',
+          isRunning: true, // Auto-start next work session
+          timeRemaining: nextTime
+        }));
+
+        // Reset session tracking
+        sessionStartTimeRef.current = new Date().toISOString();
+        lastRecordedFullMinutesRef.current = 0;
+
+      } else if (state.timerMode === 'longBreak') {
+        // After long break - go back to work but DON'T auto-start
+        const nextTime = settings.workDuration * 60;
+        
+        console.log('Long break completed. Returning to work mode (manual start required)');
+
+        setState(prev => ({
+          ...prev,
+          timerMode: 'work',
+          isRunning: false, // Don't auto-start after long break
+          timeRemaining: nextTime,
+          currentSessionIndex: 0 // Reset cycle
+        }));
+
+        // Reset session tracking
+        sessionStartTimeRef.current = null;
+        lastRecordedFullMinutesRef.current = 0;
+      }
+
+      saveTimerState(state);
+      
+    } finally {
+      isTransitioningRef.current = false;
+    }
+  }, [state, settings, onTimerComplete]);
 
   // Persistence functions
   const saveTimerState = useCallback((timerState: Partial<OptimizedTimerState>) => {
@@ -215,10 +304,8 @@ export function useOptimizedTimer({ settings, onTimerComplete }: UseOptimizedTim
                 targetEndTimeRef.current = null;
               }
               
-              // Call completion handler
-              if (onTimerComplete) {
-                setTimeout(() => onTimerComplete(), 0);
-              }
+              // Trigger completion handling
+              setTimeout(() => handleTimerCompletion(), 0);
               
               return { ...prev, isRunning: false, timeRemaining: 0 };
             }
@@ -272,7 +359,7 @@ export function useOptimizedTimer({ settings, onTimerComplete }: UseOptimizedTim
         timerRef.current = null;
       }
     };
-  }, [state.isRunning, state.timeRemaining, user, getTotalTimeForMode, onTimerComplete, saveTimerState]);
+  }, [state.isRunning, state.timeRemaining, user, getTotalTimeForMode, handleTimerCompletion, saveTimerState]);
 
   // Initialize from saved state
   useEffect(() => {
@@ -285,6 +372,8 @@ export function useOptimizedTimer({ settings, onTimerComplete }: UseOptimizedTim
         timerMode: savedState.timerMode || 'work',
         timeRemaining: savedState.timeRemaining || getTotalTimeForMode(),
         currentSessionIndex: savedState.currentSessionIndex || 0,
+        completedSessions: savedState.completedSessions || 0,
+        totalTimeToday: savedState.totalTimeToday || 0,
         isRunning: false // Always start paused for safety
       }));
       
@@ -318,8 +407,8 @@ export function useOptimizedTimer({ settings, onTimerComplete }: UseOptimizedTim
         if (elapsedSeconds > 1) {
           setState(prev => {
             const newTime = Math.max(0, prev.timeRemaining - elapsedSeconds);
-            if (newTime === 0 && onTimerComplete) {
-              setTimeout(() => onTimerComplete(), 0);
+            if (newTime === 0) {
+              setTimeout(() => handleTimerCompletion(), 0);
             }
             return { ...prev, timeRemaining: newTime };
           });
@@ -331,7 +420,7 @@ export function useOptimizedTimer({ settings, onTimerComplete }: UseOptimizedTim
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [state.isRunning, onTimerComplete]);
+  }, [state.isRunning, handleTimerCompletion]);
 
   return {
     ...state,
