@@ -10,7 +10,6 @@ import { useTheme } from "@/components/Theme/ThemeProvider";
 import { cn } from "@/lib/utils";
 
 const TimerContainer = () => {
-  // Get timer context
   const {
     timerMode,
     isRunning,
@@ -26,7 +25,6 @@ const TimerContainer = () => {
     updateSettings
   } = useTimerContext();
   
-  // Get current theme
   const { theme } = useTheme();
   
   // Calculate total seconds for the current mode
@@ -58,38 +56,10 @@ const TimerContainer = () => {
     });
   }, [timerMode, isRunning, timeRemaining, progress, currentSessionIndex, settings]);
 
-  // Handle settings updates from the TimerSettings component
+  // Handle settings updates
   const handleSettingsChange = (newDurations: any) => {
     console.log("Received new settings in TimerContainer:", newDurations);
-    
-    // Directly update the timer settings in the context
     updateSettings(newDurations);
-  };
-
-  // Log whenever timer controls are used with enhanced debugging
-  const handleTimerStart = () => {
-    console.log("START button pressed in TimerContainer - current time:", timeRemaining);
-    handleStart();
-    console.log("After START call - time is:", timeRemaining, "isRunning:", isRunning);
-  };
-
-  const handleTimerPause = () => {
-    console.log("PAUSE button pressed in TimerContainer - current time:", timeRemaining);
-    handlePause();
-  };
-
-  const handleTimerReset = () => {
-    console.log("RESET button pressed in TimerContainer");
-    handleReset();
-  };
-
-  // We'll pass the header timer settings to TimerHeader
-  const headerProps = {
-    timerMode,
-    handleModeChange,
-    settings,
-    onSettingsChange: handleSettingsChange,
-    onReset: handleTimerReset, // Pass reset handler to settings
   };
 
   return (
@@ -104,7 +74,11 @@ const TimerContainer = () => {
         data-testid="timer-container"
       >
         <TimerHeader 
-          {...headerProps}
+          timerMode={timerMode}
+          handleModeChange={handleModeChange}
+          settings={settings}
+          onSettingsChange={handleSettingsChange}
+          onReset={handleReset}
         />
 
         <TimerDisplay 
@@ -117,9 +91,9 @@ const TimerContainer = () => {
         <TimerControls 
           isRunning={isRunning}
           mode={timerMode}
-          onStart={handleTimerStart}
-          onPause={handleTimerPause}
-          onReset={handleTimerReset}
+          onStart={handleStart}
+          onPause={handlePause}
+          onReset={handleReset}
         />
         
         <SessionDots 
