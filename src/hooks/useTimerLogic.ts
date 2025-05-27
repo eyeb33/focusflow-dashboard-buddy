@@ -46,7 +46,6 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
   const skipTimerResetRef = useRef(false);
   const previousSettingsRef = useRef(settings);
   const modeChangeInProgressRef = useRef(false);
-  const pausedTimeRef = useRef<number | null>(null);
   
   // Refs for timer ticking
   const lastRecordedFullMinutesRef = useRef<number>(0);
@@ -64,14 +63,15 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
 
   const progress = (getTotalTimeForMode() - timeRemaining) / getTotalTimeForMode() * 100;
 
-  // Initialize timer controls
+  // Initialize timer controls (now with built-in pause preservation)
   const {
-    handleStart: controlsHandleStart,
-    handlePause: controlsHandlePause,
+    handleStart,
+    handlePause,
     handleReset,
     handleModeChange,
     resetTimerState,
-    lastRecordedFullMinutesRef: controlsFullMinutesRef
+    lastRecordedFullMinutesRef: controlsFullMinutesRef,
+    pausedTimeRef
   } = useTimerControlsLogic({
     timerMode,
     settings,
@@ -86,48 +86,14 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
     setCurrentSessionIndex
   });
 
-  // Enhanced pause handler that preserves the current time
-  const handlePause = () => {
-    console.log("Enhanced pause handler called with time:", timeRemaining);
-    // Store the current time as paused time BEFORE calling the original pause handler
-    pausedTimeRef.current = timeRemaining;
-    console.log("Stored paused time:", pausedTimeRef.current);
-    
-    // Call the original pause handler
-    controlsHandlePause();
-  };
-
-  // Enhanced start handler that restores paused time if available
-  const handleStart = () => {
-    console.log("Enhanced start handler called. Paused time:", pausedTimeRef.current);
-    
-    // If we have a paused time, restore it before starting
-    if (pausedTimeRef.current !== null) {
-      console.log("Restoring paused time:", pausedTimeRef.current);
-      setTimeRemaining(pausedTimeRef.current);
-      // Clear the paused time after restoring
-      pausedTimeRef.current = null;
-    }
-    
-    // Call the original start handler
-    controlsHandleStart(timerMode);
-  };
-
-  // Enhanced reset handler that clears paused time
-  const handleResetEnhanced = () => {
-    console.log("Enhanced reset handler called");
-    pausedTimeRef.current = null;
-    handleReset();
-  };
-
   // Sync timeRemaining with settings when they change (but preserve paused state)
   useEffect(() => {
     // Don't reset if timer is running or if we have a paused time
-    if (!isRunning && pausedTimeRef.current === null) {
+    if (!isRunning && (!pausedTimeRef || pausedTimeRef.current === null)) {
       const newTime = getTotalTime(timerMode, settings);
       console.log(`Settings changed: Updating timer for ${timerMode} mode to ${newTime} seconds`);
       setTimeRemaining(newTime);
-    } else if (pausedTimeRef.current !== null) {
+    } else if (pausedTimeRef && pausedTimeRef.current !== null) {
       console.log("Settings changed but preserving paused time:", pausedTimeRef.current);
     }
   }, [settings, timerMode, isRunning, pausedTimeRef]);
@@ -171,7 +137,7 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
     setTotalTimeToday,
     handleStart,
     handlePause,
-    handleReset: handleResetEnhanced,
+    handleReset,
     handleModeChange,
     sessionStartTimeRef,
     handleTimerComplete
