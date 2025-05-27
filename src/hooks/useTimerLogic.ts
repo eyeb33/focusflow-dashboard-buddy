@@ -4,9 +4,7 @@ import { useTimerState } from './useTimerState';
 import { useTimerControlsLogic } from './useTimerControlsLogic';
 import { useTimerCompletion } from './useTimerCompletion';
 import { useTimerStatsLogic } from './useTimerStatsLogic';
-import { useTimerProgress } from './timer/useTimerProgress';
 import { useTimerInitialization } from './timer/useTimerInitialization';
-import { useSessionTracking } from './useSessionTracking';
 import { getTotalTime } from '@/utils/timerContextUtils';
 import { useEffect, useRef } from 'react';
 import { useTimerTickLogic } from './useTimerTickLogic';
@@ -52,20 +50,27 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
     setCurrentSessionIndex
   } = useTimerStatsLogic();
 
-  // Initialize session tracking
-  const {
-    sessionStartTimeRef,
-    skipTimerResetRef,
-    previousSettingsRef,
-    modeChangeInProgressRef
-  } = useSessionTracking();
+  // Initialize session tracking refs
+  const sessionStartTimeRef = useRef<string | null>(null);
+  const skipTimerResetRef = useRef(false);
+  const previousSettingsRef = useRef(settings);
+  const modeChangeInProgressRef = useRef(false);
   
   // Refs for timer ticking
   const lastRecordedFullMinutesRef = useRef<number>(0);
   const lastTickTimeRef = useRef<number>(Date.now());
 
   // Calculate progress
-  const { progress, getTotalTimeForMode } = useTimerProgress(timerMode, timeRemaining, settings);
+  const getTotalTimeForMode = () => {
+    switch(timerMode) {
+      case 'work': return settings.workDuration * 60;
+      case 'break': return settings.breakDuration * 60;
+      case 'longBreak': return settings.longBreakDuration * 60;
+      default: return settings.workDuration * 60;
+    }
+  };
+
+  const progress = (getTotalTimeForMode() - timeRemaining) / getTotalTimeForMode() * 100;
 
   // Initialize timer controls
   const {
@@ -113,7 +118,7 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
   useTimerTickLogic({
     isRunning,
     timerMode,
-    getTotalTime: () => getTotalTimeForMode(), // Use the correct function name
+    getTotalTime: () => getTotalTimeForMode(),
     onTimerComplete: handleTimerComplete,
     setTimeRemaining,
     timeRemaining,
