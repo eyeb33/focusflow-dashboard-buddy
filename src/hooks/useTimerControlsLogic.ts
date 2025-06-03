@@ -103,7 +103,8 @@ export function useTimerControlsLogic({
   const handlePause = async () => {
     console.log("HANDLE PAUSE called with time remaining:", timeRemaining);
     
-    // CRITICAL: Store the current time as paused time IMMEDIATELY
+    // CRITICAL: Store the current time as paused time IMMEDIATELY before any other state changes
+    console.log("Pausing timer at time:", timeRemaining);
     setPausedTime(timeRemaining);
     
     // CRITICAL: Set skipTimerResetRef to true BEFORE changing isRunning

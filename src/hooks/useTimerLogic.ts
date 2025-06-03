@@ -87,17 +87,31 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
     setCurrentSessionIndex
   });
 
-  // Sync timeRemaining with settings when they change (but preserve paused state)
+  // CRITICAL FIX: Only reset timer when settings change if NOT running AND NOT paused
   useEffect(() => {
-    // CRITICAL: Don't reset if timer is running OR if we have paused time
-    if (!isRunning && !hasPausedTime()) {
+    // Check if we have paused time in localStorage as backup
+    let hasStoredPausedTime = false;
+    try {
+      const timerState = JSON.parse(localStorage.getItem('timerState') || '{}');
+      hasStoredPausedTime = timerState.pausedTime !== undefined && timerState.wasPaused === true;
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+    
+    // CRITICAL: Don't reset if timer is running OR if we have paused time OR if stored paused time exists
+    const shouldPreserveTime = isRunning || hasPausedTime() || hasStoredPausedTime;
+    
+    if (!shouldPreserveTime) {
       const newTime = getTotalTime(timerMode, settings);
       console.log(`Settings changed: Updating timer for ${timerMode} mode to ${newTime} seconds`);
       setTimeRemaining(newTime);
-    } else if (hasPausedTime()) {
-      console.log("Settings changed but preserving paused time:", getPausedTime());
-    } else if (isRunning) {
-      console.log("Settings changed but timer is running, not resetting");
+    } else {
+      console.log("Settings changed but preserving current timer state:", {
+        isRunning,
+        hasPausedTime: hasPausedTime(),
+        hasStoredPausedTime,
+        pausedTime: getPausedTime()
+      });
     }
   }, [settings, timerMode, isRunning, hasPausedTime, getPausedTime]);
 
