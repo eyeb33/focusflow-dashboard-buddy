@@ -29,32 +29,11 @@ export function useTimerTickLogic({
 }: UseTimerTickLogicProps) {
   const { user } = useAuth();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const lastKnownTimeRef = useRef<number>(timeRemaining);
   const previousIsRunningRef = useRef<boolean>(false);
-  const isPausingRef = useRef<boolean>(false);
   
-  // Update the ref whenever timeRemaining changes to keep track of the latest value
-  useEffect(() => {
-    lastKnownTimeRef.current = timeRemaining;
-    
-    // When pausing (transitioning from running to not running)
-    if (!isRunning && previousIsRunningRef.current) {
-      isPausingRef.current = true;
-      console.log("Timer paused - Preserving exact current time:", lastKnownTimeRef.current);
-    } else {
-      isPausingRef.current = false;
-    }
-    
-    // Update previous running state
-    previousIsRunningRef.current = isRunning;
-  }, [timeRemaining, isRunning]);
-  
-  // Debug the incoming isRunning state
   console.log(`useTimerTickLogic - isRunning: ${isRunning}, timerMode: ${timerMode}, timeRemaining: ${timeRemaining}`);
 
   useEffect(() => {
-    console.log(`Timer tick effect running - isRunning: ${isRunning}, time: ${timeRemaining}`);
-    
     // Critical: Always clear any existing timer first to prevent multiple timers
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -62,20 +41,9 @@ export function useTimerTickLogic({
       console.log("Cleared existing timer interval");
     }
     
-    // When pausing, ensure we save the current state
+    // When pausing (transitioning from running to not running)
     if (!isRunning && previousIsRunningRef.current) {
-      console.log("Timer paused - Preserving exact current time:", lastKnownTimeRef.current);
-      
-      const timerState = {
-        isRunning: false,
-        timerMode,
-        timeRemaining: lastKnownTimeRef.current, // Use the ref to get the most accurate time
-        totalTime: getTotalTime(),
-        timestamp: Date.now(),
-        sessionStartTime: sessionStartTimeRef.current
-      };
-      
-      localStorage.setItem('timerState', JSON.stringify(timerState));
+      console.log("Timer paused - state preserved externally");
     }
     
     if (isRunning) {
@@ -88,11 +56,10 @@ export function useTimerTickLogic({
         
         // Only update if at least 1 second has passed
         if (actualElapsed >= 1000) {
-          // Calculate adjustment if timer drift occurs
           const secondsToSubtract = Math.max(1, Math.floor(actualElapsed / 1000));
           
           setTimeRemaining(prevTime => {
-            // Debug with less frequent logging (only every 5 seconds)
+            // Debug with less frequent logging
             if (prevTime % 5 === 0 || prevTime <= 5) {
               console.log("Timer tick: remaining =", prevTime, "elapsed =", secondsToSubtract);
             }
@@ -139,9 +106,7 @@ export function useTimerTickLogic({
                 startDate
               );
               
-              // Corrected: Check if result exists and has the right property before using it
               if (result) {
-                // We need to handle this properly since savePartialSession returns a Promise
                 Promise.resolve(result).then((resolvedResult) => {
                   if (resolvedResult && 'newFullMinutes' in resolvedResult) {
                     lastRecordedFullMinutesRef.current = resolvedResult.newFullMinutes;
@@ -154,7 +119,7 @@ export function useTimerTickLogic({
               }
             }
 
-            // Update timer state in localStorage (for tab switching/visibility)
+            // Update timer state in localStorage only when running
             const timerState = {
               isRunning: true,
               timerMode,
@@ -165,13 +130,11 @@ export function useTimerTickLogic({
             };
             localStorage.setItem('timerState', JSON.stringify(timerState));
             
-            // Keep track of the current time
-            lastKnownTimeRef.current = newTime;
             lastTickTimeRef.current = now;
             return newTime;
           });
         }
-      }, 200); // Check more frequently for smoother updates
+      }, 200);
     }
     
     // Update previous running state
@@ -193,7 +156,7 @@ export function useTimerTickLogic({
     lastRecordedFullMinutesRef,
     lastTickTimeRef,
     sessionStartTimeRef,
-  ]); // Removed timeRemaining from dependencies to prevent reset loops
+  ]);
 
   return timerRef;
 }

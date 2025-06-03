@@ -63,7 +63,7 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
 
   const progress = (getTotalTimeForMode() - timeRemaining) / getTotalTimeForMode() * 100;
 
-  // Initialize timer controls (now with built-in pause preservation)
+  // Initialize timer controls with pause/resume functionality
   const {
     handleStart,
     handlePause,
@@ -71,7 +71,8 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
     handleModeChange,
     resetTimerState,
     lastRecordedFullMinutesRef: controlsFullMinutesRef,
-    pausedTimeRef
+    hasPausedTime,
+    getPausedTime
   } = useTimerControlsLogic({
     timerMode,
     settings,
@@ -88,15 +89,17 @@ export function useTimerLogic(settings: ReturnType<typeof useTimerSettings>['set
 
   // Sync timeRemaining with settings when they change (but preserve paused state)
   useEffect(() => {
-    // Don't reset if timer is running or if we have a paused time
-    if (!isRunning && (!pausedTimeRef || pausedTimeRef.current === null)) {
+    // CRITICAL: Don't reset if timer is running OR if we have paused time
+    if (!isRunning && !hasPausedTime()) {
       const newTime = getTotalTime(timerMode, settings);
       console.log(`Settings changed: Updating timer for ${timerMode} mode to ${newTime} seconds`);
       setTimeRemaining(newTime);
-    } else if (pausedTimeRef && pausedTimeRef.current !== null) {
-      console.log("Settings changed but preserving paused time:", pausedTimeRef.current);
+    } else if (hasPausedTime()) {
+      console.log("Settings changed but preserving paused time:", getPausedTime());
+    } else if (isRunning) {
+      console.log("Settings changed but timer is running, not resetting");
     }
-  }, [settings, timerMode, isRunning, pausedTimeRef]);
+  }, [settings, timerMode, isRunning, hasPausedTime, getPausedTime]);
 
   // Initialize timer completion logic
   const { handleTimerComplete } = useTimerCompletion({

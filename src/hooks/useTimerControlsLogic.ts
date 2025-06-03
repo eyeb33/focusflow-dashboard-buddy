@@ -3,6 +3,7 @@ import { useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { TimerMode, getTotalTime, savePartialSession } from '@/utils/timerContextUtils';
 import { TimerSettings } from './useTimerSettings';
+import { useTimerPauseResume } from './timer/useTimerPauseResume';
 
 // Interface for the hook's parameters
 interface UseTimerControlsLogicParams {
@@ -37,12 +38,18 @@ export function useTimerControlsLogic({
   const lastRecordedFullMinutesRef = useRef<number>(0);
   const timerStartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // NEW: Add pausedTimeRef to track paused state
-  const pausedTimeRef = useRef<number | null>(null);
+  // Use the dedicated pause/resume hook
+  const {
+    setPausedTime,
+    getPausedTime,
+    clearPausedTime,
+    hasPausedTime,
+    restorePausedTime
+  } = useTimerPauseResume();
 
   // Timer control functions
   const handleStart = (mode: TimerMode = timerMode) => {
-    console.log("HANDLE START called in useTimerControlsLogic with mode:", mode, "isRunning:", isRunning);
+    console.log("HANDLE START called - isRunning:", isRunning, "hasPausedTime:", hasPausedTime());
     
     // If the timer is already running, don't restart it
     if (isRunning) {
@@ -50,20 +57,28 @@ export function useTimerControlsLogic({
       return;
     }
     
-    // CRITICAL: If we have a paused time, restore it
-    if (pausedTimeRef.current !== null) {
-      console.log("Restoring paused time on start:", pausedTimeRef.current);
-      setTimeRemaining(pausedTimeRef.current);
-      lastRecordedTimeRef.current = pausedTimeRef.current;
-      // Clear the paused time since we're resuming
-      pausedTimeRef.current = null;
+    // CRITICAL: Check for paused time first
+    const pausedTime = getPausedTime();
+    if (pausedTime !== null) {
+      console.log("Restoring paused time on start:", pausedTime);
+      setTimeRemaining(pausedTime);
+      lastRecordedTimeRef.current = pausedTime;
+      // Don't clear paused time yet - wait for timer to actually start running
     } else {
-      // Save the current time to compare on pause
-      lastRecordedTimeRef.current = timeRemaining;
+      // Try to restore from localStorage
+      const restoredTime = restorePausedTime();
+      if (restoredTime !== null) {
+        console.log("Restored time from localStorage:", restoredTime);
+        setTimeRemaining(restoredTime);
+        lastRecordedTimeRef.current = restoredTime;
+      } else {
+        // Save the current time to compare on pause
+        lastRecordedTimeRef.current = timeRemaining;
+      }
     }
     
     const totalTime = getTotalTime(mode, settings);
-    const currentTime = pausedTimeRef.current !== null ? pausedTimeRef.current : timeRemaining;
+    const currentTime = getPausedTime() || timeRemaining;
     const elapsedSeconds = totalTime - currentTime;
     lastRecordedFullMinutesRef.current = Math.floor(elapsedSeconds / 60);
     
@@ -74,57 +89,29 @@ export function useTimerControlsLogic({
       console.log("Set new session start time:", sessionStartTimeRef.current);
     }
     
-    // Start the timer without changing timeRemaining
-    console.log("Setting isRunning to TRUE with time remaining:", currentTime);
-    
     // CRITICAL: Set skipTimerResetRef to true BEFORE changing isRunning
-    // This prevents any listeners from resetting the timer
     skipTimerResetRef.current = true;
     
     setIsRunning(true);
     
-    // Save the timer state to localStorage for persistence
-    const timerState = {
-      isRunning: true,
-      timerMode: mode,
-      timeRemaining: currentTime,
-      totalTime: getTotalTime(mode, settings),
-      timestamp: Date.now(),
-      sessionStartTime: sessionStartTimeRef.current
-    };
-    localStorage.setItem('timerState', JSON.stringify(timerState));
+    // Clear paused time after starting
+    clearPausedTime();
     
-    console.log("Timer started at:", currentTime, "seconds with mode:", mode);
+    console.log("Timer started with time remaining:", currentTime);
   };
   
   const handlePause = async () => {
     console.log("HANDLE PAUSE called with time remaining:", timeRemaining);
     
-    // CRITICAL: Store the current time as paused time BEFORE any state changes
-    pausedTimeRef.current = timeRemaining;
-    console.log("Stored paused time:", pausedTimeRef.current);
+    // CRITICAL: Store the current time as paused time IMMEDIATELY
+    setPausedTime(timeRemaining);
     
     // CRITICAL: Set skipTimerResetRef to true BEFORE changing isRunning
-    // This prevents any listeners from resetting the timer
     skipTimerResetRef.current = true;
     
-    // Store current time in localStorage BEFORE changing any state
-    const timerState = {
-      isRunning: false,
-      timerMode,
-      timeRemaining: timeRemaining, // Use the current timeRemaining directly
-      totalTime: getTotalTime(timerMode, settings),
-      timestamp: Date.now(),
-      sessionStartTime: sessionStartTimeRef.current,
-      pausedTime: timeRemaining // Store paused time for restoration
-    };
-    
-    console.log("Saving paused timer state with exact time:", timerState);
-    localStorage.setItem('timerState', JSON.stringify(timerState));
-    
-    // Only after saving state, stop the timer
+    // Stop the timer
     setIsRunning(false);
-    console.log("Timer paused at:", timeRemaining, "seconds - PRESERVING paused time:", pausedTimeRef.current);
+    console.log("Timer paused - preserved time:", timeRemaining);
     
     // Save partial session if user is logged in
     if (user && lastRecordedTimeRef.current) {
@@ -141,7 +128,7 @@ export function useTimerControlsLogic({
   
   const handleReset = async () => {
     // Clear paused time on reset
-    pausedTimeRef.current = null;
+    clearPausedTime();
     
     // Stop the timer
     setIsRunning(false);
@@ -158,7 +145,7 @@ export function useTimerControlsLogic({
       );
     }
     
-    // Reset the time - CRITICAL: we always want to reset here
+    // Reset the time
     const newTime = getTotalTime(timerMode, settings);
     setTimeRemaining(newTime);
     lastRecordedTimeRef.current = newTime;
@@ -174,16 +161,13 @@ export function useTimerControlsLogic({
       setCurrentSessionIndex(0);
     }
     
-    // Important: We're intentionally resetting, so don't skip the reset
     skipTimerResetRef.current = false;
-    
-    // Clear paused time from localStorage
     localStorage.removeItem('timerState');
   };
 
   const handleModeChange = async (newMode: TimerMode) => {
     // Clear paused time when changing modes
-    pausedTimeRef.current = null;
+    clearPausedTime();
     
     // Save session if the timer was running
     if (isRunning && user && lastRecordedTimeRef.current) {
@@ -221,7 +205,6 @@ export function useTimerControlsLogic({
     // Finally, change the timer mode
     setTimerMode(newMode);
     
-    // Important: Don't skip the reset when changing modes
     skipTimerResetRef.current = false;
     
     // Save the timer state to localStorage for persistence
@@ -238,7 +221,7 @@ export function useTimerControlsLogic({
 
   const resetTimerState = () => {
     // Clear paused time on reset
-    pausedTimeRef.current = null;
+    clearPausedTime();
     
     // Calculate the correct time for the current mode
     const newTime = getTotalTime(timerMode, settings);
@@ -252,7 +235,6 @@ export function useTimerControlsLogic({
     sessionStartTimeRef.current = null;
     localStorage.removeItem('sessionStartTime');
     
-    // Important: We're intentionally resetting, so don't skip the reset
     skipTimerResetRef.current = false;
     
     console.log("Timer state reset to:", newTime, "seconds for mode:", timerMode);
@@ -269,6 +251,7 @@ export function useTimerControlsLogic({
     handleReset,
     handleModeChange,
     resetTimerState,
-    pausedTimeRef // Export pausedTimeRef for other hooks that need it
+    hasPausedTime,
+    getPausedTime
   };
 }
