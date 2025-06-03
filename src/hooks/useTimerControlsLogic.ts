@@ -1,5 +1,4 @@
-
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { TimerMode, getTotalTime, savePartialSession } from '@/utils/timerContextUtils';
 import { TimerSettings } from './useTimerSettings';
@@ -46,6 +45,25 @@ export function useTimerControlsLogic({
     hasPausedTime,
     restorePausedTime
   } = useTimerPauseResume();
+
+  // CRITICAL: Handle settings changes properly to not reset paused timer
+  useEffect(() => {
+    // Only reset timer when settings change if NOT running AND NOT paused
+    const pausedTime = getPausedTime();
+    const shouldPreserveTime = isRunning || pausedTime !== null;
+    
+    if (!shouldPreserveTime) {
+      const newTime = getTotalTime(timerMode, settings);
+      console.log(`Settings changed: Updating timer for ${timerMode} mode to ${newTime} seconds`);
+      setTimeRemaining(newTime);
+    } else {
+      console.log("Settings changed but preserving current timer state:", {
+        isRunning,
+        hasPausedTime: pausedTime !== null,
+        pausedTime
+      });
+    }
+  }, [settings, timerMode, isRunning, getPausedTime, setTimeRemaining]);
 
   // Timer control functions
   const handleStart = (mode: TimerMode = timerMode) => {
@@ -104,7 +122,7 @@ export function useTimerControlsLogic({
     console.log("HANDLE PAUSE called with time remaining:", timeRemaining);
     
     // CRITICAL: Store the current time as paused time IMMEDIATELY before any other state changes
-    console.log("Pausing timer at time:", timeRemaining);
+    console.log("Storing paused time:", timeRemaining);
     setPausedTime(timeRemaining);
     
     // CRITICAL: Set skipTimerResetRef to true BEFORE changing isRunning
