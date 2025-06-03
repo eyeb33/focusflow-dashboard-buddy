@@ -2,7 +2,7 @@
 import { useCallback } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { formatTime as formatTimeUtil, getModeLabel as getModeLabelUtil } from '@/utils/timerUtils';
-import { useOptimizedTimer } from './timer/useOptimizedTimer';
+import { useTimerLogic } from './useTimerLogic';
 import { useOptimizedDocumentTitle } from './useOptimizedDocumentTitle';
 import { useTimerAudio } from './useTimerAudio';
 import { DEFAULT_TIMER_SETTINGS } from './timer/useTimerDefaults';
@@ -19,7 +19,7 @@ export const useTimer = (settings?: typeof DEFAULT_TIMER_SETTINGS) => {
   // Initialize audio context
   useTimerAudio();
   
-  // Use optimized timer
+  // Use our simplified timer logic
   const {
     timerMode,
     isRunning,
@@ -31,15 +31,8 @@ export const useTimer = (settings?: typeof DEFAULT_TIMER_SETTINGS) => {
     handleStart,
     handlePause,
     handleReset,
-    handleModeChange,
-    getTotalTimeForMode
-  } = useOptimizedTimer({
-    settings: timerSettings,
-    onTimerComplete: () => {
-      console.log('Timer completed for mode:', timerMode);
-      // Handle completion logic here if needed
-    }
-  });
+    handleModeChange
+  } = useTimerLogic({ settings: timerSettings });
   
   // Update document title
   useOptimizedDocumentTitle({

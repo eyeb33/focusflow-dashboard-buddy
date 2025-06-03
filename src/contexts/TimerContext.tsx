@@ -2,7 +2,8 @@
 import React, { createContext, useContext } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerSettings } from '@/hooks/useTimerSettings';
-import { useTimer as useTimerHook } from '@/hooks/useTimer';
+import { useTimerLogic } from '@/hooks/useTimerLogic';
+import { formatTime as formatTimeUtil, getModeLabel as getModeLabelUtil } from '@/utils/timerUtils';
 
 interface TimerContextType {
   timerMode: TimerMode;
@@ -27,12 +28,9 @@ const TimerContext = createContext<TimerContextType | undefined>(undefined);
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { settings, updateSettings } = useTimerSettings();
   
-  console.log('TimerProvider: Using settings from useTimerSettings:', settings);
+  console.log('TimerProvider: Using settings:', settings);
   
-  // Use our timer hook with settings
-  const timerHook = useTimerHook(settings);
-  
-  // Destructure for clarity and debugging
+  // Use our simplified timer logic
   const {
     timerMode,
     isRunning,
@@ -44,10 +42,14 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     handleStart,
     handlePause,
     handleReset,
-    handleModeChange,
-    getModeLabel,
-    formatTime
-  } = timerHook;
+    handleModeChange
+  } = useTimerLogic({ settings });
+
+  // Format time helper
+  const formatTime = (seconds: number) => formatTimeUtil(seconds);
+  
+  // Get mode label helper
+  const getModeLabel = (mode?: TimerMode) => getModeLabelUtil(mode || timerMode);
 
   // Handle settings updates
   const handleUpdateSettings = (newSettings: Partial<typeof settings>) => {
