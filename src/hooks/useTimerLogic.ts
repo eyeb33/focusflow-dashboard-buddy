@@ -189,16 +189,19 @@ export function useTimerLogic({ settings }: UseTimerLogicProps) {
     }
   }, [clearTimer, settings]);
   
-  // Timer tick effect
+  // Timer tick effect - CRITICAL: Don't include timeRemaining in deps!
   useEffect(() => {
     if (!isRunning) {
       clearTimer();
       return;
     }
     
-    console.log('Starting timer interval with time:', timeRemaining);
-    const now = Date.now();
-    targetEndTimeRef.current = now + (timeRemaining * 1000);
+    // Only set target end time when starting
+    if (targetEndTimeRef.current === null) {
+      console.log('Starting new timer interval with time:', timeRemaining);
+      const now = Date.now();
+      targetEndTimeRef.current = now + (timeRemaining * 1000);
+    }
     
     timerRef.current = setInterval(() => {
       const currentTime = Date.now();
@@ -246,7 +249,7 @@ export function useTimerLogic({ settings }: UseTimerLogicProps) {
     }, 200);
     
     return () => clearTimer();
-  }, [isRunning, timeRemaining, handleTimerComplete, user, timerMode, getTotalTimeForMode, clearTimer]);
+  }, [isRunning, handleTimerComplete, user, timerMode, getTotalTimeForMode, clearTimer]);
   
   // Update time when settings change (only if not running and not paused)
   useEffect(() => {
