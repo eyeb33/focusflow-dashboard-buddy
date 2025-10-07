@@ -44,10 +44,9 @@ const Index = () => {
     )}>
       <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
       
-      <main className="flex-1 flex flex-col overflow-y-auto">
+      <main className="flex-1 flex flex-col overflow-y-auto timer-ambient-bg">
         <div className={cn(
-          "relative flex flex-col items-center justify-start py-4 px-4",
-          theme === "dark" ? "bg-black" : "bg-gray-100"
+          "relative flex flex-col items-center justify-start py-4 px-4"
         )}>
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full max-w-md">
             <TabsList className={cn(

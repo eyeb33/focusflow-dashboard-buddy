@@ -231,7 +231,7 @@
 /* Cache busting */
 @media (max-width: 0px) {
   body::after {
-    content: 'v1.0.5';
+    content: 'v1.0.7';
     display: none;
   }
 }
