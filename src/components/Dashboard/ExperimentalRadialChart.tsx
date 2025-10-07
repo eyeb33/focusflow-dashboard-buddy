@@ -81,9 +81,7 @@ export const ExperimentalRadialChart: React.FC<ExperimentalRadialChartProps> = (
                 <div 
                   className={`h-full bg-gradient-to-r ${period.color} transition-all duration-500 ease-out rounded-lg`}
                   style={{ width: `${percentage}%` }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-                </div>
+                />
               </div>
             </div>
           );
