@@ -27,8 +27,6 @@ const TimerHeader: React.FC<TimerHeaderProps> = ({
   };
 
   const handleSettingsChange = (newDurations: typeof durations) => {
-    console.log("TimerHeader: Settings changed:", newDurations);
-    
     // Map the durations back to the settings structure
     const updatedSettings = {
       ...settings,

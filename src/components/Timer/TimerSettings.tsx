@@ -35,7 +35,6 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange, onRe
   // Update local settings when props change (without triggering onChange)
   useEffect(() => {
     if (durations) {
-      console.log("TimerSettings received new durations from parent:", durations);
       setLocalSettings(durations);
     }
   }, [durations]);
@@ -45,12 +44,10 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange, onRe
     setLocalSettings(updated);
     
     // Call onChange immediately with the updated value
-    console.log(`Timer setting changed by slider: ${key} = ${value}`, updated);
     onChange(updated);
     
     // Call reset handler if provided to simulate Reset button behavior
     if (onReset) {
-      console.log('Calling reset handler after settings change');
       onReset();
     }
   };

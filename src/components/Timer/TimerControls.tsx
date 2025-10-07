@@ -37,22 +37,18 @@ const TimerControls: React.FC<TimerControlsProps> = ({
   
   const buttonColor = getButtonColor(mode);
 
-  // Handle play/pause click with proper debug logging
+  // Handle play/pause click
   const handlePlayPauseClick = useCallback((e: React.MouseEvent) => {
     // Prevent any default behavior and event bubbling
     e.preventDefault();
     e.stopPropagation();
     
-    console.log(`Play/Pause button clicked, isRunning: ${isRunning}, mode: ${mode}`);
-    
     if (isRunning) {
-      console.log("Calling onPause to preserve current time");
       onPause();
     } else {
-      console.log("Calling onStart to resume with current time");
       onStart();
     }
-  }, [isRunning, onPause, onStart, mode]);
+  }, [isRunning, onPause, onStart]);
 
   // Handle reset click
   const handleResetClick = useCallback((e: React.MouseEvent) => {
@@ -60,7 +56,6 @@ const TimerControls: React.FC<TimerControlsProps> = ({
     e.preventDefault();
     e.stopPropagation();
     
-    console.log("Reset button clicked");
     onReset();
   }, [onReset]);
 

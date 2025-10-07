@@ -18,24 +18,20 @@ const UserProfileCard: React.FC = () => {
     // First try to get display_name from profile
     if (profile?.display_name) {
       const firstName = profile.display_name.split(' ')[0];
-      console.log('Setting display name from profile:', firstName);
       setDisplayName(firstName);
     } 
     // If no display_name in profile, try metadata
     else if (user.user_metadata?.name) {
       const firstName = user.user_metadata.name.split(' ')[0];
-      console.log('Setting display name from user_metadata:', firstName);
       setDisplayName(firstName);
     } 
     // Last resort, use email
     else if (user.email) {
       const firstName = user.email.split('@')[0];
-      console.log('Setting display name from email:', firstName);
       setDisplayName(firstName);
     } 
     // Fallback
     else {
-      console.log('Using fallback name: User');
       setDisplayName('User');
     }
   }, [user, profile]);

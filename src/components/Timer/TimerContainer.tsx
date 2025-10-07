@@ -39,26 +39,8 @@ const TimerContainer = () => {
     }
   };
   
-  // Debug logging for timer state changes
-  useEffect(() => {
-    const totalSeconds = getTotalSeconds();
-    const minutes = Math.floor(timeRemaining / 60);
-    const seconds = timeRemaining % 60;
-    
-    console.log('TimerContainer state update:', { 
-      mode: timerMode, 
-      running: isRunning, 
-      timeRemaining,
-      formattedTime: `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`,
-      progress,
-      currentSessionIndex,
-      totalSessions: settings?.sessionsUntilLongBreak || 4
-    });
-  }, [timerMode, isRunning, timeRemaining, progress, currentSessionIndex, settings]);
-
   // Handle settings updates
   const handleSettingsChange = (newDurations: any) => {
-    console.log("Received new settings in TimerContainer:", newDurations);
     updateSettings(newDurations);
   };
 

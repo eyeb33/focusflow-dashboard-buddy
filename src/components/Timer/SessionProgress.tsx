@@ -26,21 +26,18 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
   // Animation state for countdown
   const [isPulsing, setIsPulsing] = useState(false);
   
-  // Debug log to see what values are being provided
-  useEffect(() => {
-    console.log('SessionProgress rendering with:', { 
-      completedSessions, 
-      sessionsUntilLongBreak, 
-      currentMode, 
-      currentSessionIndex, 
-      isRunning,
-      timeRemaining
-    });
-  }, [completedSessions, sessionsUntilLongBreak, currentMode, currentSessionIndex, isRunning, timeRemaining]);
-  
   // Check if we're in the last 10 seconds
   useEffect(() => {
-    if (timeRemaining <= 10 && timeRemaining > 0 && isRunning) {
+    if (
+      !isRunning ||
+      timeRemaining === undefined ||
+      timeRemaining === null ||
+      isNaN(timeRemaining)
+    ) {
+      return;
+    }
+
+    if (timeRemaining <= 10 && timeRemaining > 0) {
       setIsPulsing(true);
     } else {
       setIsPulsing(false);
