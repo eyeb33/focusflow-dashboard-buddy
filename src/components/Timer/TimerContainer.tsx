@@ -75,7 +75,6 @@ const TimerContainer = () => {
           onPause={handlePause}
           onReset={handleReset}
         />
-        
         <SessionDots 
           totalSessions={settings?.sessionsUntilLongBreak || 4} 
           currentSessionIndex={currentSessionIndex}

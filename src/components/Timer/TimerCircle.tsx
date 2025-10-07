@@ -111,13 +111,17 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
           />
         </svg>
       </div>
-      <div className="absolute flex flex-col items-center">
+      <div className="absolute flex flex-col items-center z-20">
         <div className={cn(
-          "text-[2.8rem] font-extrabold tracking-wide font-ubuntu-mono tabular-nums font-[800]", // Changed to font-ubuntu-mono
-          "w-[7rem] text-center flex justify-center", // Fixed width container for number, centered
+          "tabular-nums flex items-baseline justify-center gap-1",
           theme === "dark" ? "text-white" : "text-gray-800"
         )}>
-          {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
+          <span className="text-[3.9rem] font-extrabold tracking-tight font-ubuntu-mono font-[800]">
+            {minutes.toString().padStart(2, '0')}
+          </span>
+          <span className="text-[2.8rem] font-extrabold tracking-tight font-ubuntu-mono font-[800]">
+            :{seconds.toString().padStart(2, '0')}
+          </span>
         </div>
         <div className={cn(
           "text-xs mt-1",
