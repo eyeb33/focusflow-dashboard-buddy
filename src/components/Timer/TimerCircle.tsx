@@ -87,7 +87,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
           strokeDasharray={circumference}
           strokeDashoffset={dashOffset}
           strokeLinecap="round"
-          style={{ transition: 'stroke-dashoffset 1s linear' }}
+          style={{ transition: 'stroke-dashoffset 0.3s ease-out' }}
         />
       </svg>
       <div className="absolute flex flex-col items-center">
