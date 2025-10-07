@@ -44,12 +44,24 @@ const TimerContainer = () => {
     updateSettings(newDurations);
   };
 
+  const getBackgroundColor = () => {
+    if (theme === 'dark') return '';
+    
+    switch(timerMode) {
+      case 'work': return 'bg-[hsl(var(--timer-focus-bg))]';
+      case 'break': return 'bg-[hsl(var(--timer-break-bg))]';
+      case 'longBreak': return 'bg-[hsl(var(--timer-longbreak-bg))]';
+      default: return 'bg-[hsl(var(--timer-focus-bg))]';
+    }
+  };
+
   return (
     <TimerObserver>
       <div 
         className={cn(
-          "min-h-[450px] rounded-2xl p-4 pb-6 flex flex-col items-center relative timer-container overflow-hidden",
-          "shadow-2xl"
+          "min-h-[450px] rounded-2xl p-4 pb-6 flex flex-col items-center relative overflow-hidden transition-colors duration-500",
+          "shadow-2xl",
+          theme === 'dark' ? 'timer-container' : getBackgroundColor()
         )}
         data-testid="timer-container"
       >

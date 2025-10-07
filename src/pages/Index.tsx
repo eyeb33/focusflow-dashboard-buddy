@@ -10,12 +10,14 @@ import TimerContainer from "@/components/Timer/TimerContainer";
 import AuthPrompt from "@/components/Auth/AuthPrompt";
 import { useTheme } from "@/components/Theme/ThemeProvider";
 import { cn } from "@/lib/utils";
+import { useTimerContext } from '@/contexts/TimerContext';
 
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('timer');
   const { theme } = useTheme();
+  const { timerMode } = useTimerContext();
   
   const handleLoginClick = useCallback(() => {
     navigate('/auth', {
@@ -37,21 +39,33 @@ const Index = () => {
     setActiveTab(value);
   }, []);
   
+  const getPageBackground = () => {
+    if (theme === 'dark') return 'bg-black text-white';
+    if (activeTab !== 'timer') return 'bg-gray-100 text-gray-900';
+    
+    switch(timerMode) {
+      case 'work': return 'bg-[hsl(var(--timer-focus-bg))] text-gray-900';
+      case 'break': return 'bg-[hsl(var(--timer-break-bg))] text-gray-900';
+      case 'longBreak': return 'bg-[hsl(var(--timer-longbreak-bg))] text-gray-900';
+      default: return 'bg-[hsl(var(--timer-focus-bg))] text-gray-900';
+    }
+  };
+
   return (
     <div className={cn(
-      "min-h-screen flex flex-col",
-      theme === "dark" ? "bg-black text-white" : "bg-gray-100 text-gray-900"
+      "min-h-screen flex flex-col transition-colors duration-500",
+      getPageBackground()
     )}>
       <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
       
-      <main className="flex-1 flex flex-col overflow-y-auto timer-ambient-bg">
+      <main className="flex-1 flex flex-col overflow-y-auto">
         <div className={cn(
           "relative flex flex-col items-center justify-start py-4 px-4"
         )}>
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full max-w-md">
             <TabsList className={cn(
               "grid w-full grid-cols-2 mb-2",
-              theme === "dark" ? "bg-[#1e293b]" : "bg-gray-200"
+              theme === "dark" ? "bg-[#1e293b]" : "bg-white/40 backdrop-blur-sm"
             )}>
               <TabsTrigger value="timer">Timer</TabsTrigger>
               <TabsTrigger value="tasks">Tasks</TabsTrigger>
