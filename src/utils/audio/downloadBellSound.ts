@@ -69,7 +69,7 @@ export const downloadBellSound = () => {
     const audioData = bufferToWave(renderedBuffer, 0, renderedBuffer.length);
 
     // Create a Blob for the browser to download
-    const blob = new Blob([audioData], { type: 'audio/wav' });
+    const blob = new Blob([audioData.buffer as ArrayBuffer], { type: 'audio/wav' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

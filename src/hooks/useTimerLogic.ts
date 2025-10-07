@@ -4,6 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { TimerMode, getTotalTime, savePartialSession } from '@/utils/timerContextUtils';
 import { TimerSettings } from './useTimerSettings';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { updateDailyStats } from '@/utils/productivityStats';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface UseTimerLogicProps {
   settings: TimerSettings;
@@ -11,6 +14,7 @@ interface UseTimerLogicProps {
 
 export function useTimerLogic({ settings }: UseTimerLogicProps) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   
   // Core timer state
   const [timerMode, setTimerMode] = useState<TimerMode>('work');
@@ -59,6 +63,44 @@ export function useTimerLogic({ settings }: UseTimerLogicProps) {
                      timerMode === 'break' ? 'Break' : 'Long Break';
     toast.success(`${modeLabel} session completed!`);
     
+    // Save completed session to database
+    if (user && sessionStartTimeRef.current) {
+      try {
+        const sessionType = timerMode === 'work' ? 'work' : 
+                           timerMode === 'break' ? 'short_break' : 'long_break';
+        const duration = getTotalTimeForMode();
+        
+        // Get the session date
+        const sessionDate = new Date(sessionStartTimeRef.current).toISOString().split('T')[0];
+        
+        // Save completed session using the database function
+        await supabase.rpc('save_session_progress', {
+          p_user_id: user.id,
+          p_session_type: sessionType,
+          p_duration: duration,
+          p_completed: true
+        });
+        
+        // Update daily stats if it's a work session
+        if (timerMode === 'work') {
+          const durationMinutes = Math.floor(duration / 60);
+          await updateDailyStats(user.id, durationMinutes, 'work', sessionDate);
+          
+          // Invalidate all dashboard queries to refresh data
+          queryClient.invalidateQueries({ queryKey: ['stats'] });
+          queryClient.invalidateQueries({ queryKey: ['dailyProductivity'] });
+          queryClient.invalidateQueries({ queryKey: ['weeklyProductivity'] });
+          queryClient.invalidateQueries({ queryKey: ['monthlyProductivity'] });
+          queryClient.invalidateQueries({ queryKey: ['streakData'] });
+          queryClient.invalidateQueries({ queryKey: ['productivityTrends'] });
+          queryClient.invalidateQueries({ queryKey: ['insights'] });
+        }
+      } catch (error) {
+        console.error('Error saving completed session:', error);
+        toast.error('Failed to save session progress');
+      }
+    }
+    
     if (timerMode === 'work') {
       // After work session
       const newCompletedSessions = completedSessions + 1;
@@ -100,7 +142,7 @@ export function useTimerLogic({ settings }: UseTimerLogicProps) {
     
     lastRecordedFullMinutesRef.current = 0;
     pausedTimeRef.current = null;
-  }, [timerMode, settings, completedSessions, currentSessionIndex, clearTimer]);
+  }, [timerMode, settings, completedSessions, currentSessionIndex, clearTimer, user, getTotalTimeForMode]);
   
   // Start timer
   const handleStart = useCallback(() => {
