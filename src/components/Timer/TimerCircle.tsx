@@ -77,40 +77,40 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
         />
       )}
       
-      <svg 
-        width={size} 
-        height={size} 
-        className={cn(
-          "transform -rotate-90 relative z-10",
-          secondsLeft > 0 && secondsLeft < totalSeconds && "animate-breathe"
-        )}
+      <div className={cn(secondsLeft > 0 && secondsLeft < totalSeconds && "animate-breathe")}
       >
-        {/* Background circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="transparent"
-          stroke={theme === "dark" ? "#2a2a2a" : "#f0f0f0"}
-          strokeWidth={strokeWidth}
-        />
-        {/* Progress circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="transparent"
-          stroke={getProgressColor()}
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          strokeDashoffset={dashOffset}
-          strokeLinecap="round"
-          style={{ 
-            transition: 'stroke-dashoffset 0.3s ease-out',
-            filter: 'drop-shadow(0 0 6px ' + getProgressColor() + '40)'
-          }}
-        />
-      </svg>
+        <svg 
+          width={size} 
+          height={size} 
+          className="transform -rotate-90 relative z-10"
+        >
+          {/* Background circle */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="transparent"
+            stroke={theme === "dark" ? "#2a2a2a" : "#f0f0f0"}
+            strokeWidth={strokeWidth}
+          />
+          {/* Progress circle */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="transparent"
+            stroke={getProgressColor()}
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={dashOffset}
+            strokeLinecap="round"
+            style={{ 
+              transition: 'stroke-dashoffset 0.3s ease-out',
+              filter: 'drop-shadow(0 0 6px ' + getProgressColor() + '40)'
+            }}
+          />
+        </svg>
+      </div>
       <div className="absolute flex flex-col items-center">
         <div className={cn(
           "text-[2.8rem] font-extrabold tracking-wide font-ubuntu-mono tabular-nums font-[800]", // Changed to font-ubuntu-mono
