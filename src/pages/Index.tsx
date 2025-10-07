@@ -45,8 +45,8 @@ const Index = () => {
     
     switch(timerMode) {
       case 'work': return 'bg-[hsl(var(--timer-focus-bg))] text-[hsl(var(--foreground))]';
-      case 'break': return 'bg-[hsl(var(--timer-break-bg))] text-[hsl(var(--foreground))]';
-      case 'longBreak': return 'bg-[hsl(var(--timer-longbreak-bg))] text-[hsl(var(--foreground))]';
+      case 'break': return 'bg-[hsl(var(--timer-break-bg))] text-[hsl(var(--primary-foreground))]';
+      case 'longBreak': return 'bg-[hsl(var(--timer-longbreak-bg))] text-[hsl(var(--primary-foreground))]';
       default: return 'bg-[hsl(var(--timer-focus-bg))] text-[hsl(var(--foreground))]';
     }
   };
@@ -65,7 +65,7 @@ const Index = () => {
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full max-w-md">
             <TabsList className={cn(
               "grid w-full grid-cols-2 mb-2",
-              theme === "dark" ? "bg-[#1e293b]" : "bg-white/40 backdrop-blur-sm"
+              theme === "dark" ? "bg-[#1e293b]" : "bg-[hsl(var(--muted))]"
             )}>
               <TabsTrigger value="timer">Timer</TabsTrigger>
               <TabsTrigger value="tasks">Tasks</TabsTrigger>

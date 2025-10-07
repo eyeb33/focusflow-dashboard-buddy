@@ -5,41 +5,41 @@
  
 @layer base {
   :root {
-    --background: 120 19% 58%;          /* Moss green */
-    --foreground: 0 0% 27%;             /* Charcoal */
+    --background: 150 8% 30%;           /* Charcoal */
+    --foreground: 80 50% 85%;           /* Light pastel lime */
 
-    --muted: 80 50% 80%;                /* Pastel lime */
-    --muted-foreground: 0 0% 35%;
+    --muted: 150 8% 40%;                /* Lighter charcoal */
+    --muted-foreground: 80 50% 75%;
 
-    --popover: 120 19% 58%;
-    --popover-foreground: 0 0% 27%;
+    --popover: 150 8% 35%;
+    --popover-foreground: 80 50% 85%;
 
-    --card: 120 25% 65%;                /* Lighter moss green */
-    --card-foreground: 0 0% 27%;
+    --card: 150 8% 35%;                 /* Card charcoal */
+    --card-foreground: 80 50% 85%;
 
-    --border: 120 15% 45%;
-    --input: 120 15% 45%;
+    --border: 120 19% 58%;              /* Moss green border */
+    --input: 150 8% 40%;
 
-    --primary: 0 0% 27%;                /* Charcoal */
-    --primary-foreground: 80 50% 80%;   /* Pastel lime */
+    --primary: 120 19% 58%;             /* Moss green */
+    --primary-foreground: 150 8% 30%;   /* Charcoal text */
 
     --secondary: 80 50% 80%;            /* Pastel lime */
-    --secondary-foreground: 0 0% 27%;
+    --secondary-foreground: 150 8% 30%;
 
-    --accent: 80 50% 80%;               /* Pastel lime */
-    --accent-foreground: 0 0% 27%;
+    --accent: 120 25% 65%;              /* Sage green */
+    --accent-foreground: 150 8% 30%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --ring: 80 50% 70%;
+    --ring: 120 19% 58%;
 
     --radius: 0.5rem;
 
     /* Timer mode backgrounds - mellow green tones */
     --timer-focus-bg: 120 19% 58%;      /* Moss green */
     --timer-break-bg: 80 50% 80%;       /* Pastel lime */
-    --timer-longbreak-bg: 120 25% 65%;  /* Lighter moss green */
+    --timer-longbreak-bg: 120 25% 65%;  /* Sage green */
   }
  
   .dark {
