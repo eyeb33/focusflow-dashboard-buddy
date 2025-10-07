@@ -48,7 +48,7 @@ const TimerContainer = () => {
     <TimerObserver>
       <div 
         className={cn(
-          "h-[450px] rounded-2xl p-4 flex flex-col items-center relative timer-container",
+          "min-h-[450px] rounded-2xl p-4 pb-6 flex flex-col items-center relative timer-container overflow-hidden",
           "shadow-2xl"
         )}
         data-testid="timer-container"

@@ -84,6 +84,13 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
           height={size} 
           className="transform -rotate-90 relative z-10"
         >
+          <defs>
+            <linearGradient id="ringHighlight" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="rgba(255,255,255,0.45)" />
+              <stop offset="60%" stopColor="rgba(255,255,255,0.08)" />
+              <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+            </linearGradient>
+          </defs>
           {/* Background circle */}
           <circle
             cx={size / 2}
@@ -108,6 +115,15 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
               transition: 'stroke-dashoffset 0.3s ease-out',
               filter: 'drop-shadow(0 0 6px ' + getProgressColor() + '40)'
             }}
+          />
+          {/* Bubble highlight overlay */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius - (strokeWidth / 2) + 1}
+            fill="transparent"
+            stroke="url(#ringHighlight)"
+            strokeWidth={Math.max(2, strokeWidth * 0.2)}
           />
         </svg>
       </div>
