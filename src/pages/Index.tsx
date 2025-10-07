@@ -41,13 +41,13 @@ const Index = () => {
   
   const getPageBackground = () => {
     if (theme === 'dark') return 'bg-black text-white';
-    if (activeTab !== 'timer') return 'bg-gray-100 text-gray-900';
+    if (activeTab !== 'timer') return 'bg-[hsl(var(--background))] text-[hsl(var(--foreground))]';
     
     switch(timerMode) {
-      case 'work': return 'bg-[hsl(var(--timer-focus-bg))] text-gray-900';
-      case 'break': return 'bg-[hsl(var(--timer-break-bg))] text-gray-900';
-      case 'longBreak': return 'bg-[hsl(var(--timer-longbreak-bg))] text-gray-900';
-      default: return 'bg-[hsl(var(--timer-focus-bg))] text-gray-900';
+      case 'work': return 'bg-[hsl(var(--timer-focus-bg))] text-[hsl(var(--foreground))]';
+      case 'break': return 'bg-[hsl(var(--timer-break-bg))] text-[hsl(var(--foreground))]';
+      case 'longBreak': return 'bg-[hsl(var(--timer-longbreak-bg))] text-[hsl(var(--foreground))]';
+      default: return 'bg-[hsl(var(--timer-focus-bg))] text-[hsl(var(--foreground))]';
     }
   };
 

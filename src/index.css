@@ -5,41 +5,41 @@
  
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 120 19% 58%;          /* Moss green */
+    --foreground: 0 0% 27%;             /* Charcoal */
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 80 50% 80%;                /* Pastel lime */
+    --muted-foreground: 0 0% 35%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 120 19% 58%;
+    --popover-foreground: 0 0% 27%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 120 25% 65%;                /* Lighter moss green */
+    --card-foreground: 0 0% 27%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
+    --border: 120 15% 45%;
+    --input: 120 15% 45%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 0 0% 27%;                /* Charcoal */
+    --primary-foreground: 80 50% 80%;   /* Pastel lime */
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 80 50% 80%;            /* Pastel lime */
+    --secondary-foreground: 0 0% 27%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 80 50% 80%;               /* Pastel lime */
+    --accent-foreground: 0 0% 27%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --ring: 215 20.2% 65.1%;
+    --ring: 80 50% 70%;
 
     --radius: 0.5rem;
 
-    /* Timer mode backgrounds - soft tones */
-    --timer-focus-bg: 0 65% 75%;        /* Soft coral/red */
-    --timer-break-bg: 75 55% 70%;       /* Soft lime green */
-    --timer-longbreak-bg: 210 50% 75%;  /* Soft blue */
+    /* Timer mode backgrounds - mellow green tones */
+    --timer-focus-bg: 120 19% 58%;      /* Moss green */
+    --timer-break-bg: 80 50% 80%;       /* Pastel lime */
+    --timer-longbreak-bg: 120 25% 65%;  /* Lighter moss green */
   }
  
   .dark {
