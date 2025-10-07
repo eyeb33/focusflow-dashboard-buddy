@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import TimeToggle from "@/components/Dashboard/TimeToggle";
 import StatCardsGrid from "@/components/Dashboard/StatCardsGrid";
 import ChartsGrid from "@/components/Dashboard/ChartsGrid";
-import ProductivityInsights from "@/components/Dashboard/ProductivityInsights";
+
 import StreakCalendar from "@/components/Dashboard/StreakCalendar";
 import { useDashboard } from '@/contexts/DashboardContext';
 import { ExperimentalRadialChart } from '@/components/Dashboard/ExperimentalRadialChart';
@@ -186,9 +186,6 @@ const DashboardContent = () => {
             bestStreak={dashboardData.stats.bestStreak}
           />
         </div>
-      </div>
-      <div className="mt-6">
-        <ProductivityInsights insights={dashboardData.insights} />
       </div>
       <div className="mt-6">
         <ExperimentalRadialChart dailyData={dashboardData.dailyProductivity} />
