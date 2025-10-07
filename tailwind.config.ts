@@ -19,6 +19,7 @@ export default {
 		},
 		extend: {
 			fontFamily: {
+				sans: ['Montserrat', 'system-ui', '-apple-system', 'sans-serif'],
 				mono: ['Ubuntu Mono', 'Roboto Mono', 'Space Mono', 'Consolas', 'Monaco', 'Courier New', 'monospace'],
 				'ubuntu-mono': ['Ubuntu Mono', 'monospace'],
 			},
