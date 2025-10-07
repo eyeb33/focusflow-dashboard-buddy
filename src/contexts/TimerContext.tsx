@@ -28,8 +28,6 @@ const TimerContext = createContext<TimerContextType | undefined>(undefined);
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { settings, updateSettings } = useTimerSettings();
   
-  console.log('TimerProvider: Using settings:', settings);
-  
   // Use our simplified timer logic
   const {
     timerMode,
@@ -53,7 +51,6 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Handle settings updates
   const handleUpdateSettings = (newSettings: Partial<typeof settings>) => {
-    console.log('TimerContext: Updating timer settings:', newSettings);
     updateSettings(newSettings);
   };
   

@@ -27,7 +27,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
-        console.log('Auth state changed:', event, 'User:', currentSession?.user);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
       }
@@ -35,10 +34,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      console.log('Initial auth check - User:', currentSession?.user);
-      if (currentSession?.user) {
-        console.log('User metadata:', currentSession.user.user_metadata);
-      }
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       setIsLoading(false);
@@ -52,7 +47,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { error, data } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      console.log('Sign in successful, user data:', data.user);
       toast({
         title: "Welcome back!",
         description: "You've successfully signed in.",
@@ -72,10 +66,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string, name: string) => {
     setIsLoading(true);
     try {
-      console.log('Signing up with name:', name);
-      
       // First, create the user with auth
-      const { error, data } = await supabase.auth.signUp({ 
+      const { error, data } = await supabase.auth.signUp({
         email, 
         password,
         options: {
@@ -87,21 +79,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) throw error;
       
-      // If sign up was successful and we have a user, update the profile username
-      if (data?.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: data.user.id,
-            username: name,
-            updated_at: new Date().toISOString()
-          });
-          
-        if (profileError) {
-          console.error('Error updating profile after signup:', profileError);
-          // We don't throw here as the user was still created successfully
-        }
-      }
+      // Profile will be created automatically by trigger
+      // Name is stored in user_metadata and will be used by the trigger
       
       toast({
         title: "Account created!",

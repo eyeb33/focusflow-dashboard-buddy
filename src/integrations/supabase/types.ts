@@ -199,7 +199,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_user_insight: {
+        Args: { p_content: string; p_title: string; p_user_id: string }
+        Returns: string
+      }
+      save_session_progress: {
+        Args: {
+          p_completed?: boolean
+          p_duration: number
+          p_session_type: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      update_productivity_score: {
+        Args: { p_date: string; p_score: number; p_user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

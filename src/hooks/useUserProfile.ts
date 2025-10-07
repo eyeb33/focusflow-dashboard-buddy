@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export interface UserProfile {
   id: string;
-  username: string | null;
+  display_name: string | null;
   avatar_url: string | null;
   created_at: string;
   updated_at: string;
@@ -31,15 +31,14 @@ export const useUserProfile = () => {
         .single();
 
       if (error) {
-        // If no profile found, create one with username from metadata
+        // If no profile found, create one with display_name from metadata
         if (error.code === 'PGRST116') {
-          const username = user.user_metadata?.name || null;
+          const displayName = user.user_metadata?.name || null;
           const { data: newProfile, error: createError } = await supabase
             .from('profiles')
             .insert({
-              id: user.id,
-              username: username,
-              updated_at: new Date().toISOString()
+              user_id: user.id,
+              display_name: displayName
             })
             .select('*')
             .single();
@@ -80,11 +79,8 @@ export const useUserProfile = () => {
 
       const { error } = await supabase
         .from('profiles')
-        .upsert({
-          id: user.id,
-          ...updates,
-          updated_at: new Date().toISOString(),
-        });
+        .update(updates)
+        .eq('user_id', user.id);
 
       if (error) {
         throw error;
@@ -136,11 +132,8 @@ export const useUserProfile = () => {
       // Update the user's profile with the avatar URL
       const { error } = await supabase
         .from('profiles')
-        .upsert({
-          id: user.id,
-          avatar_url: publicUrl,
-          updated_at: new Date().toISOString(),
-        });
+        .update({ avatar_url: publicUrl })
+        .eq('user_id', user.id);
 
       if (error) {
         throw error;

@@ -45,7 +45,7 @@ export const loadTodayStats = async (userId: string): Promise<{
   }
 };
 
-// Function to save partial session data
+// Save partial session using database function
 export const savePartialSession = async (
   userId: string | undefined,
   mode: TimerMode,
@@ -53,29 +53,22 @@ export const savePartialSession = async (
   remainingTime: number,
   lastRecordedMinutes: number,
   startDate?: string
-): Promise<{ 
-  success: boolean;
-  newFullMinutes?: number;
-} | void> => {
+): Promise<void> => {
   if (!userId) return;
   
   try {
-    // Log the partial session for now
-    console.log('Saving partial session:', {
-      userId,
-      mode,
-      totalTime,
-      remainingTime,
-      lastRecordedMinutes,
-      timestamp: new Date().toISOString(),
-      startDate
-    });
+    const { supabase } = await import('@/integrations/supabase/client');
+    const elapsedTime = totalTime - remainingTime;
     
-    // Return success with the updated minutes count
-    return {
-      success: true,
-      newFullMinutes: Math.floor((totalTime - remainingTime) / 60)
-    };
+    // Only save if at least 1 minute has elapsed
+    if (elapsedTime >= 60) {
+      await supabase.rpc('save_session_progress', {
+        p_user_id: userId,
+        p_session_type: mode === 'work' ? 'work' : mode === 'break' ? 'short_break' : 'long_break',
+        p_duration: Math.floor(elapsedTime),
+        p_completed: false
+      });
+    }
   } catch (error) {
     console.error('Error saving partial session:', error);
   }

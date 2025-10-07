@@ -51,7 +51,6 @@ export function useTimerLogic({ settings }: UseTimerLogicProps) {
   
   // Handle timer completion
   const handleTimerComplete = useCallback(async () => {
-    console.log('Timer completed for mode:', timerMode);
     clearTimer();
     setIsRunning(false);
     
@@ -105,12 +104,7 @@ export function useTimerLogic({ settings }: UseTimerLogicProps) {
   
   // Start timer
   const handleStart = useCallback(() => {
-    console.log('Starting timer - current time:', timeRemaining, 'paused time:', pausedTimeRef.current);
-    
-    if (isRunning) {
-      console.log('Timer already running, ignoring start');
-      return;
-    }
+    if (isRunning) return;
     
     // Use paused time if available
     const startTime = pausedTimeRef.current || timeRemaining;
@@ -123,17 +117,12 @@ export function useTimerLogic({ settings }: UseTimerLogicProps) {
     
     // Clear paused time since we're starting
     pausedTimeRef.current = null;
-    
-    console.log('Timer started with time:', startTime);
   }, [isRunning, timeRemaining]);
   
   // Pause timer
   const handlePause = useCallback(() => {
-    console.log('Pausing timer at time:', timeRemaining);
-    
     // CRITICAL: Store current time as paused time FIRST
     pausedTimeRef.current = timeRemaining;
-    console.log('Stored paused time:', pausedTimeRef.current);
     
     // Then stop the timer
     clearTimer();
@@ -154,7 +143,6 @@ export function useTimerLogic({ settings }: UseTimerLogicProps) {
   
   // Reset timer
   const handleReset = useCallback(() => {
-    console.log('Resetting timer');
     clearTimer();
     setIsRunning(false);
     pausedTimeRef.current = null;
@@ -172,7 +160,6 @@ export function useTimerLogic({ settings }: UseTimerLogicProps) {
   
   // Change timer mode
   const handleModeChange = useCallback((newMode: TimerMode) => {
-    console.log('Changing mode to:', newMode);
     clearTimer();
     setIsRunning(false);
     pausedTimeRef.current = null;
@@ -198,7 +185,6 @@ export function useTimerLogic({ settings }: UseTimerLogicProps) {
     
     // Only set target end time when starting
     if (targetEndTimeRef.current === null) {
-      console.log('Starting new timer interval with time:', timeRemaining);
       const now = Date.now();
       targetEndTimeRef.current = now + (timeRemaining * 1000);
     }
@@ -255,10 +241,7 @@ export function useTimerLogic({ settings }: UseTimerLogicProps) {
   useEffect(() => {
     if (!isRunning && pausedTimeRef.current === null) {
       const newTime = getTotalTimeForMode();
-      console.log('Settings changed, updating time to:', newTime);
       setTimeRemaining(newTime);
-    } else {
-      console.log('Settings changed but preserving timer state - running:', isRunning, 'paused:', pausedTimeRef.current !== null);
     }
   }, [settings, timerMode, isRunning, getTotalTimeForMode]);
   

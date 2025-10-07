@@ -62,7 +62,6 @@ export const updateDailyStats = async (
       const { error } = await supabase
         .from('sessions_summary')
         .update({
-          total_sessions: existingData.total_sessions + 1,
           total_focus_time: existingData.total_focus_time + normalizedDuration,
           total_completed_sessions: existingData.total_completed_sessions + 1,
           longest_streak: Math.max(existingData.longest_streak || 0, currentStreak),
@@ -77,7 +76,6 @@ export const updateDailyStats = async (
         .insert({
           user_id: userId,
           date: today,
-          total_sessions: 1,
           total_focus_time: normalizedDuration,
           total_completed_sessions: 1,
           longest_streak: currentStreak || 1

@@ -11,7 +11,7 @@ export const fetchStreakData = async (userId: string, today: string): Promise<St
   // Get current streak and best streak
   const { data: summaryData, error: summaryError } = await supabase
     .from('sessions_summary')
-    .select('longest_streak, total_sessions, total_focus_time, date, total_completed_sessions')
+    .select('longest_streak, total_focus_time, date, total_completed_sessions')
     .eq('user_id', userId)
     .order('date', { ascending: false })
     .limit(30);

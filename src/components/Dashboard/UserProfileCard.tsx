@@ -15,13 +15,13 @@ const UserProfileCard: React.FC = () => {
   useEffect(() => {
     if (!user) return;
     
-    // First try to get username from profile
-    if (profile?.username) {
-      const firstName = profile.username.split(' ')[0];
-      console.log('Setting display name from profile username:', firstName);
+    // First try to get display_name from profile
+    if (profile?.display_name) {
+      const firstName = profile.display_name.split(' ')[0];
+      console.log('Setting display name from profile:', firstName);
       setDisplayName(firstName);
     } 
-    // If no username in profile, try metadata
+    // If no display_name in profile, try metadata
     else if (user.user_metadata?.name) {
       const firstName = user.user_metadata.name.split(' ')[0];
       console.log('Setting display name from user_metadata:', firstName);
