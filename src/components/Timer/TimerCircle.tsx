@@ -66,14 +66,32 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
 
   return (
     <div className="relative flex items-center justify-center">
-      <svg width={size} height={size} className="transform -rotate-90">
+      {/* Soft glow effect - only when running */}
+      {secondsLeft > 0 && secondsLeft < totalSeconds && (
+        <div 
+          className="absolute inset-0 rounded-full animate-glow"
+          style={{
+            background: `radial-gradient(circle, ${getProgressColor()}40 0%, transparent 70%)`,
+            transform: 'scale(1.1)'
+          }}
+        />
+      )}
+      
+      <svg 
+        width={size} 
+        height={size} 
+        className={cn(
+          "transform -rotate-90 relative z-10",
+          secondsLeft > 0 && secondsLeft < totalSeconds && "animate-breathe"
+        )}
+      >
         {/* Background circle */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="transparent"
-          stroke={theme === "dark" ? "#444" : "#e0e0e0"} // Theme-aware background
+          stroke={theme === "dark" ? "#2a2a2a" : "#f0f0f0"}
           strokeWidth={strokeWidth}
         />
         {/* Progress circle */}
@@ -87,7 +105,10 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
           strokeDasharray={circumference}
           strokeDashoffset={dashOffset}
           strokeLinecap="round"
-          style={{ transition: 'stroke-dashoffset 0.3s ease-out' }}
+          style={{ 
+            transition: 'stroke-dashoffset 0.3s ease-out',
+            filter: 'drop-shadow(0 0 6px ' + getProgressColor() + '40)'
+          }}
         />
       </svg>
       <div className="absolute flex flex-col items-center">

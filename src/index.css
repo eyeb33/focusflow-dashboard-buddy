@@ -68,6 +68,36 @@
     --ring: 217.2 32.6% 17.5%;
   }
 
+  /* Breathing animation for calm effect */
+  @keyframes breathe {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.02);
+    }
+  }
+  
+  .animate-breathe {
+    animation: breathe 4s ease-in-out infinite;
+  }
+
+  /* Soft glow animation */
+  @keyframes glow-pulse {
+    0%, 100% {
+      opacity: 0.4;
+      filter: blur(20px);
+    }
+    50% {
+      opacity: 0.6;
+      filter: blur(25px);
+    }
+  }
+  
+  .animate-glow {
+    animation: glow-pulse 3s ease-in-out infinite;
+  }
+
   /* Add custom animation for pulsing effect */
   @keyframes pulse-light {
     0% {
@@ -125,17 +155,32 @@
   animation: pulse-slow 2.5s ease-in-out infinite;
 }
 
-/* Add a class for the timer container with black background */
+/* Timer container with glassmorphism */
 .timer-container {
-  background-color: #000000;
-  color: white;
-  border-radius: 0.5rem;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
 .light .timer-container {
-  background-color: #ffffff;
-  color: #1a1a1a;
-  border: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+}
+
+/* Ambient background for timer page */
+.timer-ambient-bg {
+  background: radial-gradient(ellipse at top, rgba(147, 197, 253, 0.15), transparent),
+              radial-gradient(ellipse at bottom, rgba(196, 181, 253, 0.15), transparent);
+}
+
+.dark .timer-ambient-bg {
+  background: radial-gradient(ellipse at top, rgba(59, 130, 246, 0.1), transparent),
+              radial-gradient(ellipse at bottom, rgba(139, 92, 246, 0.1), transparent);
 }
 
 /* Mode buttons */

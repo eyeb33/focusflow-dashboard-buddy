@@ -48,10 +48,8 @@ const TimerContainer = () => {
     <TimerObserver>
       <div 
         className={cn(
-          "h-[450px] rounded-lg p-4 flex flex-col items-center relative",
-          theme === "dark" 
-            ? "bg-black text-white" 
-            : "bg-white text-gray-900 border border-gray-200"
+          "h-[450px] rounded-2xl p-4 flex flex-col items-center relative timer-container",
+          "shadow-2xl"
         )}
         data-testid="timer-container"
       >
