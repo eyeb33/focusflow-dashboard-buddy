@@ -68,18 +68,6 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
 
   return (
     <div className="relative flex flex-col items-center justify-center mt-2">
-      <div className="text-center mb-2">
-        <div className={cn(
-          "text-xs rounded-full px-3 py-0.5 inline-block",
-          timerMode === 'work' ? "bg-red-500 text-white" : 
-          timerMode === 'break' ? "bg-green-500 text-white" : 
-          "bg-blue-500 text-white",
-          theme === "dark" ? "opacity-90" : "opacity-100"
-        )}>
-          {getModeLabel()}
-        </div>
-      </div>
-      
       <TimerCircle
         secondsLeft={validTimeRemaining}
         totalSeconds={validTotalSeconds}

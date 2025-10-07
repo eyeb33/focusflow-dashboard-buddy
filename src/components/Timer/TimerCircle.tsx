@@ -140,8 +140,10 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
           </span>
         </div>
         <div className={cn(
-          "text-xs mt-1",
-          theme === "dark" ? "text-gray-400" : "text-gray-600"
+          "text-xs mt-1 rounded-full px-3 py-1 inline-block",
+          mode === 'focus' ? "bg-red-500/10 text-red-500 dark:bg-red-500/20" :
+          mode === 'break' ? "bg-green-500/10 text-green-500 dark:bg-green-500/20" :
+          "bg-blue-500/10 text-blue-500 dark:bg-blue-500/20"
         )}>
           {getStatusText()}
         </div>
