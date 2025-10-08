@@ -29,7 +29,7 @@ const TaskInput: React.FC<TaskInputProps> = ({ onAddTask }) => {
           placeholder="Add a new task..."
           value={taskName}
           onChange={(e) => setTaskName(e.target.value)}
-          className="w-full"
+          className="w-full focus-visible:ring-0 focus-visible:ring-offset-0"
         />
       </div>
       <div className="w-24">
@@ -39,7 +39,7 @@ const TaskInput: React.FC<TaskInputProps> = ({ onAddTask }) => {
           max="10"
           value={estimatedPomodoros}
           onChange={(e) => setEstimatedPomodoros(parseInt(e.target.value) || 1)}
-          className="w-full"
+          className="w-full focus-visible:ring-0 focus-visible:ring-offset-0"
           aria-label="Estimated pomodoros"
         />
       </div>
