@@ -1,6 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import React, { useCallback } from 'react';
 import Header from "@/components/Layout/Header";
 import MobileNav from "@/components/Layout/MobileNav";
 import TaskManager from "@/components/Tasks/TaskManager";
@@ -15,7 +14,6 @@ import { useTimerContext } from '@/contexts/TimerContext';
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('timer');
   const { theme } = useTheme();
   const { timerMode } = useTimerContext();
   
@@ -35,13 +33,8 @@ const Index = () => {
     });
   }, [navigate]);
   
-  const handleTabChange = useCallback((value: string) => {
-    setActiveTab(value);
-  }, []);
-  
   const getPageBackground = () => {
     if (theme === 'dark') return 'bg-black text-white';
-    if (activeTab !== 'timer') return 'bg-[hsl(var(--background))] text-[hsl(var(--foreground))]';
     
     switch(timerMode) {
       case 'work': return 'bg-[hsl(var(--timer-focus-bg))] text-[hsl(var(--foreground))]';
@@ -62,25 +55,15 @@ const Index = () => {
         <div className={cn(
           "relative flex flex-col items-center justify-start py-4 px-4"
         )}>
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full max-w-md">
-            <TabsList className={cn(
-              "grid w-full grid-cols-2 mb-2",
-              theme === "dark" ? "bg-[#1e293b]" : "bg-[hsl(var(--muted))]"
-            )}>
-              <TabsTrigger value="timer">Timer</TabsTrigger>
-              <TabsTrigger value="tasks">Tasks</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="timer" className="w-full">
+          <div className="w-full max-w-7xl flex flex-col lg:flex-row gap-4 items-start">
+            <div className="w-full lg:w-1/2 border border-[hsl(var(--border))] rounded-lg p-4 bg-[hsl(var(--card))]">
               <TimerContainer />
-            </TabsContent>
+            </div>
             
-            <TabsContent value="tasks">
-              <div className="w-full max-w-md">
-                <TaskManager />
-              </div>
-            </TabsContent>
-          </Tabs>
+            <div className="w-full lg:w-1/2 border border-[hsl(var(--border))] rounded-lg p-4 bg-[hsl(var(--card))]">
+              <TaskManager />
+            </div>
+          </div>
           
           {!user && <AuthPrompt onSignupClick={handleSignupClick} />}
         </div>
