@@ -51,7 +51,7 @@ const Header: React.FC<HeaderProps> = ({
       <div className="container flex h-16 items-center justify-between py-4">
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center gap-2">
-            <img src={logo} alt="TimeBubble" className="h-8 w-8" />
+            <img src={logo} alt="TimeBubble" className="h-24 w-24" />
             {!isMobile && <span className={cn(
               "text-lg font-semibold",
               theme === "dark" ? "text-white" : "text-gray-800"
