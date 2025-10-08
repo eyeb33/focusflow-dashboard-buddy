@@ -58,11 +58,7 @@ const TimerContainer = () => {
   return (
     <TimerObserver>
       <div 
-        className={cn(
-          "min-h-[450px] rounded-2xl p-4 pb-6 flex flex-col items-center relative overflow-hidden transition-colors duration-500",
-          "shadow-2xl",
-          theme === 'dark' ? 'timer-container' : getBackgroundColor()
-        )}
+        className="flex-1 flex flex-col items-center relative overflow-hidden transition-colors duration-500"
         data-testid="timer-container"
       >
         <TimerHeader 

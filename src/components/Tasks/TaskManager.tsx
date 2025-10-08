@@ -80,26 +80,28 @@ const TaskManager: React.FC = () => {
 
   return (
     <>
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Tasks</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="flex-1 flex flex-col">
+        <div className="pb-3">
+          <h2 className="text-2xl font-bold">Tasks</h2>
+        </div>
+        <div className="flex-1 flex flex-col overflow-hidden">
           <TaskInput onAddTask={handleAddTask} />
           
           {isLoading ? (
-            <div className="space-y-3">
+            <div className="space-y-3 mt-4">
               {[...Array(3)].map((_, i) => (
                 <Skeleton key={i} className="w-full h-16" />
               ))}
             </div>
           ) : (
-            <TaskList 
-              tasks={tasks} 
-              onDeleteTask={handleDeleteTask}
-              onToggleComplete={handleToggleComplete}
-              onEditTask={handleEditTask}
-            />
+            <div className="flex-1 overflow-y-auto mt-4">
+              <TaskList 
+                tasks={tasks} 
+                onDeleteTask={handleDeleteTask}
+                onToggleComplete={handleToggleComplete}
+                onEditTask={handleEditTask}
+              />
+            </div>
           )}
           
           {!user && (
@@ -107,8 +109,8 @@ const TaskManager: React.FC = () => {
               <p>Sign in to save and sync your tasks across devices</p>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <Dialog open={!!editingTask} onOpenChange={(open) => !open && setEditingTask(null)}>
         <DialogContent className="sm:max-w-[425px]">

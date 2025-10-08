@@ -55,12 +55,12 @@ const Index = () => {
         <div className={cn(
           "relative flex flex-col items-center justify-start py-4 px-4"
         )}>
-          <div className="w-full max-w-7xl flex flex-col lg:flex-row gap-4 items-start">
-            <div className="w-full lg:w-1/2 border border-[hsl(var(--border))] rounded-lg p-4 bg-[hsl(var(--card))]">
+          <div className="w-full max-w-7xl flex flex-col lg:flex-row gap-4 items-stretch">
+            <div className="w-full lg:w-1/2 border border-[hsl(var(--border))] rounded-lg p-6 bg-[hsl(var(--card))] min-h-[600px] flex flex-col">
               <TimerContainer />
             </div>
             
-            <div className="w-full lg:w-1/2 border border-[hsl(var(--border))] rounded-lg p-4 bg-[hsl(var(--card))]">
+            <div className="w-full lg:w-1/2 border border-[hsl(var(--border))] rounded-lg p-6 bg-[hsl(var(--card))] min-h-[600px] flex flex-col overflow-hidden">
               <TaskManager />
             </div>
           </div>
