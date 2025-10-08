@@ -51,7 +51,7 @@ const Header: React.FC<HeaderProps> = ({
       <div className="container flex items-center justify-between py-4">
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center gap-2">
-            <img src={logo} alt="TimeBubble" className="h-24 w-auto" />
+            <img src={logo} alt="TimeBubble" className="h-48 w-auto" />
           </Link>
         </div>
         
