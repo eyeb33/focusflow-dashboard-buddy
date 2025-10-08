@@ -36,8 +36,8 @@
 
     --radius: 0.5rem;
 
-    /* Timer mode backgrounds - mellow green tones */
-    --timer-focus-bg: 120 19% 58%;      /* Moss green */
+    /* Timer mode backgrounds - mellow tones */
+    --timer-focus-bg: 0 48% 59%;        /* Dusty rose */
     --timer-break-bg: 80 50% 80%;       /* Pastel lime */
     --timer-longbreak-bg: 120 25% 65%;  /* Sage green */
   }
