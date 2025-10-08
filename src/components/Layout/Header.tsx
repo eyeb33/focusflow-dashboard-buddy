@@ -8,6 +8,7 @@ import ThemeToggle from '@/components/Theme/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/components/Theme/ThemeProvider';
 import { cn } from '@/lib/utils';
+import logo from '@/assets/logo.png';
 
 interface HeaderProps {
   isAuthenticated?: boolean;
@@ -50,9 +51,7 @@ const Header: React.FC<HeaderProps> = ({
       <div className="container flex h-16 items-center justify-between py-4">
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-pomodoro-work flex items-center justify-center">
-              <span className="text-white font-semibold text-sm">T</span>
-            </div>
+            <img src={logo} alt="TimeBubble" className="h-8 w-8" />
             {!isMobile && <span className={cn(
               "text-lg font-semibold",
               theme === "dark" ? "text-white" : "text-gray-800"
