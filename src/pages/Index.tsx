@@ -59,12 +59,12 @@ const Index = () => {
     const taskId = e.dataTransfer.getData('taskId');
     const task = tasks.find(t => t.id === taskId);
     
-    if (task && !task.completed) {
-      // Optimistic update
+    if (task && !task.completed && !task.isActive) {
+      // Optimistic update - set active immediately
       setActiveTask(task);
       setActiveTaskId(taskId);
-      // Then update database
-      await setTaskActive(taskId);
+      // Then update database in background
+      setTaskActive(taskId);
     }
   }, [tasks, setTaskActive, setActiveTaskId]);
 
