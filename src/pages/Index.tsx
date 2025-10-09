@@ -121,45 +121,51 @@ const Index = () => {
     reorderTasks(newOrderedTasks);
   }, [reorderTasks]);
 
-  const handleToggleCompleteFromList = useCallback(async (id: string) => {
-    if (activeTask && activeTask.id === id) {
-      const elapsedMinutes = getElapsedMinutes();
-      const elapsedSeconds = getElapsedSeconds();
-      if (elapsedSeconds > 0) {
-        await updateTaskTime(id, elapsedMinutes, elapsedSeconds);
-      }
-      await handleRemoveActiveTask();
-    }
-    await toggleComplete(id);
-  }, [activeTask, getElapsedMinutes, getElapsedSeconds, updateTaskTime, handleRemoveActiveTask, toggleComplete]);
+  // Unified completion handler - saves time, clears active state, marks complete
+  const completeTask = useCallback(async (id: string, showToast: boolean = false) => {
+    const task = tasks.find(t => t.id === id);
+    if (!task || !user) return;
 
-  const handleCompleteActiveTask = useCallback(async () => {
-    if (activeTask && user) {
-      // Get elapsed time before completing
-      const elapsedMinutes = getElapsedMinutes();
-      const elapsedSeconds = getElapsedSeconds();
-      const taskId = activeTask.id;
-      
-      // Clear active task immediately from UI
+    const isActiveTask = activeTask?.id === id;
+    const elapsedMinutes = isActiveTask ? getElapsedMinutes() : 0;
+    const elapsedSeconds = isActiveTask ? getElapsedSeconds() : 0;
+
+    // Clear from active zone immediately
+    if (isActiveTask) {
       setActiveTask(null);
       setActiveTaskId(null);
-      
-      // Update task time if any time has elapsed
-      if (elapsedSeconds > 0) {
-        updateTaskTime(taskId, elapsedMinutes, elapsedSeconds).catch(console.error);
-      }
-      
-      // Database updates in background (non-blocking)
-      toggleComplete(taskId).catch(console.error);
-      setTaskActive(null).catch(console.error);
-      
+    }
+
+    // Save time if any elapsed
+    if (elapsedSeconds > 0) {
+      await updateTaskTime(id, elapsedMinutes, elapsedSeconds);
+    }
+
+    // Mark complete and clear active status
+    await toggleComplete(id);
+    if (isActiveTask) {
+      await setTaskActive(null);
+    }
+
+    // Show toast for active task completions
+    if (showToast && isActiveTask) {
       const timeMessage = elapsedSeconds > 0 ? ` ${elapsedMinutes}m ${elapsedSeconds % 60}s tracked.` : '';
       toast({
         title: "Task completed",
         description: `Great work!${timeMessage}`,
       });
     }
-  }, [activeTask, user, toggleComplete, setTaskActive, setActiveTaskId, updateTaskTime, getElapsedMinutes, getElapsedSeconds, toast]);
+  }, [tasks, activeTask, user, getElapsedMinutes, getElapsedSeconds, updateTaskTime, toggleComplete, setTaskActive, setActiveTaskId, toast]);
+
+  const handleToggleCompleteFromList = useCallback(async (id: string) => {
+    await completeTask(id, false);
+  }, [completeTask]);
+
+  const handleCompleteActiveTask = useCallback(async () => {
+    if (activeTask) {
+      await completeTask(activeTask.id, true);
+    }
+  }, [activeTask, completeTask]);
   
   const getPageBackground = () => {
     if (theme === 'dark') return 'bg-black text-white';
