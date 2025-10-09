@@ -54,15 +54,17 @@ const Index = () => {
     });
   }, [navigate]);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
     const taskId = e.dataTransfer.getData('taskId');
     const task = tasks.find(t => t.id === taskId);
     
     if (task && !task.completed) {
+      // Optimistic update
       setActiveTask(task);
-      setTaskActive(taskId);
       setActiveTaskId(taskId);
+      // Then update database
+      await setTaskActive(taskId);
     }
   }, [tasks, setTaskActive, setActiveTaskId]);
 
@@ -81,9 +83,11 @@ const Index = () => {
     e.preventDefault();
     const activeTaskId = e.dataTransfer.getData('activeTaskId');
     if (activeTaskId && user) {
-      await setTaskActive(null);
+      // Optimistic update
       setActiveTask(null);
       setActiveTaskId(null);
+      // Then update database
+      await setTaskActive(null);
       toast({
         title: "Task returned to list",
         description: "Time spent has been saved",
