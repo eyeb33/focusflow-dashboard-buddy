@@ -37,7 +37,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   return (
     <div 
-      className={`flex items-center justify-between p-3 rounded-md border mb-2 ${task.completed ? 'bg-muted/50' : 'bg-card'} ${!task.completed ? 'cursor-grab active:cursor-grabbing select-none' : ''} ${isDragging ? 'opacity-40 scale-95 transition-all' : ''}`}
+      className={`group flex items-center justify-between p-3 rounded-md border mb-2 ${task.completed ? 'bg-muted/50' : 'bg-card'} ${!task.completed ? 'cursor-grab active:cursor-grabbing select-none' : ''} ${isDragging ? 'opacity-40 scale-95 transition-all' : ''}`}
       data-task-id={task.id}
       draggable={!task.completed}
       onDragStart={handleDragStart}
@@ -67,13 +67,15 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <span>{task.estimatedPomodoros}</span>
         </div>
         
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(task.id)}>
-          <Edit className="h-3.5 w-3.5" />
-        </Button>
-        
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDelete(task.id)}>
-          <Trash className="h-3.5 w-3.5" />
-        </Button>
+        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(task.id)}>
+            <Edit className="h-3.5 w-3.5" />
+          </Button>
+          
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDelete(task.id)}>
+            <Trash className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
     </div>
   );
