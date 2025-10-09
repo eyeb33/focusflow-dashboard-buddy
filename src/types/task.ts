@@ -1,4 +1,3 @@
-
 export interface Task {
   id: string;
   name: string;
@@ -9,4 +8,5 @@ export interface Task {
   completedPomodoros?: number;
   isActive?: boolean;
   timeSpent?: number; // Total minutes spent on this task
+  timeSpentSeconds?: number; // Total seconds spent on this task
 }

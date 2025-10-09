@@ -24,6 +24,7 @@ interface TimerContextType {
   updateSettings: (newSettings: Partial<ReturnType<typeof useTimerSettings>['settings']>) => void;
   setActiveTaskId: (taskId: string | null) => void;
   getElapsedMinutes: () => number;
+  getElapsedSeconds: () => number;
 }
 
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
@@ -53,13 +54,21 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Get mode label helper
   const getModeLabel = (mode?: TimerMode) => getModeLabelUtil(mode || timerMode);
 
-  // Get elapsed minutes for work sessions
-  const getElapsedMinutes = (): number => {
-    if (timerMode !== 'work') return 0;
-    const totalTime = settings.workDuration * 60;
-    const elapsed = totalTime - timeRemaining;
-    return Math.floor(elapsed / 60);
-  };
+// Get elapsed minutes for work sessions
+const getElapsedMinutes = (): number => {
+  if (timerMode !== 'work') return 0;
+  const totalTime = settings.workDuration * 60;
+  const elapsed = totalTime - timeRemaining;
+  return Math.floor(elapsed / 60);
+};
+
+// Get elapsed seconds for work sessions
+const getElapsedSeconds = (): number => {
+  if (timerMode !== 'work') return 0;
+  const totalTime = settings.workDuration * 60;
+  const elapsed = totalTime - timeRemaining;
+  return Math.max(0, Math.floor(elapsed));
+};
 
   // Handle settings updates
   const handleUpdateSettings = (newSettings: Partial<typeof settings>) => {
@@ -85,6 +94,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     updateSettings: handleUpdateSettings,
     setActiveTaskId,
     getElapsedMinutes,
+    getElapsedSeconds,
   };
 
   return (

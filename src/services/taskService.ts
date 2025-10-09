@@ -17,16 +17,20 @@ export const fetchTasks = async (userId: string | undefined) => {
     throw error;
   }
   
-  return data.map(task => ({
-    id: task.id,
-    name: task.name,
-    estimatedPomodoros: task.estimated_pomodoros,
-    completed: task.completed,
-    createdAt: task.created_at,
-    updatedAt: task.updated_at,
-    isActive: task.is_active,
-    timeSpent: task.time_spent
-  })) as Task[];
+  return data.map(task => {
+    const t: any = task as any;
+    return {
+      id: task.id,
+      name: task.name,
+      estimatedPomodoros: (task as any).estimated_pomodoros,
+      completed: task.completed,
+      createdAt: (task as any).created_at,
+      updatedAt: (task as any).updated_at,
+      isActive: (task as any).is_active,
+      timeSpent: (task as any).time_spent,
+      timeSpentSeconds: t.time_spent_seconds,
+    } as Task;
+  });
 };
 
 export const addTask = async (userId: string | undefined, taskName: string, estimatedPomodoros: number) => {
@@ -79,7 +83,7 @@ export const updateTaskCompletion = async (userId: string | undefined, taskId: s
   
   const { error } = await supabase
     .from('tasks')
-    .update({ completed })
+    .update({ completed, updated_at: new Date().toISOString() })
     .eq('id', taskId)
     .eq('user_id', userId);
     
