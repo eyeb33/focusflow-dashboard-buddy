@@ -8,13 +8,17 @@ interface TaskListProps {
   onDeleteTask: (id: string) => void;
   onToggleComplete: (id: string) => void;
   onEditTask: (id: string) => void;
+  onDropToList?: (e: React.DragEvent) => void;
+  onDragOverList?: (e: React.DragEvent) => void;
 }
 
 const TaskList: React.FC<TaskListProps> = ({ 
   tasks, 
   onDeleteTask, 
   onToggleComplete,
-  onEditTask 
+  onEditTask,
+  onDropToList,
+  onDragOverList
 }) => {
   if (tasks.length === 0) {
     return (
@@ -25,7 +29,11 @@ const TaskList: React.FC<TaskListProps> = ({
   }
 
   return (
-    <div className="space-y-1">
+    <div 
+      className="space-y-1"
+      onDrop={onDropToList}
+      onDragOver={onDragOverList}
+    >
       {tasks.map((task) => (
         <TaskItem
           key={task.id}

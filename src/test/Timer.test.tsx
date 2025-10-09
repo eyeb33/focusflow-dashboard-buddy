@@ -46,12 +46,13 @@ describe('Timer Functionality', () => {
   it('should render timer with default work mode', () => {
     render(
       <TestWrapper>
-        <TimerContainer 
-          activeTask={null}
-          onRemoveActiveTask={() => {}}
-          onDrop={() => {}}
-          onDragOver={() => {}}
-        />
+      <TimerContainer 
+        activeTask={null}
+        onRemoveActiveTask={() => {}}
+        onCompleteActiveTask={() => {}}
+        onDrop={() => {}}
+        onDragOver={() => {}}
+      />
       </TestWrapper>
     )
 
@@ -65,6 +66,7 @@ describe('Timer Functionality', () => {
         <TimerContainer 
           activeTask={null}
           onRemoveActiveTask={() => {}}
+          onCompleteActiveTask={() => {}}
           onDrop={() => {}}
           onDragOver={() => {}}
         />
@@ -99,6 +101,7 @@ describe('Timer Functionality', () => {
         <TimerContainer 
           activeTask={null}
           onRemoveActiveTask={() => {}}
+          onCompleteActiveTask={() => {}}
           onDrop={() => {}}
           onDragOver={() => {}}
         />
@@ -130,6 +133,7 @@ describe('Timer Functionality', () => {
         <TimerContainer 
           activeTask={null}
           onRemoveActiveTask={() => {}}
+          onCompleteActiveTask={() => {}}
           onDrop={() => {}}
           onDragOver={() => {}}
         />

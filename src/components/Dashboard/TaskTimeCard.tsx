@@ -8,7 +8,14 @@ interface TaskTimeCardProps {
 }
 
 const TaskTimeCard: React.FC<TaskTimeCardProps> = ({ tasks }) => {
-  const completedTasksWithTime = tasks.filter(task => task.completed && task.timeSpent && task.timeSpent > 0);
+  // Filter completed tasks with time spent from today
+  const today = new Date().toDateString();
+  const completedTasksWithTime = tasks.filter(task => {
+    if (!task.completed || !task.timeSpent || task.timeSpent === 0) return false;
+    // Check if the task was updated today (when it was marked completed)
+    const taskDate = new Date(task.createdAt).toDateString();
+    return taskDate === today;
+  });
 
   if (completedTasksWithTime.length === 0) {
     return (

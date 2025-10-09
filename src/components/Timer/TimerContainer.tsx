@@ -14,13 +14,15 @@ import { Task } from '@/types/task';
 interface TimerContainerProps {
   activeTask: Task | null;
   onRemoveActiveTask: () => void;
+  onCompleteActiveTask: () => void;
   onDrop: (e: React.DragEvent) => void;
   onDragOver: (e: React.DragEvent) => void;
 }
 
-const TimerContainer: React.FC<TimerContainerProps> = ({
-  activeTask,
+const TimerContainer: React.FC<TimerContainerProps> = ({ 
+  activeTask, 
   onRemoveActiveTask,
+  onCompleteActiveTask,
   onDrop,
   onDragOver
 }) => {
@@ -103,9 +105,10 @@ const TimerContainer: React.FC<TimerContainerProps> = ({
           mode={timerMode}
         />
 
-        <ActiveTaskZone
+        <ActiveTaskZone 
           activeTask={activeTask}
           onRemoveTask={onRemoveActiveTask}
+          onCompleteTask={onCompleteActiveTask}
           onDrop={onDrop}
           onDragOver={onDragOver}
         />
