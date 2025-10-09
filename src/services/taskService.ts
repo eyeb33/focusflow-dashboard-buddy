@@ -159,13 +159,13 @@ export const setActiveTask = async (userId: string | undefined, taskId: string |
   return true;
 };
 
-export const updateTaskTimeSpent = async (userId: string | undefined, taskId: string, additionalMinutes: number) => {
+export const updateTaskTimeSpent = async (userId: string | undefined, taskId: string, additionalMinutes: number, additionalSeconds: number = 0) => {
   if (!userId) return false;
   
   // Fetch current time spent
   const { data: task, error: fetchError } = await supabase
     .from('tasks')
-    .select('time_spent')
+    .select('time_spent, time_spent_seconds')
     .eq('id', taskId)
     .eq('user_id', userId)
     .single();
@@ -176,10 +176,15 @@ export const updateTaskTimeSpent = async (userId: string | undefined, taskId: st
   }
   
   const newTimeSpent = (task?.time_spent || 0) + additionalMinutes;
+  const newTimeSpentSeconds = ((task as any)?.time_spent_seconds || 0) + additionalSeconds;
   
   const { error } = await supabase
     .from('tasks')
-    .update({ time_spent: newTimeSpent })
+    .update({ 
+      time_spent: newTimeSpent,
+      time_spent_seconds: newTimeSpentSeconds,
+      updated_at: new Date().toISOString()
+    })
     .eq('id', taskId)
     .eq('user_id', userId);
     

@@ -147,14 +147,18 @@ export const useTasks = () => {
     }
   };
 
-  const handleUpdateTaskTime = async (taskId: string, additionalMinutes: number) => {
+  const handleUpdateTaskTime = async (taskId: string, additionalMinutes: number, additionalSeconds: number = 0) => {
     try {
-      const success = await updateTaskTimeSpent(user?.id, taskId, additionalMinutes);
+      const success = await updateTaskTimeSpent(user?.id, taskId, additionalMinutes, additionalSeconds);
       
       if (success) {
         setTasks(tasks.map(task => 
           task.id === taskId 
-            ? { ...task, timeSpent: (task.timeSpent || 0) + additionalMinutes } 
+            ? { 
+                ...task, 
+                timeSpent: (task.timeSpent || 0) + additionalMinutes,
+                timeSpentSeconds: (task.timeSpentSeconds || 0) + additionalSeconds
+              } 
             : task
         ));
         return true;

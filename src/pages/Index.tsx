@@ -21,7 +21,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { theme } = useTheme();
-  const { timerMode, setActiveTaskId, getElapsedMinutes } = useTimerContext();
+  const { timerMode, setActiveTaskId, getElapsedMinutes, getElapsedSeconds } = useTimerContext();
   const { tasks, isLoading, addTask, toggleComplete, editTask, deleteTask, setActiveTask: setTaskActive, updateTaskTime, reorderTasks } = useTasks();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const { toast } = useToast();
@@ -125,6 +125,7 @@ const Index = () => {
     if (activeTask && user) {
       // Get elapsed time before completing
       const elapsedMinutes = getElapsedMinutes();
+      const elapsedSeconds = getElapsedSeconds();
       const taskId = activeTask.id;
       
       // Clear active task immediately from UI
@@ -132,21 +133,21 @@ const Index = () => {
       setActiveTaskId(null);
       
       // Update task time if any time has elapsed
-      if (elapsedMinutes > 0) {
-        updateTaskTime(taskId, elapsedMinutes).catch(console.error);
+      if (elapsedSeconds > 0) {
+        updateTaskTime(taskId, elapsedMinutes, elapsedSeconds).catch(console.error);
       }
       
       // Database updates in background (non-blocking)
       toggleComplete(taskId).catch(console.error);
       setTaskActive(null).catch(console.error);
       
-      const timeMessage = elapsedMinutes > 0 ? ` ${elapsedMinutes} min tracked.` : '';
+      const timeMessage = elapsedSeconds > 0 ? ` ${elapsedMinutes}m ${elapsedSeconds % 60}s tracked.` : '';
       toast({
         title: "Task completed",
         description: `Great work!${timeMessage}`,
       });
     }
-  }, [activeTask, user, toggleComplete, setTaskActive, setActiveTaskId, updateTaskTime, getElapsedMinutes, toast]);
+  }, [activeTask, user, toggleComplete, setTaskActive, setActiveTaskId, updateTaskTime, getElapsedMinutes, getElapsedSeconds, toast]);
   
   const getPageBackground = () => {
     if (theme === 'dark') return 'bg-black text-white';
