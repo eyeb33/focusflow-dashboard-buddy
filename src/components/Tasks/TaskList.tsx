@@ -8,7 +8,7 @@ interface TaskListProps {
   onDeleteTask: (id: string) => void;
   onToggleComplete: (id: string) => void;
   onEditTask: (id: string) => void;
-  onDropToList?: (e: React.DragEvent) => void;
+  onDropToList?: (e: React.DragEvent, dropIndex: number | null) => void;
   onDragOverList?: (e: React.DragEvent) => void;
   onReorderTasks?: (newOrderedTasks: Task[]) => void;
 }
@@ -87,9 +87,9 @@ const TaskList: React.FC<TaskListProps> = ({
     const taskId = e.dataTransfer.getData('taskId');
     const activeTaskId = e.dataTransfer.getData('activeTaskId');
     
-    // If dropping from active zone, let parent handle it
+    // If dropping from active zone, let parent handle it with drop index
     if (activeTaskId) {
-      onDropToList?.(e);
+      onDropToList?.(e, dropIndex);
     } 
     // If reordering within list
     else if (taskId && dropIndex !== null && onReorderTasks) {

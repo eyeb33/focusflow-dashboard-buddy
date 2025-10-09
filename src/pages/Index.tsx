@@ -77,11 +77,23 @@ const Index = () => {
     setActiveTaskId(null);
   }, [setTaskActive, setActiveTaskId]);
 
-  const handleDropToList = useCallback((e: React.DragEvent) => {
+  const handleDropToList = useCallback((e: React.DragEvent, dropIndex: number | null) => {
     e.preventDefault();
     e.stopPropagation();
     const activeTaskId = e.dataTransfer.getData('activeTaskId');
     if (activeTaskId && user) {
+      const returnedTask = tasks.find(t => t.id === activeTaskId);
+      if (returnedTask && dropIndex !== null) {
+        // Remove the task from wherever it is and insert at dropIndex
+        const otherTasks = tasks.filter(t => t.id !== activeTaskId);
+        const newOrderedTasks = [
+          ...otherTasks.slice(0, dropIndex),
+          returnedTask,
+          ...otherTasks.slice(dropIndex)
+        ];
+        reorderTasks(newOrderedTasks);
+      }
+      
       // Instant UI update
       setActiveTask(null);
       setActiveTaskId(null);
@@ -92,7 +104,7 @@ const Index = () => {
         description: "Time spent has been saved",
       });
     }
-  }, [user, setTaskActive, setActiveTaskId, toast]);
+  }, [user, tasks, setTaskActive, setActiveTaskId, reorderTasks, toast]);
 
   const handleReorderTasks = useCallback((newOrderedTasks: any[]) => {
     reorderTasks(newOrderedTasks);
@@ -167,7 +179,7 @@ const Index = () => {
 
 // Wrapper component to pass drop handlers to TaskManager
 const TaskManagerWithDrop: React.FC<{
-  onDropToList: (e: React.DragEvent) => void;
+  onDropToList: (e: React.DragEvent, dropIndex: number | null) => void;
   onDragOverList: (e: React.DragEvent) => void;
   onReorderTasks: (newOrderedTasks: any[]) => void;
   activeTaskId?: string | null;
