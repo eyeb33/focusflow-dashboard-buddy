@@ -1,5 +1,5 @@
 
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import Header from "@/components/Layout/Header";
 import MobileNav from "@/components/Layout/MobileNav";
 import TaskManager from "@/components/Tasks/TaskManager";
@@ -25,17 +25,18 @@ const Index = () => {
   const { tasks, isLoading, addTask, toggleComplete, editTask, deleteTask, setActiveTask: setTaskActive, updateTaskTime, reorderTasks } = useTasks();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const { toast } = useToast();
+  const suppressRestoreRef = React.useRef<string | null>(null);
 
   // Restore active task from database after tasks load
   useEffect(() => {
     if (!isLoading && tasks.length > 0) {
-      const currentActiveTask = tasks.find(t => t.isActive && !t.completed);
+      const currentActiveTask = tasks.find(t => t.isActive && !t.completed && t.id !== suppressRestoreRef.current);
       if (currentActiveTask && !activeTask) {
         setActiveTask(currentActiveTask);
         setActiveTaskId(currentActiveTask.id);
       }
     }
-  }, [isLoading, tasks, setActiveTaskId]);
+  }, [isLoading, tasks, activeTask, setActiveTaskId]);
   
   const handleLoginClick = useCallback(() => {
     navigate('/auth', {
@@ -130,30 +131,40 @@ const Index = () => {
     const elapsedMinutes = isActiveTask ? getElapsedMinutes() : 0;
     const elapsedSeconds = isActiveTask ? getElapsedSeconds() : 0;
 
+    // Suppress restoration of this task while completion is processing
+    suppressRestoreRef.current = id;
+
     // Clear from active zone immediately
     if (isActiveTask) {
       setActiveTask(null);
       setActiveTaskId(null);
     }
 
-    // Save time if any elapsed
-    if (elapsedSeconds > 0) {
-      await updateTaskTime(id, elapsedMinutes, elapsedSeconds);
-    }
+    try {
+      // Save time if any elapsed
+      if (elapsedSeconds > 0) {
+        await updateTaskTime(id, elapsedMinutes, elapsedSeconds);
+      }
 
-    // Mark complete and clear active status
-    await toggleComplete(id);
-    if (isActiveTask) {
-      await setTaskActive(null);
-    }
+      // Mark complete and clear active status
+      await toggleComplete(id);
+      if (isActiveTask) {
+        await setTaskActive(null);
+      }
 
-    // Show toast for active task completions
-    if (showToast && isActiveTask) {
-      const timeMessage = elapsedSeconds > 0 ? ` ${elapsedMinutes}m ${elapsedSeconds % 60}s tracked.` : '';
-      toast({
-        title: "Task completed",
-        description: `Great work!${timeMessage}`,
-      });
+      // Show toast for active task completions
+      if (showToast && isActiveTask) {
+        const timeMessage = elapsedSeconds > 0 ? ` ${elapsedMinutes}m ${elapsedSeconds % 60}s tracked.` : '';
+        toast({
+          title: "Task completed",
+          description: `Great work!${timeMessage}`,
+        });
+      }
+    } finally {
+      // Clear suppression after state/queries have a chance to settle
+      setTimeout(() => {
+        if (suppressRestoreRef.current === id) suppressRestoreRef.current = null;
+      }, 0);
     }
   }, [tasks, activeTask, user, getElapsedMinutes, getElapsedSeconds, updateTaskTime, toggleComplete, setTaskActive, setActiveTaskId, toast]);
 
