@@ -82,32 +82,36 @@ const Index = () => {
     e.stopPropagation();
     const activeTaskId = e.dataTransfer.getData('activeTaskId');
     if (activeTaskId) {
-      // Get the active task
+      // Get the active task and clear its active flag
       const returnedTask = tasks.find(t => t.id === activeTaskId);
       if (returnedTask) {
         // Get all non-active tasks (what's currently visible in the list)
         const visibleTasks = tasks.filter(t => t.id !== activeTaskId && !t.isActive);
         
-        // Insert the returned task at the dropIndex within the visible tasks
+        // Insert the returned task at the dropIndex with isActive cleared
         const insertAt = dropIndex !== null ? dropIndex : visibleTasks.length;
+        const taskToInsert = { ...returnedTask, isActive: false };
         const newOrderedTasks = [
           ...visibleTasks.slice(0, insertAt),
-          returnedTask,
+          taskToInsert,
           ...visibleTasks.slice(insertAt)
         ];
         
+        // First clear active task in UI
+        setActiveTask(null);
+        setActiveTaskId(null);
+        
+        // Then reorder with the new position
         reorderTasks(newOrderedTasks);
+        
+        // Database update in background (non-blocking)
+        setTaskActive(null).catch(console.error);
+        
+        toast({
+          title: "Task returned to list",
+          description: "Time spent has been saved",
+        });
       }
-
-      // Instant UI update
-      setActiveTask(null);
-      setActiveTaskId(null);
-      // Database update in background (non-blocking)
-      setTaskActive(null).catch(console.error);
-      toast({
-        title: "Task returned to list",
-        description: "Time spent has been saved",
-      });
     }
   }, [tasks, setTaskActive, setActiveTaskId, reorderTasks, toast]);
 
