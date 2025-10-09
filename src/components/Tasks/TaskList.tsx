@@ -146,7 +146,7 @@ const TaskList: React.FC<TaskListProps> = ({
       onDragLeave={handleDragLeave}
     >
       {tasks.map((task, index) => (
-        <React.Fragment key={task.id}>
+        <div key={task.id} className="contents" data-lov-wrapper>
           {dropIndex === index && (
             <div className="h-2 my-1 rounded bg-[hsl(var(--primary))]/40" />
           )}
@@ -159,7 +159,7 @@ const TaskList: React.FC<TaskListProps> = ({
             onDragEnd={handleDragEnd}
             isDragging={draggingTaskId === task.id}
           />
-        </React.Fragment>
+        </div>
       ))}
       {dropIndex !== null && dropIndex >= tasks.length && (
         <div className="h-2 my-1 rounded bg-[hsl(var(--primary))]/40" />

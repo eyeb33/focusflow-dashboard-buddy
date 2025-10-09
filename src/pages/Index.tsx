@@ -22,7 +22,7 @@ const Index = () => {
   const { user } = useAuth();
   const { theme } = useTheme();
   const { timerMode, setActiveTaskId } = useTimerContext();
-  const { tasks, setActiveTask: setTaskActive, toggleComplete, reorderTasks } = useTasks();
+  const { tasks, isLoading, addTask, toggleComplete, editTask, deleteTask, setActiveTask: setTaskActive, reorderTasks } = useTasks();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const { toast } = useToast();
 
@@ -164,6 +164,12 @@ const Index = () => {
                 onDropToList={handleDropToList} 
                 onDragOverList={handleDragOver}
                 onReorderTasks={handleReorderTasks}
+                tasks={tasks}
+                isLoading={isLoading}
+                addTask={addTask}
+                toggleComplete={toggleComplete}
+                editTask={editTask}
+                deleteTask={deleteTask}
               />
             </div>
           </div>
@@ -178,18 +184,23 @@ const Index = () => {
 };
 
 // Wrapper component to pass drop handlers to TaskManager
-const TaskManagerWithDrop: React.FC<{
+const TaskManagerWithDrop: React.FC<{ 
   onDropToList: (e: React.DragEvent, dropIndex: number | null) => void;
   onDragOverList: (e: React.DragEvent) => void;
   onReorderTasks: (newOrderedTasks: any[]) => void;
   activeTaskId?: string | null;
-}> = ({ onDropToList, onDragOverList, onReorderTasks, activeTaskId }) => {
+  tasks: Task[];
+  isLoading: boolean;
+  addTask: (taskName: string, estimatedPomodoros: number) => Promise<boolean>;
+  toggleComplete: (id: string) => Promise<void> | void;
+  editTask: (id: string, name: string, estimatedPomodoros: number) => Promise<boolean>;
+  deleteTask: (id: string) => Promise<boolean>;
+}> = ({ onDropToList, onDragOverList, onReorderTasks, activeTaskId, tasks, isLoading, addTask, toggleComplete, editTask, deleteTask }) => {
   const [editingTask, setEditingTask] = React.useState<any>(null);
   const [editName, setEditName] = React.useState('');
   const [editPomodoros, setEditPomodoros] = React.useState(1);
   const { toast } = useToast();
   const { user } = useAuth();
-  const { tasks, isLoading, addTask, toggleComplete, editTask, deleteTask } = useTasks();
 
   const handleAddTask = (taskName: string, estimatedPomodoros: number) => {
     if (!user) {
