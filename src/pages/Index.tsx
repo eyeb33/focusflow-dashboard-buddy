@@ -29,7 +29,7 @@ const Index = () => {
   // Restore active task from database after tasks load
   useEffect(() => {
     if (!isLoading && tasks.length > 0) {
-      const currentActiveTask = tasks.find(t => t.isActive);
+      const currentActiveTask = tasks.find(t => t.isActive && !t.completed);
       if (currentActiveTask && !activeTask) {
         setActiveTask(currentActiveTask);
         setActiveTaskId(currentActiveTask.id);
