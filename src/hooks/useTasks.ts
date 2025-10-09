@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Task } from '@/types/task';
-import { fetchTasks, addTask, updateTaskCompletion, updateTask, deleteTask, setActiveTask, updateTaskTimeSpent } from '@/services/taskService';
+import { fetchTasks, addTask, updateTaskCompletion, updateTask, deleteTask, setActiveTask, updateTaskTimeSpent, reorderTasks } from '@/services/taskService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from "@/hooks/use-toast";
 
@@ -166,6 +166,30 @@ export const useTasks = () => {
     }
   };
 
+  const handleReorderTasks = async (newOrderedTasks: Task[]) => {
+    try {
+      // Optimistic update
+      setTasks(newOrderedTasks);
+      
+      // Update backend
+      const taskIds = newOrderedTasks.map(t => t.id);
+      const success = await reorderTasks(user?.id, taskIds);
+      
+      if (!success) {
+        // Revert on failure
+        toast({
+          title: "Error reordering tasks",
+          description: "Could not save the new order. Please try again.",
+          variant: "destructive",
+        });
+      }
+      return success;
+    } catch (error) {
+      console.error('Failed to reorder tasks:', error);
+      return false;
+    }
+  };
+
   return {
     tasks,
     isLoading,
@@ -174,6 +198,7 @@ export const useTasks = () => {
     editTask: handleEditTask,
     deleteTask: handleDeleteTask,
     setActiveTask: handleSetActiveTask,
-    updateTaskTime: handleUpdateTaskTime
+    updateTaskTime: handleUpdateTaskTime,
+    reorderTasks: handleReorderTasks
   };
 };

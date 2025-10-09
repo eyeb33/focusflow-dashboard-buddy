@@ -10,6 +10,7 @@ interface TaskListProps {
   onEditTask: (id: string) => void;
   onDropToList?: (e: React.DragEvent) => void;
   onDragOverList?: (e: React.DragEvent) => void;
+  onReorderTasks?: (newOrderedTasks: Task[]) => void;
 }
 
 const TaskList: React.FC<TaskListProps> = ({ 
@@ -18,7 +19,8 @@ const TaskList: React.FC<TaskListProps> = ({
   onToggleComplete,
   onEditTask,
   onDropToList,
-  onDragOverList
+  onDragOverList,
+  onReorderTasks
 }) => {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
@@ -82,10 +84,30 @@ const TaskList: React.FC<TaskListProps> = ({
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    const taskId = e.dataTransfer.getData('taskId');
+    const activeTaskId = e.dataTransfer.getData('activeTaskId');
+    
+    // If dropping from active zone, let parent handle it
+    if (activeTaskId) {
+      onDropToList?.(e);
+    } 
+    // If reordering within list
+    else if (taskId && dropIndex !== null && onReorderTasks) {
+      const draggedTask = tasks.find(t => t.id === taskId);
+      if (draggedTask) {
+        const filteredTasks = tasks.filter(t => t.id !== taskId);
+        const newTasks = [
+          ...filteredTasks.slice(0, dropIndex),
+          draggedTask,
+          ...filteredTasks.slice(dropIndex)
+        ];
+        onReorderTasks(newTasks);
+      }
+    }
+    
     setIsDraggingOver(false);
     setDropIndex(null);
     setDraggingTaskId(null);
-    onDropToList?.(e);
   };
 
   const handleDragEnd = () => {

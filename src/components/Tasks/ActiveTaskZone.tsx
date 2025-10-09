@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, X, Check, Square } from 'lucide-react';
+import { Clock, Check, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Task } from '@/types/task';
 
@@ -57,14 +57,6 @@ const ActiveTaskZone: React.FC<ActiveTaskZoneProps> = ({
               </p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onRemoveTask}
-            className="h-7 w-7"
-          >
-            <X className="h-4 w-4" />
-          </Button>
         </div>
       ) : (
         <p className="text-muted-foreground text-sm">

@@ -22,7 +22,7 @@ const Index = () => {
   const { user } = useAuth();
   const { theme } = useTheme();
   const { timerMode, setActiveTaskId } = useTimerContext();
-  const { tasks, setActiveTask: setTaskActive, toggleComplete } = useTasks();
+  const { tasks, setActiveTask: setTaskActive, toggleComplete, reorderTasks } = useTasks();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const { toast } = useToast();
 
@@ -94,6 +94,10 @@ const Index = () => {
     }
   }, [user, setTaskActive, setActiveTaskId, toast]);
 
+  const handleReorderTasks = useCallback((newOrderedTasks: any[]) => {
+    reorderTasks(newOrderedTasks);
+  }, [reorderTasks]);
+
   const handleCompleteActiveTask = useCallback(() => {
     if (activeTask && user) {
       // Instant UI update
@@ -143,7 +147,12 @@ const Index = () => {
             </div>
             
             <div className="w-full lg:w-1/2 border border-[hsl(var(--border))] rounded-lg p-6 bg-[hsl(var(--card))] min-h-[600px] flex flex-col overflow-hidden">
-              <TaskManagerWithDrop activeTaskId={activeTask?.id ?? null} onDropToList={handleDropToList} onDragOverList={handleDragOver} />
+              <TaskManagerWithDrop 
+                activeTaskId={activeTask?.id ?? null} 
+                onDropToList={handleDropToList} 
+                onDragOverList={handleDragOver}
+                onReorderTasks={handleReorderTasks}
+              />
             </div>
           </div>
           
@@ -160,8 +169,9 @@ const Index = () => {
 const TaskManagerWithDrop: React.FC<{
   onDropToList: (e: React.DragEvent) => void;
   onDragOverList: (e: React.DragEvent) => void;
+  onReorderTasks: (newOrderedTasks: any[]) => void;
   activeTaskId?: string | null;
-}> = ({ onDropToList, onDragOverList, activeTaskId }) => {
+}> = ({ onDropToList, onDragOverList, onReorderTasks, activeTaskId }) => {
   const [editingTask, setEditingTask] = React.useState<any>(null);
   const [editName, setEditName] = React.useState('');
   const [editPomodoros, setEditPomodoros] = React.useState(1);
@@ -251,6 +261,7 @@ const TaskManagerWithDrop: React.FC<{
                 onEditTask={handleEditTask}
                 onDropToList={onDropToList}
                 onDragOverList={onDragOverList}
+                onReorderTasks={onReorderTasks}
               />
             </div>
           )}

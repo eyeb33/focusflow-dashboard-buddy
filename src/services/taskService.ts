@@ -171,3 +171,12 @@ export const updateTaskTimeSpent = async (userId: string | undefined, taskId: st
   
   return true;
 };
+
+export const reorderTasks = async (userId: string | undefined, taskIds: string[]) => {
+  if (!userId) return false;
+  
+  // For now, just return true since we don't have a sort_order column yet
+  // The order will be maintained in the UI state
+  // TODO: Add sort_order column to tasks table for persistent ordering
+  return true;
+};
