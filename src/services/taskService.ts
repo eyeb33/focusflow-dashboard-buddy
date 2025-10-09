@@ -23,6 +23,7 @@ export const fetchTasks = async (userId: string | undefined) => {
     estimatedPomodoros: task.estimated_pomodoros,
     completed: task.completed,
     createdAt: task.created_at,
+    updatedAt: task.updated_at,
     isActive: task.is_active,
     timeSpent: task.time_spent
   })) as Task[];
@@ -67,6 +68,7 @@ export const addTask = async (userId: string | undefined, taskName: string, esti
     estimatedPomodoros: data.estimated_pomodoros,
     completed: data.completed,
     createdAt: data.created_at,
+    updatedAt: data.updated_at,
     isActive: data.is_active,
     timeSpent: data.time_spent
   } as Task;
