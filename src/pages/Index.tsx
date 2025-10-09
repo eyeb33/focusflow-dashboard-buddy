@@ -82,15 +82,20 @@ const Index = () => {
     e.stopPropagation();
     const activeTaskId = e.dataTransfer.getData('activeTaskId');
     if (activeTaskId) {
+      // Get the active task
       const returnedTask = tasks.find(t => t.id === activeTaskId);
       if (returnedTask) {
-        const otherTasks = tasks.filter(t => t.id !== activeTaskId);
-        const insertAt = dropIndex !== null ? dropIndex : otherTasks.length;
+        // Get all non-active tasks (what's currently visible in the list)
+        const visibleTasks = tasks.filter(t => t.id !== activeTaskId && !t.isActive);
+        
+        // Insert the returned task at the dropIndex within the visible tasks
+        const insertAt = dropIndex !== null ? dropIndex : visibleTasks.length;
         const newOrderedTasks = [
-          ...otherTasks.slice(0, insertAt),
+          ...visibleTasks.slice(0, insertAt),
           returnedTask,
-          ...otherTasks.slice(insertAt)
+          ...visibleTasks.slice(insertAt)
         ];
+        
         reorderTasks(newOrderedTasks);
       }
 

@@ -28,25 +28,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
     e.dataTransfer.setData('text/plain', task.name);
     e.dataTransfer.effectAllowed = 'move';
     
-    // Create a custom drag image that looks like the card
-    const dragEl = e.currentTarget as HTMLElement;
-    const clone = dragEl.cloneNode(true) as HTMLElement;
-    clone.style.position = 'absolute';
-    clone.style.top = '-9999px';
-    clone.style.width = dragEl.offsetWidth + 'px';
-    clone.style.opacity = '0.8';
-    clone.style.pointerEvents = 'none';
-    document.body.appendChild(clone);
-    
-    try {
-      e.dataTransfer.setDragImage(clone, dragEl.offsetWidth / 2, dragEl.offsetHeight / 2);
-    } catch (_) {}
-    
-    // Clean up clone after drag starts
-    setTimeout(() => {
-      document.body.removeChild(clone);
-    }, 0);
-    
     onDragStart?.(task.id);
   };
 
@@ -56,7 +37,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   return (
     <div 
-      className={`flex items-center justify-between p-3 rounded-md border mb-2 ${task.completed ? 'bg-muted/50' : 'bg-card'} ${!task.completed ? 'cursor-grab active:cursor-grabbing select-none' : ''} ${isDragging ? 'opacity-60' : ''}`}
+      className={`flex items-center justify-between p-3 rounded-md border mb-2 ${task.completed ? 'bg-muted/50' : 'bg-card'} ${!task.completed ? 'cursor-grab active:cursor-grabbing select-none' : ''} ${isDragging ? 'opacity-40 scale-95 transition-all' : ''}`}
       data-task-id={task.id}
       draggable={!task.completed}
       onDragStart={handleDragStart}
