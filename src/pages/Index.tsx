@@ -21,8 +21,8 @@ const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { theme } = useTheme();
-  const { timerMode, setActiveTaskId } = useTimerContext();
-  const { tasks, isLoading, addTask, toggleComplete, editTask, deleteTask, setActiveTask: setTaskActive, reorderTasks } = useTasks();
+  const { timerMode, setActiveTaskId, getElapsedMinutes } = useTimerContext();
+  const { tasks, isLoading, addTask, toggleComplete, editTask, deleteTask, setActiveTask: setTaskActive, updateTaskTime, reorderTasks } = useTasks();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const { toast } = useToast();
 
@@ -121,20 +121,34 @@ const Index = () => {
     reorderTasks(newOrderedTasks);
   }, [reorderTasks]);
 
-  const handleCompleteActiveTask = useCallback(() => {
+  const handleCompleteActiveTask = useCallback(async () => {
     if (activeTask && user) {
-      // Instant UI update
-      setActiveTask(null);
+      // Get elapsed time before completing
+      const elapsedMinutes = getElapsedMinutes();
+      
+      // Update task time if any time has elapsed
+      if (elapsedMinutes > 0) {
+        await updateTaskTime(activeTask.id, elapsedMinutes);
+        
+        // Refetch tasks to update the UI
+        const updatedTasks = await import('@/services/taskService').then(m => m.fetchTasks(user.id));
+        setActiveTask(null);
+      } else {
+        setActiveTask(null);
+      }
+      
       setActiveTaskId(null);
       // Database updates in background (non-blocking)
       toggleComplete(activeTask.id).catch(console.error);
       setTaskActive(null).catch(console.error);
+      
+      const timeMessage = elapsedMinutes > 0 ? ` ${elapsedMinutes} min tracked.` : '';
       toast({
         title: "Task completed",
-        description: "Great work! Task moved to dashboard.",
+        description: `Great work!${timeMessage}`,
       });
     }
-  }, [activeTask, user, toggleComplete, setTaskActive, setActiveTaskId, toast]);
+  }, [activeTask, user, toggleComplete, setTaskActive, setActiveTaskId, updateTaskTime, getElapsedMinutes, toast]);
   
   const getPageBackground = () => {
     if (theme === 'dark') return 'bg-black text-white';
