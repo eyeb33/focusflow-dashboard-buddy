@@ -10,7 +10,7 @@ interface TaskItemProps {
   onToggleComplete: (id: string) => void;
   onEdit: (id: string) => void;
   onDragStart?: (id: string) => void;
-  onDragEnd?: (id: string) => void;
+  onDragEnd?: () => void;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({ 
@@ -27,13 +27,17 @@ const TaskItem: React.FC<TaskItemProps> = ({
     onDragStart?.(task.id);
   };
 
+  const handleDragEnd = () => {
+    onDragEnd?.();
+  };
+
   return (
     <div 
       className={`flex items-center justify-between p-3 rounded-md border mb-2 ${task.completed ? 'bg-muted/50' : 'bg-card'} ${!task.completed ? 'cursor-grab active:cursor-grabbing select-none' : ''}`}
       data-task-id={task.id}
       draggable={!task.completed}
       onDragStart={handleDragStart}
-      onDragEnd={() => onDragEnd?.(task.id)}
+      onDragEnd={handleDragEnd}
     >
       <div className="flex items-center gap-3">
         <Button 

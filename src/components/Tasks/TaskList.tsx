@@ -66,6 +66,12 @@ const TaskList: React.FC<TaskListProps> = ({
     onDropToList?.(e);
   };
 
+  const handleDragEnd = () => {
+    setDraggingTaskId(null);
+    setIsDraggingOver(false);
+    setDropIndex(null);
+  };
+
   if (tasks.length === 0) {
     return (
       <div 
@@ -108,7 +114,7 @@ const TaskList: React.FC<TaskListProps> = ({
               onToggleComplete={onToggleComplete}
               onEdit={onEditTask}
               onDragStart={(id) => setDraggingTaskId(id)}
-              onDragEnd={() => setDraggingTaskId(null)}
+              onDragEnd={handleDragEnd}
             />
           </React.Fragment>
         ))}
