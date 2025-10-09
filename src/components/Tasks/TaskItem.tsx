@@ -11,6 +11,7 @@ interface TaskItemProps {
   onEdit: (id: string) => void;
   onDragStart?: (id: string) => void;
   onDragEnd?: () => void;
+  isDragging?: boolean;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({ 
@@ -19,11 +20,19 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onToggleComplete,
   onEdit,
   onDragStart,
-  onDragEnd
+  onDragEnd,
+  isDragging
 }) => {
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('taskId', task.id);
+    e.dataTransfer.setData('text/plain', task.name);
     e.dataTransfer.effectAllowed = 'move';
+    // Use the element itself as drag image for snappy preview
+    if (e.currentTarget instanceof HTMLElement) {
+      try {
+        e.dataTransfer.setDragImage(e.currentTarget, 16, 16);
+      } catch (_) {}
+    }
     onDragStart?.(task.id);
   };
 
@@ -33,7 +42,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   return (
     <div 
-      className={`flex items-center justify-between p-3 rounded-md border mb-2 ${task.completed ? 'bg-muted/50' : 'bg-card'} ${!task.completed ? 'cursor-grab active:cursor-grabbing select-none' : ''}`}
+      className={`flex items-center justify-between p-3 rounded-md border mb-2 ${task.completed ? 'bg-muted/50' : 'bg-card'} ${!task.completed ? 'cursor-grab active:cursor-grabbing select-none' : ''} ${isDragging ? 'opacity-0 h-0 p-0 m-0 border-0 overflow-hidden' : ''}`}
       data-task-id={task.id}
       draggable={!task.completed}
       onDragStart={handleDragStart}

@@ -123,23 +123,22 @@ const TaskList: React.FC<TaskListProps> = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
     >
-      {tasks
-        .filter((task) => task.id !== draggingTaskId)
-        .map((task, index) => (
-          <React.Fragment key={task.id}>
-            {dropIndex === index && (
-              <div className="h-2 my-1 rounded bg-[hsl(var(--primary))]/40" />
-            )}
-            <TaskItem
-              task={task}
-              onDelete={onDeleteTask}
-              onToggleComplete={onToggleComplete}
-              onEdit={onEditTask}
-              onDragStart={(id) => setDraggingTaskId(id)}
-              onDragEnd={handleDragEnd}
-            />
-          </React.Fragment>
-        ))}
+      {tasks.map((task, index) => (
+        <React.Fragment key={task.id}>
+          {dropIndex === index && (
+            <div className="h-2 my-1 rounded bg-[hsl(var(--primary))]/40" />
+          )}
+          <TaskItem
+            task={task}
+            onDelete={onDeleteTask}
+            onToggleComplete={onToggleComplete}
+            onEdit={onEditTask}
+            onDragStart={(id) => setDraggingTaskId(id)}
+            onDragEnd={handleDragEnd}
+            isDragging={draggingTaskId === task.id}
+          />
+        </React.Fragment>
+      ))}
       {dropIndex !== null && dropIndex >= tasks.length && (
         <div className="h-2 my-1 rounded bg-[hsl(var(--primary))]/40" />
       )}
