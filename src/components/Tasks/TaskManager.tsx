@@ -96,7 +96,7 @@ const TaskManager: React.FC = () => {
           ) : (
             <div className="flex-1 overflow-y-auto mt-4">
               <TaskList 
-                tasks={tasks} 
+                tasks={tasks.filter(t => !t.completed)} 
                 onDeleteTask={handleDeleteTask}
                 onToggleComplete={handleToggleComplete}
                 onEditTask={handleEditTask}

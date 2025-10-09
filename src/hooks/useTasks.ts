@@ -66,8 +66,28 @@ export const useTasks = () => {
       const success = await updateTaskCompletion(user?.id, id, newCompletedState);
       
       if (success) {
-        setTasks(tasks.map(task => 
-          task.id === id ? { ...task, completed: newCompletedState } : task
+        // If completing the currently active task, clear it on the backend
+        if (newCompletedState && task.isActive) {
+          try {
+            await setActiveTask(user?.id, null);
+          } catch (e) {
+            console.error('Failed to clear active task on completion:', e);
+          }
+        }
+
+        // Update local state immediately so UI reflects changes and TaskTimeCard picks it up today
+        const nowIso = new Date().toISOString();
+        setTasks(tasks.map(t => 
+          t.id === id 
+            ? { 
+                ...t, 
+                completed: newCompletedState,
+                // Ensure it disappears from active zone and list
+                isActive: newCompletedState ? false : t.isActive,
+                // Make sure "completed today" cards detect it immediately
+                updatedAt: nowIso,
+              } 
+            : t
         ));
       }
     } catch (error) {

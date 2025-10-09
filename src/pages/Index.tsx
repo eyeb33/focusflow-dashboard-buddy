@@ -121,6 +121,14 @@ const Index = () => {
     reorderTasks(newOrderedTasks);
   }, [reorderTasks]);
 
+  const handleToggleCompleteFromList = useCallback((id: string) => {
+    // If completing the currently active task, clear it from the active zone
+    if (activeTask && activeTask.id === id) {
+      handleRemoveActiveTask();
+    }
+    toggleComplete(id);
+  }, [activeTask, handleRemoveActiveTask, toggleComplete]);
+
   const handleCompleteActiveTask = useCallback(async () => {
     if (activeTask && user) {
       // Get elapsed time before completing
@@ -191,7 +199,7 @@ const Index = () => {
                 tasks={tasks}
                 isLoading={isLoading}
                 addTask={addTask}
-                toggleComplete={toggleComplete}
+                toggleComplete={handleToggleCompleteFromList}
                 editTask={editTask}
                 deleteTask={deleteTask}
               />
@@ -302,7 +310,7 @@ const TaskManagerWithDrop: React.FC<{
           ) : (
             <div className="flex-1 overflow-y-auto mt-4">
               <TaskList 
-                tasks={tasks.filter(t => !t.isActive)} 
+                tasks={tasks.filter(t => !t.isActive && !t.completed)} 
                 onDeleteTask={handleDeleteTask}
                 onToggleComplete={handleToggleComplete}
                 onEditTask={handleEditTask}
