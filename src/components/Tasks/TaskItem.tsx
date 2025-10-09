@@ -20,22 +20,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('taskId', task.id);
     e.dataTransfer.effectAllowed = 'move';
-    // Add a slight delay to allow the drag image to be created
-    setTimeout(() => {
-      (e.target as HTMLElement).style.opacity = '0';
-    }, 0);
-  };
-
-  const handleDragEnd = (e: React.DragEvent) => {
-    (e.target as HTMLElement).style.opacity = '1';
   };
 
   return (
     <div 
-      className={`flex items-center justify-between p-3 rounded-md border mb-2 transition-opacity duration-200 ${task.completed ? 'bg-muted/50' : 'bg-card'} ${!task.completed ? 'cursor-grab active:cursor-grabbing' : ''}`}
+      className={`flex items-center justify-between p-3 rounded-md border mb-2 ${task.completed ? 'bg-muted/50' : 'bg-card'} ${!task.completed ? 'cursor-grab active:cursor-grabbing' : ''}`}
       draggable={!task.completed}
       onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
     >
       <div className="flex items-center gap-3">
         <Button 

@@ -26,17 +26,14 @@ const Index = () => {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const { toast } = useToast();
 
-  // Sync active task from tasks array
+  // Sync active task from tasks array only on mount
   useEffect(() => {
     const currentActiveTask = tasks.find(t => t.isActive);
-    if (currentActiveTask) {
+    if (currentActiveTask && !activeTask) {
       setActiveTask(currentActiveTask);
-    } else if (activeTask && !tasks.find(t => t.id === activeTask.id && t.isActive)) {
-      // If the active task is no longer active in the database, clear it
-      setActiveTask(null);
-      setActiveTaskId(null);
+      setActiveTaskId(currentActiveTask.id);
     }
-  }, [tasks, activeTask, setActiveTaskId]);
+  }, []);
   
   const handleLoginClick = useCallback(() => {
     navigate('/auth', {
@@ -54,17 +51,17 @@ const Index = () => {
     });
   }, [navigate]);
 
-  const handleDrop = useCallback(async (e: React.DragEvent) => {
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     const taskId = e.dataTransfer.getData('taskId');
     const task = tasks.find(t => t.id === taskId);
     
-    if (task && !task.completed && !task.isActive) {
-      // Optimistic update - set active immediately
+    if (task && !task.completed) {
+      // Instant UI update
       setActiveTask(task);
       setActiveTaskId(taskId);
-      // Then update database in background
-      setTaskActive(taskId);
+      // Database update in background (non-blocking)
+      setTaskActive(taskId).catch(console.error);
     }
   }, [tasks, setTaskActive, setActiveTaskId]);
 
@@ -79,15 +76,15 @@ const Index = () => {
     setActiveTaskId(null);
   }, [setTaskActive, setActiveTaskId]);
 
-  const handleDropToList = useCallback(async (e: React.DragEvent) => {
+  const handleDropToList = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     const activeTaskId = e.dataTransfer.getData('activeTaskId');
     if (activeTaskId && user) {
-      // Optimistic update
+      // Instant UI update
       setActiveTask(null);
       setActiveTaskId(null);
-      // Then update database
-      await setTaskActive(null);
+      // Database update in background (non-blocking)
+      setTaskActive(null).catch(console.error);
       toast({
         title: "Task returned to list",
         description: "Time spent has been saved",
@@ -95,12 +92,14 @@ const Index = () => {
     }
   }, [user, setTaskActive, setActiveTaskId, toast]);
 
-  const handleCompleteActiveTask = useCallback(async () => {
+  const handleCompleteActiveTask = useCallback(() => {
     if (activeTask && user) {
-      await toggleComplete(activeTask.id);
-      await setTaskActive(null);
+      // Instant UI update
       setActiveTask(null);
       setActiveTaskId(null);
+      // Database updates in background (non-blocking)
+      toggleComplete(activeTask.id).catch(console.error);
+      setTaskActive(null).catch(console.error);
       toast({
         title: "Task completed",
         description: "Great work! Task moved to dashboard.",
