@@ -51,6 +51,7 @@ const TaskList: React.FC<TaskListProps> = ({
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
     onDragOverList?.(e);
     setIsDraggingOver(true);
 

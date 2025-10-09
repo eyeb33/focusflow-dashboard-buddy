@@ -81,19 +81,19 @@ const Index = () => {
     e.preventDefault();
     e.stopPropagation();
     const activeTaskId = e.dataTransfer.getData('activeTaskId');
-    if (activeTaskId && user) {
+    if (activeTaskId) {
       const returnedTask = tasks.find(t => t.id === activeTaskId);
-      if (returnedTask && dropIndex !== null) {
-        // Remove the task from wherever it is and insert at dropIndex
+      if (returnedTask) {
         const otherTasks = tasks.filter(t => t.id !== activeTaskId);
+        const insertAt = dropIndex !== null ? dropIndex : otherTasks.length;
         const newOrderedTasks = [
-          ...otherTasks.slice(0, dropIndex),
+          ...otherTasks.slice(0, insertAt),
           returnedTask,
-          ...otherTasks.slice(dropIndex)
+          ...otherTasks.slice(insertAt)
         ];
         reorderTasks(newOrderedTasks);
       }
-      
+
       // Instant UI update
       setActiveTask(null);
       setActiveTaskId(null);
@@ -104,7 +104,7 @@ const Index = () => {
         description: "Time spent has been saved",
       });
     }
-  }, [user, tasks, setTaskActive, setActiveTaskId, reorderTasks, toast]);
+  }, [tasks, setTaskActive, setActiveTaskId, reorderTasks, toast]);
 
   const handleReorderTasks = useCallback((newOrderedTasks: any[]) => {
     reorderTasks(newOrderedTasks);

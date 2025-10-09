@@ -21,6 +21,7 @@ const ActiveTaskZone: React.FC<ActiveTaskZoneProps> = ({
   const handleDragStart = (e: React.DragEvent) => {
     if (activeTask) {
       e.dataTransfer.setData('activeTaskId', activeTask.id);
+      e.dataTransfer.setData('text/plain', activeTask.name);
       e.dataTransfer.effectAllowed = 'move';
     }
   };
