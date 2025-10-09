@@ -287,7 +287,7 @@ const TaskManagerWithDrop: React.FC<{
           ) : (
             <div className="flex-1 overflow-y-auto mt-4">
               <TaskList 
-                tasks={tasks.filter(t => !t.isActive && (!activeTaskId || t.id !== activeTaskId))} 
+                tasks={tasks.filter(t => !t.isActive)} 
                 onDeleteTask={handleDeleteTask}
                 onToggleComplete={handleToggleComplete}
                 onEditTask={handleEditTask}
