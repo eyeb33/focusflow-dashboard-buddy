@@ -17,8 +17,17 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onToggleComplete,
   onEdit
 }) => {
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData('taskId', task.id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
   return (
-    <div className={`flex items-center justify-between p-3 rounded-md border mb-2 ${task.completed ? 'bg-muted/50' : 'bg-card'}`}>
+    <div 
+      className={`flex items-center justify-between p-3 rounded-md border mb-2 ${task.completed ? 'bg-muted/50' : 'bg-card'} ${!task.completed ? 'cursor-grab active:cursor-grabbing' : ''}`}
+      draggable={!task.completed}
+      onDragStart={handleDragStart}
+    >
       <div className="flex items-center gap-3">
         <Button 
           variant="ghost" 

@@ -42,7 +42,7 @@ export const useTimer = (settings?: typeof DEFAULT_TIMER_SETTINGS) => {
     handlePause,
     handleReset,
     handleModeChange
-  } = useTimerLogic({ settings: timerSettings });
+  } = useTimerLogic({ settings: timerSettings, activeTaskId: null });
   
   // Update document title
   useOptimizedDocumentTitle({

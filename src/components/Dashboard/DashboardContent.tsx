@@ -3,15 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import TimeToggle from "@/components/Dashboard/TimeToggle";
 import StatCardsGrid from "@/components/Dashboard/StatCardsGrid";
 import ChartsGrid from "@/components/Dashboard/ChartsGrid";
-
+import TaskTimeCard from "@/components/Dashboard/TaskTimeCard";
 import StreakCalendar from "@/components/Dashboard/StreakCalendar";
 import { useDashboard } from '@/contexts/DashboardContext';
+import { useTasks } from '@/hooks/useTasks';
 import { ExperimentalRadialChart } from '@/components/Dashboard/ExperimentalRadialChart';
 import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
 
 const DashboardContent = () => {
   const { selectedPeriod, setSelectedPeriod, dashboardData, isDemoMode } = useDashboard();
+  const { tasks } = useTasks();
   const navigate = useNavigate();
 
   const getPeriodStats = () => {
@@ -189,6 +191,9 @@ const DashboardContent = () => {
       </div>
       <div className="mt-6">
         <ExperimentalRadialChart dailyData={dashboardData.dailyProductivity} />
+      </div>
+      <div className="mt-6">
+        <TaskTimeCard tasks={tasks} />
       </div>
     </div>
   );

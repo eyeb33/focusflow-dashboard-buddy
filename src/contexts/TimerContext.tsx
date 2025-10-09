@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerSettings } from '@/hooks/useTimerSettings';
 import { useTimerLogic } from '@/hooks/useTimerLogic';
@@ -14,6 +14,7 @@ interface TimerContextType {
   currentSessionIndex: number;
   settings: ReturnType<typeof useTimerSettings>['settings'];
   progress: number;
+  activeTaskId: string | null;
   formatTime: (seconds: number) => string;
   handleStart: () => void;
   handlePause: () => void;
@@ -21,12 +22,14 @@ interface TimerContextType {
   handleModeChange: (mode: TimerMode) => void;
   getModeLabel: (mode?: TimerMode) => string;
   updateSettings: (newSettings: Partial<ReturnType<typeof useTimerSettings>['settings']>) => void;
+  setActiveTaskId: (taskId: string | null) => void;
 }
 
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
 
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { settings, updateSettings } = useTimerSettings();
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   
   // Use our simplified timer logic
   const {
@@ -41,7 +44,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     handlePause,
     handleReset,
     handleModeChange
-  } = useTimerLogic({ settings });
+  } = useTimerLogic({ settings, activeTaskId });
 
   // Format time helper
   const formatTime = (seconds: number) => formatTimeUtil(seconds);
@@ -63,13 +66,15 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     currentSessionIndex,
     settings,
     progress,
+    activeTaskId,
     formatTime,
     handleStart,
     handlePause,
     handleReset,
     handleModeChange,
     getModeLabel,
-    updateSettings: handleUpdateSettings
+    updateSettings: handleUpdateSettings,
+    setActiveTaskId
   };
 
   return (

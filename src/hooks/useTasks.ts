@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Task } from '@/types/task';
-import { fetchTasks, addTask, updateTaskCompletion, updateTask, deleteTask } from '@/services/taskService';
+import { fetchTasks, addTask, updateTaskCompletion, updateTask, deleteTask, setActiveTask, updateTaskTimeSpent } from '@/services/taskService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from "@/hooks/use-toast";
 
@@ -124,12 +124,56 @@ export const useTasks = () => {
     }
   };
 
+  const handleSetActiveTask = async (taskId: string | null) => {
+    try {
+      const success = await setActiveTask(user?.id, taskId);
+      
+      if (success) {
+        setTasks(tasks.map(task => ({
+          ...task,
+          isActive: task.id === taskId
+        })));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Failed to set active task:', error);
+      toast({
+        title: "Error setting active task",
+        description: "Could not set the active task. Please try again.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  const handleUpdateTaskTime = async (taskId: string, additionalMinutes: number) => {
+    try {
+      const success = await updateTaskTimeSpent(user?.id, taskId, additionalMinutes);
+      
+      if (success) {
+        setTasks(tasks.map(task => 
+          task.id === taskId 
+            ? { ...task, timeSpent: (task.timeSpent || 0) + additionalMinutes } 
+            : task
+        ));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Failed to update task time:', error);
+      return false;
+    }
+  };
+
   return {
     tasks,
     isLoading,
     addTask: handleAddTask,
     toggleComplete: handleToggleComplete,
     editTask: handleEditTask,
-    deleteTask: handleDeleteTask
+    deleteTask: handleDeleteTask,
+    setActiveTask: handleSetActiveTask,
+    updateTaskTime: handleUpdateTaskTime
   };
 };

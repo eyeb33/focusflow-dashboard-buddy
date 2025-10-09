@@ -40,7 +40,7 @@ describe('useTimerLogic', () => {
   })
 
   it('should initialize with correct default values', () => {
-    const { result } = renderHook(() => useTimerLogic({ settings: mockSettings }))
+    const { result } = renderHook(() => useTimerLogic({ settings: mockSettings, activeTaskId: null }))
 
     expect(result.current.timerMode).toBe('work')
     expect(result.current.isRunning).toBe(false)
@@ -50,7 +50,7 @@ describe('useTimerLogic', () => {
   })
 
   it('should handle start and pause correctly', () => {
-    const { result } = renderHook(() => useTimerLogic({ settings: mockSettings }))
+    const { result } = renderHook(() => useTimerLogic({ settings: mockSettings, activeTaskId: null }))
 
     // Start timer
     act(() => {
@@ -68,7 +68,7 @@ describe('useTimerLogic', () => {
   })
 
   it('should reset timer correctly', () => {
-    const { result } = renderHook(() => useTimerLogic({ settings: mockSettings }))
+    const { result } = renderHook(() => useTimerLogic({ settings: mockSettings, activeTaskId: null }))
 
     // Start and run timer for a bit
     act(() => {
@@ -90,7 +90,7 @@ describe('useTimerLogic', () => {
   })
 
   it('should switch modes correctly', () => {
-    const { result } = renderHook(() => useTimerLogic({ settings: mockSettings }))
+    const { result } = renderHook(() => useTimerLogic({ settings: mockSettings, activeTaskId: null }))
 
     // Switch to break mode
     act(() => {

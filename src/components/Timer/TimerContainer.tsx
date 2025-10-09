@@ -5,11 +5,25 @@ import TimerDisplay from './TimerDisplay';
 import TimerControls from './TimerControls';
 import SessionDots from './SessionDots';
 import TimerObserver from './TimerObserver';
+import ActiveTaskZone from '../Tasks/ActiveTaskZone';
 import { useTimerContext } from '@/contexts/TimerContext';
 import { useTheme } from "@/components/Theme/ThemeProvider";
 import { cn } from "@/lib/utils";
+import { Task } from '@/types/task';
 
-const TimerContainer = () => {
+interface TimerContainerProps {
+  activeTask: Task | null;
+  onRemoveActiveTask: () => void;
+  onDrop: (e: React.DragEvent) => void;
+  onDragOver: (e: React.DragEvent) => void;
+}
+
+const TimerContainer: React.FC<TimerContainerProps> = ({
+  activeTask,
+  onRemoveActiveTask,
+  onDrop,
+  onDragOver
+}) => {
   const {
     timerMode,
     isRunning,
@@ -87,6 +101,13 @@ const TimerContainer = () => {
           totalSessions={settings?.sessionsUntilLongBreak || 4} 
           currentSessionIndex={currentSessionIndex}
           mode={timerMode}
+        />
+
+        <ActiveTaskZone
+          activeTask={activeTask}
+          onRemoveTask={onRemoveActiveTask}
+          onDrop={onDrop}
+          onDragOver={onDragOver}
         />
       </div>
     </TimerObserver>

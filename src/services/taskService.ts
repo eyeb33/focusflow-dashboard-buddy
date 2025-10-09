@@ -21,7 +21,9 @@ export const fetchTasks = async (userId: string | undefined) => {
     name: task.name,
     estimatedPomodoros: task.estimated_pomodoros,
     completed: task.completed,
-    createdAt: task.created_at
+    createdAt: task.created_at,
+    isActive: task.is_active,
+    timeSpent: task.time_spent
   })) as Task[];
 };
 
@@ -51,7 +53,9 @@ export const addTask = async (userId: string | undefined, taskName: string, esti
     name: data.name,
     estimatedPomodoros: data.estimated_pomodoros,
     completed: data.completed,
-    createdAt: data.created_at
+    createdAt: data.created_at,
+    isActive: data.is_active,
+    timeSpent: data.time_spent
   } as Task;
 };
 
@@ -104,6 +108,64 @@ export const deleteTask = async (userId: string | undefined, taskId: string) => 
     
   if (error) {
     console.error('Error deleting task:', error);
+    throw error;
+  }
+  
+  return true;
+};
+
+export const setActiveTask = async (userId: string | undefined, taskId: string | null) => {
+  if (!userId) return false;
+  
+  // First, unset all active tasks
+  await supabase
+    .from('tasks')
+    .update({ is_active: false })
+    .eq('user_id', userId);
+  
+  // If taskId is provided, set that task as active
+  if (taskId) {
+    const { error } = await supabase
+      .from('tasks')
+      .update({ is_active: true })
+      .eq('id', taskId)
+      .eq('user_id', userId);
+      
+    if (error) {
+      console.error('Error setting active task:', error);
+      throw error;
+    }
+  }
+  
+  return true;
+};
+
+export const updateTaskTimeSpent = async (userId: string | undefined, taskId: string, additionalMinutes: number) => {
+  if (!userId) return false;
+  
+  // Fetch current time spent
+  const { data: task, error: fetchError } = await supabase
+    .from('tasks')
+    .select('time_spent')
+    .eq('id', taskId)
+    .eq('user_id', userId)
+    .single();
+    
+  if (fetchError) {
+    console.error('Error fetching task:', fetchError);
+    throw fetchError;
+  }
+  
+  const newTimeSpent = (task?.time_spent || 0) + additionalMinutes;
+  
+  const { error } = await supabase
+    .from('tasks')
+    .update({ time_spent: newTimeSpent })
+    .eq('id', taskId)
+    .eq('user_id', userId);
+    
+  if (error) {
+    console.error('Error updating task time spent:', error);
     throw error;
   }
   

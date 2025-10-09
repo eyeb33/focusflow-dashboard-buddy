@@ -10,9 +10,10 @@ import { useQueryClient } from '@tanstack/react-query';
 
 interface UseTimerLogicProps {
   settings: TimerSettings;
+  activeTaskId: string | null;
 }
 
-export function useTimerLogic({ settings }: UseTimerLogicProps) {
+export function useTimerLogic({ settings, activeTaskId }: UseTimerLogicProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
@@ -85,6 +86,16 @@ export function useTimerLogic({ settings }: UseTimerLogicProps) {
         if (timerMode === 'work') {
           const durationMinutes = Math.floor(duration / 60);
           await updateDailyStats(user.id, durationMinutes, 'work', sessionDate);
+          
+          // Update active task time if there's an active task
+          if (activeTaskId) {
+            try {
+              const { updateTaskTimeSpent } = await import('@/services/taskService');
+              await updateTaskTimeSpent(user.id, activeTaskId, durationMinutes);
+            } catch (error) {
+              console.error('Error updating task time:', error);
+            }
+          }
           
           // Invalidate all dashboard queries to refresh data
           queryClient.invalidateQueries({ queryKey: ['stats'] });
