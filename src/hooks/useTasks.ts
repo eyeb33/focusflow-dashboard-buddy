@@ -129,7 +129,7 @@ export const useTasks = () => {
       const success = await setActiveTask(user?.id, taskId);
       
       if (success) {
-        setTasks(tasks.map(task => ({
+        setTasks(prev => prev.map(task => ({
           ...task,
           isActive: task.id === taskId
         })));
