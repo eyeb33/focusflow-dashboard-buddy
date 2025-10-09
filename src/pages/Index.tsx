@@ -141,7 +141,7 @@ const Index = () => {
             </div>
             
             <div className="w-full lg:w-1/2 border border-[hsl(var(--border))] rounded-lg p-6 bg-[hsl(var(--card))] min-h-[600px] flex flex-col overflow-hidden">
-              <TaskManagerWithDrop onDropToList={handleDropToList} onDragOverList={handleDragOver} />
+              <TaskManagerWithDrop activeTaskId={activeTask?.id ?? null} onDropToList={handleDropToList} onDragOverList={handleDragOver} />
             </div>
           </div>
           
@@ -158,7 +158,8 @@ const Index = () => {
 const TaskManagerWithDrop: React.FC<{
   onDropToList: (e: React.DragEvent) => void;
   onDragOverList: (e: React.DragEvent) => void;
-}> = ({ onDropToList, onDragOverList }) => {
+  activeTaskId?: string | null;
+}> = ({ onDropToList, onDragOverList, activeTaskId }) => {
   const [editingTask, setEditingTask] = React.useState<any>(null);
   const [editName, setEditName] = React.useState('');
   const [editPomodoros, setEditPomodoros] = React.useState(1);
@@ -242,7 +243,7 @@ const TaskManagerWithDrop: React.FC<{
           ) : (
             <div className="flex-1 overflow-y-auto mt-4">
               <TaskList 
-                tasks={tasks.filter(t => !t.isActive)} 
+                tasks={tasks.filter(t => !t.isActive && (!activeTaskId || t.id !== activeTaskId))} 
                 onDeleteTask={handleDeleteTask}
                 onToggleComplete={handleToggleComplete}
                 onEditTask={handleEditTask}

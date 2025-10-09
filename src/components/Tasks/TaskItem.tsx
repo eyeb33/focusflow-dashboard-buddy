@@ -9,24 +9,31 @@ interface TaskItemProps {
   onDelete: (id: string) => void;
   onToggleComplete: (id: string) => void;
   onEdit: (id: string) => void;
+  onDragStart?: (id: string) => void;
+  onDragEnd?: (id: string) => void;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({ 
   task, 
   onDelete, 
   onToggleComplete,
-  onEdit
+  onEdit,
+  onDragStart,
+  onDragEnd
 }) => {
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('taskId', task.id);
     e.dataTransfer.effectAllowed = 'move';
+    onDragStart?.(task.id);
   };
 
   return (
     <div 
-      className={`flex items-center justify-between p-3 rounded-md border mb-2 ${task.completed ? 'bg-muted/50' : 'bg-card'} ${!task.completed ? 'cursor-grab active:cursor-grabbing' : ''}`}
+      className={`flex items-center justify-between p-3 rounded-md border mb-2 ${task.completed ? 'bg-muted/50' : 'bg-card'} ${!task.completed ? 'cursor-grab active:cursor-grabbing select-none' : ''}`}
+      data-task-id={task.id}
       draggable={!task.completed}
       onDragStart={handleDragStart}
+      onDragEnd={() => onDragEnd?.(task.id)}
     >
       <div className="flex items-center gap-3">
         <Button 
