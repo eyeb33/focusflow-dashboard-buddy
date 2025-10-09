@@ -13,7 +13,7 @@ import { AlertCircle } from 'lucide-react';
 
 const DashboardContent = () => {
   const { selectedPeriod, setSelectedPeriod, dashboardData, isDemoMode } = useDashboard();
-  const { tasks } = useTasks();
+  const { tasks, deleteTask } = useTasks();
   const navigate = useNavigate();
 
   const getPeriodStats = () => {
@@ -193,7 +193,7 @@ const DashboardContent = () => {
         <ExperimentalRadialChart dailyData={dashboardData.dailyProductivity} />
       </div>
       <div className="mt-6">
-        <TaskTimeCard tasks={tasks} />
+        <TaskTimeCard tasks={tasks} onTaskDeleted={deleteTask} />
       </div>
     </div>
   );
