@@ -25,6 +25,28 @@ const TaskList: React.FC<TaskListProps> = ({
   const [dropIndex, setDropIndex] = useState<number | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
 
+  // Global safety net: ensure drag state resets even if source unmounts during drag
+  React.useEffect(() => {
+    const clearDragState = () => {
+      setDraggingTaskId(null);
+      setIsDraggingOver(false);
+      setDropIndex(null);
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') clearDragState();
+    };
+
+    window.addEventListener('dragend', clearDragState);
+    window.addEventListener('drop', clearDragState, true);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('dragend', clearDragState);
+      window.removeEventListener('drop', clearDragState, true);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     onDragOverList?.(e);

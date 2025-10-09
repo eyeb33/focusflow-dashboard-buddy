@@ -53,6 +53,7 @@ const Index = () => {
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     const taskId = e.dataTransfer.getData('taskId');
     const task = tasks.find(t => t.id === taskId);
     
@@ -78,6 +79,7 @@ const Index = () => {
 
   const handleDropToList = useCallback((e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     const activeTaskId = e.dataTransfer.getData('activeTaskId');
     if (activeTaskId && user) {
       // Instant UI update
