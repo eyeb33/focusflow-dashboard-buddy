@@ -169,6 +169,7 @@ export type Database = {
           name: string
           sort_order: number | null
           time_spent: number
+          time_spent_seconds: number
           updated_at: string
           user_id: string
         }
@@ -182,6 +183,7 @@ export type Database = {
           name: string
           sort_order?: number | null
           time_spent?: number
+          time_spent_seconds?: number
           updated_at?: string
           user_id: string
         }
@@ -195,6 +197,7 @@ export type Database = {
           name?: string
           sort_order?: number | null
           time_spent?: number
+          time_spent_seconds?: number
           updated_at?: string
           user_id?: string
         }
