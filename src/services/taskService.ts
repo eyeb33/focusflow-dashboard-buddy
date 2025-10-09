@@ -9,6 +9,7 @@ export const fetchTasks = async (userId: string | undefined) => {
   const { data, error } = await supabase
     .from('tasks')
     .select('*')
+    .order('sort_order', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false });
     
   if (error) {
@@ -30,6 +31,17 @@ export const fetchTasks = async (userId: string | undefined) => {
 export const addTask = async (userId: string | undefined, taskName: string, estimatedPomodoros: number) => {
   if (!userId) return null;
   
+  // Get the max sort_order to place new task at the top
+  const { data: maxData } = await supabase
+    .from('tasks')
+    .select('sort_order')
+    .eq('user_id', userId)
+    .order('sort_order', { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+  
+  const nextSortOrder = maxData?.sort_order ? maxData.sort_order + 1 : 1;
+  
   const { data, error } = await supabase
     .from('tasks')
     .insert([
@@ -37,7 +49,8 @@ export const addTask = async (userId: string | undefined, taskName: string, esti
         user_id: userId,
         name: taskName,
         estimated_pomodoros: estimatedPomodoros,
-        completed: false
+        completed: false,
+        sort_order: nextSortOrder
       }
     ])
     .select()
@@ -175,8 +188,20 @@ export const updateTaskTimeSpent = async (userId: string | undefined, taskId: st
 export const reorderTasks = async (userId: string | undefined, taskIds: string[]) => {
   if (!userId) return false;
   
-  // For now, just return true since we don't have a sort_order column yet
-  // The order will be maintained in the UI state
-  // TODO: Add sort_order column to tasks table for persistent ordering
-  return true;
+  try {
+    // Update sort_order for each task based on its position in the array
+    const updates = taskIds.map((taskId, index) => 
+      supabase
+        .from('tasks')
+        .update({ sort_order: index + 1 })
+        .eq('id', taskId)
+        .eq('user_id', userId)
+    );
+    
+    await Promise.all(updates);
+    return true;
+  } catch (error) {
+    console.error('Error reordering tasks:', error);
+    return false;
+  }
 };

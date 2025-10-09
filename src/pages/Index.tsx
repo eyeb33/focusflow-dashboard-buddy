@@ -26,14 +26,16 @@ const Index = () => {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const { toast } = useToast();
 
-  // Sync active task from tasks array only on mount
+  // Restore active task from database after tasks load
   useEffect(() => {
-    const currentActiveTask = tasks.find(t => t.isActive);
-    if (currentActiveTask && !activeTask) {
-      setActiveTask(currentActiveTask);
-      setActiveTaskId(currentActiveTask.id);
+    if (!isLoading && tasks.length > 0) {
+      const currentActiveTask = tasks.find(t => t.isActive);
+      if (currentActiveTask && !activeTask) {
+        setActiveTask(currentActiveTask);
+        setActiveTaskId(currentActiveTask.id);
+      }
     }
-  }, []);
+  }, [isLoading, tasks, setActiveTaskId]);
   
   const handleLoginClick = useCallback(() => {
     navigate('/auth', {
