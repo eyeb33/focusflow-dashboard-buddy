@@ -87,25 +87,42 @@ const TaskList: React.FC<TaskListProps> = ({
     e.preventDefault();
     const taskId = e.dataTransfer.getData('taskId');
     const activeTaskId = e.dataTransfer.getData('activeTaskId');
-    
-    // If dropping from active zone, let parent handle it with drop index
+
+    // Recompute a reliable drop index at drop time (dragleave may have cleared state)
+    const container = listRef.current;
+    const items = container
+      ? Array.from(container.querySelectorAll<HTMLElement>('[data-task-id]'))
+      : [];
+    const y = e.clientY;
+    let computedIndex = items.length;
+    for (let i = 0; i < items.length; i++) {
+      const rect = items[i].getBoundingClientRect();
+      const midpoint = rect.top + rect.height / 2;
+      if (y < midpoint) {
+        computedIndex = i;
+        break;
+      }
+    }
+    const effectiveIndex = dropIndex ?? computedIndex;
+
+    // If dropping from active zone, let parent handle it with effective drop index
     if (activeTaskId) {
-      onDropToList?.(e, dropIndex);
-    } 
+      onDropToList?.(e, effectiveIndex);
+    }
     // If reordering within list
-    else if (taskId && dropIndex !== null && onReorderTasks) {
+    else if (taskId && effectiveIndex !== null && onReorderTasks) {
       const draggedTask = tasks.find(t => t.id === taskId);
       if (draggedTask) {
         const filteredTasks = tasks.filter(t => t.id !== taskId);
         const newTasks = [
-          ...filteredTasks.slice(0, dropIndex),
+          ...filteredTasks.slice(0, effectiveIndex),
           draggedTask,
-          ...filteredTasks.slice(dropIndex)
+          ...filteredTasks.slice(effectiveIndex)
         ];
         onReorderTasks(newTasks);
       }
     }
-    
+
     setIsDraggingOver(false);
     setDropIndex(null);
     setDraggingTaskId(null);
