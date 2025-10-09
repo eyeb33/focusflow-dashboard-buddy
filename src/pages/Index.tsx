@@ -121,13 +121,17 @@ const Index = () => {
     reorderTasks(newOrderedTasks);
   }, [reorderTasks]);
 
-  const handleToggleCompleteFromList = useCallback((id: string) => {
-    // If completing the currently active task, clear it from the active zone
+  const handleToggleCompleteFromList = useCallback(async (id: string) => {
     if (activeTask && activeTask.id === id) {
-      handleRemoveActiveTask();
+      const elapsedMinutes = getElapsedMinutes();
+      const elapsedSeconds = getElapsedSeconds();
+      if (elapsedSeconds > 0) {
+        await updateTaskTime(id, elapsedMinutes, elapsedSeconds);
+      }
+      await handleRemoveActiveTask();
     }
-    toggleComplete(id);
-  }, [activeTask, handleRemoveActiveTask, toggleComplete]);
+    await toggleComplete(id);
+  }, [activeTask, getElapsedMinutes, getElapsedSeconds, updateTaskTime, handleRemoveActiveTask, toggleComplete]);
 
   const handleCompleteActiveTask = useCallback(async () => {
     if (activeTask && user) {
