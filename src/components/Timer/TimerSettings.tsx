@@ -55,7 +55,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange, onRe
   const settingsConfig = [
     { label: 'Focus Duration (min)', key: 'focus', min: 1, max: 60 },
     { label: 'Break Duration (min)', key: 'break', min: 1, max: 15 },
-    { label: 'Long Break Duration (min)', key: 'longBreak', min: 5, max: 30 },
+    { label: 'Long Break Duration (min)', key: 'longBreak', min: 1, max: 30 },
     { label: 'Focus Sessions Until Long Break', key: 'sessionsUntilLongBreak', min: 1, max: 10 }
   ];
 
@@ -97,25 +97,31 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange, onRe
         </div>
         
         <div className="pt-4 border-t">
-          <p className="text-sm text-muted-foreground mb-2">Timer Sequence:</p>
-          <div className="flex flex-wrap gap-1 text-xs">
-            <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded">Focus</span>
-            <span className="text-gray-500">→</span>
-            <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded">Break</span>
-            <span className="text-gray-500">→</span>
-            <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded">Focus</span>
-            <span className="text-gray-500">→</span>
-            <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded">Break</span>
-            <span className="text-gray-500">→</span>
-            <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded">Focus</span>
-            <span className="text-gray-500">→</span>
-            <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded">Break</span>
-            <span className="text-gray-500">→</span>
-            <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded">Focus</span>
-            <span className="text-gray-500">→</span>
-            <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Long Break</span>
+          <p className="text-sm text-muted-foreground mb-3">Timer Sequence:</p>
+          <div className="flex justify-center items-center gap-2 mb-3">
+            {Array.from({ length: localSettings.sessionsUntilLongBreak }).map((_, i) => (
+              <React.Fragment key={i}>
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: "#ff4545" }}
+                  title="Focus"
+                />
+                {i < localSettings.sessionsUntilLongBreak - 1 && (
+                  <div
+                    className="w-2.5 h-2.5 rounded-full"
+                    style={{ backgroundColor: "#2fc55e" }}
+                    title="Break"
+                  />
+                )}
+              </React.Fragment>
+            ))}
+            <div
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: "#3b81f6" }}
+              title="Long Break"
+            />
           </div>
-          <p className="text-xs mt-2 text-muted-foreground">The timer automatically advances through the sequence. After a long break, you'll need to manually start the next focus session.</p>
+          <p className="text-xs text-center text-muted-foreground">The timer automatically advances through the sequence. After a long break, you'll need to manually start the next focus session.</p>
         </div>
       </DialogContent>
     </Dialog>
