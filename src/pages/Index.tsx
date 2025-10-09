@@ -125,21 +125,19 @@ const Index = () => {
     if (activeTask && user) {
       // Get elapsed time before completing
       const elapsedMinutes = getElapsedMinutes();
+      const taskId = activeTask.id;
+      
+      // Clear active task immediately from UI
+      setActiveTask(null);
+      setActiveTaskId(null);
       
       // Update task time if any time has elapsed
       if (elapsedMinutes > 0) {
-        await updateTaskTime(activeTask.id, elapsedMinutes);
-        
-        // Refetch tasks to update the UI
-        const updatedTasks = await import('@/services/taskService').then(m => m.fetchTasks(user.id));
-        setActiveTask(null);
-      } else {
-        setActiveTask(null);
+        updateTaskTime(taskId, elapsedMinutes).catch(console.error);
       }
       
-      setActiveTaskId(null);
       // Database updates in background (non-blocking)
-      toggleComplete(activeTask.id).catch(console.error);
+      toggleComplete(taskId).catch(console.error);
       setTaskActive(null).catch(console.error);
       
       const timeMessage = elapsedMinutes > 0 ? ` ${elapsedMinutes} min tracked.` : '';
