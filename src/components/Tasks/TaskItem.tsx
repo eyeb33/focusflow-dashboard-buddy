@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Trash, Edit, Clock, Check, Square } from "lucide-react";
+import { Trash, Edit, Check, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Task } from '@/types/task';
 
@@ -62,12 +62,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       </div>
       
       <div className="flex items-center gap-2">
-        <div className="flex items-center text-sm text-muted-foreground mr-2">
-          <Clock className="h-3 w-3 mr-1" />
-          <span>{task.estimatedPomodoros}</span>
-        </div>
-        
-        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="flex items-center text-sm text-muted-foreground mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(task.id)}>
             <Edit className="h-3.5 w-3.5" />
           </Button>

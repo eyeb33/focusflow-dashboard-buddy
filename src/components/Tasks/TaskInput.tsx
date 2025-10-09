@@ -10,14 +10,12 @@ interface TaskInputProps {
 
 const TaskInput: React.FC<TaskInputProps> = ({ onAddTask }) => {
   const [taskName, setTaskName] = useState('');
-  const [estimatedPomodoros, setEstimatedPomodoros] = useState(1);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (taskName.trim()) {
-      onAddTask(taskName, estimatedPomodoros);
+      onAddTask(taskName, 1); // Default to 1 pomodoro
       setTaskName('');
-      setEstimatedPomodoros(1);
     }
   };
 
@@ -32,19 +30,13 @@ const TaskInput: React.FC<TaskInputProps> = ({ onAddTask }) => {
           className="w-full focus-visible:ring-0 focus-visible:ring-offset-0"
         />
       </div>
-      <div className="w-24">
-        <Input
-          type="number"
-          min="1"
-          max="10"
-          value={estimatedPomodoros}
-          onChange={(e) => setEstimatedPomodoros(parseInt(e.target.value) || 1)}
-          className="w-full focus-visible:ring-0 focus-visible:ring-offset-0"
-          aria-label="Estimated pomodoros"
-        />
-      </div>
-      <Button type="submit" size="icon" disabled={!taskName.trim()}>
-        <Plus className="h-4 w-4" />
+      <Button 
+        type="submit" 
+        size="icon" 
+        disabled={!taskName.trim()}
+        className="bg-red-500 hover:bg-red-600 text-white disabled:bg-red-500/50"
+      >
+        <Plus className="h-5 w-5" strokeWidth={3} />
       </Button>
     </form>
   );
