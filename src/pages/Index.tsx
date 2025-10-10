@@ -141,10 +141,9 @@ const Index = () => {
     }
 
     try {
-      // Save time if any elapsed
-      if (elapsedSeconds > 0) {
-        await updateTaskTime(id, elapsedMinutes, elapsedSeconds);
-      }
+      // Always save time to ensure task appears on dashboard
+      // Even if 0, this ensures timeSpent fields are set
+      await updateTaskTime(id, elapsedMinutes, elapsedSeconds);
 
       // Mark complete and clear active status
       await toggleComplete(id);
