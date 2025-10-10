@@ -28,8 +28,10 @@ const TaskTimeCard: React.FC<TaskTimeCardProps> = ({ tasks, selectedPeriod, onTa
   const now = new Date();
   const completedTasksWithTime = tasks.filter(task => {
     if (!task.completed) return false;
-    const hasAnyTime = ((task.timeSpent || 0) > 0) || ((task.timeSpentSeconds || 0) > 0);
-    if (!hasAnyTime) return false;
+    // Check if time has been set (even if 0) - this ensures completed tasks appear
+    const hasTimeSet = (task.timeSpent !== null && task.timeSpent !== undefined) || 
+                       (task.timeSpentSeconds !== null && task.timeSpentSeconds !== undefined);
+    if (!hasTimeSet) return false;
     
     const taskDate = new Date(task.updatedAt);
     
