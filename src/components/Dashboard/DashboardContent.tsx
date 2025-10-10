@@ -193,7 +193,7 @@ const DashboardContent = () => {
         <ExperimentalRadialChart dailyData={dashboardData.dailyProductivity} />
       </div>
       <div className="mt-6">
-        <TaskTimeCard tasks={tasks} onTaskDeleted={deleteTask} />
+        <TaskTimeCard tasks={tasks} selectedPeriod={selectedPeriod} onTaskDeleted={deleteTask} />
       </div>
     </div>
   );

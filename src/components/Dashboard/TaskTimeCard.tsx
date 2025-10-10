@@ -10,26 +10,46 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from '@/hooks/use-toast';
+import { TimePeriod } from '@/components/Dashboard/TimeToggle';
 
 interface TaskTimeCardProps {
   tasks: Task[];
+  selectedPeriod: TimePeriod;
   onTaskDeleted?: (taskId: string) => Promise<boolean>;
 }
 
 type SortOption = 'time' | 'order';
 
-const TaskTimeCard: React.FC<TaskTimeCardProps> = ({ tasks, onTaskDeleted }) => {
+const TaskTimeCard: React.FC<TaskTimeCardProps> = ({ tasks, selectedPeriod, onTaskDeleted }) => {
   const [sortBy, setSortBy] = useState<SortOption>('order');
   const { toast } = useToast();
 
-  // Filter completed tasks with time spent from today
-  const today = new Date().toDateString();
+  // Filter completed tasks with time spent based on selected period
+  const now = new Date();
   const completedTasksWithTime = tasks.filter(task => {
     if (!task.completed) return false;
     const hasAnyTime = ((task.timeSpent || 0) > 0) || ((task.timeSpentSeconds || 0) > 0);
     if (!hasAnyTime) return false;
-    const taskDate = new Date(task.updatedAt).toDateString();
-    return taskDate === today;
+    
+    const taskDate = new Date(task.updatedAt);
+    
+    switch (selectedPeriod) {
+      case 'today': {
+        return taskDate.toDateString() === now.toDateString();
+      }
+      case 'week': {
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - 7);
+        return taskDate >= weekStart && taskDate <= now;
+      }
+      case 'month': {
+        const monthStart = new Date(now);
+        monthStart.setDate(now.getDate() - 30);
+        return taskDate >= monthStart && taskDate <= now;
+      }
+      default:
+        return false;
+    }
   });
 
   // Sort tasks based on selected option
