@@ -150,9 +150,11 @@ const TaskTimeCard: React.FC<TaskTimeCardProps> = ({ tasks, selectedPeriod, onTa
             >
               <span className="font-medium truncate">{task.name}</span>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground whitespace-nowrap">
-                  {timeLabel}
-                </span>
+                {totalSeconds > 0 && (
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">
+                    {timeLabel}
+                  </span>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"
