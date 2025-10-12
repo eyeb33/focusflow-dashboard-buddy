@@ -19,6 +19,7 @@ const ChartsGrid: React.FC<ChartsGridProps> = ({
 }) => {
   const getActiveData = () => {
     switch (selectedPeriod) {
+      case 'yesterday':
       case 'today':
         return dailyData;
       case 'week':

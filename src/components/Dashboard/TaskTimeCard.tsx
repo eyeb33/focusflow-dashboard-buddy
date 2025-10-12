@@ -37,6 +37,11 @@ const TaskTimeCard: React.FC<TaskTimeCardProps> = ({ tasks, selectedPeriod, onTa
     const taskDate = new Date(task.completedAt || task.updatedAt);
     
     switch (selectedPeriod) {
+      case 'yesterday': {
+        const yesterday = new Date(now);
+        yesterday.setDate(now.getDate() - 1);
+        return taskDate.toDateString() === yesterday.toDateString();
+      }
       case 'today': {
         return taskDate.toDateString() === now.toDateString();
       }

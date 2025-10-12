@@ -20,6 +20,7 @@ const DashboardContent = () => {
     const stats = dashboardData.stats;
     
     switch (selectedPeriod) {
+      case 'yesterday':
       case 'today': {
         const dailyData = dashboardData.dailyProductivity;
         const totalMinutes = dailyData.reduce((sum: number, point: any) => sum + point.minutes, 0);

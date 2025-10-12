@@ -16,6 +16,8 @@ const ProductivityChart: React.FC<ProductivityChartProps> = ({
 }) => {
   const getChartTitle = () => {
     switch (period) {
+      case 'yesterday':
+        return 'Yesterday\'s Productivity';
       case 'today':
         return 'Today\'s Productivity';
       case 'week':
@@ -35,6 +37,7 @@ const ProductivityChart: React.FC<ProductivityChartProps> = ({
     , data[0]);
 
     switch (period) {
+      case 'yesterday':
       case 'today':
         return `${maxEntry.name} - ${parseInt(maxEntry.name) + 1}:00`;
       case 'week':

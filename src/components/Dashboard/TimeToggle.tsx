@@ -2,7 +2,7 @@
 import React from 'react';
 import { cn } from "@/lib/utils";
 
-export type TimePeriod = 'today' | 'week' | 'month';
+export type TimePeriod = 'yesterday' | 'today' | 'week' | 'month';
 
 interface TimeToggleProps {
   selectedPeriod: TimePeriod;
@@ -13,6 +13,15 @@ interface TimeToggleProps {
 const TimeToggle: React.FC<TimeToggleProps> = ({ selectedPeriod, onChange, className }) => {
   return (
     <div className={cn("flex p-1 gap-1 bg-muted rounded-lg w-fit", className)}>
+      <button
+        onClick={() => onChange('yesterday')}
+        className={cn(
+          "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
+          selectedPeriod === 'yesterday' ? "bg-background shadow-sm" : "hover:bg-background/50"
+        )}
+      >
+        Yesterday
+      </button>
       <button
         onClick={() => onChange('today')}
         className={cn(
