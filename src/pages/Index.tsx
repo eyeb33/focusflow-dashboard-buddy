@@ -194,8 +194,8 @@ const Index = () => {
       getPageBackground()
     )}>
       <main className="flex-1 flex flex-col overflow-hidden">
-        <div className="relative flex flex-col h-full p-4">
-          <div className="h-full flex flex-col gap-4">
+        <div className="relative flex flex-col items-center h-full p-4">
+          <div className="w-full max-w-[80%] h-full flex flex-col gap-4">
             <div className="rounded-lg p-4 bg-[hsl(var(--card))]">
               <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
             </div>
