@@ -42,13 +42,8 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className={cn(
-      "border-b",
-      theme === "dark" 
-        ? "bg-black border-[#333]" 
-        : "bg-white border-gray-200"
-    )}>
-      <div className="container flex items-center justify-between py-4">
+    <header>
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center gap-2">
             <img src={logo} alt="TimeBubble" className="h-48 w-auto" />
