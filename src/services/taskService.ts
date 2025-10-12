@@ -26,6 +26,7 @@ export const fetchTasks = async (userId: string | undefined) => {
       completed: task.completed,
       createdAt: (task as any).created_at,
       updatedAt: (task as any).updated_at,
+      completedAt: t.completed_at,
       isActive: (task as any).is_active,
       timeSpent: (task as any).time_spent,
       timeSpentSeconds: t.time_spent_seconds,
@@ -81,9 +82,21 @@ export const addTask = async (userId: string | undefined, taskName: string, esti
 export const updateTaskCompletion = async (userId: string | undefined, taskId: string, completed: boolean) => {
   if (!userId) return false;
   
+  const updateData: any = { 
+    completed, 
+    updated_at: new Date().toISOString() 
+  };
+  
+  // Set completedAt timestamp when marking as completed, clear it when uncompleting
+  if (completed) {
+    updateData.completed_at = new Date().toISOString();
+  } else {
+    updateData.completed_at = null;
+  }
+  
   const { error } = await supabase
     .from('tasks')
-    .update({ completed, updated_at: new Date().toISOString() })
+    .update(updateData)
     .eq('id', taskId)
     .eq('user_id', userId);
     

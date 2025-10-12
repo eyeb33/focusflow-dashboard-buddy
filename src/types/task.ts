@@ -5,6 +5,7 @@ export interface Task {
   completed: boolean;
   createdAt: string;
   updatedAt: string;
+  completedAt?: string;
   completedPomodoros?: number;
   isActive?: boolean;
   timeSpent?: number; // Total minutes spent on this task

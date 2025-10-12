@@ -161,6 +161,7 @@ export type Database = {
       tasks: {
         Row: {
           completed: boolean
+          completed_at: string | null
           completed_pomodoros: number | null
           created_at: string
           estimated_pomodoros: number
@@ -175,6 +176,7 @@ export type Database = {
         }
         Insert: {
           completed?: boolean
+          completed_at?: string | null
           completed_pomodoros?: number | null
           created_at?: string
           estimated_pomodoros?: number
@@ -189,6 +191,7 @@ export type Database = {
         }
         Update: {
           completed?: boolean
+          completed_at?: string | null
           completed_pomodoros?: number | null
           created_at?: string
           estimated_pomodoros?: number

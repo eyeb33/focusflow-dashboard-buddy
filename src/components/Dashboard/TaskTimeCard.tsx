@@ -33,7 +33,8 @@ const TaskTimeCard: React.FC<TaskTimeCardProps> = ({ tasks, selectedPeriod, onTa
                        (task.timeSpentSeconds !== null && task.timeSpentSeconds !== undefined);
     if (!hasTimeSet) return false;
     
-    const taskDate = new Date(task.updatedAt);
+    // Use completedAt if available, otherwise fall back to updatedAt
+    const taskDate = new Date(task.completedAt || task.updatedAt);
     
     switch (selectedPeriod) {
       case 'today': {
