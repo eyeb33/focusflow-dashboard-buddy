@@ -161,6 +161,14 @@ const Index = () => {
           title: "Task completed",
           description: `Great work!${timeMessage}`,
         });
+        
+        // Trigger coach response for task completion
+        if (user) {
+          triggerProactiveCoaching('task_completed', {
+            taskName: task.name,
+            timeSpent: elapsedMinutes
+          });
+        }
       }
     } finally {
       // Clear suppression after state/queries have a chance to settle

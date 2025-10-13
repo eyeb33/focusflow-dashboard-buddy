@@ -82,7 +82,7 @@ serve(async (req) => {
     // Calculate context
     const completedToday = todayStats.total_completed_sessions || 0;
     const focusTimeToday = todayStats.total_focus_time || 0;
-    const activeTa skName = triggerContext?.taskName || (activeTasks[0]?.name || 'No active task');
+    const activeTaskName = triggerContext?.taskName || (activeTasks[0]?.name || 'No active task');
     const pendingTasksCount = activeTasks.length;
     const lastMood = recentCheckIns[0]?.mood_rating || null;
 
