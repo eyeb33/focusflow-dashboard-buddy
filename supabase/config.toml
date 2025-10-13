@@ -2,3 +2,9 @@ project_id = "mphdigvrxgnckplongdu"
 
 [functions.ai-coach]
 verify_jwt = true
+
+[functions.transcribe-audio]
+verify_jwt = true
+
+[functions.synthesize-speech]
+verify_jwt = true

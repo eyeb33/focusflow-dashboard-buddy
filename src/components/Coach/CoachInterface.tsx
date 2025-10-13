@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MessageCircle, X, Send, TrendingUp, Heart, AlertCircle } from 'lucide-react';
+import { MessageCircle, X, Send, TrendingUp, Heart, AlertCircle, Mic, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useCoach } from '@/contexts/CoachContext';
+import { useVoiceRecording } from '@/hooks/useVoiceRecording';
+import { useVoicePlayback } from '@/hooks/useVoicePlayback';
 import CoachMessage from './CoachMessage';
 import WellbeingCheckIn from './WellbeingCheckIn';
 
@@ -24,6 +26,9 @@ const CoachInterface: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showQuickActions, setShowQuickActions] = useState(true);
+  
+  const { state: recordingState, duration, startRecording, stopRecording } = useVoiceRecording();
+  const { isPlaying, voiceEnabled, toggleVoice, playText } = useVoicePlayback();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -57,6 +62,27 @@ const CoachInterface: React.FC = () => {
     }
   };
 
+  const handleVoiceToggle = async () => {
+    if (recordingState === 'recording') {
+      try {
+        const transcription = await stopRecording();
+        setInputValue(transcription);
+      } catch (error) {
+        console.error('Failed to stop recording:', error);
+      }
+    } else if (recordingState === 'idle') {
+      await startRecording();
+    }
+  };
+
+  // Play assistant responses automatically
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage && lastMessage.role === 'assistant' && voiceEnabled) {
+      playText(lastMessage.content);
+    }
+  }, [messages, voiceEnabled, playText]);
+
   return (
     <>
       <div className={cn(
@@ -86,17 +112,34 @@ const CoachInterface: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-sm">Wellbeing Coach</h3>
-                  <p className="text-xs text-muted-foreground">Here to support you</p>
+                  <p className="text-xs text-muted-foreground">
+                    {isPlaying ? 'Speaking...' : 'Here to support you'}
+                  </p>
                 </div>
               </div>
-              <Button
-                onClick={toggleMinimize}
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-              >
-                <X className="w-4 h-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  onClick={toggleVoice}
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  title={voiceEnabled ? "Disable voice" : "Enable voice"}
+                >
+                  {voiceEnabled ? (
+                    <Volume2 className="w-4 h-4" />
+                  ) : (
+                    <VolumeX className="w-4 h-4" />
+                  )}
+                </Button>
+                <Button
+                  onClick={toggleMinimize}
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
 
             {/* Messages */}
@@ -169,18 +212,37 @@ const CoachInterface: React.FC = () => {
 
             {/* Input */}
             <div className="p-4 border-t border-border">
+              {recordingState !== 'idle' && (
+                <div className="mb-2 text-xs text-center text-muted-foreground">
+                  {recordingState === 'recording' 
+                    ? `Recording... ${duration}s` 
+                    : 'Processing...'}
+                </div>
+              )}
               <div className="flex gap-2">
+                <Button
+                  onClick={handleVoiceToggle}
+                  disabled={recordingState === 'processing' || isLoading}
+                  variant={recordingState === 'recording' ? 'destructive' : 'outline'}
+                  size="icon"
+                  className={cn(
+                    recordingState === 'recording' && 'animate-pulse'
+                  )}
+                  title={recordingState === 'recording' ? 'Stop recording' : 'Start voice recording'}
+                >
+                  <Mic className="w-4 h-4" />
+                </Button>
                 <Input
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Type a message..."
-                  disabled={isLoading}
+                  placeholder="Type or speak a message..."
+                  disabled={isLoading || recordingState !== 'idle'}
                   className="flex-1"
                 />
                 <Button
                   onClick={handleSend}
-                  disabled={!inputValue.trim() || isLoading}
+                  disabled={!inputValue.trim() || isLoading || recordingState !== 'idle'}
                   size="icon"
                 >
                   <Send className="w-4 h-4" />

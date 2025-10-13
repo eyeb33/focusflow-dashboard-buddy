@@ -24,6 +24,7 @@ interface CoachContextType {
   markAsRead: () => void;
   checkInModalOpen: boolean;
   setCheckInModalOpen: (open: boolean) => void;
+  onResponseReceived?: (text: string) => void;
 }
 
 const CoachContext = createContext<CoachContextType | undefined>(undefined);
