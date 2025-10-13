@@ -16,6 +16,8 @@ import { useToast } from '@/hooks/use-toast';
 import TaskInput from '@/components/Tasks/TaskInput';
 import TaskList from '@/components/Tasks/TaskList';
 import { Skeleton } from '@/components/ui/skeleton';
+import CoachInterface from '@/components/Coach/CoachInterface';
+import { useCoach } from '@/contexts/CoachContext';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -25,6 +27,7 @@ const Index = () => {
   const { tasks, isLoading, addTask, toggleComplete, editTask, deleteTask, setActiveTask: setTaskActive, updateTaskTime, reorderTasks } = useTasks();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const { toast } = useToast();
+  const { triggerProactiveCoaching } = useCoach();
   const suppressRestoreRef = React.useRef<string | null>(null);
 
   // Restore active task from database after tasks load
@@ -233,6 +236,7 @@ const Index = () => {
       </main>
       
       <MobileNav />
+      {user && <CoachInterface />}
     </div>
   );
 };

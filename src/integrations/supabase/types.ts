@@ -14,6 +14,101 @@ export type Database = {
   }
   public: {
     Tables: {
+      coach_check_ins: {
+        Row: {
+          created_at: string
+          energy_level: number
+          id: string
+          mood_rating: number
+          notes: string | null
+          stress_level: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          energy_level: number
+          id?: string
+          mood_rating: number
+          notes?: string | null
+          stress_level: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          energy_level?: number
+          id?: string
+          mood_rating?: number
+          notes?: string | null
+          stress_level?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      coach_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string
+          started_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          started_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          started_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      coach_messages: {
+        Row: {
+          content: string
+          context_snapshot: Json | null
+          conversation_id: string
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["coach_role"]
+          user_id: string
+        }
+        Insert: {
+          content: string
+          context_snapshot?: Json | null
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["coach_role"]
+          user_id: string
+        }
+        Update: {
+          content?: string
+          context_snapshot?: Json | null
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["coach_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "coach_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       focus_sessions: {
         Row: {
           completed: boolean
@@ -230,7 +325,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      coach_role: "user" | "assistant"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -357,6 +452,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      coach_role: ["user", "assistant"],
+    },
   },
 } as const

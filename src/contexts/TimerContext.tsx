@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerSettings } from '@/hooks/useTimerSettings';
 import { useTimerLogic } from '@/hooks/useTimerLogic';
@@ -32,6 +32,8 @@ const TimerContext = createContext<TimerContextType | undefined>(undefined);
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { settings, updateSettings } = useTimerSettings();
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const prevCompletedSessions = useRef(0);
+  const workTimeRef = useRef(0);
   
   // Use our simplified timer logic
   const {
@@ -47,6 +49,40 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     handleReset,
     handleModeChange
   } = useTimerLogic({ settings, activeTaskId });
+
+  // Proactive coaching triggers - to be used by CoachContext
+  useEffect(() => {
+    // Track work time for extended work detection
+    if (isRunning && timerMode === 'work') {
+      const interval = setInterval(() => {
+        workTimeRef.current += 1;
+        
+        // Trigger after 2 hours of continuous work (7200 seconds)
+        if (workTimeRef.current === 7200 || workTimeRef.current % 3600 === 0 && workTimeRef.current > 7200) {
+          // This will be picked up by CoachContext
+          window.dispatchEvent(new CustomEvent('coach:extended-work', {
+            detail: { minutes: workTimeRef.current / 60 }
+          }));
+        }
+      }, 1000);
+      
+      return () => clearInterval(interval);
+    } else if (!isRunning) {
+      workTimeRef.current = 0;
+    }
+  }, [isRunning, timerMode]);
+
+  // Trigger on Pomodoro cycle completion (4 sessions)
+  useEffect(() => {
+    if (completedSessions > 0 && 
+        completedSessions !== prevCompletedSessions.current && 
+        completedSessions % 4 === 0) {
+      window.dispatchEvent(new CustomEvent('coach:pomodoro-cycle', {
+        detail: { cycles: completedSessions / 4 }
+      }));
+    }
+    prevCompletedSessions.current = completedSessions;
+  }, [completedSessions]);
 
   // Format time helper
   const formatTime = (seconds: number) => formatTimeUtil(seconds);
