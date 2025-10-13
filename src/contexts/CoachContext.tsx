@@ -150,13 +150,17 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           content
         });
 
+      // Get user's session token for edge function auth
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No session found');
+
       // Stream AI response
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-coach`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'Authorization': `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -281,13 +285,17 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const convId = await createConversationIfNeeded();
       if (!convId) throw new Error('No conversation');
 
+      // Get user's session token for edge function auth
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No session found');
+
       // Call AI with trigger context
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-coach`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'Authorization': `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
