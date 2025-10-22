@@ -33,10 +33,12 @@ export const useOptimizedDocumentTitle = ({
     const circle = getCircleColor();
     const formattedTime = formatTime(timeRemaining);
     
-    document.title = (isRunning || timeRemaining > 0)
+    const newTitle = (isRunning || timeRemaining > 0)
       ? `${circle} ${formattedTime}`
       : 'FocusFlow';
-      
-    console.log(`Document title updated: ${document.title}`);
+    
+    if (document.title !== newTitle) {
+      document.title = newTitle;
+    }
   }, [timeRemaining, timerMode, isRunning]);
 };
