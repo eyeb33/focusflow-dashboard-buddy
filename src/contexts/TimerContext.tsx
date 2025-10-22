@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerSettings } from '@/hooks/useTimerSettings';
 import { useTimerLogic } from '@/hooks/useTimerLogic';
+import { useOptimizedDocumentTitle } from '@/hooks/useOptimizedDocumentTitle';
 import { formatTime as formatTimeUtil, getModeLabel as getModeLabelUtil } from '@/utils/timerUtils';
 
 interface TimerContextType {
@@ -49,6 +50,13 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     handleReset,
     handleModeChange
   } = useTimerLogic({ settings, activeTaskId });
+
+  // Update document title with timer
+  useOptimizedDocumentTitle({
+    timeRemaining,
+    timerMode,
+    isRunning
+  });
 
   // Proactive coaching triggers - to be used by CoachContext
   useEffect(() => {
