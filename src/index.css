@@ -43,15 +43,15 @@
     
     --radius: 0.75rem;                  /* Slightly larger radius for premium feel */
 
-    /* Timer Mode Backgrounds - Vibrant personality colors */
-    --timer-focus-bg: 8 85% 65%;        /* Vibrant orange-red for focus */
-    --timer-focus-accent: 8 85% 55%;    /* Deep orange-red for UI */
+    /* Timer Mode Backgrounds - Cohesive color palette */
+    --timer-focus-bg: 0 82% 48%;        /* Red #df1515 */
+    --timer-focus-accent: 0 82% 42%;    /* Darker red */
     
-    --timer-break-bg: 150 60% 55%;      /* Vibrant teal-green - energizing rest */
-    --timer-break-accent: 150 60% 45%;  /* Deep teal-green */
+    --timer-break-bg: 99 19% 48%;       /* Green #738f66 */
+    --timer-break-accent: 99 19% 42%;   /* Darker green */
     
-    --timer-longbreak-bg: 200 75% 60%;  /* Vibrant cyan-blue - deep relaxation */
-    --timer-longbreak-accent: 200 75% 50%; /* Deep cyan-blue */
+    --timer-longbreak-bg: 157 20% 70%;  /* Blue #a4c2b6 */
+    --timer-longbreak-accent: 157 20% 60%; /* Darker blue */
   }
  
   .dark {

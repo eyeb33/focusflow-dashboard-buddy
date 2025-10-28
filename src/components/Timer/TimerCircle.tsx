@@ -47,24 +47,24 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
       // Keep vibrant colors for dark mode
       switch (mode) {
         case 'break':
-          return "#2fc55e"; // Green for break
+          return "#738f66"; // Green
         case 'longBreak':
-          return "#3b81f6"; // Blue for long break
+          return "#a4c2b6"; // Blue
         case 'focus':
         default:
-          return "#ff4545"; // Red for focus
+          return "#df1515"; // Red
       }
     }
     
-    // Light mode - vibrant colors from reference
+    // Light mode - new color palette
     switch (mode) {
       case 'break':
-        return "#4ECDC4";      // Vibrant teal
+        return "#738f66";      // Green
       case 'longBreak':
-        return "#45B7D1";      // Vibrant cyan
+        return "#a4c2b6";      // Blue
       case 'focus':
       default:
-        return "#FF6B58";      // Vibrant orange-red
+        return "#df1515";      // Red
     }
   };
 

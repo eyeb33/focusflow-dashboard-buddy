@@ -27,26 +27,26 @@ const TimerControls: React.FC<TimerControlsProps> = ({
       // Keep vibrant for dark mode
       switch (mode) {
         case 'work':
-          return "bg-red-500 hover:bg-red-600 active:bg-red-700 shadow-soft hover:shadow-soft-lg";
+          return "bg-[#df1515] hover:bg-[#c91313] active:bg-[#b31111] shadow-soft hover:shadow-soft-lg";
         case 'break':
-          return "bg-green-500 hover:bg-green-600 active:bg-green-700 shadow-soft hover:shadow-soft-lg";
+          return "bg-[#738f66] hover:bg-[#657f5a] active:bg-[#576f4e] shadow-soft hover:shadow-soft-lg";
         case 'longBreak':
-          return "bg-blue-500 hover:bg-blue-600 active:bg-blue-700 shadow-soft hover:shadow-soft-lg";
+          return "bg-[#a4c2b6] hover:bg-[#93b3a7] active:bg-[#82a498] shadow-soft hover:shadow-soft-lg";
         default:
-          return "bg-red-500 hover:bg-red-600 active:bg-red-700 shadow-soft hover:shadow-soft-lg";
+          return "bg-[#df1515] hover:bg-[#c91313] active:bg-[#b31111] shadow-soft hover:shadow-soft-lg";
       }
     }
     
-  // Light mode - vibrant reference colors
+  // Light mode - new color palette
   switch (mode) {
     case 'work':
-      return "bg-[#FF6B58] hover:bg-[#FF5545] active:bg-[#FF3F32] shadow-soft hover:shadow-soft-lg";
+      return "bg-[#df1515] hover:bg-[#c91313] active:bg-[#b31111] shadow-soft hover:shadow-soft-lg";
     case 'break':
-      return "bg-[#4ECDC4] hover:bg-[#3EBDB4] active:bg-[#2EADA4] shadow-soft hover:shadow-soft-lg";
+      return "bg-[#738f66] hover:bg-[#657f5a] active:bg-[#576f4e] shadow-soft hover:shadow-soft-lg";
     case 'longBreak':
-      return "bg-[#45B7D1] hover:bg-[#35A7C1] active:bg-[#2597B1] shadow-soft hover:shadow-soft-lg";
+      return "bg-[#a4c2b6] hover:bg-[#93b3a7] active:bg-[#82a498] shadow-soft hover:shadow-soft-lg";
     default:
-      return "bg-[#FF6B58] hover:bg-[#FF5545] active:bg-[#FF3F32] shadow-soft hover:shadow-soft-lg";
+      return "bg-[#df1515] hover:bg-[#c91313] active:bg-[#b31111] shadow-soft hover:shadow-soft-lg";
   }
   };
   

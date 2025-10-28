@@ -125,22 +125,22 @@ const TimerContainer: React.FC<TimerContainerProps> = ({
     setCompletedSessionData(null);
   };
 
-  // Get background gradient based on mode and theme - vibrant colors
+  // Get background gradient based on mode and theme
   const getBackgroundStyle = () => {
     if (theme === 'dark') {
       return 'bg-background';
     }
     
-    // Light mode - vibrant gradients from reference
+    // Light mode - new color palette
     switch (timerMode) {
       case 'work':
-        return 'bg-gradient-to-br from-[#FF6B58] via-[#FF7F6E] to-[#FF9484]';
+        return 'bg-[#df1515]';
       case 'break':
-        return 'bg-gradient-to-br from-[#4ECDC4] via-[#5DD9D0] to-[#6CE5DC]';
+        return 'bg-[#738f66]';
       case 'longBreak':
-        return 'bg-gradient-to-br from-[#45B7D1] via-[#5BC5DD] to-[#71D3E9]';
+        return 'bg-[#a4c2b6]';
       default:
-        return 'bg-gradient-to-br from-[#FF6B58] via-[#FF7F6E] to-[#FF9484]';
+        return 'bg-[#df1515]';
     }
   };
 
@@ -148,51 +148,53 @@ const TimerContainer: React.FC<TimerContainerProps> = ({
     <TimerObserver>
       <div 
         className={cn(
-          "flex-1 flex flex-col items-center justify-center relative overflow-hidden transition-all duration-700 ease-in-out px-8 py-12",
+          "flex-1 flex items-center justify-center relative overflow-hidden transition-all duration-700 ease-in-out px-8 py-12",
           getBackgroundStyle()
         )}
         data-testid="timer-container"
       >
-        <TimerHeader 
-          timerMode={timerMode}
-          handleModeChange={handleModeChange}
-          settings={settings}
-          onSettingsChange={handleSettingsChange}
-          onReset={handleReset}
-        />
+        <div className="bg-white dark:bg-card rounded-3xl shadow-2xl p-8 w-full max-w-md flex flex-col items-center">
+          <TimerHeader 
+            timerMode={timerMode}
+            handleModeChange={handleModeChange}
+            settings={settings}
+            onSettingsChange={handleSettingsChange}
+            onReset={handleReset}
+          />
 
-        <TimerDisplay 
-          timerMode={timerMode}
-          timeRemaining={timeRemaining}
-          totalSeconds={getTotalSeconds()}
-          theme={theme}
-          isRunning={isRunning}
-        />
+          <TimerDisplay 
+            timerMode={timerMode}
+            timeRemaining={timeRemaining}
+            totalSeconds={getTotalSeconds()}
+            theme={theme}
+            isRunning={isRunning}
+          />
 
-        <TimerControls 
-          isRunning={isRunning}
-          mode={timerMode}
-          onStart={handleStartWithModal}
-          onPause={handlePause}
-          onReset={handleReset}
-        />
-        <SessionDots 
-          totalSessions={settings?.sessionsUntilLongBreak || 4} 
-          currentSessionIndex={currentSessionIndex}
-          mode={timerMode}
-        />
+          <TimerControls 
+            isRunning={isRunning}
+            mode={timerMode}
+            onStart={handleStartWithModal}
+            onPause={handlePause}
+            onReset={handleReset}
+          />
+          <SessionDots 
+            totalSessions={settings?.sessionsUntilLongBreak || 4} 
+            currentSessionIndex={currentSessionIndex}
+            mode={timerMode}
+          />
 
-        <ActiveTaskZone 
-          activeTask={activeTask}
-          onRemoveTask={onRemoveActiveTask}
-          onCompleteTask={onCompleteActiveTask}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
-          sessionGoal={sessionGoal}
-          timeRemaining={timeRemaining}
-          totalTime={getTotalSeconds()}
-          isRunning={isRunning}
-        />
+          <ActiveTaskZone 
+            activeTask={activeTask}
+            onRemoveTask={onRemoveActiveTask}
+            onCompleteTask={onCompleteActiveTask}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
+            sessionGoal={sessionGoal}
+            timeRemaining={timeRemaining}
+            totalTime={getTotalSeconds()}
+            isRunning={isRunning}
+          />
+        </div>
       </div>
       
       {/* Session Start Modal */}

@@ -44,21 +44,21 @@ const SessionDots: React.FC<SessionDotsProps> = ({
     switch(mode) {
       case 'break':
         return {
-          active: "#2fc55e", // Green for regular breaks
-          completed: "#2fc55e",
+          active: "#738f66", // Green
+          completed: "#738f66",
           inactive: theme === "dark" ? "#444" : "#d1d5db"
         };
       case 'longBreak':
         return {
-          active: "#3b81f6", // Blue for long breaks
-          completed: "#3b81f6",
+          active: "#a4c2b6", // Blue
+          completed: "#a4c2b6",
           inactive: theme === "dark" ? "#444" : "#d1d5db"
         };
       case 'work':
       default:
         return {
-          active: "#ff4545", // Red for work mode
-          completed: "#ff4545",
+          active: "#df1515", // Red
+          completed: "#df1515",
           inactive: theme === "dark" ? "#444" : "#d1d5db"
         };
     }
