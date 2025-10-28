@@ -33,10 +33,10 @@ const TimerModeTabs: React.FC<TimerModeTabsProps> = ({
             "flex-1 py-2.5 px-4 text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap",
             currentMode === tabMode 
               ? tabMode === 'work' 
-                ? "bg-[hsl(355,75%,60%)] dark:bg-red-500 text-white shadow-soft" 
+                ? "bg-[#FF6B58] dark:bg-red-500 text-white shadow-soft" 
                 : tabMode === 'break' 
-                  ? "bg-[hsl(140,55%,50%)] dark:bg-green-500 text-white shadow-soft" 
-                  : "bg-[hsl(215,65%,55%)] dark:bg-blue-500 text-white shadow-soft"
+                  ? "bg-[#4ECDC4] dark:bg-green-500 text-white shadow-soft" 
+                  : "bg-[#45B7D1] dark:bg-blue-500 text-white shadow-soft"
               : "text-muted-foreground hover:text-foreground hover:bg-accent font-medium"
           )}
         >

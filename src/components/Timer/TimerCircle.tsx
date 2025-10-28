@@ -2,17 +2,20 @@
 import React from 'react';
 import { useTheme } from "@/components/Theme/ThemeProvider";
 import { cn } from "@/lib/utils";
+import TimerMoodCharacter from './TimerMoodCharacter';
 
 interface TimerCircleProps {
   secondsLeft: number;
   totalSeconds: number;
   mode?: 'focus' | 'break' | 'longBreak';
+  isRunning?: boolean;
 }
 
 const TimerCircle: React.FC<TimerCircleProps> = ({ 
   secondsLeft, 
   totalSeconds,
-  mode = 'focus' 
+  mode = 'focus',
+  isRunning = false
 }) => {
   const { theme } = useTheme();
   
@@ -53,16 +56,16 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
       }
     }
     
-  // Light mode - vibrant, noticeable colors
-  switch (mode) {
-    case 'break':
-      return "#4a9d5e";      // Rich forest green
-    case 'longBreak':
-      return "#5080bf";      // Rich ocean blue
-    case 'focus':
-    default:
-      return "#e06b64";      // Rich coral red
-  }
+    // Light mode - vibrant colors from reference
+    switch (mode) {
+      case 'break':
+        return "#4ECDC4";      // Vibrant teal
+      case 'longBreak':
+        return "#45B7D1";      // Vibrant cyan
+      case 'focus':
+      default:
+        return "#FF6B58";      // Vibrant orange-red
+    }
   };
 
   // Get text for the status message
@@ -80,6 +83,13 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
 
   return (
     <div className="relative flex items-center justify-center">
+      {/* Mood Character above timer */}
+      <TimerMoodCharacter 
+        mode={mode} 
+        isRunning={isRunning}
+        progress={progress}
+      />
+      
       {/* Soft glow effect - only when running */}
       {secondsLeft > 0 && secondsLeft < totalSeconds && (
         <div 

@@ -125,22 +125,22 @@ const TimerContainer: React.FC<TimerContainerProps> = ({
     setCompletedSessionData(null);
   };
 
-  // Get background gradient based on mode and theme
+  // Get background gradient based on mode and theme - vibrant colors
   const getBackgroundStyle = () => {
     if (theme === 'dark') {
       return 'bg-background';
     }
     
-    // Light mode - smooth gradients inspired by reference
+    // Light mode - vibrant gradients from reference
     switch (timerMode) {
       case 'work':
-        return 'bg-gradient-to-br from-[#f8b4b4] via-[#f5a3a3] to-[#f08d8d]';
+        return 'bg-gradient-to-br from-[#FF6B58] via-[#FF7F6E] to-[#FF9484]';
       case 'break':
-        return 'bg-gradient-to-br from-[#a8d8b8] via-[#95c9a5] to-[#82ba92]';
+        return 'bg-gradient-to-br from-[#4ECDC4] via-[#5DD9D0] to-[#6CE5DC]';
       case 'longBreak':
-        return 'bg-gradient-to-br from-[#a8c8e8] via-[#8fb5d8] to-[#76a2c8]';
+        return 'bg-gradient-to-br from-[#45B7D1] via-[#5BC5DD] to-[#71D3E9]';
       default:
-        return 'bg-gradient-to-br from-[#f8b4b4] via-[#f5a3a3] to-[#f08d8d]';
+        return 'bg-gradient-to-br from-[#FF6B58] via-[#FF7F6E] to-[#FF9484]';
     }
   };
 
@@ -166,6 +166,7 @@ const TimerContainer: React.FC<TimerContainerProps> = ({
           timeRemaining={timeRemaining}
           totalSeconds={getTotalSeconds()}
           theme={theme}
+          isRunning={isRunning}
         />
 
         <TimerControls 

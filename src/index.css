@@ -43,15 +43,15 @@
     
     --radius: 0.75rem;                  /* Slightly larger radius for premium feel */
 
-    /* Timer Mode Backgrounds - Rich, vibrant colors */
-    --timer-focus-bg: 350 70% 80%;      /* Rich coral pink */
-    --timer-focus-accent: 355 75% 60%;  /* Vibrant coral */
+    /* Timer Mode Backgrounds - Vibrant personality colors */
+    --timer-focus-bg: 8 85% 65%;        /* Vibrant orange-red for focus */
+    --timer-focus-accent: 8 85% 55%;    /* Deep orange-red for UI */
     
-    --timer-break-bg: 130 40% 70%;      /* Rich sage green */
-    --timer-break-accent: 140 55% 50%;  /* Vibrant forest green */
+    --timer-break-bg: 150 60% 55%;      /* Vibrant teal-green - energizing rest */
+    --timer-break-accent: 150 60% 45%;  /* Deep teal-green */
     
-    --timer-longbreak-bg: 210 50% 70%;  /* Rich sky blue */
-    --timer-longbreak-accent: 215 65% 55%; /* Vibrant ocean blue */
+    --timer-longbreak-bg: 200 75% 60%;  /* Vibrant cyan-blue - deep relaxation */
+    --timer-longbreak-accent: 200 75% 50%; /* Deep cyan-blue */
   }
  
   .dark {
@@ -302,6 +302,20 @@
 }
 .interactive-scale:active {
   transform: scale(0.97);
+}
+
+/* Gentle bounce for character */
+@keyframes bounce-gentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-bounce-gentle {
+  animation: bounce-gentle 2s ease-in-out infinite;
 }
 
 /* Subtle shine effect on hover */

@@ -9,6 +9,7 @@ interface TimerDisplayProps {
   timeRemaining: number;
   totalSeconds: number;
   theme: string;
+  isRunning?: boolean;
 }
 
 const TimerDisplay: React.FC<TimerDisplayProps> = ({
@@ -16,6 +17,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
   timeRemaining,
   totalSeconds,
   theme,
+  isRunning = false,
 }) => {
   // Map timerMode to the format expected by TimerCircle
   const getTimerCircleMode = () => {
@@ -72,6 +74,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
         secondsLeft={validTimeRemaining}
         totalSeconds={validTotalSeconds}
         mode={getTimerCircleMode()}
+        isRunning={isRunning}
       />
     </div>
   );

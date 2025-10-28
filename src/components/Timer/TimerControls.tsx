@@ -37,16 +37,16 @@ const TimerControls: React.FC<TimerControlsProps> = ({
       }
     }
     
-  // Light mode - vibrant, mode-aware
+  // Light mode - vibrant reference colors
   switch (mode) {
     case 'work':
-      return "bg-[hsl(355,75%,60%)] hover:bg-[hsl(355,75%,55%)] active:bg-[hsl(355,75%,50%)] shadow-soft hover:shadow-soft-lg";
+      return "bg-[#FF6B58] hover:bg-[#FF5545] active:bg-[#FF3F32] shadow-soft hover:shadow-soft-lg";
     case 'break':
-      return "bg-[hsl(140,55%,50%)] hover:bg-[hsl(140,55%,45%)] active:bg-[hsl(140,55%,40%)] shadow-soft hover:shadow-soft-lg";
+      return "bg-[#4ECDC4] hover:bg-[#3EBDB4] active:bg-[#2EADA4] shadow-soft hover:shadow-soft-lg";
     case 'longBreak':
-      return "bg-[hsl(215,65%,55%)] hover:bg-[hsl(215,65%,50%)] active:bg-[hsl(215,65%,45%)] shadow-soft hover:shadow-soft-lg";
+      return "bg-[#45B7D1] hover:bg-[#35A7C1] active:bg-[#2597B1] shadow-soft hover:shadow-soft-lg";
     default:
-      return "bg-[hsl(355,75%,60%)] hover:bg-[hsl(355,75%,55%)] active:bg-[hsl(355,75%,50%)] shadow-soft hover:shadow-soft-lg";
+      return "bg-[#FF6B58] hover:bg-[#FF5545] active:bg-[#FF3F32] shadow-soft hover:shadow-soft-lg";
   }
   };
   
