@@ -77,26 +77,10 @@ const ActiveTaskZone: React.FC<ActiveTaskZoneProps> = ({
           
           {/* Session Goal */}
           {sessionGoal && (
-            <div className="ml-9 mb-2 p-2 bg-background/50 rounded border border-border/50">
+            <div className="ml-9 p-2 bg-background/50 rounded border border-border/50">
               <div className="flex items-start gap-2">
                 <Target className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                 <p className="text-sm text-foreground italic">"{sessionGoal}"</p>
-              </div>
-            </div>
-          )}
-          
-          {/* Progress Indicator */}
-          {isRunning && totalTime > 0 && (
-            <div className="ml-9 space-y-1">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{elapsedMinutes} of {totalMinutes} minutes completed</span>
-                <span>{Math.round(((totalTime - timeRemaining) / totalTime) * 100)}%</span>
-              </div>
-              <div className="h-1.5 bg-background rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-primary transition-all duration-300 rounded-full"
-                  style={{ width: `${((totalTime - timeRemaining) / totalTime) * 100}%` }}
-                />
               </div>
             </div>
           )}
