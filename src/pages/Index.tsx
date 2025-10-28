@@ -221,8 +221,7 @@ const Index = () => {
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
                 onQuickAddTask={async (name) => {
-                  const success = await addTask(name, 1);
-                  return success ? tasks[tasks.length - 1]?.id || null : null;
+                  return await addTask(name, 1);
                 }}
                 onSetActiveTask={async (taskId) => {
                   const task = tasks.find(t => t.id === taskId);
@@ -270,7 +269,7 @@ const TaskManagerWithDrop: React.FC<{
   activeTaskId?: string | null;
   tasks: Task[];
   isLoading: boolean;
-  addTask: (taskName: string, estimatedPomodoros: number) => Promise<boolean>;
+  addTask: (taskName: string, estimatedPomodoros: number) => Promise<string | null>;
   toggleComplete: (id: string) => Promise<void> | void;
   editTask: (id: string, name: string, estimatedPomodoros: number) => Promise<boolean>;
   deleteTask: (id: string) => Promise<boolean>;
@@ -291,8 +290,8 @@ const TaskManagerWithDrop: React.FC<{
       return;
     }
     
-    addTask(taskName, estimatedPomodoros).then(success => {
-      if (success) {
+    addTask(taskName, estimatedPomodoros).then(taskId => {
+      if (taskId) {
         toast({
           title: "Task added",
           description: `"${taskName}" has been added to your tasks`,

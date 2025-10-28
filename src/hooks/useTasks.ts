@@ -38,14 +38,14 @@ export const useTasks = () => {
     loadTasks();
   }, [user]);
 
-  const handleAddTask = async (taskName: string, estimatedPomodoros: number) => {
+  const handleAddTask = async (taskName: string, estimatedPomodoros: number): Promise<string | null> => {
     try {
       const newTask = await addTask(user?.id, taskName, estimatedPomodoros);
       if (newTask) {
         setTasks([newTask, ...tasks]);
-        return true;
+        return newTask.id;
       }
-      return false;
+      return null;
     } catch (error) {
       console.error('Failed to add task:', error);
       toast({
@@ -53,7 +53,7 @@ export const useTasks = () => {
         description: "Could not add your task. Please try again.",
         variant: "destructive",
       });
-      return false;
+      return null;
     }
   };
 

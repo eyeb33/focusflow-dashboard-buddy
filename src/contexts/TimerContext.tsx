@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
 import { useTimerSettings } from '@/hooks/useTimerSettings';
 import { useTimerLogic } from '@/hooks/useTimerLogic';
@@ -38,7 +38,7 @@ const TimerContext = createContext<TimerContextType | undefined>(undefined);
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { settings, updateSettings } = useTimerSettings();
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
-  const [onSessionCompleteCallback, setOnSessionCompleteCallback] = useState<((sessionData: { mode: TimerMode; duration: number; taskId?: string }) => void) | undefined>();
+  const onSessionCompleteCallbackRef = useRef<((sessionData: { mode: TimerMode; duration: number; taskId?: string }) => void) | undefined>();
   const prevCompletedSessions = useRef(0);
   const workTimeRef = useRef(0);
   
@@ -61,7 +61,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   } = useTimerLogic({ 
     settings, 
     activeTaskId,
-    onSessionComplete: onSessionCompleteCallback 
+    onSessionComplete: onSessionCompleteCallbackRef.current 
   });
 
   // Update document title with timer
@@ -132,6 +132,11 @@ const getElapsedSeconds = (): number => {
     updateSettings(newSettings);
   };
   
+  // Callback setter that properly stores in ref
+  const setOnSessionComplete = useCallback((callback: (sessionData: { mode: TimerMode; duration: number; taskId?: string }) => void) => {
+    onSessionCompleteCallbackRef.current = callback;
+  }, []);
+
   const value: TimerContextType = {
     timerMode,
     isRunning,
@@ -155,8 +160,8 @@ const getElapsedSeconds = (): number => {
     sessionGoal,
     setSessionGoal,
     saveSessionReflection,
-    onSessionComplete: onSessionCompleteCallback,
-    setOnSessionComplete: setOnSessionCompleteCallback
+    onSessionComplete: onSessionCompleteCallbackRef.current,
+    setOnSessionComplete
   };
 
   return (
