@@ -24,20 +24,20 @@ const TimerModeTabs: React.FC<TimerModeTabsProps> = ({
   };
 
   return (
-    <div className="flex bg-gray-100 dark:bg-gray-800 rounded-md p-1 mb-4 w-full">
+    <div className="flex bg-muted rounded-lg p-1 mb-6 w-full shadow-soft">
       {(['work', 'break', 'longBreak'] as TimerMode[]).map((tabMode) => (
         <button
           key={tabMode}
           onClick={() => onModeChange(tabMode)}
           className={cn(
-            "flex-1 py-2 px-3 text-sm rounded transition-colors whitespace-nowrap",
+            "flex-1 py-2.5 px-4 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap",
             currentMode === tabMode 
               ? tabMode === 'work' 
-                ? "bg-red-500 text-white" 
+                ? "bg-[hsl(var(--timer-focus-accent))] dark:bg-red-500 text-white shadow-soft" 
                 : tabMode === 'break' 
-                  ? "bg-green-500 text-white" 
-                  : "bg-blue-500 text-white"
-              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                  ? "bg-[hsl(var(--timer-break-accent))] dark:bg-green-500 text-white shadow-soft" 
+                  : "bg-[hsl(var(--timer-longbreak-accent))] dark:bg-blue-500 text-white shadow-soft"
+              : "text-muted-foreground hover:text-foreground hover:bg-accent"
           )}
         >
           {getModeLabel(tabMode)}

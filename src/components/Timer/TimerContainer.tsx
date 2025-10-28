@@ -125,21 +125,32 @@ const TimerContainer: React.FC<TimerContainerProps> = ({
     setCompletedSessionData(null);
   };
 
-  const getBackgroundColor = () => {
-    if (theme === 'dark') return '';
+  // Get background gradient based on mode and theme
+  const getBackgroundStyle = () => {
+    if (theme === 'dark') {
+      return 'bg-background';
+    }
     
-    switch(timerMode) {
-      case 'work': return 'bg-[hsl(var(--timer-focus-bg))]';
-      case 'break': return 'bg-[hsl(var(--timer-break-bg))]';
-      case 'longBreak': return 'bg-[hsl(var(--timer-longbreak-bg))]';
-      default: return 'bg-[hsl(var(--timer-focus-bg))]';
+    // Light mode - zone-specific gradients
+    switch (timerMode) {
+      case 'work':
+        return 'bg-gradient-to-br from-[hsl(355,75%,97%)] via-[hsl(30,20%,98%)] to-[hsl(355,75%,95%)]';
+      case 'break':
+        return 'bg-gradient-to-br from-[hsl(140,45%,96%)] via-[hsl(30,20%,98%)] to-[hsl(140,45%,94%)]';
+      case 'longBreak':
+        return 'bg-gradient-to-br from-[hsl(215,55%,97%)] via-[hsl(30,20%,98%)] to-[hsl(215,55%,95%)]';
+      default:
+        return 'bg-gradient-to-br from-[hsl(355,75%,97%)] via-[hsl(30,20%,98%)] to-[hsl(355,75%,95%)]';
     }
   };
 
   return (
     <TimerObserver>
       <div 
-        className="flex-1 flex flex-col items-center relative overflow-hidden transition-colors duration-500"
+        className={cn(
+          "flex-1 flex flex-col items-center relative overflow-hidden transition-all duration-700 ease-in-out px-8 py-12",
+          getBackgroundStyle()
+        )}
         data-testid="timer-container"
       >
         <TimerHeader 

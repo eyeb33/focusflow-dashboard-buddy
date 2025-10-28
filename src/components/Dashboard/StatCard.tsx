@@ -32,10 +32,10 @@ const StatCard: React.FC<StatCardProps> = ({
   const shouldShowTrend = trend && Number(value) !== 0;
 
   return (
-    <Card className={cn("h-full", className)}>
+    <Card className={cn("h-full border-0 bg-card/60 backdrop-blur-sm shadow-soft hover:shadow-soft-lg transition-all duration-200", className)}>
       <CardHeader className={cn(
         "flex flex-row items-center justify-between space-y-0",
-        compact ? "pb-2" : "pb-2"
+        compact ? "pb-3 p-6" : "pb-3 p-6"
       )}>
         <span className={cn(
           "font-medium",
@@ -43,8 +43,8 @@ const StatCard: React.FC<StatCardProps> = ({
         )}>{title}</span>
         <div
           className={cn(
-            "rounded-full flex items-center justify-center",
-            compact ? "h-7 w-7" : "h-8 w-8",
+            "rounded-full flex items-center justify-center shadow-soft",
+            compact ? "h-8 w-8" : "h-9 w-9",
             iconColor ? `bg-opacity-20` : ""
           )}
           style={iconColor ? { backgroundColor: `${iconColor}20` } : {}}
@@ -55,13 +55,13 @@ const StatCard: React.FC<StatCardProps> = ({
           })}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-6 pt-0">
         <div className={cn(
           "font-bold",
-          compact ? "text-xl" : "text-2xl"
+          compact ? "text-2xl" : "text-3xl"
         )}>{value}</div>
         {description && (
-          <p className="text-xs text-muted-foreground">{description}</p>
+          <p className="text-xs text-muted-foreground mt-1">{description}</p>
         )}
         <div className="flex items-center mt-2 text-xs">
           {shouldShowTrend && (

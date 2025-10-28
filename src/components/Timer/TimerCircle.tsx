@@ -38,16 +38,30 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
   // At 100% progress we want 0 offset (full circle)
   const dashOffset = circumference * (1 - progress / 100);
 
-  // Determine color based on mode
+  // Determine color based on mode and theme
   const getProgressColor = () => {
+    if (theme === 'dark') {
+      // Keep vibrant colors for dark mode
+      switch (mode) {
+        case 'break':
+          return "#2fc55e"; // Green for break
+        case 'longBreak':
+          return "#3b81f6"; // Blue for long break
+        case 'focus':
+        default:
+          return "#ff4545"; // Red for focus
+      }
+    }
+    
+    // Light mode - soft, sophisticated colors
     switch (mode) {
       case 'break':
-        return "#2fc55e"; // Green for break
+        return "#52a065";      // Muted sage
       case 'longBreak':
-        return "#3b81f6"; // Blue for long break
+        return "#5a8bc4";      // Soft ocean blue
       case 'focus':
       default:
-        return "#ff4545"; // Red for focus
+        return "#d6756f";      // Soft coral (not harsh red)
     }
   };
 

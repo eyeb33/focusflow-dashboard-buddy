@@ -21,17 +21,32 @@ const TimerControls: React.FC<TimerControlsProps> = ({
 }) => {
   const { theme } = useTheme();
   
-  // Get color based on timer mode
+  // Get color based on timer mode and theme
   const getButtonColor = (mode: string): string => {
+    if (theme === 'dark') {
+      // Keep vibrant for dark mode
+      switch (mode) {
+        case 'work':
+          return "bg-red-500 hover:bg-red-600 active:bg-red-700 shadow-soft hover:shadow-soft-lg";
+        case 'break':
+          return "bg-green-500 hover:bg-green-600 active:bg-green-700 shadow-soft hover:shadow-soft-lg";
+        case 'longBreak':
+          return "bg-blue-500 hover:bg-blue-600 active:bg-blue-700 shadow-soft hover:shadow-soft-lg";
+        default:
+          return "bg-red-500 hover:bg-red-600 active:bg-red-700 shadow-soft hover:shadow-soft-lg";
+      }
+    }
+    
+    // Light mode - sophisticated, mode-aware
     switch (mode) {
       case 'work':
-        return "bg-red-500 hover:bg-red-600 active:bg-red-700";
+        return "bg-[hsl(355,70%,65%)] hover:bg-[hsl(355,70%,60%)] active:bg-[hsl(355,70%,55%)] shadow-soft hover:shadow-soft-lg";
       case 'break':
-        return "bg-green-500 hover:bg-green-600 active:bg-green-700";
+        return "bg-[hsl(140,50%,58%)] hover:bg-[hsl(140,50%,53%)] active:bg-[hsl(140,50%,48%)] shadow-soft hover:shadow-soft-lg";
       case 'longBreak':
-        return "bg-blue-500 hover:bg-blue-600 active:bg-blue-700";
+        return "bg-[hsl(215,60%,62%)] hover:bg-[hsl(215,60%,57%)] active:bg-[hsl(215,60%,52%)] shadow-soft hover:shadow-soft-lg";
       default:
-        return "bg-red-500 hover:bg-red-600 active:bg-red-700";
+        return "bg-[hsl(355,70%,65%)] hover:bg-[hsl(355,70%,60%)] active:bg-[hsl(355,70%,55%)] shadow-soft hover:shadow-soft-lg";
     }
   };
   
@@ -64,7 +79,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
       <button 
         onClick={handlePlayPauseClick}
         className={cn(
-          "w-12 h-12 rounded-full flex items-center justify-center transition-all",
+          "w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 interactive-scale shine-on-hover",
           buttonColor
         )}
         aria-label={isRunning ? "Pause timer" : "Start timer"}
@@ -81,10 +96,10 @@ const TimerControls: React.FC<TimerControlsProps> = ({
       <button 
         onClick={handleResetClick}
         className={cn(
-          "w-12 h-12 rounded-full flex items-center justify-center transition-all",
+          "w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 interactive-scale shadow-soft hover:shadow-soft-lg",
           theme === "dark" 
             ? "bg-gray-700 hover:bg-gray-600 active:bg-gray-800" 
-            : "bg-gray-300 hover:bg-gray-400 active:bg-gray-500"
+            : "bg-secondary hover:bg-secondary/80 active:bg-secondary/70"
         )}
         aria-label="Reset timer"
         type="button"

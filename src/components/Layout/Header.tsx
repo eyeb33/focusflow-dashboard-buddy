@@ -42,51 +42,53 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Link to="/" className="flex items-center gap-2">
-            <img src={logo} alt="TimeBubble" className="h-48 w-auto" />
-          </Link>
-        </div>
-        
-        <nav className="flex items-center gap-2 md:gap-4">
-          <ThemeToggle />
+    <header className="border-b border-border/50 backdrop-blur-md bg-background/80 sticky top-0 z-50">
+      <div className="container px-6 py-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Link to="/" className="flex items-center gap-2">
+              <img src={logo} alt="TimeBubble" className="h-48 w-auto" />
+            </Link>
+          </div>
           
-          {user ? (
-            <div className="flex items-center gap-2">
-              <Link to="/dashboard">
-                <Button variant="ghost" size={isMobile ? "icon" : "default"}>
+          <nav className="flex items-center gap-2 md:gap-4">
+            <ThemeToggle />
+            
+            {user ? (
+              <div className="flex items-center gap-2">
+                <Link to="/dashboard">
+                  <Button variant="ghost" size={isMobile ? "icon" : "default"}>
+                    {isMobile ? (
+                      <User className="h-5 w-5" />
+                    ) : (
+                      "Dashboard"
+                    )}
+                  </Button>
+                </Link>
+                <Button 
+                  variant="ghost" 
+                  size={isMobile ? "icon" : "default"}
+                  onClick={() => signOut()}
+                >
                   {isMobile ? (
-                    <User className="h-5 w-5" />
+                    <LogOut className="h-5 w-5" />
                   ) : (
-                    "Dashboard"
+                    "Logout"
                   )}
                 </Button>
-              </Link>
-              <Button 
-                variant="ghost" 
-                size={isMobile ? "icon" : "default"}
-                onClick={() => signOut()}
-              >
-                {isMobile ? (
-                  <LogOut className="h-5 w-5" />
-                ) : (
-                  "Logout"
-                )}
-              </Button>
-            </div>
-          ) : (
-            <>
-              <Button variant="ghost" onClick={handleLoginClick} size={isMobile ? "sm" : "default"}>
-                Login
-              </Button>
-              <Button variant="default" onClick={handleSignupClick} size={isMobile ? "sm" : "default"} className="bg-pomodoro-work hover:bg-pomodoro-work/90">
-                Sign Up
-              </Button>
-            </>
-          )}
-        </nav>
+              </div>
+            ) : (
+              <>
+                <Button variant="ghost" onClick={handleLoginClick} size={isMobile ? "sm" : "default"}>
+                  Login
+                </Button>
+                <Button variant="default" onClick={handleSignupClick} size={isMobile ? "sm" : "default"} className="bg-pomodoro-work hover:bg-pomodoro-work/90">
+                  Sign Up
+                </Button>
+              </>
+            )}
+          </nav>
+        </div>
       </div>
     </header>
   );

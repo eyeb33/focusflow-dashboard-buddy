@@ -8,9 +8,9 @@ interface InsightCardProps {
 
 const InsightCard: React.FC<InsightCardProps> = ({ title, content }) => {
   return (
-    <div className="bg-white rounded-md p-4 border">
-      <h3 className="font-medium mb-2">{title}</h3>
-      <p className="text-muted-foreground text-sm">{content}</p>
+    <div className="bg-card rounded-xl p-6 border border-border/50 shadow-soft hover:shadow-soft-lg transition-all duration-200">
+      <h3 className="font-semibold mb-3">{title}</h3>
+      <p className="text-muted-foreground text-sm leading-relaxed">{content}</p>
     </div>
   );
 };

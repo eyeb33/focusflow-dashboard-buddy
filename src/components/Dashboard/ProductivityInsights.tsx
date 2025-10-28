@@ -13,8 +13,8 @@ interface ProductivityInsightsProps {
 
 const ProductivityInsights: React.FC<ProductivityInsightsProps> = ({ insights }) => {
   return (
-    <div className="bg-muted/40 rounded-lg p-6 border">
-      <h2 className="text-lg font-medium mb-4">Productivity Insights</h2>
+    <div className="bg-card/60 backdrop-blur-sm rounded-xl p-8 border border-border/50 shadow-soft">
+      <h2 className="text-lg font-semibold mb-6">Productivity Insights</h2>
       <div className="space-y-4">
         {insights.map((insight, index) => (
           <InsightCard 

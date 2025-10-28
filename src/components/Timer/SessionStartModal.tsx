@@ -54,9 +54,9 @@ export const SessionStartModal: React.FC<SessionStartModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md bg-card/95 backdrop-blur-xl shadow-soft-lg border-border/50">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 font-display">
             <Target className="h-5 w-5 text-primary" />
             What will you focus on?
           </DialogTitle>
@@ -65,20 +65,20 @@ export const SessionStartModal: React.FC<SessionStartModalProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-6 py-4">
           {/* Task Selection */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Label>Select a task (optional)</Label>
-            <div className="space-y-2 max-h-[200px] overflow-y-auto">
+            <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
               {incompleteTasks.length > 0 ? (
                 incompleteTasks.map((task) => (
                   <button
                     key={task.id}
                     onClick={() => setSelectedTaskId(task.id)}
-                    className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
+                    className={`w-full p-3.5 rounded-xl border-2 text-left transition-all duration-200 ${
                       selectedTaskId === task.id
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/50'
+                        ? 'border-primary bg-primary/5 shadow-soft'
+                        : 'border-border hover:border-primary/30 hover:bg-accent/50'
                     }`}
                   >
                     <p className="font-medium text-sm">{task.name}</p>
