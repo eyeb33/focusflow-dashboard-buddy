@@ -82,7 +82,7 @@ const TaskManager: React.FC = () => {
     <>
       <div className="flex-1 flex flex-col">
         <div className="pb-3">
-          <h2 className="text-2xl font-bold">Tasks</h2>
+          <h2 className="text-2xl font-display font-semibold tracking-tight">Tasks</h2>
         </div>
         <div className="flex-1 flex flex-col overflow-hidden">
           <TaskInput onAddTask={handleAddTask} />

@@ -53,16 +53,16 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
       }
     }
     
-    // Light mode - soft, sophisticated colors
-    switch (mode) {
-      case 'break':
-        return "#52a065";      // Muted sage
-      case 'longBreak':
-        return "#5a8bc4";      // Soft ocean blue
-      case 'focus':
-      default:
-        return "#d6756f";      // Soft coral (not harsh red)
-    }
+  // Light mode - vibrant, noticeable colors
+  switch (mode) {
+    case 'break':
+      return "#4a9d5e";      // Rich forest green
+    case 'longBreak':
+      return "#5080bf";      // Rich ocean blue
+    case 'focus':
+    default:
+      return "#e06b64";      // Rich coral red
+  }
   };
 
   // Get text for the status message
@@ -144,20 +144,20 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
       <div className="absolute flex flex-col items-center z-20">
         <div className={cn(
           "tabular-nums flex items-baseline justify-center gap-1",
-          theme === "dark" ? "text-white" : "text-gray-800"
+          theme === "dark" ? "text-white" : "text-gray-900"
         )}>
-          <span className="text-[3.9rem] font-extrabold tracking-tight font-ubuntu-mono font-[800]">
+          <span className="text-[3.9rem] font-extrabold tracking-tight font-display font-[900]">
             {minutes.toString().padStart(2, '0')}
           </span>
-          <span className="text-[2.8rem] font-extrabold tracking-tight font-ubuntu-mono font-[800]">
+          <span className="text-[2.8rem] font-extrabold tracking-tight font-display font-[900]">
             :{seconds.toString().padStart(2, '0')}
           </span>
         </div>
         <div className={cn(
-          "text-xs mt-1 rounded-full px-3 py-1 inline-block",
-          mode === 'focus' ? "bg-red-500/10 text-red-500 dark:bg-red-500/20" :
-          mode === 'break' ? "bg-green-500/10 text-green-500 dark:bg-green-500/20" :
-          "bg-blue-500/10 text-blue-500 dark:bg-blue-500/20"
+          "text-sm font-semibold mt-1 rounded-full px-3 py-1 inline-block tracking-wide",
+          mode === 'focus' ? "bg-red-500/15 text-red-700 dark:bg-red-500/20 dark:text-red-400" :
+          mode === 'break' ? "bg-green-500/15 text-green-700 dark:bg-green-500/20 dark:text-green-400" :
+          "bg-blue-500/15 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400"
         )}>
           {getStatusText()}
         </div>

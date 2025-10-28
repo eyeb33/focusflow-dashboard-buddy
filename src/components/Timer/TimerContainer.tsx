@@ -127,20 +127,22 @@ const TimerContainer: React.FC<TimerContainerProps> = ({
 
   // Get background gradient based on mode and theme
   const getBackgroundStyle = () => {
+    const baseClasses = "min-h-screen transition-all duration-700 ease-in-out";
+    
     if (theme === 'dark') {
       return 'bg-background';
     }
     
-    // Light mode - zone-specific gradients
+    // Light mode - vibrant zone-specific gradients
     switch (timerMode) {
       case 'work':
-        return 'bg-gradient-to-br from-[hsl(355,75%,97%)] via-[hsl(30,20%,98%)] to-[hsl(355,75%,95%)]';
+        return 'bg-gradient-to-br from-[hsl(350,70%,85%)] via-[hsl(350,65%,82%)] to-[hsl(350,70%,80%)]';
       case 'break':
-        return 'bg-gradient-to-br from-[hsl(140,45%,96%)] via-[hsl(30,20%,98%)] to-[hsl(140,45%,94%)]';
+        return 'bg-gradient-to-br from-[hsl(130,40%,75%)] via-[hsl(130,38%,72%)] to-[hsl(130,40%,70%)]';
       case 'longBreak':
-        return 'bg-gradient-to-br from-[hsl(215,55%,97%)] via-[hsl(30,20%,98%)] to-[hsl(215,55%,95%)]';
+        return 'bg-gradient-to-br from-[hsl(210,50%,75%)] via-[hsl(210,48%,72%)] to-[hsl(210,50%,70%)]';
       default:
-        return 'bg-gradient-to-br from-[hsl(355,75%,97%)] via-[hsl(30,20%,98%)] to-[hsl(355,75%,95%)]';
+        return 'bg-gradient-to-br from-[hsl(350,70%,85%)] via-[hsl(350,65%,82%)] to-[hsl(350,70%,80%)]';
     }
   };
 

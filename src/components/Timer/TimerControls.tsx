@@ -37,17 +37,17 @@ const TimerControls: React.FC<TimerControlsProps> = ({
       }
     }
     
-    // Light mode - sophisticated, mode-aware
-    switch (mode) {
-      case 'work':
-        return "bg-[hsl(355,70%,65%)] hover:bg-[hsl(355,70%,60%)] active:bg-[hsl(355,70%,55%)] shadow-soft hover:shadow-soft-lg";
-      case 'break':
-        return "bg-[hsl(140,50%,58%)] hover:bg-[hsl(140,50%,53%)] active:bg-[hsl(140,50%,48%)] shadow-soft hover:shadow-soft-lg";
-      case 'longBreak':
-        return "bg-[hsl(215,60%,62%)] hover:bg-[hsl(215,60%,57%)] active:bg-[hsl(215,60%,52%)] shadow-soft hover:shadow-soft-lg";
-      default:
-        return "bg-[hsl(355,70%,65%)] hover:bg-[hsl(355,70%,60%)] active:bg-[hsl(355,70%,55%)] shadow-soft hover:shadow-soft-lg";
-    }
+  // Light mode - vibrant, mode-aware
+  switch (mode) {
+    case 'work':
+      return "bg-[hsl(355,75%,60%)] hover:bg-[hsl(355,75%,55%)] active:bg-[hsl(355,75%,50%)] shadow-soft hover:shadow-soft-lg";
+    case 'break':
+      return "bg-[hsl(140,55%,50%)] hover:bg-[hsl(140,55%,45%)] active:bg-[hsl(140,55%,40%)] shadow-soft hover:shadow-soft-lg";
+    case 'longBreak':
+      return "bg-[hsl(215,65%,55%)] hover:bg-[hsl(215,65%,50%)] active:bg-[hsl(215,65%,45%)] shadow-soft hover:shadow-soft-lg";
+    default:
+      return "bg-[hsl(355,75%,60%)] hover:bg-[hsl(355,75%,55%)] active:bg-[hsl(355,75%,50%)] shadow-soft hover:shadow-soft-lg";
+  }
   };
   
   const buttonColor = getButtonColor(mode);
@@ -87,9 +87,9 @@ const TimerControls: React.FC<TimerControlsProps> = ({
         data-testid={isRunning ? "pause-button" : "play-button"}
       >
         {isRunning ? (
-          <Pause className="h-5 w-5 text-white" />
+          <Pause className={cn("h-5 w-5", theme === "dark" ? "text-white" : "text-white")} />
         ) : (
-          <Play className="h-5 w-5 text-white ml-1" />
+          <Play className={cn("h-5 w-5 ml-1", theme === "dark" ? "text-white" : "text-white")} />
         )}
       </button>
       
