@@ -11,7 +11,6 @@ import { SessionReflectionModal } from './SessionReflectionModal';
 import { useTimerContext } from '@/contexts/TimerContext';
 import { useTheme } from "@/components/Theme/ThemeProvider";
 import { useTimerAudio } from '@/hooks/useTimerAudio';
-import { cn } from "@/lib/utils";
 import { Task } from '@/types/task';
 
 interface TimerContainerProps {
@@ -125,76 +124,52 @@ const TimerContainer: React.FC<TimerContainerProps> = ({
     setCompletedSessionData(null);
   };
 
-  // Get background gradient based on mode and theme
-  const getBackgroundStyle = () => {
-    if (theme === 'dark') {
-      return 'bg-background';
-    }
-    
-    // Light mode - new color palette
-    switch (timerMode) {
-      case 'work':
-        return 'bg-[#df1515]';
-      case 'break':
-        return 'bg-[#738f66]';
-      case 'longBreak':
-        return 'bg-[#a4c2b6]';
-      default:
-        return 'bg-[#df1515]';
-    }
-  };
-
   return (
     <TimerObserver>
       <div 
-        className={cn(
-          "flex-1 flex items-center justify-center relative overflow-hidden transition-all duration-700 ease-in-out px-8 py-12",
-          getBackgroundStyle()
-        )}
+        className="flex-1 flex flex-col items-center justify-center w-full"
         data-testid="timer-container"
       >
-        <div className="bg-white dark:bg-card rounded-3xl shadow-2xl p-8 w-full max-w-md flex flex-col items-center">
-          <TimerHeader 
-            timerMode={timerMode}
-            handleModeChange={handleModeChange}
-            settings={settings}
-            onSettingsChange={handleSettingsChange}
-            onReset={handleReset}
-          />
+        <TimerHeader 
+          timerMode={timerMode}
+          handleModeChange={handleModeChange}
+          settings={settings}
+          onSettingsChange={handleSettingsChange}
+          onReset={handleReset}
+        />
 
-          <TimerDisplay 
-            timerMode={timerMode}
-            timeRemaining={timeRemaining}
-            totalSeconds={getTotalSeconds()}
-            theme={theme}
-            isRunning={isRunning}
-          />
+        <TimerDisplay 
+          timerMode={timerMode}
+          timeRemaining={timeRemaining}
+          totalSeconds={getTotalSeconds()}
+          theme={theme}
+          isRunning={isRunning}
+        />
 
-          <TimerControls 
-            isRunning={isRunning}
-            mode={timerMode}
-            onStart={handleStartWithModal}
-            onPause={handlePause}
-            onReset={handleReset}
-          />
-          <SessionDots 
-            totalSessions={settings?.sessionsUntilLongBreak || 4} 
-            currentSessionIndex={currentSessionIndex}
-            mode={timerMode}
-          />
+        <TimerControls 
+          isRunning={isRunning}
+          mode={timerMode}
+          onStart={handleStartWithModal}
+          onPause={handlePause}
+          onReset={handleReset}
+        />
+        <SessionDots 
+          totalSessions={settings?.sessionsUntilLongBreak || 4} 
+          currentSessionIndex={currentSessionIndex}
+          mode={timerMode}
+        />
 
-          <ActiveTaskZone 
-            activeTask={activeTask}
-            onRemoveTask={onRemoveActiveTask}
-            onCompleteTask={onCompleteActiveTask}
-            onDrop={onDrop}
-            onDragOver={onDragOver}
-            sessionGoal={sessionGoal}
-            timeRemaining={timeRemaining}
-            totalTime={getTotalSeconds()}
-            isRunning={isRunning}
-          />
-        </div>
+        <ActiveTaskZone 
+          activeTask={activeTask}
+          onRemoveTask={onRemoveActiveTask}
+          onCompleteTask={onCompleteActiveTask}
+          onDrop={onDrop}
+          onDragOver={onDragOver}
+          sessionGoal={sessionGoal}
+          timeRemaining={timeRemaining}
+          totalTime={getTotalSeconds()}
+          isRunning={isRunning}
+        />
       </div>
       
       {/* Session Start Modal */}

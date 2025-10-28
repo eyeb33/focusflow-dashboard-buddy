@@ -205,14 +205,12 @@ const Index = () => {
       getPageBackground()
     )}>
       <main className="flex-1 flex flex-col overflow-hidden">
-        <div className="relative flex flex-col items-center h-full p-4">
-          <div className="w-full max-w-[80%] h-full flex flex-col gap-4">
-            <div className="rounded-lg p-4 bg-[hsl(var(--card))]">
-              <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
-            </div>
+        <div className="relative flex flex-col items-center h-full p-8">
+          <div className="w-full max-w-[85%] h-full bg-white dark:bg-card rounded-3xl shadow-2xl p-8 flex flex-col gap-6">
+            <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
             
-            <div className="flex-1 flex flex-col lg:flex-row gap-4 overflow-hidden">
-              <div className="w-full lg:w-1/2 border border-[hsl(var(--border))] rounded-lg p-6 bg-[hsl(var(--card))] flex flex-col">
+            <div className="flex-1 flex flex-col lg:flex-row gap-6 overflow-hidden">
+              <div className="w-full lg:w-1/2 flex flex-col">
                 <TimerContainer
                 activeTask={activeTask}
                 tasks={tasks}
@@ -234,7 +232,7 @@ const Index = () => {
               />
             </div>
             
-            <div className="w-full lg:w-1/2 border border-[hsl(var(--border))] rounded-lg p-6 bg-[hsl(var(--card))] flex flex-col overflow-hidden">
+            <div className="w-full lg:w-1/2 border-l border-border/20 pl-6 flex flex-col overflow-hidden">
               <TaskManagerWithDrop 
                 activeTaskId={activeTask?.id ?? null} 
                 onDropToList={handleDropToList} 
