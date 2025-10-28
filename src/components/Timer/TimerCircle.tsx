@@ -105,6 +105,14 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
               <stop offset="100%" stopColor="rgba(255,255,255,0)" />
             </linearGradient>
           </defs>
+          {/* White center circle */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius - strokeWidth / 2}
+            fill={theme === "dark" ? "#1a1a1a" : "#ffffff"}
+            className="drop-shadow-lg"
+          />
           {/* Background circle */}
           <circle
             cx={size / 2}
@@ -152,14 +160,6 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
           <span className="text-[2.8rem] font-extrabold tracking-tight font-display font-[900]">
             :{seconds.toString().padStart(2, '0')}
           </span>
-        </div>
-        <div className={cn(
-          "text-sm font-semibold mt-1 rounded-full px-3 py-1 inline-block tracking-wide",
-          mode === 'focus' ? "bg-red-500/15 text-red-700 dark:bg-red-500/20 dark:text-red-400" :
-          mode === 'break' ? "bg-green-500/15 text-green-700 dark:bg-green-500/20 dark:text-green-400" :
-          "bg-blue-500/15 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400"
-        )}>
-          {getStatusText()}
         </div>
       </div>
     </div>

@@ -127,22 +127,20 @@ const TimerContainer: React.FC<TimerContainerProps> = ({
 
   // Get background gradient based on mode and theme
   const getBackgroundStyle = () => {
-    const baseClasses = "min-h-screen transition-all duration-700 ease-in-out";
-    
     if (theme === 'dark') {
       return 'bg-background';
     }
     
-    // Light mode - vibrant zone-specific gradients
+    // Light mode - smooth gradients inspired by reference
     switch (timerMode) {
       case 'work':
-        return 'bg-gradient-to-br from-[hsl(350,70%,85%)] via-[hsl(350,65%,82%)] to-[hsl(350,70%,80%)]';
+        return 'bg-gradient-to-br from-[#f8b4b4] via-[#f5a3a3] to-[#f08d8d]';
       case 'break':
-        return 'bg-gradient-to-br from-[hsl(130,40%,75%)] via-[hsl(130,38%,72%)] to-[hsl(130,40%,70%)]';
+        return 'bg-gradient-to-br from-[#a8d8b8] via-[#95c9a5] to-[#82ba92]';
       case 'longBreak':
-        return 'bg-gradient-to-br from-[hsl(210,50%,75%)] via-[hsl(210,48%,72%)] to-[hsl(210,50%,70%)]';
+        return 'bg-gradient-to-br from-[#a8c8e8] via-[#8fb5d8] to-[#76a2c8]';
       default:
-        return 'bg-gradient-to-br from-[hsl(350,70%,85%)] via-[hsl(350,65%,82%)] to-[hsl(350,70%,80%)]';
+        return 'bg-gradient-to-br from-[#f8b4b4] via-[#f5a3a3] to-[#f08d8d]';
     }
   };
 
@@ -150,7 +148,7 @@ const TimerContainer: React.FC<TimerContainerProps> = ({
     <TimerObserver>
       <div 
         className={cn(
-          "flex-1 flex flex-col items-center relative overflow-hidden transition-all duration-700 ease-in-out px-8 py-12",
+          "flex-1 flex flex-col items-center justify-center relative overflow-hidden transition-all duration-700 ease-in-out px-8 py-12",
           getBackgroundStyle()
         )}
         data-testid="timer-container"

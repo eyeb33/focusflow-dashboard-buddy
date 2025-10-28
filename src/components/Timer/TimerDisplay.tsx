@@ -67,7 +67,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
   }, [timerMode, timeRemaining, validTimeRemaining, totalSeconds, validTotalSeconds, progress]);
 
   return (
-    <div className="relative flex flex-col items-center justify-center mt-2">
+    <div className="flex-1 flex items-center justify-center">
       <TimerCircle
         secondsLeft={validTimeRemaining}
         totalSeconds={validTotalSeconds}
