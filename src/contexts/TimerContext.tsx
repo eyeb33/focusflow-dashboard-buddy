@@ -17,7 +17,7 @@ interface TimerContextType {
   progress: number;
   activeTaskId: string | null;
   formatTime: (seconds: number) => string;
-  handleStart: () => void;
+  handleStart: (goal?: string) => void;
   handlePause: () => void;
   handleReset: () => void;
   handleModeChange: (mode: TimerMode) => void;
@@ -26,6 +26,11 @@ interface TimerContextType {
   setActiveTaskId: (taskId: string | null) => void;
   getElapsedMinutes: () => number;
   getElapsedSeconds: () => number;
+  sessionGoal: string;
+  setSessionGoal: (goal: string) => void;
+  saveSessionReflection: (quality: 'completed' | 'progress' | 'distracted', reflection: string) => Promise<void>;
+  onSessionComplete?: (sessionData: { mode: TimerMode; duration: number; taskId?: string }) => void;
+  setOnSessionComplete: (callback: (sessionData: { mode: TimerMode; duration: number; taskId?: string }) => void) => void;
 }
 
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
@@ -33,6 +38,7 @@ const TimerContext = createContext<TimerContextType | undefined>(undefined);
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { settings, updateSettings } = useTimerSettings();
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [onSessionCompleteCallback, setOnSessionCompleteCallback] = useState<((sessionData: { mode: TimerMode; duration: number; taskId?: string }) => void) | undefined>();
   const prevCompletedSessions = useRef(0);
   const workTimeRef = useRef(0);
   
@@ -48,8 +54,15 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     handleStart,
     handlePause,
     handleReset,
-    handleModeChange
-  } = useTimerLogic({ settings, activeTaskId });
+    handleModeChange,
+    sessionGoal,
+    setSessionGoal,
+    saveSessionReflection
+  } = useTimerLogic({ 
+    settings, 
+    activeTaskId,
+    onSessionComplete: onSessionCompleteCallback 
+  });
 
   // Update document title with timer
   useOptimizedDocumentTitle({
@@ -139,6 +152,11 @@ const getElapsedSeconds = (): number => {
     setActiveTaskId,
     getElapsedMinutes,
     getElapsedSeconds,
+    sessionGoal,
+    setSessionGoal,
+    saveSessionReflection,
+    onSessionComplete: onSessionCompleteCallback,
+    setOnSessionComplete: setOnSessionCompleteCallback
   };
 
   return (

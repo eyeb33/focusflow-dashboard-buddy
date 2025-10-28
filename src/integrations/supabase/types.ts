@@ -115,6 +115,9 @@ export type Database = {
           created_at: string
           duration: number
           id: string
+          session_goal: string | null
+          session_quality: string | null
+          session_reflection: string | null
           session_type: string
           updated_at: string
           user_id: string
@@ -124,6 +127,9 @@ export type Database = {
           created_at?: string
           duration: number
           id?: string
+          session_goal?: string | null
+          session_quality?: string | null
+          session_reflection?: string | null
           session_type: string
           updated_at?: string
           user_id: string
@@ -133,6 +139,9 @@ export type Database = {
           created_at?: string
           duration?: number
           id?: string
+          session_goal?: string | null
+          session_quality?: string | null
+          session_reflection?: string | null
           session_type?: string
           updated_at?: string
           user_id?: string

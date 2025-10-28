@@ -1,7 +1,8 @@
 import React from 'react';
-import { Clock, Check, Square } from 'lucide-react';
+import { Clock, Check, Square, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Task } from '@/types/task';
+import { cn } from '@/lib/utils';
 
 interface ActiveTaskZoneProps {
   activeTask: Task | null;
@@ -9,6 +10,10 @@ interface ActiveTaskZoneProps {
   onCompleteTask: () => void;
   onDrop: (e: React.DragEvent) => void;
   onDragOver: (e: React.DragEvent) => void;
+  sessionGoal?: string;
+  timeRemaining?: number;
+  totalTime?: number;
+  isRunning?: boolean;
 }
 
 const ActiveTaskZone: React.FC<ActiveTaskZoneProps> = ({ 
@@ -16,8 +21,14 @@ const ActiveTaskZone: React.FC<ActiveTaskZoneProps> = ({
   onRemoveTask,
   onCompleteTask,
   onDrop,
-  onDragOver
+  onDragOver,
+  sessionGoal,
+  timeRemaining = 0,
+  totalTime = 0,
+  isRunning = false
 }) => {
+  const elapsedMinutes = Math.floor((totalTime - timeRemaining) / 60);
+  const totalMinutes = Math.floor(totalTime / 60);
   const handleDragStart = (e: React.DragEvent) => {
     if (activeTask) {
       e.dataTransfer.setData('activeTaskId', activeTask.id);
@@ -28,17 +39,22 @@ const ActiveTaskZone: React.FC<ActiveTaskZoneProps> = ({
 
   return (
     <div 
-      className="mt-6 p-4 border-2 border-dashed border-primary/30 rounded-lg bg-primary/5 min-h-[80px] flex items-center justify-center transition-colors hover:border-primary/50"
+      className={cn(
+        "mt-6 p-4 border-2 border-dashed rounded-lg min-h-[80px] flex items-center justify-center transition-all",
+        isRunning && activeTask 
+          ? "border-primary/50 bg-primary/10 animate-pulse-border" 
+          : "border-primary/30 bg-primary/5 hover:border-primary/50"
+      )}
       onDrop={onDrop}
       onDragOver={onDragOver}
     >
       {activeTask ? (
         <div 
-          className="flex items-center justify-between w-full cursor-grab active:cursor-grabbing"
+          className="w-full cursor-grab active:cursor-grabbing"
           draggable
           onDragStart={handleDragStart}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-2">
             <Button 
               variant="ghost" 
               size="icon" 
@@ -51,13 +67,39 @@ const ActiveTaskZone: React.FC<ActiveTaskZoneProps> = ({
               }
             </Button>
             <Clock className="h-5 w-5 text-primary" />
-            <div>
+            <div className="flex-1">
               <p className="font-medium text-foreground">{activeTask.name}</p>
               <p className="text-sm text-muted-foreground">
                 {activeTask.timeSpent ? `${activeTask.timeSpent} min tracked` : 'Tracking time...'}
               </p>
             </div>
           </div>
+          
+          {/* Session Goal */}
+          {sessionGoal && (
+            <div className="ml-9 mb-2 p-2 bg-background/50 rounded border border-border/50">
+              <div className="flex items-start gap-2">
+                <Target className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-foreground italic">"{sessionGoal}"</p>
+              </div>
+            </div>
+          )}
+          
+          {/* Progress Indicator */}
+          {isRunning && totalTime > 0 && (
+            <div className="ml-9 space-y-1">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{elapsedMinutes} of {totalMinutes} minutes completed</span>
+                <span>{Math.round(((totalTime - timeRemaining) / totalTime) * 100)}%</span>
+              </div>
+              <div className="h-1.5 bg-background rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary transition-all duration-300 rounded-full"
+                  style={{ width: `${((totalTime - timeRemaining) / totalTime) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <p className="text-muted-foreground text-sm">

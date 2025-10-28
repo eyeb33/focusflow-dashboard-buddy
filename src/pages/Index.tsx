@@ -215,10 +215,23 @@ const Index = () => {
               <div className="w-full lg:w-1/2 border border-[hsl(var(--border))] rounded-lg p-6 bg-[hsl(var(--card))] flex flex-col">
                 <TimerContainer
                 activeTask={activeTask}
+                tasks={tasks}
                 onRemoveActiveTask={handleRemoveActiveTask}
                 onCompleteActiveTask={handleCompleteActiveTask}
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
+                onQuickAddTask={async (name) => {
+                  const success = await addTask(name, 1);
+                  return success ? tasks[tasks.length - 1]?.id || null : null;
+                }}
+                onSetActiveTask={async (taskId) => {
+                  const task = tasks.find(t => t.id === taskId);
+                  if (task) {
+                    setActiveTask(task);
+                    setActiveTaskId(taskId);
+                    await setTaskActive(taskId);
+                  }
+                }}
               />
             </div>
             

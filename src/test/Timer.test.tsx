@@ -46,12 +46,15 @@ describe('Timer Functionality', () => {
   it('should render timer with default work mode', () => {
     render(
       <TestWrapper>
-      <TimerContainer 
+      <TimerContainer
         activeTask={null}
+        tasks={[]}
         onRemoveActiveTask={() => {}}
         onCompleteActiveTask={() => {}}
         onDrop={() => {}}
         onDragOver={() => {}}
+        onQuickAddTask={async () => null}
+        onSetActiveTask={async () => {}}
       />
       </TestWrapper>
     )
@@ -65,10 +68,13 @@ describe('Timer Functionality', () => {
       <TestWrapper>
         <TimerContainer 
           activeTask={null}
+          tasks={[]}
           onRemoveActiveTask={() => {}}
           onCompleteActiveTask={() => {}}
           onDrop={() => {}}
           onDragOver={() => {}}
+          onQuickAddTask={async () => null}
+          onSetActiveTask={async () => {}}
         />
       </TestWrapper>
     )
@@ -100,10 +106,13 @@ describe('Timer Functionality', () => {
       <TestWrapper>
         <TimerContainer 
           activeTask={null}
+          tasks={[]}
           onRemoveActiveTask={() => {}}
           onCompleteActiveTask={() => {}}
           onDrop={() => {}}
           onDragOver={() => {}}
+          onQuickAddTask={async () => null}
+          onSetActiveTask={async () => {}}
         />
       </TestWrapper>
     )
@@ -132,10 +141,13 @@ describe('Timer Functionality', () => {
       <TestWrapper>
         <TimerContainer 
           activeTask={null}
+          tasks={[]}
           onRemoveActiveTask={() => {}}
           onCompleteActiveTask={() => {}}
           onDrop={() => {}}
           onDragOver={() => {}}
+          onQuickAddTask={async () => null}
+          onSetActiveTask={async () => {}}
         />
       </TestWrapper>
     )

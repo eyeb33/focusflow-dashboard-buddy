@@ -11,9 +11,14 @@ import { useQueryClient } from '@tanstack/react-query';
 interface UseTimerLogicProps {
   settings: TimerSettings;
   activeTaskId: string | null;
+  onSessionComplete?: (sessionData: {
+    mode: TimerMode;
+    duration: number;
+    taskId?: string;
+  }) => void;
 }
 
-export function useTimerLogic({ settings, activeTaskId }: UseTimerLogicProps) {
+export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: UseTimerLogicProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
@@ -24,6 +29,8 @@ export function useTimerLogic({ settings, activeTaskId }: UseTimerLogicProps) {
   const [completedSessions, setCompletedSessions] = useState(0);
   const [totalTimeToday, setTotalTimeToday] = useState(0);
   const [currentSessionIndex, setCurrentSessionIndex] = useState(0);
+  const [sessionGoal, setSessionGoal] = useState<string>('');
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   
   // Refs for timer management
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -65,6 +72,7 @@ export function useTimerLogic({ settings, activeTaskId }: UseTimerLogicProps) {
     toast.success(`${modeLabel} session completed!`);
     
     // Save completed session to database
+    let sessionId: string | null = null;
     if (user && sessionStartTimeRef.current) {
       try {
         const sessionType = timerMode === 'work' ? 'work' : 
@@ -74,7 +82,24 @@ export function useTimerLogic({ settings, activeTaskId }: UseTimerLogicProps) {
         // Get the session date
         const sessionDate = new Date(sessionStartTimeRef.current).toISOString().split('T')[0];
         
-        // Save completed session using the database function
+        // Save completed session with session goal
+        const { data: sessionData, error: sessionError } = await supabase
+          .from('focus_sessions')
+          .insert({
+            user_id: user.id,
+            session_type: sessionType,
+            duration: duration,
+            completed: true,
+            session_goal: sessionGoal || null
+          })
+          .select('id')
+          .single();
+        
+        if (sessionError) throw sessionError;
+        sessionId = sessionData?.id || null;
+        setCurrentSessionId(sessionId);
+        
+        // Update daily stats summary
         await supabase.rpc('save_session_progress', {
           p_user_id: user.id,
           p_session_type: sessionType,
@@ -110,6 +135,15 @@ export function useTimerLogic({ settings, activeTaskId }: UseTimerLogicProps) {
         console.error('Error saving completed session:', error);
         toast.error('Failed to save session progress');
       }
+    }
+    
+    // Trigger reflection modal for work sessions
+    if (timerMode === 'work' && onSessionComplete) {
+      onSessionComplete({
+        mode: timerMode,
+        duration: getTotalTimeForMode(),
+        taskId: activeTaskId || undefined
+      });
     }
     
     if (timerMode === 'work') {
@@ -155,9 +189,14 @@ export function useTimerLogic({ settings, activeTaskId }: UseTimerLogicProps) {
     pausedTimeRef.current = null;
   }, [timerMode, settings, completedSessions, currentSessionIndex, clearTimer, user, getTotalTimeForMode]);
   
-  // Start timer
-  const handleStart = useCallback(() => {
+  // Start timer with optional goal
+  const handleStart = useCallback((goal?: string) => {
     if (isRunning) return;
+    
+    // Set session goal if provided
+    if (goal !== undefined) {
+      setSessionGoal(goal);
+    }
     
     // Use paused time if available
     const startTime = pausedTimeRef.current || timeRemaining;
@@ -171,6 +210,26 @@ export function useTimerLogic({ settings, activeTaskId }: UseTimerLogicProps) {
     // Clear paused time since we're starting
     pausedTimeRef.current = null;
   }, [isRunning, timeRemaining]);
+  
+  // Save session reflection
+  const saveSessionReflection = useCallback(async (quality: 'completed' | 'progress' | 'distracted', reflection: string) => {
+    if (!user || !currentSessionId) return;
+    
+    try {
+      await supabase
+        .from('focus_sessions')
+        .update({
+          session_quality: quality,
+          session_reflection: reflection
+        })
+        .eq('id', currentSessionId);
+      
+      toast.success('Session reflection saved');
+    } catch (error) {
+      console.error('Error saving reflection:', error);
+      toast.error('Failed to save reflection');
+    }
+  }, [user, currentSessionId]);
   
   // Pause timer
   const handlePause = useCallback(() => {
@@ -310,6 +369,10 @@ export function useTimerLogic({ settings, activeTaskId }: UseTimerLogicProps) {
     handlePause,
     handleReset,
     handleModeChange,
-    sessionStartTimeRef
+    sessionStartTimeRef,
+    sessionGoal,
+    setSessionGoal,
+    saveSessionReflection,
+    currentSessionId
   };
 }

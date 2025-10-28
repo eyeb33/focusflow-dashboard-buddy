@@ -1,8 +1,17 @@
 
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { initAudioContext } from '@/utils/audioUtils';
 
 export function useTimerAudio() {
+  const playStartChime = useCallback(() => {
+    try {
+      const audio = new Audio('/sounds/01_zen_chime.mp3');
+      audio.volume = 0.5;
+      audio.play().catch(err => console.warn('Could not play start chime:', err));
+    } catch (error) {
+      console.warn('Error playing start chime:', error);
+    }
+  }, []);
   // Initialize audio context on first user interaction
   useEffect(() => {
     const initAudioOnInteraction = () => {
@@ -55,4 +64,6 @@ export function useTimerAudio() {
       document.removeEventListener('keydown', initAudioOnInteraction);
     };
   }, []);
+
+  return { playStartChime };
 }
