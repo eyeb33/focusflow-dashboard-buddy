@@ -47,9 +47,7 @@ const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Link to="/" className="flex items-center gap-2">
-              <div className="p-3 rounded-xl dark:bg-gray-950 transition-colors">
-                <img src={icon} alt="TimeBubble" className="h-16 w-auto" />
-              </div>
+              <img src={icon} alt="TimeBubble" className="h-24 w-auto" />
             </Link>
           </div>
           
