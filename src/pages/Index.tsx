@@ -23,9 +23,10 @@ const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { theme } = useTheme();
-  const { timerMode, setActiveTaskId, getElapsedMinutes, getElapsedSeconds } = useTimerContext();
+  const { timerMode, setActiveTaskId, getElapsedMinutes, getElapsedSeconds, isRunning } = useTimerContext();
   const { tasks, isLoading, addTask, toggleComplete, editTask, deleteTask, setActiveTask: setTaskActive, updateTaskTime, reorderTasks } = useTasks();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [isTasksVisible, setIsTasksVisible] = useState(true);
   const { toast } = useToast();
   const { triggerProactiveCoaching } = useCoach();
   const suppressRestoreRef = React.useRef<string | null>(null);
@@ -40,6 +41,15 @@ const Index = () => {
       }
     }
   }, [isLoading, tasks, activeTask, setActiveTaskId]);
+
+  // Auto-hide tasks when timer starts, auto-show when paused
+  useEffect(() => {
+    if (isRunning && activeTask) {
+      setIsTasksVisible(false);
+    } else if (!isRunning) {
+      setIsTasksVisible(true);
+    }
+  }, [isRunning, activeTask]);
   
   const handleLoginClick = useCallback(() => {
     navigate('/auth', {
@@ -230,8 +240,12 @@ const Index = () => {
           <div className="w-full max-w-[85%] h-full bg-white dark:bg-card rounded-3xl shadow-2xl p-8 flex flex-col gap-6">
             <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
             
-            <div className="flex-1 flex flex-col lg:flex-row gap-6 overflow-hidden">
-              <div className="w-full lg:w-1/2 flex flex-col">
+            <div className="flex-1 flex gap-0 overflow-hidden relative">
+              {/* Timer Section - expands when tasks hidden */}
+              <div className={cn(
+                "flex flex-col transition-all duration-700 ease-in-out",
+                isTasksVisible ? "w-full lg:w-1/2" : "w-full"
+              )}>
                 <TimerContainer
                 activeTask={activeTask}
                 tasks={tasks}
@@ -253,8 +267,48 @@ const Index = () => {
               />
             </div>
             
-            <div className="w-full lg:w-1/2 border-l border-border/20 pl-6 flex flex-col overflow-hidden">
-              <TaskManagerWithDrop 
+            {/* Toggle Button - floating between sections */}
+            <button
+              onClick={() => setIsTasksVisible(!isTasksVisible)}
+              className={cn(
+                "hidden lg:flex absolute top-1/2 -translate-y-1/2 z-20",
+                "w-8 h-16 items-center justify-center",
+                "bg-gradient-to-r from-primary/90 to-primary",
+                "hover:from-primary hover:to-primary/90",
+                "text-white rounded-r-lg shadow-lg",
+                "transition-all duration-700 ease-in-out",
+                "hover:w-10 hover:shadow-xl",
+                "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                isTasksVisible ? "left-[50%]" : "left-[calc(100%-2rem)]"
+              )}
+              aria-label={isTasksVisible ? "Hide tasks" : "Show tasks"}
+            >
+              <svg
+                className={cn(
+                  "w-5 h-5 transition-transform duration-700",
+                  isTasksVisible ? "rotate-0" : "rotate-180"
+                )}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            
+            {/* Tasks Section - slides in/out */}
+            <div className={cn(
+              "flex flex-col border-l border-border/20 pl-6 overflow-hidden",
+              "transition-all duration-700 ease-in-out",
+              isTasksVisible 
+                ? "w-full lg:w-1/2 opacity-100 translate-x-0" 
+                : "w-0 lg:w-0 opacity-0 translate-x-full pl-0 border-l-0"
+            )}>
+              <div className={cn(
+                "transition-opacity duration-500",
+                isTasksVisible ? "opacity-100 delay-300" : "opacity-0"
+              )}>
+                <TaskManagerWithDrop
                 activeTaskId={activeTask?.id ?? null} 
                 onDropToList={handleDropToList} 
                 onDragOverList={handleDragOver}
@@ -264,8 +318,9 @@ const Index = () => {
                 addTask={addTask}
                 toggleComplete={handleToggleCompleteFromList}
                 editTask={editTask}
-                deleteTask={deleteTask}
-              />
+                  deleteTask={deleteTask}
+                />
+              </div>
             </div>
             </div>
           </div>
