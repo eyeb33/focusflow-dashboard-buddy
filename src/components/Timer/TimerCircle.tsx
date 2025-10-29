@@ -161,13 +161,13 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
       </div>
       <div className="absolute flex flex-col items-center z-20">
         <div className={cn(
-          "tabular-nums flex items-baseline justify-center gap-1",
+          "flex items-baseline justify-center gap-1",
           theme === "dark" ? "text-white" : "text-gray-900"
         )}>
-          <span className="text-[3.9rem] font-extrabold tracking-tight font-display font-[900]">
+          <span className="text-[3.9rem] font-extrabold tracking-tight font-display font-[900] tabular-nums">
             {minutes.toString().padStart(2, '0')}
           </span>
-          <span className="text-[2.8rem] font-extrabold tracking-tight font-display font-[900]">
+          <span className="text-[2.8rem] font-extrabold tracking-tight font-display font-[900] tabular-nums">
             :{seconds.toString().padStart(2, '0')}
           </span>
         </div>
