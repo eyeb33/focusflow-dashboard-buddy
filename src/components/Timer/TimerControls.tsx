@@ -79,7 +79,8 @@ const TimerControls: React.FC<TimerControlsProps> = ({
       <button 
         onClick={handlePlayPauseClick}
         className={cn(
-          "w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 interactive-scale shine-on-hover",
+          "w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 interactive-scale",
+          "shadow-lg hover:shadow-xl active:shadow-md",
           buttonColor
         )}
         aria-label={isRunning ? "Pause timer" : "Start timer"}
@@ -87,26 +88,27 @@ const TimerControls: React.FC<TimerControlsProps> = ({
         data-testid={isRunning ? "pause-button" : "play-button"}
       >
         {isRunning ? (
-          <Pause className={cn("h-5 w-5", theme === "dark" ? "text-white" : "text-white")} />
+          <Pause className="h-6 w-6 text-white" fill="white" />
         ) : (
-          <Play className={cn("h-5 w-5 ml-1", theme === "dark" ? "text-white" : "text-white")} />
+          <Play className="h-6 w-6 ml-1 text-white" fill="white" />
         )}
       </button>
       
       <button 
         onClick={handleResetClick}
         className={cn(
-          "w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 interactive-scale shadow-soft hover:shadow-soft-lg",
+          "w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 interactive-scale",
+          "shadow-lg hover:shadow-xl active:shadow-md",
           theme === "dark" 
             ? "bg-gray-700 hover:bg-gray-600 active:bg-gray-800" 
-            : "bg-secondary hover:bg-secondary/80 active:bg-secondary/70"
+            : "bg-gray-200 hover:bg-gray-300 active:bg-gray-100"
         )}
         aria-label="Reset timer"
         type="button"
         data-testid="reset-button"
       >
         <RotateCcw className={cn(
-          "h-5 w-5",
+          "h-6 w-6",
           theme === "dark" ? "text-white" : "text-gray-700"
         )} />
       </button>
