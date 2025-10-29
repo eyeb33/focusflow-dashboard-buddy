@@ -189,22 +189,43 @@ const Index = () => {
   }, [activeTask, completeTask]);
   
   const getPageBackground = () => {
-    if (theme === 'dark') return 'bg-black text-white';
+    if (theme === 'dark') return 'bg-gradient-to-b from-gray-900 via-gray-800 to-black';
     
     switch(timerMode) {
-      case 'work': return 'bg-[hsl(var(--timer-focus-bg))] text-[hsl(var(--foreground))]';
-      case 'break': return 'bg-[hsl(var(--timer-break-bg))] text-[hsl(var(--primary-foreground))]';
-      case 'longBreak': return 'bg-[hsl(var(--timer-longbreak-bg))] text-[hsl(var(--primary-foreground))]';
-      default: return 'bg-[hsl(var(--timer-focus-bg))] text-[hsl(var(--foreground))]';
+      case 'work': return 'bg-gradient-to-b from-[#df1515] via-[#ef6c47] to-[#ffa577]';
+      case 'break': return 'bg-gradient-to-b from-[#738f66] via-[#a4c2a0] to-[#c8dcc4]';
+      case 'longBreak': return 'bg-gradient-to-b from-[#a4c2b6] via-[#bdd9d0] to-[#d6ebe5]';
+      default: return 'bg-gradient-to-b from-[#df1515] via-[#ef6c47] to-[#ffa577]';
     }
   };
 
   return (
     <div className={cn(
-      "min-h-screen flex flex-col transition-colors duration-500",
+      "min-h-screen flex flex-col transition-colors duration-500 relative overflow-hidden",
       getPageBackground()
     )}>
-      <main className="flex-1 flex flex-col overflow-hidden">
+      {/* Decorative mountain silhouettes */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Far mountains */}
+        <svg className="absolute bottom-0 w-full h-[40%] opacity-20" viewBox="0 0 1200 400" preserveAspectRatio="none">
+          <polygon points="0,400 0,200 200,150 400,220 600,100 800,180 1000,140 1200,200 1200,400" fill="currentColor" className="text-black/30" />
+        </svg>
+        
+        {/* Mid mountains */}
+        <svg className="absolute bottom-0 w-full h-[35%] opacity-30" viewBox="0 0 1200 350" preserveAspectRatio="none">
+          <polygon points="0,350 0,250 150,180 350,240 550,160 750,200 950,170 1200,220 1200,350" fill="currentColor" className="text-black/40" />
+        </svg>
+        
+        {/* Near mountains/trees */}
+        <svg className="absolute bottom-0 w-full h-[30%] opacity-60" viewBox="0 0 1200 300" preserveAspectRatio="none">
+          <polygon points="0,300 0,280 100,220 200,240 300,200 400,260 500,210 600,250 700,190 800,230 900,200 1000,240 1100,220 1200,260 1200,300" fill="currentColor" className="text-black/60" />
+        </svg>
+        
+        {/* Foreground trees */}
+        <div className="absolute bottom-0 w-full h-[20%] bg-gradient-to-t from-black/80 to-transparent" />
+      </div>
+
+      <main className="flex-1 flex flex-col overflow-hidden relative z-10">
         <div className="relative flex flex-col items-center h-full p-8">
           <div className="w-full max-w-[85%] h-full bg-white dark:bg-card rounded-3xl shadow-2xl p-8 flex flex-col gap-6">
             <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
