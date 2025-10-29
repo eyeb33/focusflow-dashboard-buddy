@@ -8,7 +8,7 @@ import ThemeToggle from '@/components/Theme/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/components/Theme/ThemeProvider';
 import { cn } from '@/lib/utils';
-import logo from '@/assets/logo.png';
+import icon from '@/assets/icon.png';
 
 interface HeaderProps {
   isAuthenticated?: boolean;
@@ -47,7 +47,9 @@ const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Link to="/" className="flex items-center gap-2">
-              <img src={logo} alt="TimeBubble" className="h-48 w-auto" />
+              <div className="p-2 rounded-lg dark:bg-gray-900 transition-colors">
+                <img src={icon} alt="TimeBubble" className="h-8 w-auto" />
+              </div>
             </Link>
           </div>
           
