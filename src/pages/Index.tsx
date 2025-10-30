@@ -238,9 +238,9 @@ const Index = () => {
       <main className="flex-1 flex flex-col overflow-hidden relative z-10">
         <div className="relative flex flex-col items-center h-full p-8">
           <div className={cn(
-            "w-full h-full bg-white dark:bg-card rounded-3xl shadow-2xl p-8 flex flex-col gap-6 relative",
+            "w-full bg-white dark:bg-card rounded-3xl shadow-2xl p-8 flex flex-col gap-6 relative",
             "transition-all duration-700 ease-in-out",
-            isTasksVisible ? "max-w-[85%]" : "max-w-[45%]"
+            isTasksVisible ? "max-w-[85%] h-full" : "max-w-[45%] h-auto"
           )}>
             <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
             
@@ -271,17 +271,17 @@ const Index = () => {
               />
             </div>
             
-            {/* Toggle Button - always on right edge of container */}
+            {/* Toggle Button - index tab at top right */}
             <button
               onClick={() => setIsTasksVisible(!isTasksVisible)}
               className={cn(
-                "hidden lg:flex absolute top-1/2 -translate-y-1/2 z-30",
-                "w-10 h-20 items-center justify-center",
+                "hidden lg:flex absolute top-8 z-30",
+                "w-10 h-16 items-center justify-center",
                 "bg-primary hover:bg-primary/90 active:bg-primary",
                 "text-white shadow-lg hover:shadow-xl",
                 "transition-all duration-500 ease-in-out",
                 "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
-                "-right-5 rounded-l-xl"
+                "-right-5 rounded-r-lg"
               )}
               aria-label={isTasksVisible ? "Hide tasks" : "Show tasks"}
             >
