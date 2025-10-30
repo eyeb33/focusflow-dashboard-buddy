@@ -236,7 +236,7 @@ const Index = () => {
       </div>
 
       <main className="flex-1 flex flex-col overflow-hidden relative z-10">
-        <div className="relative flex flex-col items-center h-full p-8">
+        <div className="relative flex flex-col items-center p-8 min-h-0">
           <div className={cn(
             "w-full bg-white dark:bg-card rounded-3xl shadow-2xl p-8 flex flex-col gap-6 relative",
             "transition-all duration-700 ease-in-out",
