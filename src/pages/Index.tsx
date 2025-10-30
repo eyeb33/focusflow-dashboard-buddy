@@ -237,14 +237,18 @@ const Index = () => {
 
       <main className="flex-1 flex flex-col overflow-hidden relative z-10">
         <div className="relative flex flex-col items-center h-full p-8">
-          <div className="w-full max-w-[85%] h-full bg-white dark:bg-card rounded-3xl shadow-2xl p-8 flex flex-col gap-6">
+          <div className={cn(
+            "w-full h-full bg-white dark:bg-card rounded-3xl shadow-2xl p-8 flex flex-col gap-6 relative",
+            "transition-all duration-700 ease-in-out",
+            isTasksVisible ? "max-w-[85%]" : "max-w-[45%]"
+          )}>
             <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
             
-            <div className="flex-1 flex gap-0 overflow-hidden relative">
-              {/* Timer Section - expands when tasks hidden */}
+            <div className="flex-1 flex gap-0 overflow-hidden">
+              {/* Timer Section */}
               <div className={cn(
-                "flex flex-col transition-all duration-700 ease-in-out",
-                isTasksVisible ? "w-full lg:w-1/2" : "w-full"
+                "flex flex-col transition-all duration-500 ease-in-out",
+                isTasksVisible ? "w-1/2" : "w-full"
               )}>
                 <TimerContainer
                 activeTask={activeTask}
@@ -267,25 +271,23 @@ const Index = () => {
               />
             </div>
             
-            {/* Toggle Button - floating between sections */}
+            {/* Toggle Button - on right edge */}
             <button
               onClick={() => setIsTasksVisible(!isTasksVisible)}
               className={cn(
-                "hidden lg:flex absolute top-1/2 -translate-y-1/2 z-20",
-                "w-8 h-16 items-center justify-center",
-                "bg-gradient-to-r from-primary/90 to-primary",
-                "hover:from-primary hover:to-primary/90",
-                "text-white rounded-r-lg shadow-lg",
-                "transition-all duration-700 ease-in-out",
-                "hover:w-10 hover:shadow-xl",
+                "hidden lg:flex absolute top-1/2 -translate-y-1/2 z-30",
+                "w-10 h-20 items-center justify-center",
+                "bg-primary hover:bg-primary/90 active:bg-primary",
+                "text-white shadow-lg hover:shadow-xl",
+                "transition-all duration-500 ease-in-out",
                 "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
-                isTasksVisible ? "left-[50%]" : "left-[calc(100%-2rem)]"
+                isTasksVisible ? "right-0 rounded-l-xl" : "-right-10 rounded-l-xl"
               )}
               aria-label={isTasksVisible ? "Hide tasks" : "Show tasks"}
             >
               <svg
                 className={cn(
-                  "w-5 h-5 transition-transform duration-700",
+                  "w-5 h-5 transition-transform duration-500",
                   isTasksVisible ? "rotate-0" : "rotate-180"
                 )}
                 fill="none"
@@ -299,14 +301,14 @@ const Index = () => {
             {/* Tasks Section - slides in/out */}
             <div className={cn(
               "flex flex-col border-l border-border/20 pl-6 overflow-hidden",
-              "transition-all duration-700 ease-in-out",
+              "transition-all duration-500 ease-in-out",
               isTasksVisible 
-                ? "w-full lg:w-1/2 opacity-100 translate-x-0" 
-                : "w-0 lg:w-0 opacity-0 translate-x-full pl-0 border-l-0"
+                ? "w-1/2 opacity-100" 
+                : "w-0 opacity-0 pl-0 border-l-0"
             )}>
               <div className={cn(
-                "transition-opacity duration-500",
-                isTasksVisible ? "opacity-100 delay-300" : "opacity-0"
+                "transition-opacity duration-300",
+                isTasksVisible ? "opacity-100 delay-200" : "opacity-0"
               )}>
                 <TaskManagerWithDrop
                 activeTaskId={activeTask?.id ?? null} 
