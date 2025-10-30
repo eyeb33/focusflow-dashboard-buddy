@@ -240,7 +240,7 @@ const Index = () => {
           <div className={cn(
             "w-full bg-white dark:bg-card rounded-3xl shadow-2xl p-8 flex flex-col gap-6 relative",
             "transition-all duration-700 ease-in-out",
-            isTasksVisible ? "max-w-[85%] h-full" : "max-w-[45%] h-auto"
+            isTasksVisible ? "max-w-[85%] h-full" : "max-w-[45%] h-fit"
           )}>
             <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
             
@@ -271,17 +271,17 @@ const Index = () => {
               />
             </div>
             
-            {/* Toggle Button - index tab at top right */}
+            {/* Toggle Button - index tab at navigation level */}
             <button
               onClick={() => setIsTasksVisible(!isTasksVisible)}
               className={cn(
-                "hidden lg:flex absolute top-8 z-30",
-                "w-10 h-16 items-center justify-center",
+                "hidden lg:flex absolute top-[140px] z-30",
+                "w-12 h-12 items-center justify-center",
                 "bg-primary hover:bg-primary/90 active:bg-primary",
                 "text-white shadow-lg hover:shadow-xl",
                 "transition-all duration-500 ease-in-out",
                 "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
-                "-right-5 rounded-r-lg"
+                "right-0 translate-x-1/2 rounded-lg"
               )}
               aria-label={isTasksVisible ? "Hide tasks" : "Show tasks"}
             >
