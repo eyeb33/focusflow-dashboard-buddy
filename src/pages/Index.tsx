@@ -271,7 +271,7 @@ const Index = () => {
               />
             </div>
             
-            {/* Toggle Button - on right edge */}
+            {/* Toggle Button - always on right edge of container */}
             <button
               onClick={() => setIsTasksVisible(!isTasksVisible)}
               className={cn(
@@ -281,7 +281,7 @@ const Index = () => {
                 "text-white shadow-lg hover:shadow-xl",
                 "transition-all duration-500 ease-in-out",
                 "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
-                isTasksVisible ? "right-0 rounded-l-xl" : "-right-10 rounded-l-xl"
+                "-right-5 rounded-l-xl"
               )}
               aria-label={isTasksVisible ? "Hide tasks" : "Show tasks"}
             >
