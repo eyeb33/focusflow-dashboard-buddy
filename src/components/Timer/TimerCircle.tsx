@@ -49,7 +49,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
         case 'break':
           return "#738f66"; // Green
         case 'longBreak':
-          return "#a4c2b6"; // Blue
+          return "#70cccb"; // Blue
         case 'focus':
         default:
           return "#df1515"; // Red
@@ -61,7 +61,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
       case 'break':
         return "#738f66";      // Green
       case 'longBreak':
-        return "#a4c2b6";      // Blue
+        return "#70cccb";      // Blue
       case 'focus':
       default:
         return "#df1515";      // Red
@@ -161,13 +161,13 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
       </div>
       <div className="absolute flex flex-col items-center z-20">
         <div className={cn(
-          "flex items-baseline justify-center gap-1",
+          "flex items-baseline justify-center",
           theme === "dark" ? "text-white" : "text-gray-900"
         )}>
-          <span className="text-[3.9rem] font-extrabold tracking-tight font-display font-[900] tabular-nums">
+          <span className="text-[3.9rem] font-extrabold tracking-tight font-mono tabular-nums font-[900]" style={{ fontVariantNumeric: 'tabular-nums' }}>
             {minutes.toString().padStart(2, '0')}
           </span>
-          <span className="text-[2.8rem] font-extrabold tracking-tight font-display font-[900] tabular-nums">
+          <span className="text-[2.8rem] font-extrabold tracking-tight font-mono tabular-nums font-[900]" style={{ fontVariantNumeric: 'tabular-nums' }}>
             :{seconds.toString().padStart(2, '0')}
           </span>
         </div>

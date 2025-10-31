@@ -31,7 +31,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
         case 'break':
           return "bg-[#738f66] hover:bg-[#657f5a] active:bg-[#576f4e] shadow-soft hover:shadow-soft-lg";
         case 'longBreak':
-          return "bg-[#a4c2b6] hover:bg-[#93b3a7] active:bg-[#82a498] shadow-soft hover:shadow-soft-lg";
+          return "bg-[#70cccb] hover:bg-[#63b8b7] active:bg-[#56a4a3] shadow-soft hover:shadow-soft-lg";
         default:
           return "bg-[#df1515] hover:bg-[#c91313] active:bg-[#b31111] shadow-soft hover:shadow-soft-lg";
       }
@@ -44,7 +44,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
     case 'break':
       return "bg-[#738f66] hover:bg-[#657f5a] active:bg-[#576f4e] shadow-soft hover:shadow-soft-lg";
     case 'longBreak':
-      return "bg-[#a4c2b6] hover:bg-[#93b3a7] active:bg-[#82a498] shadow-soft hover:shadow-soft-lg";
+      return "bg-[#70cccb] hover:bg-[#63b8b7] active:bg-[#56a4a3] shadow-soft hover:shadow-soft-lg";
     default:
       return "bg-[#df1515] hover:bg-[#c91313] active:bg-[#b31111] shadow-soft hover:shadow-soft-lg";
   }

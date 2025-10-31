@@ -36,7 +36,7 @@ const TimerModeTabs: React.FC<TimerModeTabsProps> = ({
                 ? "bg-[#df1515] text-white shadow-soft" 
                 : tabMode === 'break' 
                   ? "bg-[#738f66] text-white shadow-soft" 
-                  : "bg-[#a4c2b6] text-white shadow-soft"
+                  : "bg-[#70cccb] text-white shadow-soft"
               : "text-muted-foreground hover:text-foreground hover:bg-accent font-medium"
           )}
         >

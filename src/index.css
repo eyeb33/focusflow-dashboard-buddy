@@ -50,8 +50,8 @@
     --timer-break-bg: 99 19% 48%;       /* Green #738f66 */
     --timer-break-accent: 99 19% 42%;   /* Darker green */
     
-    --timer-longbreak-bg: 157 20% 70%;  /* Blue #a4c2b6 */
-    --timer-longbreak-accent: 157 20% 60%; /* Darker blue */
+    --timer-longbreak-bg: 179 53% 62%;  /* Blue #70cccb */
+    --timer-longbreak-accent: 179 53% 52%; /* Darker blue */
   }
  
   .dark {
@@ -91,8 +91,8 @@
     --timer-break-bg: 140 45% 50%;      /* Forest green */
     --timer-break-accent: 140 60% 55%;  /* Bright green */
     
-    --timer-longbreak-bg: 215 50% 50%;  /* Deep blue */
-    --timer-longbreak-accent: 215 70% 60%; /* Bright blue */
+    --timer-longbreak-bg: 179 53% 62%;  /* Blue #70cccb */
+    --timer-longbreak-accent: 179 53% 52%; /* Darker blue */
   }
 
   /* Breathing animation for calm effect */

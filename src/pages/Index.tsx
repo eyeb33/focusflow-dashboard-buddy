@@ -202,32 +202,34 @@ const Index = () => {
   }, [activeTask, completeTask]);
   
   const getPageBackground = () => {
-    if (theme === 'dark') return { type: 'gradient', value: 'bg-gradient-to-b from-gray-900 via-gray-800 to-black' };
-    
+    // Always use images for backgrounds, dark mode will have overlay
     switch(timerMode) {
-      case 'work': return { type: 'image', value: bgWork };
-      case 'break': return { type: 'image', value: bgBreak };
-      case 'longBreak': return { type: 'image', value: bgLongBreak };
-      default: return { type: 'image', value: bgWork };
+      case 'work': return bgWork;
+      case 'break': return bgBreak;
+      case 'longBreak': return bgLongBreak;
+      default: return bgWork;
     }
   };
 
   const background = getPageBackground();
 
   return (
-    <div className={cn(
-      "min-h-screen flex flex-col transition-colors duration-500 relative overflow-hidden",
-      background.type === 'gradient' ? background.value : ''
-    )}
-    style={background.type === 'image' ? {
-      backgroundImage: `url(${background.value})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat'
-    } : undefined}
+    <div 
+      className="min-h-screen flex flex-col transition-colors duration-500 relative overflow-hidden"
+      style={{
+        backgroundImage: `url(${background})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
     >
-      {/* Gradient overlay to fade to top */}
-      <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-white/30 dark:to-gray-900/30 pointer-events-none" />
+      {/* Dark overlay for dark mode + gradient fade to top */}
+      <div className={cn(
+        "absolute inset-0 pointer-events-none transition-colors duration-500",
+        theme === 'dark' 
+          ? "bg-gradient-to-t from-black/80 via-black/70 to-black/60" 
+          : "bg-gradient-to-t from-transparent via-transparent to-white/30"
+      )} />
 
       <main className="flex-1 flex flex-col overflow-hidden relative z-10">
         <div className={cn(
@@ -236,10 +238,9 @@ const Index = () => {
         )}>
           <div className={cn(
             "w-full bg-white dark:bg-card rounded-3xl shadow-2xl p-8 flex flex-col gap-6 relative",
-            "transition-all duration-700 ease-in-out",
-            isTasksVisible ? "max-w-[85%]" : "max-w-[45%]"
+            "transition-all duration-500 ease-in-out",
+            isTasksVisible ? "max-w-[85%] h-[85vh]" : "max-w-[45%]"
           )}
-          style={isTasksVisible ? { height: '85vh' } : undefined}
           >
             <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
             
@@ -280,10 +281,11 @@ const Index = () => {
                 "hidden lg:flex absolute top-[140px] z-30",
                 "w-12 h-12 items-center justify-center",
                 "bg-primary hover:bg-primary/90 active:bg-primary",
-                "text-white shadow-lg hover:shadow-xl",
+                "shadow-lg hover:shadow-xl",
                 "transition-all duration-500 ease-in-out",
                 "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
-                "right-0 translate-x-1/2 rounded-lg"
+                "right-0 translate-x-1/2 rounded-lg",
+                theme === 'dark' ? "text-gray-900" : "text-white"
               )}
               aria-label={isTasksVisible ? "Hide tasks" : "Show tasks"}
             >
