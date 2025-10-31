@@ -25,24 +25,24 @@ const TimerModeTabs: React.FC<TimerModeTabsProps> = ({
 
   return (
     <div className="flex bg-muted rounded-lg p-1 mb-6 w-full shadow-soft">
-      {(['work', 'break', 'longBreak'] as TimerMode[]).map((tabMode) => (
-        <button
-          key={tabMode}
-          onClick={() => onModeChange(tabMode)}
-          className={cn(
-            "flex-1 py-2.5 px-4 text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap",
-            currentMode === tabMode 
-              ? tabMode === 'work' 
-                ? "bg-[#df1515] text-white shadow-soft" 
-                : tabMode === 'break' 
-                  ? "bg-[#738f66] text-white shadow-soft" 
-                  : "bg-[#70cccb] text-white shadow-soft"
-              : "text-muted-foreground hover:text-foreground hover:bg-accent font-medium"
-          )}
-        >
-          {getModeLabel(tabMode)}
-        </button>
-      ))}
+      {(['work', 'break', 'longBreak'] as TimerMode[]).map((tabMode) => {
+        const bgVar = tabMode === 'work' ? '--timer-focus-bg' : tabMode === 'break' ? '--timer-break-bg' : '--timer-longbreak-bg';
+        return (
+          <button
+            key={tabMode}
+            onClick={() => onModeChange(tabMode)}
+            className={cn(
+              "flex-1 py-2.5 px-4 text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap",
+              currentMode === tabMode 
+                ? "text-white shadow-soft" 
+                : "text-muted-foreground hover:text-foreground hover:bg-accent font-medium"
+            )}
+            style={currentMode === tabMode ? { backgroundColor: `hsl(var(${bgVar}))` } : undefined}
+          >
+            {getModeLabel(tabMode)}
+          </button>
+        );
+      })}
     </div>
   );
 };

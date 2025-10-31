@@ -127,7 +127,7 @@ const TimerContainer: React.FC<TimerContainerProps> = ({
   return (
     <TimerObserver>
       <div 
-        className="flex-1 flex flex-col items-center justify-center w-full"
+        className="flex flex-col items-center justify-start w-full"
         data-testid="timer-container"
       >
         <TimerHeader 

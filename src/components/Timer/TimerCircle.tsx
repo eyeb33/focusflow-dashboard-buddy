@@ -41,32 +41,28 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
   // At 100% progress we want 0 offset (full circle)
   const dashOffset = circumference * (1 - progress / 100);
 
-  // Determine color based on mode and theme
-  const getProgressColor = () => {
-    if (theme === 'dark') {
-      // Keep vibrant colors for dark mode
-      switch (mode) {
-        case 'break':
-          return "#738f66"; // Green
-        case 'longBreak':
-          return "#70cccb"; // Blue
-        case 'focus':
-        default:
-          return "#df1515"; // Red
-      }
-    }
-    
-    // Light mode - new color palette
+  // Determine color based on mode and theme using design tokens
+  const getColorVars = () => {
     switch (mode) {
       case 'break':
-        return "#738f66";      // Green
+        return {
+          solid: 'hsl(var(--timer-break-bg))',
+          glow: 'hsl(var(--timer-break-bg) / 0.4)'
+        };
       case 'longBreak':
-        return "#70cccb";      // Blue
+        return {
+          solid: 'hsl(var(--timer-longbreak-bg))',
+          glow: 'hsl(var(--timer-longbreak-bg) / 0.4)'
+        };
       case 'focus':
       default:
-        return "#df1515";      // Red
+        return {
+          solid: 'hsl(var(--timer-focus-bg))',
+          glow: 'hsl(var(--timer-focus-bg) / 0.4)'
+        };
     }
   };
+  const colors = getColorVars();
 
   // Get text for the status message
   const getStatusText = () => {
@@ -95,7 +91,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
         <div 
           className="absolute inset-0 rounded-full animate-glow"
           style={{
-            background: `radial-gradient(circle, ${getProgressColor()}40 0%, transparent 70%)`,
+            background: `radial-gradient(circle, ${colors.glow} 0%, transparent 70%)`,
             transform: 'scale(1.1)'
           }}
         />
@@ -138,14 +134,14 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
             cy={size / 2}
             r={radius}
             fill="transparent"
-            stroke={getProgressColor()}
+            stroke={colors.solid}
             strokeWidth={strokeWidth}
             strokeDasharray={circumference}
             strokeDashoffset={dashOffset}
             strokeLinecap="round"
             style={{ 
               transition: 'stroke-dashoffset 0.3s ease-out',
-              filter: 'drop-shadow(0 0 6px ' + getProgressColor() + '40)'
+              filter: 'drop-shadow(0 0 6px ' + colors.glow + ')'
             }}
           />
           {/* Bubble highlight overlay */}

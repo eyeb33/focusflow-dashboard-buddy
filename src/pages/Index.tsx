@@ -227,26 +227,24 @@ const Index = () => {
       <div className={cn(
         "absolute inset-0 pointer-events-none transition-colors duration-500",
         theme === 'dark' 
-          ? "bg-gradient-to-t from-black/80 via-black/70 to-black/60" 
+          ? "bg-gradient-to-t from-black/90 via-black/85 to-black/80" 
           : "bg-gradient-to-t from-transparent via-transparent to-white/30"
       )} />
 
       <main className="flex-1 flex flex-col overflow-hidden relative z-10">
         <div className={cn(
-          "relative flex flex-col items-center justify-center p-8",
-          isTasksVisible ? "min-h-screen" : "min-h-0"
+          "relative flex flex-col items-center justify-start py-10 px-8"
         )}>
           <div className={cn(
-            "w-full bg-white dark:bg-card rounded-3xl shadow-2xl p-8 flex flex-col gap-6 relative",
-            "transition-all duration-500 ease-in-out",
-            isTasksVisible ? "max-w-[85%] h-[85vh]" : "max-w-[45%]"
+            "w-full mx-auto bg-white dark:bg-card rounded-3xl shadow-2xl p-8 flex flex-col gap-6 relative",
+            "transition-[width,opacity,padding,margin] duration-500 ease-in-out",
+            isTasksVisible ? "max-w-[85%]" : "max-w-[45%]"
           )}
           >
             <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
             
             <div className={cn(
-              "flex gap-0 overflow-hidden",
-              isTasksVisible ? "flex-1" : ""
+              "flex gap-0 overflow-hidden transition-[height] duration-500"
             )}>
               {/* Timer Section */}
               <div className={cn(
@@ -434,7 +432,7 @@ const TaskManagerWithDrop: React.FC<{
               ))}
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto mt-4">
+            <div className="mt-4 max-h-[60vh] overflow-y-auto">
               <TaskList 
                 tasks={tasks.filter(t => !t.isActive && !t.completed)} 
                 onDeleteTask={handleDeleteTask}

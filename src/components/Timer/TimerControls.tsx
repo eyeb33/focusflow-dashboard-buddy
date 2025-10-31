@@ -21,36 +21,20 @@ const TimerControls: React.FC<TimerControlsProps> = ({
 }) => {
   const { theme } = useTheme();
   
-  // Get color based on timer mode and theme
-  const getButtonColor = (mode: string): string => {
-    if (theme === 'dark') {
-      // Keep vibrant for dark mode
-      switch (mode) {
-        case 'work':
-          return "bg-[#df1515] hover:bg-[#c91313] active:bg-[#b31111] shadow-soft hover:shadow-soft-lg";
-        case 'break':
-          return "bg-[#738f66] hover:bg-[#657f5a] active:bg-[#576f4e] shadow-soft hover:shadow-soft-lg";
-        case 'longBreak':
-          return "bg-[#70cccb] hover:bg-[#63b8b7] active:bg-[#56a4a3] shadow-soft hover:shadow-soft-lg";
-        default:
-          return "bg-[#df1515] hover:bg-[#c91313] active:bg-[#b31111] shadow-soft hover:shadow-soft-lg";
-      }
+  // Compute mode color via design tokens
+  const getModeBg = (mode: string): string => {
+    switch (mode) {
+      case 'work':
+        return 'hsl(var(--timer-focus-bg))';
+      case 'break':
+        return 'hsl(var(--timer-break-bg))';
+      case 'longBreak':
+        return 'hsl(var(--timer-longbreak-bg))';
+      default:
+        return 'hsl(var(--timer-focus-bg))';
     }
-    
-  // Light mode - new color palette
-  switch (mode) {
-    case 'work':
-      return "bg-[#df1515] hover:bg-[#c91313] active:bg-[#b31111] shadow-soft hover:shadow-soft-lg";
-    case 'break':
-      return "bg-[#738f66] hover:bg-[#657f5a] active:bg-[#576f4e] shadow-soft hover:shadow-soft-lg";
-    case 'longBreak':
-      return "bg-[#70cccb] hover:bg-[#63b8b7] active:bg-[#56a4a3] shadow-soft hover:shadow-soft-lg";
-    default:
-      return "bg-[#df1515] hover:bg-[#c91313] active:bg-[#b31111] shadow-soft hover:shadow-soft-lg";
-  }
   };
-  
-  const buttonColor = getButtonColor(mode);
+  const buttonBg = getModeBg(mode);
 
   // Handle play/pause click
   const handlePlayPauseClick = useCallback((e: React.MouseEvent) => {
@@ -80,9 +64,9 @@ const TimerControls: React.FC<TimerControlsProps> = ({
         onClick={handlePlayPauseClick}
         className={cn(
           "w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 interactive-scale",
-          "shadow-lg hover:shadow-xl active:shadow-md",
-          buttonColor
+          "shadow-lg hover:shadow-xl active:shadow-md"
         )}
+        style={{ backgroundColor: buttonBg }}
         aria-label={isRunning ? "Pause timer" : "Start timer"}
         type="button"
         data-testid={isRunning ? "pause-button" : "play-button"}
