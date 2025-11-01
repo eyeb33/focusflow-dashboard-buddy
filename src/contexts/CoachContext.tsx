@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { useTimerContext } from './TimerContext';
+import { Task } from '@/types/task';
 
 interface CoachMessage {
   id: string;
@@ -10,12 +12,19 @@ interface CoachMessage {
   created_at: string;
 }
 
+interface CoachAction {
+  type: string;
+  status: 'executing' | 'success' | 'error';
+  message: string;
+}
+
 interface CoachContextType {
   messages: CoachMessage[];
   isLoading: boolean;
   isMinimized: boolean;
   unreadCount: number;
   conversationId: string | null;
+  currentAction: CoachAction | null;
   sendMessage: (content: string) => Promise<void>;
   triggerProactiveCoaching: (trigger: string, context?: any) => Promise<void>;
   showCheckIn: () => void;
@@ -25,12 +34,15 @@ interface CoachContextType {
   checkInModalOpen: boolean;
   setCheckInModalOpen: (open: boolean) => void;
   onResponseReceived?: (text: string) => void;
+  tasks: Task[];
+  setTasks: (tasks: Task[]) => void;
 }
 
 const CoachContext = createContext<CoachContextType | undefined>(undefined);
 
 export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
+  const timer = useTimerContext();
   const [messages, setMessages] = useState<CoachMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -38,6 +50,274 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [unreadCount, setUnreadCount] = useState(0);
   const [checkInModalOpen, setCheckInModalOpen] = useState(false);
   const [lastTriggerTime, setLastTriggerTime] = useState<number>(0);
+  const [currentAction, setCurrentAction] = useState<CoachAction | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
+
+  // Load tasks
+  useEffect(() => {
+    if (!user) return;
+
+    const loadTasks = async () => {
+      const { data } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('completed', false)
+        .order('sort_order', { ascending: true });
+      
+      if (data) {
+        const mappedTasks: Task[] = data.map(t => ({
+          id: t.id,
+          name: t.name,
+          estimatedPomodoros: t.estimated_pomodoros,
+          completed: t.completed,
+          createdAt: t.created_at,
+          updatedAt: t.updated_at,
+          completedAt: t.completed_at || undefined,
+          completedPomodoros: t.completed_pomodoros || undefined,
+          isActive: t.is_active || false,
+          timeSpent: t.time_spent,
+          timeSpentSeconds: t.time_spent_seconds
+        }));
+        setTasks(mappedTasks);
+      }
+    };
+
+    loadTasks();
+  }, [user]);
+
+  // Execute tool actions
+  const executeToolAction = useCallback(async (toolCall: any) => {
+    if (!user || !conversationId) return null;
+
+    const { name, arguments: args } = toolCall.function;
+    let parsedArgs: any = {};
+    
+    try {
+      parsedArgs = typeof args === 'string' ? JSON.parse(args) : args;
+    } catch (e) {
+      console.error('Failed to parse tool arguments:', e);
+      return { error: 'Invalid arguments' };
+    }
+
+    console.log('Executing tool:', name, parsedArgs);
+
+    try {
+      let result: any = {};
+      
+      switch (name) {
+        case 'add_task': {
+          setCurrentAction({ type: 'add_task', status: 'executing', message: `Adding task: ${parsedArgs.name}...` });
+          
+          const { data: newTask, error } = await supabase
+            .from('tasks')
+            .insert({
+              user_id: user.id,
+              name: parsedArgs.name,
+              estimated_pomodoros: parsedArgs.estimated_pomodoros || 1,
+              completed: false,
+              is_active: false,
+              time_spent: 0
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+          
+          const mappedTask: Task = {
+            id: newTask.id,
+            name: newTask.name,
+            estimatedPomodoros: newTask.estimated_pomodoros,
+            completed: newTask.completed,
+            createdAt: newTask.created_at,
+            updatedAt: newTask.updated_at,
+            completedAt: newTask.completed_at || undefined,
+            completedPomodoros: newTask.completed_pomodoros || undefined,
+            isActive: newTask.is_active || false,
+            timeSpent: newTask.time_spent,
+            timeSpentSeconds: newTask.time_spent_seconds
+          };
+          
+          setTasks(prev => [...prev, mappedTask]);
+          
+          await supabase.from('coach_actions').insert({
+            conversation_id: conversationId,
+            user_id: user.id,
+            action_type: 'add_task',
+            action_params: { task_id: newTask.id, name: parsedArgs.name },
+            success: true
+          });
+
+          setCurrentAction({ type: 'add_task', status: 'success', message: `Added: ${parsedArgs.name}` });
+          setTimeout(() => setCurrentAction(null), 3000);
+          
+          result = { success: true, task_id: newTask.id, message: `Task "${parsedArgs.name}" added successfully` };
+          break;
+        }
+
+        case 'complete_task': {
+          setCurrentAction({ type: 'complete_task', status: 'executing', message: 'Completing task...' });
+          
+          const { data: task, error } = await supabase
+            .from('tasks')
+            .update({ completed: true, completed_at: new Date().toISOString() })
+            .eq('id', parsedArgs.task_id)
+            .eq('user_id', user.id)
+            .select()
+            .single();
+
+          if (error) throw error;
+          
+          setTasks(prev => prev.filter(t => t.id !== parsedArgs.task_id));
+          
+          await supabase.from('coach_actions').insert({
+            conversation_id: conversationId,
+            user_id: user.id,
+            action_type: 'complete_task',
+            action_params: { task_id: parsedArgs.task_id },
+            success: true
+          });
+
+          setCurrentAction({ type: 'complete_task', status: 'success', message: `Task completed!` });
+          setTimeout(() => setCurrentAction(null), 3000);
+          
+          result = { success: true, message: `Task completed` };
+          break;
+        }
+
+        case 'start_timer': {
+          setCurrentAction({ type: 'start_timer', status: 'executing', message: 'Starting timer...' });
+          
+          timer.handleStart();
+          
+          await supabase.from('coach_actions').insert({
+            conversation_id: conversationId,
+            user_id: user.id,
+            action_type: 'start_timer',
+            action_params: {},
+            success: true
+          });
+
+          setCurrentAction({ type: 'start_timer', status: 'success', message: 'Timer started!' });
+          setTimeout(() => setCurrentAction(null), 3000);
+          
+          result = { success: true, message: 'Timer started' };
+          break;
+        }
+
+        case 'pause_timer': {
+          setCurrentAction({ type: 'pause_timer', status: 'executing', message: 'Pausing timer...' });
+          
+          timer.handlePause();
+          
+          await supabase.from('coach_actions').insert({
+            conversation_id: conversationId,
+            user_id: user.id,
+            action_type: 'pause_timer',
+            action_params: {},
+            success: true
+          });
+
+          setCurrentAction({ type: 'pause_timer', status: 'success', message: 'Timer paused' });
+          setTimeout(() => setCurrentAction(null), 3000);
+          
+          result = { success: true, message: 'Timer paused' };
+          break;
+        }
+
+        case 'set_active_task': {
+          const taskToActivate = tasks.find(t => t.id === parsedArgs.task_id);
+          setCurrentAction({ 
+            type: 'set_active_task', 
+            status: 'executing', 
+            message: `Setting active task...` 
+          });
+          
+          // Deactivate all tasks
+          await supabase
+            .from('tasks')
+            .update({ is_active: false })
+            .eq('user_id', user.id);
+
+          // Activate selected task
+          if (parsedArgs.task_id) {
+            await supabase
+              .from('tasks')
+              .update({ is_active: true })
+              .eq('id', parsedArgs.task_id)
+              .eq('user_id', user.id);
+          }
+
+          setTasks(prev => prev.map(t => ({ ...t, isActive: t.id === parsedArgs.task_id })));
+          
+          await supabase.from('coach_actions').insert({
+            conversation_id: conversationId,
+            user_id: user.id,
+            action_type: 'set_active_task',
+            action_params: { task_id: parsedArgs.task_id },
+            success: true
+          });
+
+          setCurrentAction({ 
+            type: 'set_active_task', 
+            status: 'success', 
+            message: taskToActivate ? `Now working on: ${taskToActivate.name}` : 'Task cleared' 
+          });
+          setTimeout(() => setCurrentAction(null), 3000);
+          
+          result = { success: true, message: parsedArgs.task_id ? 'Active task set' : 'Active task cleared' };
+          break;
+        }
+
+        default:
+          result = { error: `Unknown tool: ${name}` };
+      }
+
+      return result;
+
+    } catch (error) {
+      console.error('Tool execution error:', error);
+      setCurrentAction({ 
+        type: name, 
+        status: 'error', 
+        message: error instanceof Error ? error.message : 'Action failed' 
+      });
+      setTimeout(() => setCurrentAction(null), 3000);
+
+      await supabase.from('coach_actions').insert({
+        conversation_id: conversationId,
+        user_id: user.id,
+        action_type: name,
+        action_params: parsedArgs,
+        success: false,
+        error_message: error instanceof Error ? error.message : 'Unknown error'
+      });
+
+      return { error: error instanceof Error ? error.message : 'Tool execution failed' };
+    }
+  }, [user, conversationId, tasks, timer]);
+
+  // Get current state for context injection
+  const getCurrentState = useCallback(() => {
+    return {
+      timerState: {
+        isRunning: timer.isRunning,
+        mode: timer.timerMode,
+        timeRemaining: timer.timeRemaining,
+        currentSessionIndex: timer.currentSessionIndex,
+        sessionsUntilLongBreak: timer.settings.sessionsUntilLongBreak
+      },
+      taskState: {
+        tasks: tasks.map(t => ({
+          id: t.id,
+          name: t.name,
+          estimated_pomodoros: t.estimatedPomodoros,
+          is_active: t.isActive,
+          completed: t.completed
+        }))
+      }
+    };
+  }, [timer, tasks]);
 
   // Load or create conversation
   useEffect(() => {
@@ -155,7 +435,7 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No session found');
 
-      // Stream AI response
+      // Stream AI response with tool support
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-coach`,
         {
@@ -168,7 +448,8 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             messages: [...messages, userMessage].map(m => ({
               role: m.role,
               content: m.content
-            }))
+            })),
+            ...getCurrentState()
           }),
         }
       );
@@ -178,11 +459,12 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         throw new Error(errorData.error || 'Failed to get response');
       }
 
-      // Handle streaming
+      // Handle streaming with tool calls
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let assistantContent = '';
       let assistantMessageId = `temp-assistant-${Date.now()}`;
+      let toolCalls: any[] = [];
 
       // Add initial assistant message
       setMessages(prev => [...prev, {
@@ -211,7 +493,32 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
             try {
               const parsed = JSON.parse(jsonStr);
-              const content = parsed.choices?.[0]?.delta?.content;
+              const delta = parsed.choices?.[0]?.delta;
+              
+              // Handle tool calls
+              if (delta?.tool_calls) {
+                for (const toolCallDelta of delta.tool_calls) {
+                  const index = toolCallDelta.index || 0;
+                  
+                  if (!toolCalls[index]) {
+                    toolCalls[index] = {
+                      id: toolCallDelta.id,
+                      type: 'function',
+                      function: {
+                        name: toolCallDelta.function?.name || '',
+                        arguments: toolCallDelta.function?.arguments || ''
+                      }
+                    };
+                  } else {
+                    if (toolCallDelta.function?.arguments) {
+                      toolCalls[index].function.arguments += toolCallDelta.function.arguments;
+                    }
+                  }
+                }
+              }
+              
+              // Handle regular content
+              const content = delta?.content;
               if (content) {
                 assistantContent += content;
                 setMessages(prev => prev.map(m => 
@@ -224,6 +531,16 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               console.error('Parse error:', e);
             }
           }
+        }
+      }
+
+      // Execute any tool calls
+      if (toolCalls.length > 0) {
+        console.log('Tool calls detected:', toolCalls);
+        
+        for (const toolCall of toolCalls) {
+          const result = await executeToolAction(toolCall);
+          console.log('Tool result:', result);
         }
       }
 
@@ -290,7 +607,7 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No session found');
 
-      // Call AI with trigger context
+      // Call AI with trigger context and current state
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-coach`,
         {
@@ -305,7 +622,8 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               content: m.content
             })),
             trigger,
-            triggerContext: context
+            triggerContext: context,
+            ...getCurrentState()
           }),
         }
       );
@@ -442,6 +760,7 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     isMinimized,
     unreadCount,
     conversationId,
+    currentAction,
     sendMessage,
     triggerProactiveCoaching,
     showCheckIn,
@@ -449,7 +768,9 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     toggleMinimize,
     markAsRead,
     checkInModalOpen,
-    setCheckInModalOpen
+    setCheckInModalOpen,
+    tasks,
+    setTasks
   };
 
   return (

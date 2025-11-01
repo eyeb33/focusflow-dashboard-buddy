@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      coach_actions: {
+        Row: {
+          action_params: Json | null
+          action_type: string
+          conversation_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          success: boolean
+          user_id: string
+        }
+        Insert: {
+          action_params?: Json | null
+          action_type: string
+          conversation_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          success?: boolean
+          user_id: string
+        }
+        Update: {
+          action_params?: Json | null
+          action_type?: string
+          conversation_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          success?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_actions_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "coach_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coach_check_ins: {
         Row: {
           created_at: string

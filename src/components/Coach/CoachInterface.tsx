@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { useCoach } from '@/contexts/CoachContext';
 import CoachMessage from './CoachMessage';
 import WellbeingCheckIn from './WellbeingCheckIn';
+import { CoachActionFeedback } from './CoachActionFeedback';
 
 const CoachInterface: React.FC = () => {
   const {
@@ -13,6 +14,7 @@ const CoachInterface: React.FC = () => {
     isLoading,
     isMinimized,
     unreadCount,
+    currentAction,
     sendMessage,
     toggleMinimize,
     markAsRead,
@@ -106,12 +108,17 @@ const CoachInterface: React.FC = () => {
                   <Heart className="w-12 h-12 mx-auto mb-4 text-primary/50" />
                   <p className="mb-2">Hi! I'm your wellbeing coach.</p>
                   <p>I'm here to help you stay productive and balanced.</p>
+                  <p className="mt-4 text-xs">I can add tasks, start your timer, and more!</p>
                 </div>
               )}
               
               {messages.map((message) => (
                 <CoachMessage key={message.id} message={message} />
               ))}
+
+              {currentAction && (
+                <CoachActionFeedback action={currentAction} />
+              )}
 
               {isLoading && (
                 <div className="flex gap-2 items-start">

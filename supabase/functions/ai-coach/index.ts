@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, trigger, triggerContext } = await req.json();
+    const { messages, trigger, triggerContext, timerState, taskState } = await req.json();
     
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -86,8 +86,8 @@ serve(async (req) => {
     const pendingTasksCount = activeTasks.length;
     const lastMood = recentCheckIns[0]?.mood_rating || null;
 
-    // Build system prompt based on context and trigger
-    let systemPrompt = `You are a supportive wellbeing and productivity coach. You help users maintain healthy work habits while achieving their goals.
+    // Build system prompt with real-time state
+    let systemPrompt = `You are a supportive wellbeing and productivity coach with direct control over the user's Pomodoro timer and task list.
 
 Current Context:
 - Active Task: ${activeTaskName}
@@ -96,13 +96,28 @@ Current Context:
 - Tasks Pending: ${pendingTasksCount}
 ${lastMood ? `- Recent Mood: ${lastMood}/5` : ''}
 
+${timerState ? `Timer Status:
+- State: ${timerState.isRunning ? 'Running' : 'Paused'}
+- Mode: ${timerState.mode}
+- Time Remaining: ${Math.floor(timerState.timeRemaining / 60)} minutes ${timerState.timeRemaining % 60} seconds
+- Current Session: ${timerState.currentSessionIndex + 1} of ${timerState.sessionsUntilLongBreak}` : ''}
+
+${taskState && taskState.tasks?.length > 0 ? `Current Tasks:
+${taskState.tasks.map((t: any, i: number) => `${i + 1}. ${t.name}${t.is_active ? ' (ACTIVE)' : ''}${t.completed ? ' ✓' : ''} - ${t.estimated_pomodoros} pomodoros`).join('\n')}` : ''}
+
+Your capabilities:
+- You can ADD tasks to the user's list
+- You can COMPLETE tasks
+- You can START and PAUSE the timer
+- You can SET which task is active
+
 Your approach:
 1. Be warm, encouraging, and concise (2-3 sentences max)
-2. Acknowledge progress and effort
-3. Suggest breaks when overworking (>2 hours continuous work)
-4. Celebrate wins
-5. Ask about wellbeing periodically
-6. Offer specific, actionable advice
+2. Use your tools to help users take action
+3. When users mention tasks, offer to add them
+4. Suggest starting the timer for focus work
+5. Celebrate wins and acknowledge effort
+6. Ask about wellbeing periodically
 7. Use emojis sparingly but effectively`;
 
     // Add trigger-specific context
@@ -121,7 +136,76 @@ Your approach:
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    // Call Lovable AI
+    // Define available tools for the AI
+    const tools = [
+      {
+        type: "function",
+        function: {
+          name: "add_task",
+          description: "Add a new task to the user's task list",
+          parameters: {
+            type: "object",
+            properties: {
+              name: { type: "string", description: "The task name" },
+              estimated_pomodoros: { type: "integer", description: "Estimated number of pomodoros (default: 1)", default: 1 }
+            },
+            required: ["name"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "complete_task",
+          description: "Mark a task as completed",
+          parameters: {
+            type: "object",
+            properties: {
+              task_id: { type: "string", description: "The UUID of the task to complete" }
+            },
+            required: ["task_id"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "start_timer",
+          description: "Start the Pomodoro timer",
+          parameters: {
+            type: "object",
+            properties: {}
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "pause_timer",
+          description: "Pause the Pomodoro timer",
+          parameters: {
+            type: "object",
+            properties: {}
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "set_active_task",
+          description: "Set which task the user is currently working on",
+          parameters: {
+            type: "object",
+            properties: {
+              task_id: { type: "string", description: "The UUID of the task to set as active, or null to clear" }
+            },
+            required: ["task_id"]
+          }
+        }
+      }
+    ];
+
+    // Call Lovable AI with tools
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -137,6 +221,7 @@ Your approach:
             content: msg.content
           }))
         ],
+        tools,
         stream: true,
       }),
     });
