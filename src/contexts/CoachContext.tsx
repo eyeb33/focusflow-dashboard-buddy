@@ -521,11 +521,14 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               const content = delta?.content;
               if (content) {
                 assistantContent += content;
-                setMessages(prev => prev.map(m => 
-                  m.id === assistantMessageId 
-                    ? { ...m, content: assistantContent }
-                    : m
-                ));
+                // Use functional update with queueMicrotask to ensure smooth streaming
+                queueMicrotask(() => {
+                  setMessages(prev => prev.map(m => 
+                    m.id === assistantMessageId 
+                      ? { ...m, content: assistantContent }
+                      : m
+                  ));
+                });
               }
             } catch (e) {
               console.error('Parse error:', e);
@@ -665,11 +668,14 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               const content = parsed.choices?.[0]?.delta?.content;
               if (content) {
                 assistantContent += content;
-                setMessages(prev => prev.map(m => 
-                  m.id === assistantMessageId 
-                    ? { ...m, content: assistantContent }
-                    : m
-                ));
+                // Use functional update with queueMicrotask to ensure smooth streaming
+                queueMicrotask(() => {
+                  setMessages(prev => prev.map(m => 
+                    m.id === assistantMessageId 
+                      ? { ...m, content: assistantContent }
+                      : m
+                  ));
+                });
               }
             } catch (e) {
               console.error('Parse error:', e);
