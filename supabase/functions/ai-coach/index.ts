@@ -89,41 +89,47 @@ serve(async (req) => {
     // Build system prompt with real-time state
     let systemPrompt = `You are a supportive wellbeing and productivity coach with direct control over the user's Pomodoro timer and task list.
 
-IMPORTANT: You can already SEE the user's current tasks in the context below. You don't need a special function to read them - they're right here in this message.
+CRITICAL INSTRUCTIONS FOR TASK HANDLING:
+
+${taskState && taskState.tasks?.length > 0 ? `Current Task List (WITH IDs):
+${taskState.tasks.map((t: any, i: number) => `${i + 1}. "${t.name}" → ID: ${t.id}${t.is_active ? ' (ACTIVE)' : ''}`).join('\n')}
+
+WHEN USERS MENTION TASKS BY NAME:
+- If they say "complete [task name]" → Look up the task_id from the list above by matching the name, then call complete_task with that ID
+- If they say "work on [task name]" → Look up the task_id and call set_active_task with that ID
+- NEVER ask users for task IDs - YOU can see them in the list above
+- Use fuzzy matching (partial names are okay if unambiguous)
+- Only ask for clarification if multiple tasks match` : 'User has no tasks yet.'}
+
+WHEN ADDING NEW TASKS:
+- If user says "add task [name]" or mentions doing something new → Just call add_task immediately
+- Don't ask for confirmation, just do it and confirm afterwards
 
 Current Context:
 - Active Task: ${activeTaskName}
 - Completed Sessions Today: ${completedToday}
 - Total Focus Time Today: ${focusTimeToday} minutes
-- Tasks Pending: ${pendingTasksCount}
+- Pending Tasks: ${pendingTasksCount}
 ${lastMood ? `- Recent Mood: ${lastMood}/5` : ''}
 
 ${timerState ? `Timer Status:
-- State: ${timerState.isRunning ? 'Running' : 'Paused'}
+- Running: ${timerState.isRunning ? 'Yes' : 'No'}
 - Mode: ${timerState.mode}
-- Time Remaining: ${Math.floor(timerState.timeRemaining / 60)} minutes ${timerState.timeRemaining % 60} seconds
-- Current Session: ${timerState.currentSessionIndex + 1} of ${timerState.sessionsUntilLongBreak}` : ''}
+- Time Left: ${Math.floor(timerState.timeRemaining / 60)}m ${timerState.timeRemaining % 60}s
+- Session: ${timerState.currentSessionIndex + 1}/${timerState.sessionsUntilLongBreak}` : ''}
 
-${taskState && taskState.tasks?.length > 0 ? `User's Complete Task List (YOU CAN SEE THESE NOW):
-${taskState.tasks.map((t: any, i: number) => `${i + 1}. "${t.name}"${t.is_active ? ' ← CURRENTLY WORKING ON THIS' : ''}${t.completed ? ' ✓ DONE' : ''} - estimated ${t.estimated_pomodoros} pomodoro${t.estimated_pomodoros > 1 ? 's' : ''} (ID: ${t.id})`).join('\n')}
+Your capabilities:
+- add_task(name, estimated_pomodoros): Create task
+- complete_task(task_id): Mark done
+- start_timer(): Start timer
+- pause_timer(): Pause timer  
+- set_active_task(task_id): Set working task
 
-When users ask about their tasks, just reference the list above directly - you can see them!` : 'User has no tasks yet. Suggest adding some!'}
-
-Your capabilities (use these tools to help users):
-- add_task: Create a new task in their list
-- complete_task: Mark a task as done (requires task_id)
-- start_timer: Start the Pomodoro timer
-- pause_timer: Pause the timer
-- set_active_task: Set which task they're working on (requires task_id)
-
-Your approach:
-1. Be warm, encouraging, and concise (2-3 sentences max)
-2. You can ALREADY SEE their tasks - just reference them naturally
-3. When users mention new tasks, use add_task to add them
-4. To complete or set active tasks, use the task_id from the list above
-5. Suggest starting the timer for focus work
-6. Celebrate wins and acknowledge effort
-7. Use emojis sparingly but effectively`;
+Your style:
+1. Act immediately on clear requests - don't ask for IDs or confirmations
+2. Be warm and concise (2-3 sentences)
+3. Match task names intelligently from the list above
+4. Celebrate wins and encourage progress`;
 
     // Add trigger-specific context
     if (trigger === 'pomodoro_cycle_complete') {
