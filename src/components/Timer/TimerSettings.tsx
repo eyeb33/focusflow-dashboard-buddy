@@ -100,7 +100,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange, onRe
           <p className="text-sm text-muted-foreground mb-3">Timer Sequence:</p>
           <div className="flex justify-center items-center gap-2 mb-3">
             {Array.from({ length: localSettings.sessionsUntilLongBreak }).map((_, i) => (
-              <React.Fragment key={i}>
+              <div key={i} className="flex items-center gap-2">
                 <div
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: "#ff4545" }}
@@ -113,7 +113,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ durations, onChange, onRe
                     title="Break"
                   />
                 )}
-              </React.Fragment>
+              </div>
             ))}
             <div
               className="w-3 h-3 rounded-full"
