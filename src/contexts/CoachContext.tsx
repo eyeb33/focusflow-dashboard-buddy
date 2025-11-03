@@ -538,15 +538,22 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                   const index = toolCallDelta.index || 0;
                   
                   if (!toolCalls[index]) {
-                    toolCalls[index] = {
-                      id: toolCallDelta.id,
-                      type: 'function',
-                      function: {
-                        name: toolCallDelta.function?.name || '',
-                        arguments: toolCallDelta.function?.arguments || ''
-                      }
-                    };
+                    // Only initialize if we have a function name
+                    if (toolCallDelta.function?.name) {
+                      toolCalls[index] = {
+                        id: toolCallDelta.id || `tool_${index}`,
+                        type: 'function',
+                        function: {
+                          name: toolCallDelta.function.name,
+                          arguments: toolCallDelta.function?.arguments || ''
+                        }
+                      };
+                    }
                   } else {
+                    // Update existing tool call
+                    if (toolCallDelta.function?.name && !toolCalls[index].function.name) {
+                      toolCalls[index].function.name = toolCallDelta.function.name;
+                    }
                     if (toolCallDelta.function?.arguments) {
                       toolCalls[index].function.arguments += toolCallDelta.function.arguments;
                     }
@@ -580,6 +587,12 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         const toolResults = [];
         for (const toolCall of toolCalls) {
+          // Ensure function name is present
+          if (!toolCall.function?.name) {
+            console.error('Tool call missing function name:', toolCall);
+            continue;
+          }
+          
           const result = await executeToolAction(toolCall);
           console.log('Tool result:', result);
           toolResults.push({
