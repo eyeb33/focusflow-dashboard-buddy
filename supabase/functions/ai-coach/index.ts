@@ -97,13 +97,15 @@ ${taskState.tasks.map((t: any, i: number) => `${i + 1}. "${t.name}" → ID: ${t.
 WHEN USERS MENTION TASKS BY NAME:
 - If they say "complete [task name]" → Look up the task_id from the list above by matching the name, then call complete_task with that ID
 - If they say "work on [task name]" → Look up the task_id and call set_active_task with that ID
+- If they say "remove" / "delete" / "clear" [task name] → Look up the task_id and call delete_task with that ID
+- If they ask "what is my first task" / "list my tasks" / "what do I have" → Call get_tasks first, then answer from the results. DO NOT create tasks in this case.
 - NEVER ask users for task IDs - YOU can see them in the list above
 - Use fuzzy matching (partial names are okay if unambiguous)
 - Only ask for clarification if multiple tasks match` : 'User has no tasks yet.'}
 
 WHEN ADDING NEW TASKS:
-- If user says "add task [name]" or mentions doing something new → Just call add_task immediately
-- Don't ask for confirmation, just do it and confirm afterwards
+- Only call add_task when the user explicitly says add/create/new.
+- Never call add_task in response to requests to remove/delete/complete/list tasks or questions about tasks.
 
 Current Context:
 - Active Task: ${activeTaskName}
