@@ -119,6 +119,7 @@ ${timerState ? `Timer Status:
 - Session: ${timerState.currentSessionIndex + 1}/${timerState.sessionsUntilLongBreak}` : ''}
 
 Your capabilities:
+- get_tasks(): Retrieve current task list (use when user asks about tasks)
 - add_task(name, estimated_pomodoros): Create task
 - complete_task(task_id): Mark done
 - delete_task(task_id): Remove/delete task
@@ -228,6 +229,17 @@ Your style:
             required: ["task_id"]
           }
         }
+      },
+      {
+        type: "function",
+        function: {
+          name: "get_tasks",
+          description: "Get the current task list. Use this when the user asks about their tasks or wants to know what tasks they have.",
+          parameters: {
+            type: "object",
+            properties: {}
+          }
+        }
       }
     ];
 
@@ -242,10 +254,24 @@ Your style:
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
-          ...messages.map((msg: any) => ({
-            role: msg.role,
-            content: msg.content
-          }))
+          ...messages.map((msg: any) => {
+            // Preserve tool_calls and tool information for proper conversation context
+            const mappedMsg: any = {
+              role: msg.role,
+              content: msg.content || ''
+            };
+            
+            if (msg.tool_calls) {
+              mappedMsg.tool_calls = msg.tool_calls;
+            }
+            
+            if (msg.tool_call_id) {
+              mappedMsg.tool_call_id = msg.tool_call_id;
+              mappedMsg.name = msg.name;
+            }
+            
+            return mappedMsg;
+          })
         ],
         tools,
         stream: true,

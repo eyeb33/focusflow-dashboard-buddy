@@ -306,6 +306,47 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           break;
         }
 
+        case 'get_tasks': {
+          setCurrentAction({ 
+            type: 'get_tasks', 
+            status: 'executing', 
+            message: 'Getting tasks...' 
+          });
+          
+          const { data: tasksList, error } = await supabase
+            .from('tasks')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('completed', false)
+            .order('created_at', { ascending: true });
+
+          if (error) throw error;
+
+          await supabase.from('coach_actions').insert({
+            conversation_id: conversationId,
+            user_id: user.id,
+            action_type: 'get_tasks',
+            action_params: {},
+            success: true
+          });
+
+          setCurrentAction({ 
+            type: 'get_tasks', 
+            status: 'success', 
+            message: tasksList.length === 0 ? 'No tasks found' : `Found ${tasksList.length} task${tasksList.length > 1 ? 's' : ''}` 
+          });
+          setTimeout(() => setCurrentAction(null), 2000);
+          
+          result = {
+            success: true,
+            tasks: tasksList,
+            message: tasksList.length === 0 
+              ? 'You have no tasks yet' 
+              : `You have ${tasksList.length} task${tasksList.length > 1 ? 's' : ''}`
+          };
+          break;
+        }
+
         default:
           result = { error: `Unknown tool: ${name}` };
       }
