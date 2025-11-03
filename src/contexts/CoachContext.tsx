@@ -269,6 +269,43 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           break;
         }
 
+        case 'delete_task': {
+          const taskToDelete = tasks.find(t => t.id === parsedArgs.task_id);
+          setCurrentAction({ 
+            type: 'delete_task', 
+            status: 'executing', 
+            message: `Deleting task...` 
+          });
+          
+          const { error } = await supabase
+            .from('tasks')
+            .delete()
+            .eq('id', parsedArgs.task_id)
+            .eq('user_id', user.id);
+
+          if (error) throw error;
+
+          setTasks(prev => prev.filter(t => t.id !== parsedArgs.task_id));
+          
+          await supabase.from('coach_actions').insert({
+            conversation_id: conversationId,
+            user_id: user.id,
+            action_type: 'delete_task',
+            action_params: { task_id: parsedArgs.task_id },
+            success: true
+          });
+
+          setCurrentAction({ 
+            type: 'delete_task', 
+            status: 'success', 
+            message: taskToDelete ? `Deleted: ${taskToDelete.name}` : 'Task deleted' 
+          });
+          setTimeout(() => setCurrentAction(null), 3000);
+          
+          result = { success: true, message: 'Task deleted' };
+          break;
+        }
+
         default:
           result = { error: `Unknown tool: ${name}` };
       }

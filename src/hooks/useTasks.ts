@@ -4,6 +4,7 @@ import { Task } from '@/types/task';
 import { fetchTasks, addTask, updateTaskCompletion, updateTask, deleteTask, setActiveTask, updateTaskTimeSpent, reorderTasks } from '@/services/taskService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from '@/integrations/supabase/client';
 
 export const useTasks = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -36,6 +37,46 @@ export const useTasks = () => {
     };
     
     loadTasks();
+  }, [user]);
+
+  // Real-time subscription for task updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('tasks-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Task change detected:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            const newTask = payload.new as Task;
+            setTasks(prev => {
+              // Avoid duplicates
+              if (prev.some(t => t.id === newTask.id)) return prev;
+              return [newTask, ...prev];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedTask = payload.new as Task;
+            setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+          } else if (payload.eventType === 'DELETE') {
+            const deletedTask = payload.old as Task;
+            setTasks(prev => prev.filter(t => t.id !== deletedTask.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const handleAddTask = async (taskName: string, estimatedPomodoros: number): Promise<string | null> => {

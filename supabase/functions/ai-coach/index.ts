@@ -121,6 +121,7 @@ ${timerState ? `Timer Status:
 Your capabilities:
 - add_task(name, estimated_pomodoros): Create task
 - complete_task(task_id): Mark done
+- delete_task(task_id): Remove/delete task
 - start_timer(): Start timer
 - pause_timer(): Pause timer  
 - set_active_task(task_id): Set working task
@@ -209,6 +210,20 @@ Your style:
             type: "object",
             properties: {
               task_id: { type: "string", description: "The UUID of the task to set as active, or null to clear" }
+            },
+            required: ["task_id"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "delete_task",
+          description: "Delete/remove a task from the user's task list",
+          parameters: {
+            type: "object",
+            properties: {
+              task_id: { type: "string", description: "The UUID of the task to delete" }
             },
             required: ["task_id"]
           }
