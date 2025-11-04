@@ -29,7 +29,7 @@ const Index = () => {
   const { timerMode, setActiveTaskId, getElapsedMinutes, getElapsedSeconds, isRunning } = useTimerContext();
   const { tasks, isLoading, addTask, toggleComplete, editTask, deleteTask, setActiveTask: setTaskActive, updateTaskTime, reorderTasks } = useTasks();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
-  const [isTasksVisible, setIsTasksVisible] = useState(true);
+  const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
   const { toast } = useToast();
   const { triggerProactiveCoaching } = useCoach();
   const suppressRestoreRef = React.useRef<string | null>(null);
@@ -45,14 +45,6 @@ const Index = () => {
     }
   }, [isLoading, tasks, activeTask, setActiveTaskId]);
 
-  // Auto-hide tasks when timer starts, auto-show when paused
-  useEffect(() => {
-    if (isRunning && activeTask) {
-      setIsTasksVisible(false);
-    } else if (!isRunning) {
-      setIsTasksVisible(true);
-    }
-  }, [isRunning, activeTask]);
   
   const handleLoginClick = useCallback(() => {
     navigate('/auth', {
@@ -191,8 +183,12 @@ const Index = () => {
     }
   }, [tasks, activeTask, user, getElapsedMinutes, getElapsedSeconds, updateTaskTime, toggleComplete, setTaskActive, setActiveTaskId, toast]);
 
-  const handleToggleCompleteFromList = useCallback(async (id: string) => {
-    await completeTask(id, false);
+  const handleToggleCompleteFromList = useCallback((id: string) => {
+    setCompletingTaskId(id);
+    setTimeout(() => {
+      completeTask(id, false);
+      setTimeout(() => setCompletingTaskId(null), 300);
+    }, 400);
   }, [completeTask]);
 
   const handleCompleteActiveTask = useCallback(async () => {
@@ -235,97 +231,50 @@ const Index = () => {
         <div className={cn(
           "relative flex flex-col items-center justify-start py-10 px-8"
         )}>
-          <div className={cn(
-            "w-full mx-auto bg-white dark:bg-card rounded-3xl shadow-2xl p-8 flex flex-col gap-6 relative",
-            "transition-[width,opacity,padding,margin] duration-500 ease-in-out",
-            isTasksVisible ? "max-w-[85%]" : "max-w-[45%]"
-          )}
-          >
+          <div className="w-full max-w-[85%] mx-auto bg-white dark:bg-card rounded-3xl shadow-2xl p-8 flex flex-col gap-6 relative">
+
             <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
             
-            <div className={cn(
-              "flex gap-0 overflow-hidden transition-[height] duration-500"
-            )}>
+            <div className="flex gap-6">
               {/* Timer Section */}
-              <div className={cn(
-                "flex flex-col transition-all duration-500 ease-in-out",
-                isTasksVisible ? "w-1/2" : "w-full"
-              )}>
+              <div className="flex flex-col w-1/2">
                 <TimerContainer
-                activeTask={activeTask}
-                tasks={tasks}
-                onRemoveActiveTask={handleRemoveActiveTask}
-                onCompleteActiveTask={handleCompleteActiveTask}
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                onQuickAddTask={async (name) => {
-                  return await addTask(name, 1);
-                }}
-                onSetActiveTask={async (taskId) => {
-                  const task = tasks.find(t => t.id === taskId);
-                  if (task) {
-                    setActiveTask(task);
-                    setActiveTaskId(taskId);
-                    await setTaskActive(taskId);
-                  }
-                }}
-              />
-            </div>
-            
-            {/* Toggle Button - index tab at navigation level */}
-            <button
-              onClick={() => setIsTasksVisible(!isTasksVisible)}
-              className={cn(
-                "hidden lg:flex absolute top-[140px] z-30",
-                "w-12 h-12 items-center justify-center",
-                "bg-primary hover:bg-primary/90 active:bg-primary",
-                "shadow-lg hover:shadow-xl",
-                "transition-all duration-500 ease-in-out",
-                "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
-                "right-0 translate-x-1/2 rounded-lg",
-                theme === 'dark' ? "text-gray-900" : "text-white"
-              )}
-              aria-label={isTasksVisible ? "Hide tasks" : "Show tasks"}
-            >
-              <svg
-                className={cn(
-                  "w-5 h-5 transition-transform duration-500",
-                  isTasksVisible ? "rotate-0" : "rotate-180"
-                )}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-            
-            {/* Tasks Section - slides in/out with improved animations */}
-            <div className={cn(
-              "flex flex-col border-l border-border/20 pl-6 overflow-hidden",
-              "transition-all duration-500 ease-in-out",
-              isTasksVisible 
-                ? "w-1/2 opacity-100" 
-                : "w-0 opacity-0 pl-0 border-l-0"
-            )}>
-              <div className={cn(
-                "transition-opacity duration-200",
-                isTasksVisible ? "opacity-100 delay-300" : "opacity-0 delay-0"
-              )}>
-                <TaskManagerWithDrop
-                activeTaskId={activeTask?.id ?? null} 
-                onDropToList={handleDropToList} 
-                onDragOverList={handleDragOver}
-                onReorderTasks={handleReorderTasks}
-                tasks={tasks}
-                isLoading={isLoading}
-                addTask={addTask}
-                toggleComplete={handleToggleCompleteFromList}
-                editTask={editTask}
-                  deleteTask={deleteTask}
+                  activeTask={activeTask}
+                  tasks={tasks}
+                  onRemoveActiveTask={handleRemoveActiveTask}
+                  onCompleteActiveTask={handleCompleteActiveTask}
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onQuickAddTask={async (name) => {
+                    return await addTask(name, 1);
+                  }}
+                  onSetActiveTask={async (taskId) => {
+                    const task = tasks.find(t => t.id === taskId);
+                    if (task) {
+                      setActiveTask(task);
+                      setActiveTaskId(taskId);
+                      await setTaskActive(taskId);
+                    }
+                  }}
                 />
               </div>
-            </div>
+            
+              {/* Tasks Section - always visible */}
+              <div className="flex flex-col border-l border-border/20 pl-6 w-1/2">
+                <TaskManagerWithDrop
+                  activeTaskId={activeTask?.id ?? null} 
+                  onDropToList={handleDropToList} 
+                  onDragOverList={handleDragOver}
+                  onReorderTasks={handleReorderTasks}
+                  tasks={tasks}
+                  isLoading={isLoading}
+                  addTask={addTask}
+                  toggleComplete={handleToggleCompleteFromList}
+                  editTask={editTask}
+                  deleteTask={deleteTask}
+                  completingTaskId={completingTaskId}
+                />
+              </div>
             </div>
           </div>
           
@@ -348,10 +297,11 @@ const TaskManagerWithDrop: React.FC<{
   tasks: Task[];
   isLoading: boolean;
   addTask: (taskName: string, estimatedPomodoros: number) => Promise<string | null>;
-  toggleComplete: (id: string) => Promise<void> | void;
+  toggleComplete: (id: string) => void;
   editTask: (id: string, name: string, estimatedPomodoros: number) => Promise<boolean>;
   deleteTask: (id: string) => Promise<boolean>;
-}> = ({ onDropToList, onDragOverList, onReorderTasks, activeTaskId, tasks, isLoading, addTask, toggleComplete, editTask, deleteTask }) => {
+  completingTaskId: string | null;
+}> = ({ onDropToList, onDragOverList, onReorderTasks, activeTaskId, tasks, isLoading, addTask, toggleComplete, editTask, deleteTask, completingTaskId }) => {
   const [editingTask, setEditingTask] = React.useState<any>(null);
   const [editName, setEditName] = React.useState('');
   const [editPomodoros, setEditPomodoros] = React.useState(1);
@@ -441,6 +391,7 @@ const TaskManagerWithDrop: React.FC<{
                 onDropToList={onDropToList}
                 onDragOverList={onDragOverList}
                 onReorderTasks={onReorderTasks}
+                completingTaskId={completingTaskId}
               />
             </div>
           )}

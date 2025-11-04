@@ -78,7 +78,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
   };
 
   return (
-    <div className="relative flex items-center justify-center">
+    <div className="relative flex items-center justify-center p-8 overflow-visible">
       {/* Mood Character above timer */}
       <TimerMoodCharacter 
         mode={mode} 
