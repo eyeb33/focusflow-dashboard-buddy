@@ -11,6 +11,7 @@ interface TaskListProps {
   onDropToList?: (e: React.DragEvent, dropIndex: number | null) => void;
   onDragOverList?: (e: React.DragEvent) => void;
   onReorderTasks?: (newOrderedTasks: Task[]) => void;
+  completingTaskId?: string | null;
 }
 
 const TaskList: React.FC<TaskListProps> = ({ 
@@ -20,7 +21,8 @@ const TaskList: React.FC<TaskListProps> = ({
   onEditTask,
   onDropToList,
   onDragOverList,
-  onReorderTasks
+  onReorderTasks,
+  completingTaskId
 }) => {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
@@ -176,6 +178,7 @@ const TaskList: React.FC<TaskListProps> = ({
             onDragStart={(id) => setDraggingTaskId(id)}
             onDragEnd={handleDragEnd}
             isDragging={draggingTaskId === task.id}
+            isCompleting={completingTaskId === task.id}
           />
         </div>
       ))}

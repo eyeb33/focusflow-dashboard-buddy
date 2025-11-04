@@ -42,7 +42,7 @@ const ActiveTaskZone: React.FC<ActiveTaskZoneProps> = ({
       className={cn(
         "mt-6 p-4 border-2 border-dashed rounded-lg min-h-[80px] flex items-center justify-center transition-all",
         isRunning && activeTask 
-          ? "border-primary/50 bg-primary/10 animate-pulse-border" 
+          ? "border-primary/50 bg-primary/10" 
           : "border-primary/30 bg-primary/5 hover:border-primary/50"
       )}
       onDrop={onDrop}

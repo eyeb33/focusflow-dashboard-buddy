@@ -12,6 +12,7 @@ interface TaskItemProps {
   onDragStart?: (id: string) => void;
   onDragEnd?: () => void;
   isDragging?: boolean;
+  isCompleting?: boolean;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({ 
@@ -21,7 +22,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onEdit,
   onDragStart,
   onDragEnd,
-  isDragging
+  isDragging,
+  isCompleting
 }) => {
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('taskId', task.id);
@@ -37,7 +39,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   return (
     <div 
-      className={`group flex items-center justify-between p-3 rounded-md border mb-2 ${task.completed ? 'bg-muted/50' : 'bg-card'} ${!task.completed ? 'cursor-grab active:cursor-grabbing select-none' : ''} ${isDragging ? 'opacity-40 scale-95 transition-all' : ''}`}
+      className={`group flex items-center justify-between p-3 rounded-md border mb-2 transition-all ${task.completed ? 'bg-muted/50' : 'bg-card'} ${!task.completed ? 'cursor-grab active:cursor-grabbing select-none' : ''} ${isDragging ? 'opacity-40 scale-95' : ''} ${isCompleting ? 'animate-fade-out' : ''}`}
       data-task-id={task.id}
       draggable={!task.completed}
       onDragStart={handleDragStart}
@@ -47,11 +49,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
         <Button 
           variant="ghost" 
           size="icon" 
-          className="h-6 w-6"
+          className={`h-6 w-6 transition-all ${isCompleting ? 'scale-110' : ''}`}
           onClick={() => onToggleComplete(task.id)}
         >
-          {task.completed ? 
-            <Check className="h-4 w-4 text-primary" /> : 
+          {task.completed || isCompleting ? 
+            <Check className={`h-4 w-4 text-primary ${isCompleting ? 'animate-scale-in' : ''}`} /> : 
             <Square className="h-4 w-4" />
           }
         </Button>

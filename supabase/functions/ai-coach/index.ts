@@ -98,10 +98,12 @@ WHEN USERS MENTION TASKS BY NAME:
 - If they say "complete [task name]" → Look up the task_id from the list above by matching the name, then call complete_task with that ID
 - If they say "work on [task name]" → Look up the task_id and call set_active_task with that ID
 - If they say "remove" / "delete" / "clear" [task name] → Look up the task_id and call delete_task with that ID
+- If they say "delete them all" / "remove all of these" → Look up ALL matching task_ids by name and call delete_task for EACH ONE
 - If they ask "what is my first task" / "list my tasks" / "what do I have" → Call get_tasks first, then answer from the results. DO NOT create tasks in this case.
-- NEVER ask users for task IDs - YOU can see them in the list above
+- NEVER ask users for task IDs - YOU can see them in the list above and MUST use them automatically
 - Use fuzzy matching (partial names are okay if unambiguous)
-- Only ask for clarification if multiple tasks match` : 'User has no tasks yet.'}
+- For bulk operations (delete all matching), call the tool multiple times with different task_ids
+- Only ask for clarification if the task name is too vague and matches many unrelated tasks` : 'User has no tasks yet.'}
 
 WHEN ADDING NEW TASKS:
 - Only call add_task when the user explicitly says add/create/new.

@@ -300,7 +300,7 @@ const Index = () => {
               </svg>
             </button>
             
-            {/* Tasks Section - slides in/out */}
+            {/* Tasks Section - slides in/out with improved animations */}
             <div className={cn(
               "flex flex-col border-l border-border/20 pl-6 overflow-hidden",
               "transition-all duration-500 ease-in-out",
@@ -309,8 +309,8 @@ const Index = () => {
                 : "w-0 opacity-0 pl-0 border-l-0"
             )}>
               <div className={cn(
-                "transition-opacity duration-300",
-                isTasksVisible ? "opacity-100 delay-200" : "opacity-0"
+                "transition-opacity duration-200",
+                isTasksVisible ? "opacity-100 delay-300" : "opacity-0 delay-0"
               )}>
                 <TaskManagerWithDrop
                 activeTaskId={activeTask?.id ?? null} 

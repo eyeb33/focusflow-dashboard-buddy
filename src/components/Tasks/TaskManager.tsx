@@ -16,6 +16,7 @@ const TaskManager: React.FC = () => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editName, setEditName] = useState('');
   const [editPomodoros, setEditPomodoros] = useState(1);
+  const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const { tasks, isLoading, addTask, toggleComplete, editTask, deleteTask } = useTasks();
@@ -52,7 +53,11 @@ const TaskManager: React.FC = () => {
   };
 
   const handleToggleComplete = (id: string) => {
-    toggleComplete(id);
+    setCompletingTaskId(id);
+    setTimeout(() => {
+      toggleComplete(id);
+      setTimeout(() => setCompletingTaskId(null), 300);
+    }, 400);
   };
 
   const handleEditTask = (id: string) => {
@@ -100,6 +105,7 @@ const TaskManager: React.FC = () => {
                 onDeleteTask={handleDeleteTask}
                 onToggleComplete={handleToggleComplete}
                 onEditTask={handleEditTask}
+                completingTaskId={completingTaskId}
               />
             </div>
           )}
