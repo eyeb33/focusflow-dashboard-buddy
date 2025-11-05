@@ -1,8 +1,10 @@
-
-import React from 'react';
-import { Trash, Edit, Check, Square } from "lucide-react";
+import React, { useState } from 'react';
+import { Trash, Edit, Check, Square, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Task } from '@/types/task';
+import { useSubTasks } from '@/hooks/useSubTasks';
+import { SubTaskList } from './SubTaskList';
+import { SubTaskInput } from './SubTaskInput';
 
 interface TaskItemProps {
   task: Task;
@@ -25,6 +27,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
   isDragging,
   isCompleting
 }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const { subTasks, isLoading, handleAddSubTask, handleToggleComplete, handleDeleteSubTask } = useSubTasks(
+    isExpanded ? task.id : null
+  );
+
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('taskId', task.id);
     e.dataTransfer.setData('text/plain', task.name);
@@ -37,43 +44,112 @@ const TaskItem: React.FC<TaskItemProps> = ({
     onDragEnd?.();
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't expand if clicking on interactive elements
+    const target = e.target as HTMLElement;
+    if (
+      target.closest('button') || 
+      target.closest('[role="button"]') ||
+      target.closest('input')
+    ) {
+      return;
+    }
+    setIsExpanded(!isExpanded);
+  };
+
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggleComplete(task.id);
+  };
+
   return (
     <div 
-      className={`group flex items-center justify-between p-3 rounded-md border mb-2 transition-all ${task.completed ? 'bg-muted/50' : 'bg-card'} ${!task.completed ? 'cursor-grab active:cursor-grabbing select-none' : ''} ${isDragging ? 'opacity-40 scale-95' : ''} ${isCompleting ? 'animate-fade-out' : ''}`}
+      className={`group rounded-md border mb-2 transition-all ${task.completed ? 'bg-muted/50' : 'bg-card'} ${isDragging ? 'opacity-40 scale-95' : ''} ${isCompleting ? 'animate-fade-out' : ''}`}
       data-task-id={task.id}
-      draggable={!task.completed}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
     >
-      <div className="flex items-center gap-3">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className={`h-6 w-6 transition-all ${isCompleting ? 'scale-110' : ''}`}
-          onClick={() => onToggleComplete(task.id)}
-        >
-          {task.completed || isCompleting ? 
-            <Check className={`h-4 w-4 text-primary ${isCompleting ? 'animate-scale-in' : ''}`} /> : 
-            <Square className="h-4 w-4" />
-          }
-        </Button>
-        
-        <span className={`${task.completed ? 'line-through text-muted-foreground' : ''}`}>
-          {task.name}
-        </span>
-      </div>
-      
-      <div className="flex items-center gap-2">
-        <div className="flex items-center text-sm text-muted-foreground mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(task.id)}>
-            <Edit className="h-3.5 w-3.5" />
+      <div
+        className={`flex items-center justify-between p-3 ${!task.completed ? 'cursor-grab active:cursor-grabbing select-none' : ''}`}
+        draggable={!task.completed}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onClick={handleCardClick}
+      >
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={`h-6 w-6 transition-all ${isCompleting ? 'scale-110' : ''}`}
+            onClick={handleCheckboxClick}
+          >
+            {task.completed || isCompleting ? 
+              <Check className={`h-4 w-4 text-primary ${isCompleting ? 'animate-scale-in' : ''}`} /> : 
+              <Square className="h-4 w-4" />
+            }
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
           </Button>
           
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDelete(task.id)}>
-            <Trash className="h-3.5 w-3.5" />
-          </Button>
+          <span className={`${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+            {task.name}
+          </span>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <div className="flex items-center text-sm text-muted-foreground mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-7 w-7" 
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(task.id);
+              }}
+            >
+              <Edit className="h-3.5 w-3.5" />
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-7 w-7" 
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(task.id);
+              }}
+            >
+              <Trash className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
       </div>
+
+      {isExpanded && (
+        <div className="px-4 pb-4 animate-accordion-down">
+          <div className="pt-2 border-t">
+            <h4 className="text-sm font-semibold mb-2">Sub-tasks</h4>
+            <SubTaskList
+              subTasks={subTasks}
+              onToggleComplete={handleToggleComplete}
+              onDeleteSubTask={handleDeleteSubTask}
+            />
+            <SubTaskInput onAddSubTask={handleAddSubTask} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
