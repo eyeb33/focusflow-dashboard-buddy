@@ -67,8 +67,15 @@ export const useTasks = () => {
             const updatedTask = payload.new as Task;
             setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
           } else if (payload.eventType === 'DELETE') {
+            console.log('DELETE event received:', payload);
+            console.log('payload.old:', payload.old);
             const deletedTask = payload.old as Task;
-            setTasks(prev => prev.filter(t => t.id !== deletedTask.id));
+            console.log('Filtering out task with id:', deletedTask?.id);
+            setTasks(prev => {
+              const filtered = prev.filter(t => t.id !== deletedTask?.id);
+              console.log('Tasks before filter:', prev.length, 'after filter:', filtered.length);
+              return filtered;
+            });
           }
         }
       )
