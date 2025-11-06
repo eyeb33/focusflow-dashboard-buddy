@@ -115,11 +115,56 @@ export function useSubTasks(parentTaskId: string | null) {
     }
   };
 
+  const handleReorderSubTasks = async (subTaskId: string, newIndex: number): Promise<void> => {
+    if (!parentTaskId) return;
+
+    const currentIndex = subTasks.findIndex(st => st.id === subTaskId);
+    if (currentIndex === -1 || currentIndex === newIndex) return;
+
+    // Optimistically update local state
+    const reordered = [...subTasks];
+    const [movedItem] = reordered.splice(currentIndex, 1);
+    reordered.splice(newIndex, 0, movedItem);
+    setSubTasks(reordered);
+
+    try {
+      await subTaskService.reorderSubTasks(user?.id, parentTaskId, reordered);
+    } catch (error) {
+      console.error('Error reordering sub-tasks:', error);
+      toast.error('Failed to reorder sub-tasks');
+      // Revert on error
+      setSubTasks(subTasks);
+    }
+  };
+
+  const handlePromoteToTask = async (subTaskId: string): Promise<void> => {
+    try {
+      await subTaskService.promoteSubTaskToTask(user?.id, subTaskId);
+      toast.success('Sub-task converted to main task');
+    } catch (error) {
+      console.error('Error promoting sub-task:', error);
+      toast.error('Failed to convert sub-task');
+    }
+  };
+
+  const handleMoveToTask = async (subTaskId: string, newParentId: string): Promise<void> => {
+    try {
+      await subTaskService.moveSubTaskToParent(user?.id, subTaskId, newParentId);
+      toast.success('Sub-task moved');
+    } catch (error) {
+      console.error('Error moving sub-task:', error);
+      toast.error('Failed to move sub-task');
+    }
+  };
+
   return {
     subTasks,
     isLoading,
     handleAddSubTask,
     handleToggleComplete,
-    handleDeleteSubTask
+    handleDeleteSubTask,
+    handleReorderSubTasks,
+    handlePromoteToTask,
+    handleMoveToTask
   };
 }

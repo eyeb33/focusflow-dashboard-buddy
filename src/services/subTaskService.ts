@@ -87,3 +87,114 @@ export const deleteSubTask = async (userId: string | undefined, subTaskId: strin
   
   return true;
 };
+
+export const reorderSubTasks = async (
+  userId: string | undefined,
+  parentTaskId: string,
+  subTasks: SubTask[]
+): Promise<boolean> => {
+  if (!userId) return false;
+
+  // Update sort_order for all sub-tasks in batch
+  const updates = subTasks.map((subTask, index) => 
+    supabase
+      .from('sub_tasks')
+      .update({ sort_order: index, updated_at: new Date().toISOString() })
+      .eq('id', subTask.id)
+      .eq('user_id', userId)
+  );
+
+  try {
+    await Promise.all(updates);
+    return true;
+  } catch (error) {
+    console.error('Error reordering sub-tasks:', error);
+    throw error;
+  }
+};
+
+export const promoteSubTaskToTask = async (
+  userId: string | undefined,
+  subTaskId: string
+): Promise<boolean> => {
+  if (!userId) return false;
+
+  // Get the sub-task details
+  const { data: subTask, error: fetchError } = await supabase
+    .from('sub_tasks')
+    .select('name')
+    .eq('id', subTaskId)
+    .eq('user_id', userId)
+    .single();
+
+  if (fetchError || !subTask) {
+    console.error('Error fetching sub-task:', fetchError);
+    throw fetchError;
+  }
+
+  // Create a new main task
+  const { error: insertError } = await supabase
+    .from('tasks')
+    .insert({
+      user_id: userId,
+      name: subTask.name,
+      completed: false,
+      estimated_pomodoros: 1
+    });
+
+  if (insertError) {
+    console.error('Error creating main task:', insertError);
+    throw insertError;
+  }
+
+  // Delete the sub-task
+  const { error: deleteError } = await supabase
+    .from('sub_tasks')
+    .delete()
+    .eq('id', subTaskId)
+    .eq('user_id', userId);
+
+  if (deleteError) {
+    console.error('Error deleting sub-task:', deleteError);
+    throw deleteError;
+  }
+
+  return true;
+};
+
+export const moveSubTaskToParent = async (
+  userId: string | undefined,
+  subTaskId: string,
+  newParentId: string
+): Promise<boolean> => {
+  if (!userId) return false;
+
+  // Get current max sort_order for new parent
+  const { data: existingSubTasks } = await supabase
+    .from('sub_tasks')
+    .select('sort_order')
+    .eq('parent_task_id', newParentId)
+    .eq('user_id', userId)
+    .order('sort_order', { ascending: false })
+    .limit(1);
+
+  const maxSortOrder = existingSubTasks?.[0]?.sort_order ?? -1;
+
+  // Update the sub-task's parent and sort_order
+  const { error } = await supabase
+    .from('sub_tasks')
+    .update({
+      parent_task_id: newParentId,
+      sort_order: maxSortOrder + 1,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', subTaskId)
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('Error moving sub-task:', error);
+    throw error;
+  }
+
+  return true;
+};

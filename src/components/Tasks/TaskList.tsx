@@ -179,6 +179,7 @@ const TaskList: React.FC<TaskListProps> = ({
             onDragEnd={handleDragEnd}
             isDragging={draggingTaskId === task.id}
             isCompleting={completingTaskId === task.id}
+            allTasks={tasks}
           />
         </div>
       ))}

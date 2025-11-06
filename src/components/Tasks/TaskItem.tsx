@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Trash, Edit, Check, Square, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { Task } from '@/types/task';
 import { useSubTasks } from '@/hooks/useSubTasks';
 import { SubTaskList } from './SubTaskList';
@@ -15,6 +16,7 @@ interface TaskItemProps {
   onDragEnd?: () => void;
   isDragging?: boolean;
   isCompleting?: boolean;
+  allTasks?: Task[];
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({ 
@@ -25,12 +27,36 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onDragStart,
   onDragEnd,
   isDragging,
-  isCompleting
+  isCompleting,
+  allTasks = []
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { subTasks, isLoading, handleAddSubTask, handleToggleComplete, handleDeleteSubTask } = useSubTasks(
-    isExpanded ? task.id : null
-  );
+  const { 
+    subTasks, 
+    isLoading, 
+    handleAddSubTask, 
+    handleToggleComplete, 
+    handleDeleteSubTask,
+    handleReorderSubTasks,
+    handlePromoteToTask,
+    handleMoveToTask
+  } = useSubTasks(task.id);
+
+  // Calculate progress
+  const subTaskProgress = useMemo(() => {
+    if (subTasks.length === 0) return null;
+    const completed = subTasks.filter(st => st.completed).length;
+    const total = subTasks.length;
+    const percentage = (completed / total) * 100;
+    return { completed, total, percentage };
+  }, [subTasks]);
+
+  // Get available tasks for moving sub-tasks (excluding current task and completed tasks)
+  const availableTasks = useMemo(() => {
+    return allTasks
+      .filter(t => t.id !== task.id && !t.completed)
+      .map(t => ({ id: t.id, name: t.name }));
+  }, [allTasks, task.id]);
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('taskId', task.id);
@@ -103,9 +129,19 @@ const TaskItem: React.FC<TaskItemProps> = ({
             )}
           </Button>
           
-          <span className={`${task.completed ? 'line-through text-muted-foreground' : ''}`}>
-            {task.name}
-          </span>
+          <div className="flex-1">
+            <span className={`${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+              {task.name}
+            </span>
+            {!isExpanded && subTaskProgress && (
+              <div className="flex items-center gap-2 mt-1">
+                <Progress value={subTaskProgress.percentage} className="h-1.5 w-24" />
+                <span className="text-xs text-muted-foreground">
+                  {subTaskProgress.completed}/{subTaskProgress.total}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
         
         <div className="flex items-center gap-2">
@@ -145,6 +181,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
               subTasks={subTasks}
               onToggleComplete={handleToggleComplete}
               onDeleteSubTask={handleDeleteSubTask}
+              onReorderSubTasks={handleReorderSubTasks}
+              onPromoteToTask={handlePromoteToTask}
+              availableTasks={availableTasks}
+              onMoveToTask={handleMoveToTask}
             />
             <SubTaskInput onAddSubTask={handleAddSubTask} />
           </div>
