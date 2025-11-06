@@ -40,7 +40,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
     handleReorderSubTasks,
     handlePromoteToTask,
     handleMoveToTask
-  } = useSubTasks(task.id);
+  } = useSubTasks(task.id); // Always load sub-tasks, not just when expanded
 
   // Calculate progress
   const subTaskProgress = useMemo(() => {

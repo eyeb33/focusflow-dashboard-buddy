@@ -91,19 +91,28 @@ serve(async (req) => {
 
 CRITICAL INSTRUCTIONS FOR TASK HANDLING:
 
-${taskState && taskState.tasks?.length > 0 ? `Current Task List (WITH IDs):
-${taskState.tasks.map((t: any, i: number) => `${i + 1}. "${t.name}" → ID: ${t.id}${t.is_active ? ' (ACTIVE)' : ''}`).join('\n')}
+${taskState && taskState.tasks?.length > 0 ? `Current Task List (WITH IDs AND SUB-TASKS):
+${taskState.tasks.map((t: any, i: number) => {
+  let taskInfo = `${i + 1}. "${t.name}" → ID: ${t.id}${t.is_active ? ' (ACTIVE)' : ''}`;
+  if (t.sub_tasks && t.sub_tasks.length > 0) {
+    taskInfo += `\n   Sub-tasks:`;
+    t.sub_tasks.forEach((st: any, j: number) => {
+      taskInfo += `\n   ${String.fromCharCode(97 + j)}. "${st.name}" → ID: ${st.id}${st.completed ? ' ✓' : ''}`;
+    });
+  }
+  return taskInfo;
+}).join('\n')}
 
-WHEN USERS MENTION TASKS BY NAME:
+WHEN USERS MENTION TASKS OR SUB-TASKS BY NAME:
 - If they say "complete [task name]" → Look up the task_id from the list above by matching the name, then call complete_task with that ID
+- If they say "complete [sub-task name]" → Look up the subtask_id and call toggle_subtask with that ID
 - If they say "work on [task name]" → Look up the task_id and call set_active_task with that ID
-- If they say "remove" / "delete" / "clear" [task name] → Look up the task_id and call delete_task with that ID
-- If they say "delete them all" / "remove all of these" → Look up ALL matching task_ids by name and call delete_task for EACH ONE
-- If they ask "what is my first task" / "list my tasks" / "what do I have" → Call get_tasks first, then answer from the results. DO NOT create tasks in this case.
-- NEVER ask users for task IDs - YOU can see them in the list above and MUST use them automatically
+- If they say "remove" / "delete" / "clear" [task/sub-task name] → Look up the ID and call delete_task or delete_subtask
+- If they say "add a sub-task to [task name]" → Look up the parent task_id and call add_subtask with parent_task_id and name
+- If they ask "what is my first task" / "list my tasks" / "what do I have" → Call get_tasks first, then answer from the results
+- NEVER ask users for IDs - YOU can see them in the list above and MUST use them automatically
 - Use fuzzy matching (partial names are okay if unambiguous)
-- For bulk operations (delete all matching), call the tool multiple times with different task_ids
-- Only ask for clarification if the task name is too vague and matches many unrelated tasks` : 'User has no tasks yet.'}
+- For bulk operations, call the tool multiple times with different IDs` : 'User has no tasks yet.'}
 
 WHEN ADDING NEW TASKS:
 - Only call add_task when the user explicitly says add/create/new.
@@ -123,10 +132,13 @@ ${timerState ? `Timer Status:
 - Session: ${timerState.currentSessionIndex + 1}/${timerState.sessionsUntilLongBreak}` : ''}
 
 Your capabilities:
-- get_tasks(): Retrieve current task list (use when user asks about tasks)
+- get_tasks(): Retrieve current task list with sub-tasks
 - add_task(name, estimated_pomodoros): Create task
-- complete_task(task_id): Mark done
+- complete_task(task_id): Mark task done
 - delete_task(task_id): Remove/delete task
+- add_subtask(parent_task_id, name): Add sub-task to a task
+- delete_subtask(subtask_id): Remove/delete sub-task
+- toggle_subtask(subtask_id): Toggle sub-task completion
 - start_timer(): Start timer
 - pause_timer(): Pause timer  
 - set_active_task(task_id): Set working task
@@ -134,7 +146,7 @@ Your capabilities:
 Your style:
 1. Act immediately on clear requests - don't ask for IDs or confirmations
 2. Be warm and concise (2-3 sentences)
-3. Match task names intelligently from the list above
+3. Match task/sub-task names intelligently from the list above
 4. Celebrate wins and encourage progress`;
 
     // Add trigger-specific context
@@ -238,10 +250,53 @@ Your style:
         type: "function",
         function: {
           name: "get_tasks",
-          description: "Get the current task list. Use this when the user asks about their tasks or wants to know what tasks they have.",
+          description: "Get the current task list with sub-tasks. Use this when the user asks about their tasks or wants to know what tasks they have.",
           parameters: {
             type: "object",
             properties: {}
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "add_subtask",
+          description: "Add a sub-task to an existing task",
+          parameters: {
+            type: "object",
+            properties: {
+              parent_task_id: { type: "string", description: "The UUID of the parent task" },
+              name: { type: "string", description: "The sub-task name" }
+            },
+            required: ["parent_task_id", "name"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "delete_subtask",
+          description: "Delete/remove a sub-task",
+          parameters: {
+            type: "object",
+            properties: {
+              subtask_id: { type: "string", description: "The UUID of the sub-task to delete" }
+            },
+            required: ["subtask_id"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "toggle_subtask",
+          description: "Toggle a sub-task's completion status (complete/uncomplete)",
+          parameters: {
+            type: "object",
+            properties: {
+              subtask_id: { type: "string", description: "The UUID of the sub-task to toggle" }
+            },
+            required: ["subtask_id"]
           }
         }
       }

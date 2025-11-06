@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { useTimerContext } from './TimerContext';
 import { Task } from '@/types/task';
+import { SubTask } from '@/types/subtask';
 
 interface CoachMessage {
   id: string;
@@ -36,6 +37,8 @@ interface CoachContextType {
   onResponseReceived?: (text: string) => void;
   tasks: Task[];
   setTasks: (tasks: Task[]) => void;
+  subTasks: SubTask[];
+  setSubTasks: (subTasks: SubTask[]) => void;
 }
 
 const CoachContext = createContext<CoachContextType | undefined>(undefined);
@@ -52,12 +55,13 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [lastTriggerTime, setLastTriggerTime] = useState<number>(0);
   const [currentAction, setCurrentAction] = useState<CoachAction | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [subTasks, setSubTasks] = useState<SubTask[]>([]);
 
-  // Load tasks
+  // Load tasks and sub-tasks
   useEffect(() => {
     if (!user) return;
 
-    const loadTasks = async () => {
+    const loadTasksAndSubTasks = async () => {
       const { data } = await supabase
         .from('tasks')
         .select('*')
@@ -80,10 +84,22 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           timeSpentSeconds: t.time_spent_seconds
         }));
         setTasks(mappedTasks);
+
+        // Load all sub-tasks for these tasks
+        const { data: subTasksData } = await supabase
+          .from('sub_tasks')
+          .select('*')
+          .eq('user_id', user.id)
+          .in('parent_task_id', mappedTasks.map(t => t.id))
+          .order('sort_order', { ascending: true });
+
+        if (subTasksData) {
+          setSubTasks(subTasksData);
+        }
       }
     };
 
-    loadTasks();
+    loadTasksAndSubTasks();
   }, [user]);
 
   // Execute tool actions
@@ -322,6 +338,15 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
           if (error) throw error;
 
+          // Get sub-tasks for these tasks
+          const taskIds = tasksList.map(t => t.id);
+          const { data: subTasksList } = await supabase
+            .from('sub_tasks')
+            .select('*')
+            .eq('user_id', user.id)
+            .in('parent_task_id', taskIds)
+            .order('sort_order', { ascending: true });
+
           await supabase.from('coach_actions').insert({
             conversation_id: conversationId,
             user_id: user.id,
@@ -339,11 +364,140 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           
           result = {
             success: true,
-            tasks: tasksList,
+            tasks: tasksList.map(t => ({
+              ...t,
+              sub_tasks: (subTasksList || []).filter(st => st.parent_task_id === t.id)
+            })),
             message: tasksList.length === 0 
               ? 'You have no tasks yet' 
               : `You have ${tasksList.length} task${tasksList.length > 1 ? 's' : ''}`
           };
+          break;
+        }
+
+        case 'add_subtask': {
+          setCurrentAction({ type: 'add_subtask', status: 'executing', message: `Adding sub-task...` });
+          
+          // Get current max sort_order
+          const { data: existingSubTasks } = await supabase
+            .from('sub_tasks')
+            .select('sort_order')
+            .eq('parent_task_id', parsedArgs.parent_task_id)
+            .eq('user_id', user.id)
+            .order('sort_order', { ascending: false })
+            .limit(1);
+
+          const maxSortOrder = existingSubTasks?.[0]?.sort_order ?? -1;
+
+          const { data: newSubTask, error } = await supabase
+            .from('sub_tasks')
+            .insert({
+              user_id: user.id,
+              parent_task_id: parsedArgs.parent_task_id,
+              name: parsedArgs.name,
+              sort_order: maxSortOrder + 1,
+              completed: false
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+
+          setSubTasks(prev => [...prev, newSubTask]);
+          
+          await supabase.from('coach_actions').insert({
+            conversation_id: conversationId,
+            user_id: user.id,
+            action_type: 'add_subtask',
+            action_params: { subtask_id: newSubTask.id, name: parsedArgs.name, parent_task_id: parsedArgs.parent_task_id },
+            success: true
+          });
+
+          setCurrentAction({ type: 'add_subtask', status: 'success', message: `Added sub-task: ${parsedArgs.name}` });
+          setTimeout(() => setCurrentAction(null), 3000);
+          
+          result = { success: true, subtask_id: newSubTask.id, message: `Sub-task "${parsedArgs.name}" added successfully` };
+          break;
+        }
+
+        case 'delete_subtask': {
+          const subTaskToDelete = subTasks.find(st => st.id === parsedArgs.subtask_id);
+          setCurrentAction({ 
+            type: 'delete_subtask', 
+            status: 'executing', 
+            message: 'Deleting sub-task...' 
+          });
+          
+          const { error } = await supabase
+            .from('sub_tasks')
+            .delete()
+            .eq('id', parsedArgs.subtask_id)
+            .eq('user_id', user.id);
+
+          if (error) throw error;
+
+          setSubTasks(prev => prev.filter(st => st.id !== parsedArgs.subtask_id));
+          
+          await supabase.from('coach_actions').insert({
+            conversation_id: conversationId,
+            user_id: user.id,
+            action_type: 'delete_subtask',
+            action_params: { subtask_id: parsedArgs.subtask_id },
+            success: true
+          });
+
+          setCurrentAction({ 
+            type: 'delete_subtask', 
+            status: 'success', 
+            message: subTaskToDelete ? `Deleted sub-task: ${subTaskToDelete.name}` : 'Sub-task deleted' 
+          });
+          setTimeout(() => setCurrentAction(null), 3000);
+          
+          result = { success: true, message: 'Sub-task deleted' };
+          break;
+        }
+
+        case 'toggle_subtask': {
+          const subTaskToToggle = subTasks.find(st => st.id === parsedArgs.subtask_id);
+          if (!subTaskToToggle) throw new Error('Sub-task not found');
+
+          setCurrentAction({ 
+            type: 'toggle_subtask', 
+            status: 'executing', 
+            message: 'Updating sub-task...' 
+          });
+          
+          const { data: updatedSubTask, error } = await supabase
+            .from('sub_tasks')
+            .update({ 
+              completed: !subTaskToToggle.completed,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', parsedArgs.subtask_id)
+            .eq('user_id', user.id)
+            .select()
+            .single();
+
+          if (error) throw error;
+
+          setSubTasks(prev => prev.map(st => st.id === parsedArgs.subtask_id ? updatedSubTask : st));
+          
+          await supabase.from('coach_actions').insert({
+            conversation_id: conversationId,
+            user_id: user.id,
+            action_type: 'toggle_subtask',
+            action_params: { subtask_id: parsedArgs.subtask_id, completed: updatedSubTask.completed },
+            success: true
+          });
+
+          setCurrentAction({ 
+            type: 'toggle_subtask', 
+            status: 'success', 
+            message: updatedSubTask.completed ? `Completed: ${subTaskToToggle.name}` : `Uncompleted: ${subTaskToToggle.name}`
+          });
+          setTimeout(() => setCurrentAction(null), 3000);
+          
+          result = { success: true, message: `Sub-task ${updatedSubTask.completed ? 'completed' : 'uncompleted'}` };
           break;
         }
 
@@ -373,7 +527,7 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       return { error: error instanceof Error ? error.message : 'Tool execution failed' };
     }
-  }, [user, conversationId, tasks, timer]);
+  }, [user, conversationId, tasks, subTasks, timer]);
 
   // Get current state for context injection
   const getCurrentState = useCallback(() => {
@@ -391,11 +545,16 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           name: t.name,
           estimated_pomodoros: t.estimatedPomodoros,
           is_active: t.isActive,
-          completed: t.completed
+          completed: t.completed,
+          sub_tasks: subTasks.filter(st => st.parent_task_id === t.id).map(st => ({
+            id: st.id,
+            name: st.name,
+            completed: st.completed
+          }))
         }))
       }
     };
-  }, [timer, tasks]);
+  }, [timer, tasks, subTasks]);
 
   // Load or create conversation
   useEffect(() => {
@@ -933,7 +1092,9 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     checkInModalOpen,
     setCheckInModalOpen,
     tasks,
-    setTasks
+    setTasks,
+    subTasks,
+    setSubTasks
   };
 
   return (

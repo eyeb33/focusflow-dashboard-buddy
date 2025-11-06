@@ -21,6 +21,7 @@ export function useSubTasks(parentTaskId: string | null) {
       setIsLoading(true);
       try {
         const data = await subTaskService.fetchSubTasks(user.id, parentTaskId);
+        console.log('Loaded sub-tasks:', data);
         setSubTasks(data);
       } catch (error) {
         console.error('Error loading sub-tasks:', error);
@@ -37,8 +38,10 @@ export function useSubTasks(parentTaskId: string | null) {
   useEffect(() => {
     if (!user || !parentTaskId) return;
 
+    console.log('Setting up realtime subscription for parent task:', parentTaskId);
+    
     const channel = supabase
-      .channel('sub-tasks-changes')
+      .channel(`sub-tasks-${parentTaskId}`)
       .on(
         'postgres_changes',
         {
@@ -48,28 +51,40 @@ export function useSubTasks(parentTaskId: string | null) {
           filter: `parent_task_id=eq.${parentTaskId}`
         },
         (payload) => {
-          console.log('Sub-task change detected:', payload);
+          console.log('Sub-task change detected:', payload.eventType, payload);
           
           if (payload.eventType === 'INSERT') {
             const newSubTask = payload.new as SubTask;
+            console.log('Adding new sub-task:', newSubTask);
             setSubTasks(prev => {
-              if (prev.some(st => st.id === newSubTask.id)) return prev;
-              return [...prev, newSubTask].sort((a, b) => 
+              const exists = prev.some(st => st.id === newSubTask.id);
+              console.log('Sub-task exists?', exists, 'Current count:', prev.length);
+              if (exists) return prev;
+              const updated = [...prev, newSubTask].sort((a, b) => 
                 (a.sort_order ?? 0) - (b.sort_order ?? 0)
               );
+              console.log('Updated sub-tasks count:', updated.length);
+              return updated;
             });
           } else if (payload.eventType === 'UPDATE') {
             const updatedSubTask = payload.new as SubTask;
-            setSubTasks(prev => prev.map(st => st.id === updatedSubTask.id ? updatedSubTask : st));
+            console.log('Updating sub-task:', updatedSubTask);
+            setSubTasks(prev => prev.map(st => 
+              st.id === updatedSubTask.id ? updatedSubTask : st
+            ).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)));
           } else if (payload.eventType === 'DELETE') {
             const deletedSubTask = payload.old as SubTask;
+            console.log('Deleting sub-task:', deletedSubTask);
             setSubTasks(prev => prev.filter(st => st.id !== deletedSubTask.id));
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up subscription for parent task:', parentTaskId);
       supabase.removeChannel(channel);
     };
   }, [user, parentTaskId]);
