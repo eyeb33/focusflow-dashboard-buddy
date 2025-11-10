@@ -94,9 +94,9 @@ serve(async (req) => {
 ${activeTask ? `🎯 ACTIVE TASK (in the purple box): "${activeTask.name}" (ID: ${activeTask.id})
 ${activeTask.sub_tasks?.length > 0 ? `   Sub-tasks: ${activeTask.sub_tasks.map((st: any) => `"${st.name}"${st.completed ? ' ✓' : ''}`).join(', ')}` : ''}
 
-` : '⚠️ NO ACTIVE TASK SET - User should select a task to work on.
+` : `⚠️ NO ACTIVE TASK SET - User should select a task to work on.
 
-'}CRITICAL INSTRUCTIONS FOR TASK HANDLING:
+`}CRITICAL INSTRUCTIONS FOR TASK HANDLING:
 
 ${taskState && taskState.tasks?.length > 0 ? `Current Task List (WITH IDs AND SUB-TASKS):
 ${taskState.tasks.map((t: any, i: number) => {
