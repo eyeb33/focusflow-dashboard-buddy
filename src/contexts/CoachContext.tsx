@@ -184,6 +184,11 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
           if (error) throw error;
           
+          // If the completed task was the active one, clear the active task in the timer (purple box)
+          if (timer.activeTaskId === parsedArgs.task_id) {
+            timer.setActiveTaskId(null);
+          }
+          
           setTasks(prev => prev.filter(t => t.id !== parsedArgs.task_id));
           
           await supabase.from('coach_actions').insert({
@@ -263,6 +268,9 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               .eq('id', parsedArgs.task_id)
               .eq('user_id', user.id);
           }
+
+          // Keep timer context in sync with the active task (purple box)
+          timer.setActiveTaskId(parsedArgs.task_id || null);
 
           setTasks(prev => prev.map(t => ({ ...t, isActive: t.id === parsedArgs.task_id })));
           
@@ -537,14 +545,15 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         mode: timer.timerMode,
         timeRemaining: timer.timeRemaining,
         currentSessionIndex: timer.currentSessionIndex,
-        sessionsUntilLongBreak: timer.settings.sessionsUntilLongBreak
+        sessionsUntilLongBreak: timer.settings.sessionsUntilLongBreak,
+        activeTaskId: timer.activeTaskId
       },
       taskState: {
         tasks: tasks.map(t => ({
           id: t.id,
           name: t.name,
           estimated_pomodoros: t.estimatedPomodoros,
-          is_active: t.isActive,
+          is_active: t.id === timer.activeTaskId,
           completed: t.completed,
           sub_tasks: subTasks.filter(st => st.parent_task_id === t.id).map(st => ({
             id: st.id,
