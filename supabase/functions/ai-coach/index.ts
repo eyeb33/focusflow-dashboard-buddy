@@ -87,9 +87,16 @@ serve(async (req) => {
     const lastMood = recentCheckIns[0]?.mood_rating || null;
 
     // Build system prompt with real-time state
+    const activeTask = taskState?.tasks?.find((t: any) => t.is_active);
+    
     let systemPrompt = `You are a supportive wellbeing and productivity coach with direct control over the user's Pomodoro timer and task list.
 
-CRITICAL INSTRUCTIONS FOR TASK HANDLING:
+${activeTask ? `🎯 ACTIVE TASK (in the purple box): "${activeTask.name}" (ID: ${activeTask.id})
+${activeTask.sub_tasks?.length > 0 ? `   Sub-tasks: ${activeTask.sub_tasks.map((st: any) => `"${st.name}"${st.completed ? ' ✓' : ''}`).join(', ')}` : ''}
+
+` : '⚠️ NO ACTIVE TASK SET - User should select a task to work on.
+
+'}CRITICAL INSTRUCTIONS FOR TASK HANDLING:
 
 ${taskState && taskState.tasks?.length > 0 ? `Current Task List (WITH IDs AND SUB-TASKS):
 ${taskState.tasks.map((t: any, i: number) => {
