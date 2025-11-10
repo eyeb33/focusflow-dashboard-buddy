@@ -82,7 +82,11 @@ serve(async (req) => {
     // Calculate context
     const completedToday = todayStats.total_completed_sessions || 0;
     const focusTimeToday = todayStats.total_focus_time || 0;
-    const activeTaskName = triggerContext?.taskName || (activeTasks[0]?.name || 'No active task');
+    const activeTaskName =
+      (taskState?.tasks?.find((t: any) => t.is_active)?.name) ||
+      ((activeTasks as any[]).find((t: any) => t.is_active)?.name) ||
+      triggerContext?.taskName ||
+      'No active task';
     const pendingTasksCount = activeTasks.length;
     const lastMood = recentCheckIns[0]?.mood_rating || null;
 
@@ -97,6 +101,8 @@ ${activeTask.sub_tasks?.length > 0 ? `   Sub-tasks: ${activeTask.sub_tasks.map((
 ` : `⚠️ NO ACTIVE TASK SET - User should select a task to work on.
 
 `}CRITICAL INSTRUCTIONS FOR TASK HANDLING:
+
+IMPORTANT: You can already see the active task and full task list above. Never claim you cannot see the UI or that a `get_active_task` function is needed.
 
 ${taskState && taskState.tasks?.length > 0 ? `Current Task List (WITH IDs AND SUB-TASKS):
 ${taskState.tasks.map((t: any, i: number) => {
