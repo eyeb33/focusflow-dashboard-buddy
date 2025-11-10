@@ -102,7 +102,7 @@ ${activeTask.sub_tasks?.length > 0 ? `   Sub-tasks: ${activeTask.sub_tasks.map((
 
 `}CRITICAL INSTRUCTIONS FOR TASK HANDLING:
 
-IMPORTANT: You can already see the active task and full task list above. Never claim you cannot see the UI or that a `get_active_task` function is needed.
+IMPORTANT: You can already see the active task and full task list above. Never claim you cannot see the UI or that a \`get_active_task\` function is needed.
 
 ${taskState && taskState.tasks?.length > 0 ? `Current Task List (WITH IDs AND SUB-TASKS):
 ${taskState.tasks.map((t: any, i: number) => {
