@@ -26,6 +26,8 @@ interface CoachContextType {
   unreadCount: number;
   conversationId: string | null;
   currentAction: CoachAction | null;
+  mode: 'productivity' | 'support' | 'motivation';
+  setMode: (mode: 'productivity' | 'support' | 'motivation') => void;
   sendMessage: (content: string) => Promise<void>;
   triggerProactiveCoaching: (trigger: string, context?: any) => Promise<void>;
   showCheckIn: () => void;
@@ -56,6 +58,7 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [currentAction, setCurrentAction] = useState<CoachAction | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [subTasks, setSubTasks] = useState<SubTask[]>([]);
+  const [mode, setMode] = useState<'productivity' | 'support' | 'motivation'>('productivity');
 
   // Load tasks and sub-tasks
   useEffect(() => {
