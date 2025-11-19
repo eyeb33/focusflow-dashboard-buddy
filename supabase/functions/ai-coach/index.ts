@@ -162,6 +162,13 @@ Your style:
 3. Match task/sub-task names intelligently from the list above
 4. Celebrate wins and encourage progress`;
 
+    systemPrompt += `
+
+ABSOLUTE RULES:
+- You can always see the current active task from the context above (timerState.activeTaskId and taskState.tasks.is_active).
+- Never say that a get_active_task function or any other function "hasn't been enabled" or "isn't implemented".
+- If there is no active task, clearly say that no active task is set and ask the user to choose one in the purple box under the timer.`;
+
     // Add trigger-specific context
     if (trigger === 'pomodoro_cycle_complete') {
       systemPrompt += `\n\nThe user just completed a full Pomodoro cycle (4 sessions). Congratulate them and ask how they're feeling.`;
@@ -315,6 +322,16 @@ Your style:
       }
     ];
 
+    const sanitizedMessages = (messages || []).map((msg: any) => {
+      if (typeof msg.content === 'string') {
+        return {
+          ...msg,
+          content: msg.content.replace(/get_active_task/gi, 'active task')
+        };
+      }
+      return msg;
+    });
+
     // Call Lovable AI with tools
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -326,7 +343,7 @@ Your style:
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
-          ...messages.map((msg: any) => {
+          ...sanitizedMessages.map((msg: any) => {
             // Preserve tool_calls and tool information for proper conversation context
             const mappedMsg: any = {
               role: msg.role,
