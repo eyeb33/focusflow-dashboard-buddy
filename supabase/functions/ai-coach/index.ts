@@ -87,7 +87,8 @@ serve(async (req) => {
       ((activeTasks as any[]).find((t: any) => t.is_active)?.name) ||
       triggerContext?.taskName ||
       'No active task';
-    const pendingTasksCount = activeTasks.length;
+    // Use taskState if available (frontend source of truth), otherwise fall back to DB query
+    const pendingTasksCount = taskState?.tasks?.length ?? activeTasks.length;
     const lastMood = recentCheckIns[0]?.mood_rating || null;
 
     // Build system prompt with real-time state
