@@ -7,6 +7,7 @@ import { useCoach } from '@/contexts/CoachContext';
 import CoachMessage from './CoachMessage';
 import WellbeingCheckIn from './WellbeingCheckIn';
 import { CoachActionFeedback } from './CoachActionFeedback';
+import { Target, HeartHandshake, Sparkles } from 'lucide-react';
 
 const CoachInterface: React.FC = () => {
   const {
@@ -15,6 +16,8 @@ const CoachInterface: React.FC = () => {
     isMinimized,
     unreadCount,
     currentAction,
+    mode,
+    setMode,
     sendMessage,
     toggleMinimize,
     markAsRead,
@@ -81,24 +84,56 @@ const CoachInterface: React.FC = () => {
         ) : (
           <div className="w-full h-full bg-card border border-border rounded-lg shadow-2xl flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-border bg-primary/10 rounded-t-lg">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                  <Heart className="w-4 h-4 text-primary-foreground" />
+            <div className="border-b border-border bg-primary/10 rounded-t-lg">
+              <div className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                    <Heart className="w-4 h-4 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Wellbeing Coach</h3>
+                    <p className="text-xs text-muted-foreground">Here to support you</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-sm">Wellbeing Coach</h3>
-                  <p className="text-xs text-muted-foreground">Here to support you</p>
-                </div>
+                <Button
+                  onClick={toggleMinimize}
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
               </div>
-              <Button
-                onClick={toggleMinimize}
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-              >
-                <X className="w-4 h-4" />
-              </Button>
+              {/* Mode Selection */}
+              <div className="flex gap-1 px-3 pb-3">
+                <Button
+                  onClick={() => setMode('productivity')}
+                  variant={mode === 'productivity' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="flex-1 text-xs h-7"
+                >
+                  <Target className="w-3 h-3 mr-1" />
+                  Productivity
+                </Button>
+                <Button
+                  onClick={() => setMode('support')}
+                  variant={mode === 'support' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="flex-1 text-xs h-7"
+                >
+                  <HeartHandshake className="w-3 h-3 mr-1" />
+                  Support
+                </Button>
+                <Button
+                  onClick={() => setMode('motivation')}
+                  variant={mode === 'motivation' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="flex-1 text-xs h-7"
+                >
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  Motivation
+                </Button>
+              </div>
             </div>
 
             {/* Messages */}
