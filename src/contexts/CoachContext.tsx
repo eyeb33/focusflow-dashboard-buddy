@@ -1095,6 +1095,8 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     unreadCount,
     conversationId,
     currentAction,
+    mode,
+    setMode,
     sendMessage,
     triggerProactiveCoaching,
     showCheckIn,
