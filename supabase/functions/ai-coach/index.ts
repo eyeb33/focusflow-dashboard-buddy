@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, trigger, triggerContext, timerState, taskState } = await req.json();
+    const { messages, trigger, triggerContext, timerState, taskState, mode = 'productivity' } = await req.json();
     
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -94,7 +94,43 @@ serve(async (req) => {
     // Build system prompt with real-time state
     const activeTask = taskState?.tasks?.find((t: any) => t.is_active);
     
-    let systemPrompt = `You are a supportive wellbeing and productivity coach with direct control over the user's Pomodoro timer and task list.
+    // Mode-specific personality and focus
+    const modePrompts = {
+      productivity: {
+        intro: `You are a focused productivity coach with direct control over the user's Pomodoro timer and task list. Your priority is helping the user accomplish their goals efficiently.`,
+        style: `Your style:
+1. Act immediately on clear requests - don't ask for IDs or confirmations
+2. Be direct and action-oriented (2-3 sentences max)
+3. Focus on task completion and time management
+4. Suggest breaking down large tasks into smaller steps
+5. Encourage starting timers and maintaining focus
+6. When suggesting a task to focus on, AUTOMATICALLY call set_active_task with that task's ID immediately`
+      },
+      support: {
+        intro: `You are a compassionate wellbeing coach with direct control over the user's Pomodoro timer and task list. Your priority is supporting the user's mental health and work-life balance.`,
+        style: `Your style:
+1. Act on requests warmly and thoughtfully
+2. Be empathetic and understanding (2-3 sentences)
+3. Check in on how the user is feeling
+4. Encourage breaks and self-care when needed
+5. Validate struggles and offer gentle guidance
+6. When suggesting a task, consider the user's energy levels`
+      },
+      motivation: {
+        intro: `You are an energetic motivational coach with direct control over the user's Pomodoro timer and task list. Your priority is inspiring the user and celebrating their wins.`,
+        style: `Your style:
+1. Be enthusiastic and uplifting! Use encouraging language
+2. Celebrate every accomplishment, big or small
+3. Frame challenges as opportunities for growth
+4. Use motivational phrases and positive reinforcement
+5. Help the user visualize success
+6. When suggesting a task, emphasize the satisfaction of completing it`
+      }
+    };
+    
+    const currentMode = modePrompts[mode as keyof typeof modePrompts] || modePrompts.productivity;
+    
+    let systemPrompt = `${currentMode.intro}
 
 ${activeTask ? `🎯 ACTIVE TASK (in the purple box): "${activeTask.name}" (ID: ${activeTask.id})
 ${activeTask.sub_tasks?.length > 0 ? `   Sub-tasks: ${activeTask.sub_tasks.map((st: any) => `"${st.name}"${st.completed ? ' ✓' : ''}`).join(', ')}` : ''}
@@ -157,12 +193,8 @@ Your capabilities:
 - pause_timer(): Pause timer  
 - set_active_task(task_id): Set working task
 
-Your style:
-1. Act immediately on clear requests - don't ask for IDs or confirmations
-2. Be warm and concise (2-3 sentences)
-3. Match task/sub-task names intelligently from the list above
-4. Celebrate wins and encourage progress
-5. When suggesting a task to focus on, AUTOMATICALLY call set_active_task with that task's ID immediately - don't just suggest it in words`;
+${currentMode.style}
+7. Match task/sub-task names intelligently from the list above`;
 
     systemPrompt += `
 

@@ -700,6 +700,7 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               role: m.role,
               content: m.content
             })),
+            mode,
             ...getCurrentState()
           }),
         }
@@ -833,6 +834,7 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 { role: 'assistant', content: assistantContent || null, tool_calls: toolCalls },
                 ...toolResults
               ],
+              mode,
               ...getCurrentState()
             }),
           }
@@ -956,6 +958,7 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             })),
             trigger,
             triggerContext: context,
+            mode,
             ...getCurrentState()
           }),
         }
