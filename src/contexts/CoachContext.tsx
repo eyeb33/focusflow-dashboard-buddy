@@ -6,6 +6,8 @@ import { useTimerContext } from './TimerContext';
 import { Task } from '@/types/task';
 import { SubTask } from '@/types/subtask';
 
+export type CoachMode = 'productivity' | 'support' | 'motivation';
+
 interface CoachMessage {
   id: string;
   role: 'user' | 'assistant';
