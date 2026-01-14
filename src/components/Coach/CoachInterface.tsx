@@ -107,31 +107,31 @@ const CoachInterface: React.FC = () => {
               {/* Mode Selection */}
               <div className="flex gap-1 px-3 pb-3">
                 <Button
-                  onClick={() => setMode('productivity')}
-                  variant={mode === 'productivity' ? 'default' : 'ghost'}
+                  onClick={() => setMode('explain')}
+                  variant={mode === 'explain' ? 'default' : 'ghost'}
                   size="sm"
                   className="flex-1 text-xs h-7"
                 >
                   <Target className="w-3 h-3 mr-1" />
-                  Productivity
+                  Explain
                 </Button>
                 <Button
-                  onClick={() => setMode('support')}
-                  variant={mode === 'support' ? 'default' : 'ghost'}
+                  onClick={() => setMode('practice')}
+                  variant={mode === 'practice' ? 'default' : 'ghost'}
                   size="sm"
                   className="flex-1 text-xs h-7"
                 >
                   <HeartHandshake className="w-3 h-3 mr-1" />
-                  Support
+                  Practice
                 </Button>
                 <Button
-                  onClick={() => setMode('motivation')}
-                  variant={mode === 'motivation' ? 'default' : 'ghost'}
+                  onClick={() => setMode('check')}
+                  variant={mode === 'check' ? 'default' : 'ghost'}
                   size="sm"
                   className="flex-1 text-xs h-7"
                 >
                   <Sparkles className="w-3 h-3 mr-1" />
-                  Motivation
+                  Check
                 </Button>
               </div>
             </div>
