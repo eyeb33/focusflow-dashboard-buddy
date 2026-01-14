@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, trigger, triggerContext, timerState, taskState, mode = 'productivity' } = await req.json();
+    const { messages, trigger, triggerContext, timerState, taskState, mode = 'explain' } = await req.json();
     
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -37,13 +37,13 @@ serve(async (req) => {
       });
     }
 
-    console.log('Coach request from user:', user.id, 'trigger:', trigger);
+    console.log('Maths tutor request from user:', user.id, 'mode:', mode, 'trigger:', trigger);
 
-    // Gather user context
+    // Gather user context for study tracking
     const last7Days = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const today = new Date().toISOString().split('T')[0];
 
-    const [sessionsResult, tasksResult, checkInsResult, streakResult] = await Promise.all([
+    const [sessionsResult, tasksResult, streakResult] = await Promise.all([
       supabaseClient
         .from('focus_sessions')
         .select('*')
@@ -60,13 +60,6 @@ serve(async (req) => {
         .limit(10),
       
       supabaseClient
-        .from('coach_check_ins')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5),
-      
-      supabaseClient
         .from('sessions_summary')
         .select('*')
         .eq('user_id', user.id)
@@ -76,142 +69,150 @@ serve(async (req) => {
 
     const recentSessions = sessionsResult.data || [];
     const activeTasks = tasksResult.data || [];
-    const recentCheckIns = checkInsResult.data || [];
     const todayStats = streakResult.data || { total_completed_sessions: 0, total_focus_time: 0 };
 
     // Calculate context
     const completedToday = todayStats.total_completed_sessions || 0;
     const focusTimeToday = todayStats.total_focus_time || 0;
-    const activeTaskName =
+    const activeStudyTopic =
       (taskState?.tasks?.find((t: any) => t.is_active)?.name) ||
       ((activeTasks as any[]).find((t: any) => t.is_active)?.name) ||
       triggerContext?.taskName ||
-      'No active task';
-    // Use taskState if available (frontend source of truth), otherwise fall back to DB query
-    const pendingTasksCount = taskState?.tasks?.length ?? activeTasks.length;
-    const lastMood = recentCheckIns[0]?.mood_rating || null;
+      'No active topic';
+    const pendingTopicsCount = taskState?.tasks?.length ?? activeTasks.length;
 
-    // Build system prompt with real-time state
+    // Build system prompt with mode-specific behavior
     const activeTask = taskState?.tasks?.find((t: any) => t.is_active);
     
-    // Mode-specific personality and focus
+    // Mode-specific tutoring approaches
     const modePrompts = {
-      productivity: {
-        intro: `You are a focused productivity coach with direct control over the user's Pomodoro timer and task list. Your priority is helping the user accomplish their goals efficiently.`,
-        style: `Your style:
-1. Act immediately on clear requests - don't ask for IDs or confirmations
-2. Be direct and action-oriented (2-3 sentences max)
-3. Focus on task completion and time management
-4. Suggest breaking down large tasks into smaller steps
-5. Encourage starting timers and maintaining focus
-6. When suggesting a task to focus on, AUTOMATICALLY call set_active_task with that task's ID immediately`
+      explain: {
+        intro: `You are an expert A-Level Mathematics tutor specializing in the AQA specification. Your role is to EXPLAIN concepts clearly and help students understand mathematical principles deeply.`,
+        style: `Your teaching style in EXPLAIN mode:
+1. Break down complex concepts into simple, digestible steps
+2. Use the Socratic method - ask guiding questions to help students discover answers
+3. NEVER give direct answers immediately - guide the student to understanding
+4. Provide clear explanations with examples
+5. Connect new concepts to what the student already knows
+6. Use mathematical notation with LaTeX: inline $x^2$ and display $$\\frac{d}{dx}[x^n] = nx^{n-1}$$
+7. Reference relevant AQA specification topics when helpful
+8. Be encouraging but maintain academic rigor`
       },
-      support: {
-        intro: `You are a compassionate wellbeing coach with direct control over the user's Pomodoro timer and task list. Your priority is supporting the user's mental health and work-life balance.`,
-        style: `Your style:
-1. Act on requests warmly and thoughtfully
-2. Be empathetic and understanding (2-3 sentences)
-3. Check in on how the user is feeling
-4. Encourage breaks and self-care when needed
-5. Validate struggles and offer gentle guidance
-6. When suggesting a task, consider the user's energy levels`
+      practice: {
+        intro: `You are an expert A-Level Mathematics tutor specializing in the AQA specification. Your role is to generate PRACTICE problems and guide students through solving them independently.`,
+        style: `Your teaching style in PRACTICE mode:
+1. Generate appropriate practice problems matching AQA exam style
+2. Start with the problem, then wait for the student's attempt
+3. Provide hints rather than solutions when students are stuck
+4. Grade difficulty appropriately (state if it's C1/C2/C3/C4 level or equivalent)
+5. After they solve it, offer a similar problem for reinforcement
+6. Use proper mathematical notation with LaTeX
+7. Celebrate correct answers and explain any errors kindly
+8. Mix problem types to build comprehensive understanding`
       },
-      motivation: {
-        intro: `You are an energetic motivational coach with direct control over the user's Pomodoro timer and task list. Your priority is inspiring the user and celebrating their wins.`,
-        style: `Your style:
-1. Be enthusiastic and uplifting! Use encouraging language
-2. Celebrate every accomplishment, big or small
-3. Frame challenges as opportunities for growth
-4. Use motivational phrases and positive reinforcement
-5. Help the user visualize success
-6. When suggesting a task, emphasize the satisfaction of completing it`
+      check: {
+        intro: `You are an expert A-Level Mathematics tutor specializing in the AQA specification. Your role is to CHECK the student's working and help them identify and correct any errors.`,
+        style: `Your teaching style in CHECK mode:
+1. Carefully review all working shown by the student
+2. Identify specific errors and explain WHY they're wrong
+3. Point out correct steps before addressing errors
+4. Don't just give the right answer - explain the correct method
+5. Check for common mistakes (sign errors, forgotten constants, etc.)
+6. Verify the final answer makes sense in context
+7. Suggest better methods if there's a more elegant solution
+8. Be supportive - mistakes are learning opportunities`
       }
     };
     
-    const currentMode = modePrompts[mode as keyof typeof modePrompts] || modePrompts.productivity;
+    const currentMode = modePrompts[mode as keyof typeof modePrompts] || modePrompts.explain;
     
     let systemPrompt = `${currentMode.intro}
 
-${activeTask ? `🎯 ACTIVE TASK (in the purple box): "${activeTask.name}" (ID: ${activeTask.id})
-${activeTask.sub_tasks?.length > 0 ? `   Sub-tasks: ${activeTask.sub_tasks.map((st: any) => `"${st.name}"${st.completed ? ' ✓' : ''}`).join(', ')}` : ''}
+## AQA A-Level Maths Curriculum Coverage
 
-` : `⚠️ NO ACTIVE TASK SET - User should select a task to work on.
+You are an expert in ALL areas of the AQA A-Level Mathematics specification:
 
-`}CRITICAL INSTRUCTIONS FOR TASK HANDLING:
+**Pure Mathematics:**
+- Proof (mathematical argument and notation)
+- Algebra and functions (quadratics, polynomials, partial fractions)
+- Coordinate geometry (straight lines, circles, parametric equations)
+- Sequences and series (arithmetic, geometric, sigma notation, binomial expansion)
+- Trigonometry (identities, equations, inverse functions, radians)
+- Exponentials and logarithms
+- Differentiation (chain rule, product rule, quotient rule, implicit, parametric)
+- Integration (by parts, substitution, partial fractions, volumes of revolution)
+- Numerical methods (Newton-Raphson, trapezium rule)
+- Vectors (2D and 3D)
 
-IMPORTANT: You can already see the active task and full task list above. Never claim you cannot see the UI or that a \`get_active_task\` function is needed.
+**Statistics:**
+- Statistical sampling
+- Data presentation and interpretation
+- Probability (conditional, independent events, tree diagrams)
+- Statistical distributions (binomial, normal)
+- Statistical hypothesis testing
 
-${taskState && taskState.tasks?.length > 0 ? `Current Task List (WITH IDs AND SUB-TASKS):
+**Mechanics:**
+- Quantities and units in mechanics
+- Kinematics (constant acceleration, projectiles)
+- Forces and Newton's laws
+- Moments
+
+${activeTask ? `📚 CURRENT STUDY TOPIC: "${activeTask.name}"
+${activeTask.sub_tasks?.length > 0 ? `   Sub-topics: ${activeTask.sub_tasks.map((st: any) => `"${st.name}"${st.completed ? ' ✓' : ''}`).join(', ')}` : ''}
+
+Focus your tutoring on this topic when relevant.
+
+` : ''}${taskState && taskState.tasks?.length > 0 ? `Study Topics (can be managed via tools):
 ${taskState.tasks.map((t: any, i: number) => {
-  let taskInfo = `${i + 1}. "${t.name}" → ID: ${t.id}${t.is_active ? ' (ACTIVE)' : ''}`;
+  let topicInfo = `${i + 1}. "${t.name}" → ID: ${t.id}${t.is_active ? ' (CURRENT)' : ''}`;
   if (t.sub_tasks && t.sub_tasks.length > 0) {
-    taskInfo += `\n   Sub-tasks:`;
-    t.sub_tasks.forEach((st: any, j: number) => {
-      taskInfo += `\n   ${String.fromCharCode(97 + j)}. "${st.name}" → ID: ${st.id}${st.completed ? ' ✓' : ''}`;
-    });
+    topicInfo += ` [${t.sub_tasks.filter((st: any) => st.completed).length}/${t.sub_tasks.length} complete]`;
   }
-  return taskInfo;
+  return topicInfo;
 }).join('\n')}
+` : ''}
+Current Study Session:
+- Study Sessions Today: ${completedToday}
+- Total Study Time Today: ${focusTimeToday} minutes
+- Pending Topics: ${pendingTopicsCount}
 
-WHEN USERS MENTION TASKS OR SUB-TASKS BY NAME:
-- If they say "complete [task name]" → Look up the task_id from the list above by matching the name, then call complete_task with that ID
-- If they say "complete [sub-task name]" → Look up the subtask_id and call toggle_subtask with that ID
-- If they say "work on [task name]" → Look up the task_id and call set_active_task with that ID
-- If they say "remove" / "delete" / "clear" [task/sub-task name] → Look up the ID and call delete_task or delete_subtask
-- If they say "add a sub-task to [task name]" → Look up the parent task_id and call add_subtask with parent_task_id and name
-- If they ask "what is my first task" / "list my tasks" / "what do I have" → Call get_tasks first, then answer from the results
-- NEVER ask users for IDs - YOU can see them in the list above and MUST use them automatically
-- Use fuzzy matching (partial names are okay if unambiguous)
-- For bulk operations, call the tool multiple times with different IDs` : 'User has no tasks yet.'}
-
-WHEN ADDING NEW TASKS:
-- Only call add_task when the user explicitly says add/create/new.
-- Never call add_task in response to requests to remove/delete/complete/list tasks or questions about tasks.
-
-Current Context:
-- Active Task: ${activeTaskName}
-- Completed Sessions Today: ${completedToday}
-- Total Focus Time Today: ${focusTimeToday} minutes
-- Pending Tasks: ${pendingTasksCount}
-${lastMood ? `- Recent Mood: ${lastMood}/5` : ''}
-
-${timerState ? `Timer Status:
+${timerState ? `Study Timer Status:
 - Running: ${timerState.isRunning ? 'Yes' : 'No'}
-- Mode: ${timerState.mode}
-- Time Left: ${Math.floor(timerState.timeRemaining / 60)}m ${timerState.timeRemaining % 60}s
-- Session: ${timerState.currentSessionIndex + 1}/${timerState.sessionsUntilLongBreak}` : ''}
+- Mode: ${timerState.mode === 'work' ? 'Study' : timerState.mode === 'break' ? 'Short Break' : 'Long Break'}
+- Time Remaining: ${Math.floor(timerState.timeRemaining / 60)}m ${timerState.timeRemaining % 60}s` : ''}
 
-Your capabilities:
-- get_tasks(): Retrieve current task list with sub-tasks
-- add_task(name, estimated_pomodoros): Create task
-- complete_task(task_id): Mark task done
-- delete_task(task_id): Remove/delete task
-- add_subtask(parent_task_id, name): Add sub-task to a task
-- delete_subtask(subtask_id): Remove/delete sub-task
-- toggle_subtask(subtask_id): Toggle sub-task completion
-- start_timer(): Start timer
-- pause_timer(): Pause timer  
-- set_active_task(task_id): Set working task
+## CRITICAL TUTORING RULES
+
+1. **Never give direct answers** - Guide students to discover solutions themselves
+2. **Use LaTeX for ALL mathematical expressions**:
+   - Inline: $x^2 + 5x + 6$
+   - Display: $$\\int_0^1 x^2 \\, dx = \\frac{1}{3}$$
+3. **Break problems into steps** - One concept at a time
+4. **Ask questions** - "What do you think the next step would be?" "Can you see a pattern here?"
+5. **Encourage attempts** - "Have a go at this part, and I'll help if you get stuck"
+6. **Be patient** - Students learn at different paces
+7. **Connect to exams** - Mention mark schemes and common exam approaches when relevant
 
 ${currentMode.style}
-7. Match task/sub-task names intelligently from the list above`;
 
-    systemPrompt += `
-
-ABSOLUTE RULES:
-- You can always see the current active task from the context above (timerState.activeTaskId and taskState.tasks.is_active).
-- Never say that a get_active_task function or any other function "hasn't been enabled" or "isn't implemented".
-- If there is no active task, clearly say that no active task is set and ask the user to choose one in the purple box under the timer.`;
+## Available Tools (for study management)
+- get_tasks(): Get current study topics
+- add_task(name): Add a new study topic
+- complete_task(task_id): Mark topic as mastered
+- delete_task(task_id): Remove a topic
+- add_subtask(parent_task_id, name): Add a sub-topic
+- toggle_subtask(subtask_id): Mark sub-topic complete
+- start_timer(): Start study timer
+- pause_timer(): Pause study timer
+- set_active_task(task_id): Set current study topic`;
 
     // Add trigger-specific context
     if (trigger === 'pomodoro_cycle_complete') {
-      systemPrompt += `\n\nThe user just completed a full Pomodoro cycle (4 sessions). Congratulate them and ask how they're feeling.`;
-    } else if (trigger === 'extended_work_detected') {
-      systemPrompt += `\n\nThe user has been working for over 2 hours. Gently suggest taking a longer break.`;
+      systemPrompt += `\n\nThe student just completed a full study cycle. Congratulate them and suggest reviewing what they've learned or taking a proper break.`;
     } else if (trigger === 'task_completed') {
-      systemPrompt += `\n\nThe user just completed a task${triggerContext?.taskName ? ` called "${triggerContext.taskName}"` : ''}. Celebrate this achievement and ask what's next.`;
+      systemPrompt += `\n\nThe student just completed a study topic${triggerContext?.taskName ? ` called "${triggerContext.taskName}"` : ''}. Celebrate this achievement and suggest what to study next.`;
     } else if (trigger === 'first_interaction') {
-      systemPrompt += `\n\nThis is the user's first interaction with you. Introduce yourself warmly and ask how their day is going.`;
+      systemPrompt += `\n\nThis is the student's first interaction. Welcome them warmly, introduce yourself as their A-Level Maths tutor, and ask what topic they'd like help with today. Mention you cover the full AQA specification.`;
     }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -225,12 +226,12 @@ ABSOLUTE RULES:
         type: "function",
         function: {
           name: "add_task",
-          description: "Add a new task to the user's task list",
+          description: "Add a new study topic to the student's list",
           parameters: {
             type: "object",
             properties: {
-              name: { type: "string", description: "The task name" },
-              estimated_pomodoros: { type: "integer", description: "Estimated number of pomodoros (default: 1)", default: 1 }
+              name: { type: "string", description: "The topic name (e.g., 'Integration by Parts', 'Normal Distribution')" },
+              estimated_pomodoros: { type: "integer", description: "Estimated study sessions needed (default: 1)", default: 1 }
             },
             required: ["name"]
           }
@@ -240,11 +241,11 @@ ABSOLUTE RULES:
         type: "function",
         function: {
           name: "complete_task",
-          description: "Mark a task as completed",
+          description: "Mark a study topic as mastered/completed",
           parameters: {
             type: "object",
             properties: {
-              task_id: { type: "string", description: "The UUID of the task to complete" }
+              task_id: { type: "string", description: "The UUID of the topic to complete" }
             },
             required: ["task_id"]
           }
@@ -254,7 +255,7 @@ ABSOLUTE RULES:
         type: "function",
         function: {
           name: "start_timer",
-          description: "Start the Pomodoro timer",
+          description: "Start the study timer for a focused session",
           parameters: {
             type: "object",
             properties: {}
@@ -265,7 +266,7 @@ ABSOLUTE RULES:
         type: "function",
         function: {
           name: "pause_timer",
-          description: "Pause the Pomodoro timer",
+          description: "Pause the study timer",
           parameters: {
             type: "object",
             properties: {}
@@ -276,11 +277,11 @@ ABSOLUTE RULES:
         type: "function",
         function: {
           name: "set_active_task",
-          description: "Set which task the user is currently working on",
+          description: "Set which topic the student is currently studying",
           parameters: {
             type: "object",
             properties: {
-              task_id: { type: "string", description: "The UUID of the task to set as active, or null to clear" }
+              task_id: { type: "string", description: "The UUID of the topic to focus on" }
             },
             required: ["task_id"]
           }
@@ -290,11 +291,11 @@ ABSOLUTE RULES:
         type: "function",
         function: {
           name: "delete_task",
-          description: "Delete/remove a task from the user's task list",
+          description: "Remove a study topic",
           parameters: {
             type: "object",
             properties: {
-              task_id: { type: "string", description: "The UUID of the task to delete" }
+              task_id: { type: "string", description: "The UUID of the topic to delete" }
             },
             required: ["task_id"]
           }
@@ -304,7 +305,7 @@ ABSOLUTE RULES:
         type: "function",
         function: {
           name: "get_tasks",
-          description: "Get the current task list with sub-tasks. Use this when the user asks about their tasks or wants to know what tasks they have.",
+          description: "Get the current list of study topics",
           parameters: {
             type: "object",
             properties: {}
@@ -315,12 +316,12 @@ ABSOLUTE RULES:
         type: "function",
         function: {
           name: "add_subtask",
-          description: "Add a sub-task to an existing task",
+          description: "Add a sub-topic to a study topic",
           parameters: {
             type: "object",
             properties: {
-              parent_task_id: { type: "string", description: "The UUID of the parent task" },
-              name: { type: "string", description: "The sub-task name" }
+              parent_task_id: { type: "string", description: "The UUID of the parent topic" },
+              name: { type: "string", description: "The sub-topic name" }
             },
             required: ["parent_task_id", "name"]
           }
@@ -330,11 +331,11 @@ ABSOLUTE RULES:
         type: "function",
         function: {
           name: "delete_subtask",
-          description: "Delete/remove a sub-task",
+          description: "Remove a sub-topic",
           parameters: {
             type: "object",
             properties: {
-              subtask_id: { type: "string", description: "The UUID of the sub-task to delete" }
+              subtask_id: { type: "string", description: "The UUID of the sub-topic to delete" }
             },
             required: ["subtask_id"]
           }
@@ -344,11 +345,11 @@ ABSOLUTE RULES:
         type: "function",
         function: {
           name: "toggle_subtask",
-          description: "Toggle a sub-task's completion status (complete/uncomplete)",
+          description: "Toggle a sub-topic's completion status",
           parameters: {
             type: "object",
             properties: {
-              subtask_id: { type: "string", description: "The UUID of the sub-task to toggle" }
+              subtask_id: { type: "string", description: "The UUID of the sub-topic to toggle" }
             },
             required: ["subtask_id"]
           }
@@ -360,7 +361,7 @@ ABSOLUTE RULES:
       if (typeof msg.content === 'string') {
         return {
           ...msg,
-          content: msg.content.replace(/get_active_task/gi, 'active task')
+          content: msg.content.replace(/get_active_task/gi, 'current topic')
         };
       }
       return msg;
@@ -378,7 +379,6 @@ ABSOLUTE RULES:
         messages: [
           { role: 'system', content: systemPrompt },
           ...sanitizedMessages.map((msg: any) => {
-            // Preserve tool_calls and tool information for proper conversation context
             const mappedMsg: any = {
               role: msg.role,
               content: msg.content || ''

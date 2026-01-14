@@ -6,7 +6,7 @@ import { useTimerContext } from './TimerContext';
 import { Task } from '@/types/task';
 import { SubTask } from '@/types/subtask';
 
-export type CoachMode = 'productivity' | 'support' | 'motivation';
+export type CoachMode = 'explain' | 'practice' | 'check';
 
 interface CoachMessage {
   id: string;
@@ -28,8 +28,8 @@ interface CoachContextType {
   unreadCount: number;
   conversationId: string | null;
   currentAction: CoachAction | null;
-  mode: 'productivity' | 'support' | 'motivation';
-  setMode: (mode: 'productivity' | 'support' | 'motivation') => void;
+  mode: CoachMode;
+  setMode: (mode: CoachMode) => void;
   sendMessage: (content: string) => Promise<void>;
   triggerProactiveCoaching: (trigger: string, context?: any) => Promise<void>;
   showCheckIn: () => void;
@@ -60,7 +60,7 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [currentAction, setCurrentAction] = useState<CoachAction | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [subTasks, setSubTasks] = useState<SubTask[]>([]);
-  const [mode, setMode] = useState<'productivity' | 'support' | 'motivation'>('productivity');
+  const [mode, setMode] = useState<CoachMode>('explain');
 
   // Load tasks and sub-tasks
   useEffect(() => {

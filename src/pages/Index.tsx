@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import TaskInput from '@/components/Tasks/TaskInput';
 import TaskList from '@/components/Tasks/TaskList';
 import { Skeleton } from '@/components/ui/skeleton';
-import CoachInterface from '@/components/Coach/CoachInterface';
+import MathsTutorInterface from '@/components/Tutor/MathsTutorInterface';
 import { useCoach } from '@/contexts/CoachContext';
 import bgWork from '@/assets/bg-work.png';
 import bgBreak from '@/assets/bg-break.png';
@@ -235,46 +235,56 @@ const Index = () => {
 
             <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
             
-            <div className="flex gap-6">
-              {/* Timer Section */}
-              <div className="flex flex-col w-1/2">
-                <TimerContainer
-                  activeTask={activeTask}
-                  tasks={tasks}
-                  onRemoveActiveTask={handleRemoveActiveTask}
-                  onCompleteActiveTask={handleCompleteActiveTask}
-                  onDrop={handleDrop}
-                  onDragOver={handleDragOver}
-                  onQuickAddTask={async (name) => {
-                    return await addTask(name, 1);
-                  }}
-                  onSetActiveTask={async (taskId) => {
-                    const task = tasks.find(t => t.id === taskId);
-                    if (task) {
-                      setActiveTask(task);
-                      setActiveTaskId(taskId);
-                      await setTaskActive(taskId);
-                    }
-                  }}
-                />
+          <div className="flex gap-6 min-h-[600px]">
+              {/* Left Column: Timer + Tasks (40%) */}
+              <div className="flex flex-col w-2/5 gap-6">
+                {/* Timer Section */}
+                <div className="flex-shrink-0">
+                  <TimerContainer
+                    activeTask={activeTask}
+                    tasks={tasks}
+                    onRemoveActiveTask={handleRemoveActiveTask}
+                    onCompleteActiveTask={handleCompleteActiveTask}
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onQuickAddTask={async (name) => {
+                      return await addTask(name, 1);
+                    }}
+                    onSetActiveTask={async (taskId) => {
+                      const task = tasks.find(t => t.id === taskId);
+                      if (task) {
+                        setActiveTask(task);
+                        setActiveTaskId(taskId);
+                        await setTaskActive(taskId);
+                      }
+                    }}
+                  />
+                </div>
+              
+                {/* Study Topics Section */}
+                <div className="flex flex-col flex-1 border-t border-border/20 pt-4 overflow-hidden">
+                  <TaskManagerWithDrop
+                    activeTaskId={activeTask?.id ?? null} 
+                    onDropToList={handleDropToList} 
+                    onDragOverList={handleDragOver}
+                    onReorderTasks={handleReorderTasks}
+                    tasks={tasks}
+                    isLoading={isLoading}
+                    addTask={addTask}
+                    toggleComplete={handleToggleCompleteFromList}
+                    editTask={editTask}
+                    deleteTask={deleteTask}
+                    completingTaskId={completingTaskId}
+                  />
+                </div>
               </div>
-            
-              {/* Tasks Section - always visible */}
-              <div className="flex flex-col border-l border-border/20 pl-6 w-1/2">
-                <TaskManagerWithDrop
-                  activeTaskId={activeTask?.id ?? null} 
-                  onDropToList={handleDropToList} 
-                  onDragOverList={handleDragOver}
-                  onReorderTasks={handleReorderTasks}
-                  tasks={tasks}
-                  isLoading={isLoading}
-                  addTask={addTask}
-                  toggleComplete={handleToggleCompleteFromList}
-                  editTask={editTask}
-                  deleteTask={deleteTask}
-                  completingTaskId={completingTaskId}
-                />
-              </div>
+              
+              {/* Right Column: Maths Tutor (60%) */}
+              {user && (
+                <div className="flex flex-col w-3/5 border-l border-border/20 pl-6">
+                  <MathsTutorInterface />
+                </div>
+              )}
             </div>
           </div>
           
@@ -283,7 +293,6 @@ const Index = () => {
       </main>
       
       <MobileNav />
-      {user && <CoachInterface />}
     </div>
   );
 };
@@ -370,7 +379,7 @@ const TaskManagerWithDrop: React.FC<{
     <>
       <div className="flex-1 flex flex-col">
         <div className="pb-3">
-          <h2 className="text-2xl font-bold">Tasks</h2>
+          <h2 className="text-xl font-bold">Study Topics</h2>
         </div>
         <div className="flex-1 flex flex-col overflow-hidden">
           <TaskInput onAddTask={handleAddTask} />
