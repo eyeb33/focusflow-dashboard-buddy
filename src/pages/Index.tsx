@@ -228,17 +228,15 @@ const Index = () => {
       )} />
 
       <main className="flex-1 flex flex-col overflow-hidden relative z-10">
-        <div className={cn(
-          "relative flex flex-col items-center justify-start py-10 px-8"
-        )}>
-          <div className="w-full max-w-[85%] mx-auto bg-white dark:bg-card rounded-3xl shadow-2xl p-8 flex flex-col gap-6 relative">
+        <div className="relative flex flex-col items-center justify-start py-6 px-4 md:px-8 h-full">
+          <div className="w-full max-w-[92%] mx-auto bg-white dark:bg-card rounded-3xl shadow-2xl p-6 flex flex-col relative h-[calc(100vh-80px)]">
 
             <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
             
-          <div className="flex gap-6 min-h-[600px]">
-              {/* Left Column: Timer + Tasks (40%) */}
-              <div className="flex flex-col w-2/5 gap-6">
-                {/* Timer Section */}
+            <div className="flex-1 flex gap-6 mt-4 min-h-0 overflow-hidden">
+              {/* Left Column: Timer + Tasks (40%) - Fixed height with internal scroll */}
+              <div className="flex flex-col w-2/5 gap-4 overflow-hidden">
+                {/* Timer Section - Fixed */}
                 <div className="flex-shrink-0">
                   <TimerContainer
                     activeTask={activeTask}
@@ -261,8 +259,8 @@ const Index = () => {
                   />
                 </div>
               
-                {/* Study Topics Section */}
-                <div className="flex flex-col flex-1 border-t border-border/20 pt-4 overflow-hidden">
+                {/* Study Topics Section - Scrollable */}
+                <div className="flex flex-col flex-1 border-t border-border/20 pt-4 min-h-0 overflow-hidden">
                   <TaskManagerWithDrop
                     activeTaskId={activeTask?.id ?? null} 
                     onDropToList={handleDropToList} 
@@ -279,9 +277,9 @@ const Index = () => {
                 </div>
               </div>
               
-              {/* Right Column: Maths Tutor (60%) */}
+              {/* Right Column: Maths Tutor (60%) - Fixed container with internal scroll */}
               {user && (
-                <div className="flex flex-col w-3/5 border-l border-border/20 pl-6">
+                <div className="flex flex-col w-3/5 border-l border-border/20 pl-6 min-h-0 overflow-hidden">
                   <MathsTutorInterface />
                 </div>
               )}
@@ -376,43 +374,43 @@ const TaskManagerWithDrop: React.FC<{
   };
 
   return (
-    <>
-      <div className="flex-1 flex flex-col">
-        <div className="pb-3">
-          <h2 className="text-xl font-bold">Study Topics</h2>
-        </div>
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <TaskInput onAddTask={handleAddTask} />
-          
-          {isLoading ? (
-            <div className="space-y-3 mt-4">
-              {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="w-full h-16" />
-              ))}
-            </div>
-          ) : (
-            <div className="mt-4 max-h-[60vh] overflow-y-auto">
-              <TaskList 
-                tasks={tasks.filter(t => !t.isActive && !t.completed)} 
-                onDeleteTask={handleDeleteTask}
-                onToggleComplete={handleToggleComplete}
-                onEditTask={handleEditTask}
-                onDropToList={onDropToList}
-                onDragOverList={onDragOverList}
-                onReorderTasks={onReorderTasks}
-                completingTaskId={completingTaskId}
-              />
-            </div>
-          )}
-          
-          {!user && (
-            <div className="text-center py-4 text-muted-foreground">
-              <p>Sign in to save and sync your tasks across devices</p>
-            </div>
-          )}
-        </div>
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+      <div className="pb-3 flex-shrink-0">
+        <h2 className="text-xl font-bold">Study Topics</h2>
       </div>
-    </>
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="flex-shrink-0">
+          <TaskInput onAddTask={handleAddTask} />
+        </div>
+        
+        {isLoading ? (
+          <div className="space-y-3 mt-4">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="w-full h-16" />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 flex-1 overflow-y-auto pr-2">
+            <TaskList 
+              tasks={tasks.filter(t => !t.isActive && !t.completed)} 
+              onDeleteTask={handleDeleteTask}
+              onToggleComplete={handleToggleComplete}
+              onEditTask={handleEditTask}
+              onDropToList={onDropToList}
+              onDragOverList={onDragOverList}
+              onReorderTasks={onReorderTasks}
+              completingTaskId={completingTaskId}
+            />
+          </div>
+        )}
+        
+        {!user && (
+          <div className="text-center py-4 text-muted-foreground flex-shrink-0">
+            <p>Sign in to save and sync your tasks across devices</p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
