@@ -88,25 +88,34 @@ export type Database = {
       coach_conversations: {
         Row: {
           created_at: string
+          exam_board: string | null
           id: string
           last_message_at: string
+          persona: string | null
           started_at: string
+          title: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          exam_board?: string | null
           id?: string
           last_message_at?: string
+          persona?: string | null
           started_at?: string
+          title?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          exam_board?: string | null
           id?: string
           last_message_at?: string
+          persona?: string | null
           started_at?: string
+          title?: string | null
           updated_at?: string
           user_id?: string
         }
