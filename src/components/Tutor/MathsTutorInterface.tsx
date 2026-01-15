@@ -292,6 +292,7 @@ const MathsTutorInterface: React.FC = () => {
               currentSessionId={currentSession?.id || null}
               onSelectSession={switchSession}
               onDeleteSession={deleteSession}
+              onUpdateTitle={updateSessionTitle}
               isLoading={isLoadingSessions}
             />
           </div>
