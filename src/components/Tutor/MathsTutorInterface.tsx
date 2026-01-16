@@ -9,8 +9,34 @@ import { toast } from '@/hooks/use-toast';
 import MathsMessage from './MathsMessage';
 import ChatSessionDrawer from './ChatSessionDrawer';
 import { useChatSessions, ChatMessage } from '@/hooks/useChatSessions';
+import * as taskService from '@/services/taskService';
+import { fetchSubTasks, addSubTask, updateSubTaskCompletion, deleteSubTask } from '@/services/subTaskService';
 
 type TutorMode = 'explain' | 'practice' | 'check';
+
+interface AIMessage {
+  role: 'user' | 'assistant' | 'tool';
+  content: string | null;
+  tool_calls?: ToolCall[];
+  tool_call_id?: string;
+  name?: string;
+}
+
+interface ToolCall {
+  id: string;
+  type: 'function';
+  function: {
+    name: string;
+    arguments: string;
+  };
+}
+
+interface ToolResult {
+  tool_call_id: string;
+  role: 'tool';
+  name: string;
+  content: string;
+}
 
 const MathsTutorInterface: React.FC = () => {
   const { user } = useAuth();
@@ -54,6 +80,137 @@ const MathsTutorInterface: React.FC = () => {
     setShowQuickActions(true);
   };
 
+  // Execute a tool call and return the result
+  const executeToolCall = async (toolCall: ToolCall): Promise<ToolResult> => {
+    const { name, arguments: argsStr } = toolCall.function;
+    let args: any = {};
+    
+    try {
+      args = JSON.parse(argsStr);
+    } catch (e) {
+      console.error('Failed to parse tool arguments:', e);
+    }
+
+    let result: any = { success: false, error: 'Unknown tool' };
+
+    try {
+      switch (name) {
+        case 'add_task': {
+          const task = await taskService.addTask(user?.id, args.name, args.estimated_pomodoros || 1);
+          if (task) {
+            result = { success: true, task_id: task.id, name: task.name, message: `Added topic "${task.name}"` };
+          } else {
+            result = { success: false, error: 'Failed to add task' };
+          }
+          break;
+        }
+        case 'get_tasks': {
+          const tasks = await taskService.fetchTasks(user?.id);
+          result = { 
+            success: true, 
+            tasks: tasks.map(t => ({ 
+              id: t.id, 
+              name: t.name, 
+              completed: t.completed, 
+              is_active: t.isActive,
+              time_spent: t.timeSpent 
+            }))
+          };
+          break;
+        }
+        case 'complete_task': {
+          const success = await taskService.updateTaskCompletion(user?.id, args.task_id, true);
+          result = { success, message: success ? 'Topic marked as complete' : 'Failed to complete task' };
+          break;
+        }
+        case 'delete_task': {
+          const success = await taskService.deleteTask(user?.id, args.task_id);
+          result = { success, message: success ? 'Topic removed' : 'Failed to delete task' };
+          break;
+        }
+        case 'set_active_task': {
+          const success = await taskService.setActiveTask(user?.id, args.task_id);
+          result = { success, message: success ? 'Active topic updated' : 'Failed to set active task' };
+          break;
+        }
+        case 'add_subtask': {
+          const subtask = await addSubTask(user?.id, args.parent_task_id, args.name);
+          if (subtask) {
+            result = { success: true, subtask_id: subtask.id, name: subtask.name, message: `Added sub-topic "${subtask.name}"` };
+          } else {
+            result = { success: false, error: 'Failed to add subtask' };
+          }
+          break;
+        }
+        case 'toggle_subtask': {
+          // First fetch the subtask to get its current state, then toggle
+          const { data: subtask } = await supabase
+            .from('sub_tasks')
+            .select('completed')
+            .eq('id', args.subtask_id)
+            .single();
+          const newState = !(subtask?.completed ?? false);
+          const success = await updateSubTaskCompletion(user?.id, args.subtask_id, newState);
+          result = { success, message: success ? 'Sub-topic toggled' : 'Failed to toggle subtask' };
+          break;
+        }
+        case 'delete_subtask': {
+          const success = await deleteSubTask(user?.id, args.subtask_id);
+          result = { success, message: success ? 'Sub-topic removed' : 'Failed to delete subtask' };
+          break;
+        }
+        case 'start_timer':
+        case 'pause_timer': {
+          // These require dispatching events to the timer context - return success for now
+          // The frontend will need to handle these via a custom event or context
+          window.dispatchEvent(new CustomEvent('ai-timer-action', { detail: { action: name } }));
+          result = { success: true, message: `Timer ${name === 'start_timer' ? 'started' : 'paused'}` };
+          break;
+        }
+        default:
+          result = { success: false, error: `Unknown tool: ${name}` };
+      }
+    } catch (error) {
+      console.error(`Error executing tool ${name}:`, error);
+      result = { success: false, error: error instanceof Error ? error.message : 'Tool execution failed' };
+    }
+
+    return {
+      tool_call_id: toolCall.id,
+      role: 'tool',
+      name,
+      content: JSON.stringify(result)
+    };
+  };
+
+  // Parse streaming response for content and tool calls
+  const parseStreamChunk = (parsed: any, accumulated: { content: string; toolCalls: Map<number, ToolCall> }) => {
+    const delta = parsed.choices?.[0]?.delta;
+    
+    if (delta?.content) {
+      accumulated.content += delta.content;
+    }
+    
+    if (delta?.tool_calls) {
+      for (const tc of delta.tool_calls) {
+        const index = tc.index ?? 0;
+        if (!accumulated.toolCalls.has(index)) {
+          accumulated.toolCalls.set(index, {
+            id: tc.id || '',
+            type: 'function',
+            function: { name: '', arguments: '' }
+          });
+        }
+        const existing = accumulated.toolCalls.get(index)!;
+        if (tc.id) existing.id = tc.id;
+        if (tc.function?.name) existing.function.name = tc.function.name;
+        if (tc.function?.arguments) existing.function.arguments += tc.function.arguments;
+      }
+    }
+    
+    return accumulated;
+  };
+
   const handleSend = async () => {
     if (!inputValue.trim() || isLoading || !user) return;
     
@@ -94,90 +251,143 @@ const MathsTutorInterface: React.FC = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No session found');
 
-      // Call AI edge function
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-coach`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messages: [...messages, tempUserMessage].map(m => ({
-              role: m.role,
-              content: m.content
-            })),
-            mode,
-          }),
+      // Prepare messages for AI, including tool messages from context
+      const conversationMessages: AIMessage[] = [...messages, tempUserMessage].map(m => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content
+      }));
+
+      // Fetch current tasks for context
+      const tasks = await taskService.fetchTasks(user.id);
+      const taskState = { tasks: tasks.map(t => ({ id: t.id, name: t.name, is_active: t.isActive, completed: t.completed })) };
+
+      let finalContent = '';
+      let continueConversation = true;
+      let currentMessages: AIMessage[] = conversationMessages;
+
+      while (continueConversation) {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-coach`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              messages: currentMessages,
+              mode,
+              taskState,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to get response');
         }
-      );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to get response');
-      }
+        // Handle streaming response
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        const accumulated = { content: '', toolCalls: new Map<number, ToolCall>() };
+        let assistantMessageId = `temp-assistant-${Date.now()}`;
 
-      // Handle streaming response
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let assistantContent = '';
-      let assistantMessageId = `temp-assistant-${Date.now()}`;
+        // Add initial assistant message placeholder
+        if (!finalContent) {
+          setMessages(prev => [...prev, {
+            id: assistantMessageId,
+            role: 'assistant',
+            content: '',
+            created_at: new Date().toISOString()
+          }]);
+        }
 
-      // Add initial assistant message
-      setMessages(prev => [...prev, {
-        id: assistantMessageId,
-        role: 'assistant',
-        content: '',
-        created_at: new Date().toISOString()
-      }]);
+        if (reader) {
+          let buffer = '';
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-      if (reader) {
-        let buffer = '';
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
 
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
+            for (const line of lines) {
+              if (!line.trim() || line.startsWith(':')) continue;
+              if (!line.startsWith('data: ')) continue;
 
-          for (const line of lines) {
-            if (!line.trim() || line.startsWith(':')) continue;
-            if (!line.startsWith('data: ')) continue;
+              const jsonStr = line.slice(6).trim();
+              if (jsonStr === '[DONE]') continue;
 
-            const jsonStr = line.slice(6).trim();
-            if (jsonStr === '[DONE]') continue;
-
-            try {
-              const parsed = JSON.parse(jsonStr);
-              const content = parsed.choices?.[0]?.delta?.content;
-              if (content) {
-                assistantContent += content;
-                queueMicrotask(() => {
-                  setMessages(prev => prev.map(m => 
-                    m.id === assistantMessageId 
-                      ? { ...m, content: assistantContent }
-                      : m
-                  ));
-                });
+              try {
+                const parsed = JSON.parse(jsonStr);
+                parseStreamChunk(parsed, accumulated);
+                
+                // Update UI with content as it streams
+                if (accumulated.content) {
+                  finalContent = accumulated.content;
+                  queueMicrotask(() => {
+                    setMessages(prev => prev.map(m => 
+                      m.id === assistantMessageId 
+                        ? { ...m, content: finalContent }
+                        : m
+                    ));
+                  });
+                }
+              } catch (e) {
+                console.error('Parse error:', e);
               }
-            } catch (e) {
-              console.error('Parse error:', e);
             }
           }
         }
+
+        // Check if we have tool calls to execute
+        if (accumulated.toolCalls.size > 0) {
+          console.log('Executing tool calls:', Array.from(accumulated.toolCalls.values()));
+          
+          const toolResults: ToolResult[] = [];
+          for (const toolCall of accumulated.toolCalls.values()) {
+            const result = await executeToolCall(toolCall);
+            toolResults.push(result);
+            console.log('Tool result:', result);
+          }
+
+          // Prepare messages for continuation with tool results
+          const assistantMessage = {
+            role: 'assistant' as const,
+            content: accumulated.content || null,
+            tool_calls: Array.from(accumulated.toolCalls.values())
+          };
+
+          currentMessages = [
+            ...currentMessages,
+            assistantMessage as AIMessage,
+            ...toolResults.map(tr => ({
+              role: 'tool' as const,
+              content: tr.content,
+              tool_call_id: tr.tool_call_id,
+              name: tr.name
+            } as AIMessage))
+          ];
+
+          // Continue the loop to get AI's response after tool execution
+          continueConversation = true;
+        } else {
+          // No tool calls, we're done
+          continueConversation = false;
+        }
       }
 
-      // Save assistant message to DB
-      if (assistantContent) {
+      // Save final assistant message to DB
+      if (finalContent) {
         await supabase
           .from('coach_messages')
           .insert({
             conversation_id: sessionId,
             user_id: user.id,
             role: 'assistant',
-            content: assistantContent,
+            content: finalContent,
           });
 
         // Update session's last_message_at
