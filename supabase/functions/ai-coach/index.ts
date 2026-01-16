@@ -87,7 +87,7 @@ serve(async (req) => {
     // Mode-specific tutoring approaches
     const modePrompts = {
       explain: {
-        intro: `You are an expert A-Level Mathematics tutor specializing in the AQA specification. Your role is to EXPLAIN concepts clearly and help students understand mathematical principles deeply.`,
+        intro: `You are an expert A-Level Mathematics tutor specializing in the Edexcel specification. Your role is to EXPLAIN concepts clearly and help students understand mathematical principles deeply.`,
         style: `Your teaching style in EXPLAIN mode:
 1. Break down complex concepts into simple, digestible steps
 2. Use the Socratic method - ask guiding questions to help students discover answers
@@ -95,23 +95,23 @@ serve(async (req) => {
 4. Provide clear explanations with examples
 5. Connect new concepts to what the student already knows
 6. Use mathematical notation with LaTeX: inline $x^2$ and display $$\\frac{d}{dx}[x^n] = nx^{n-1}$$
-7. Reference relevant AQA specification topics when helpful
+7. Reference relevant Edexcel specification topics when helpful
 8. Be encouraging but maintain academic rigor`
       },
       practice: {
-        intro: `You are an expert A-Level Mathematics tutor specializing in the AQA specification. Your role is to generate PRACTICE problems and guide students through solving them independently.`,
+        intro: `You are an expert A-Level Mathematics tutor specializing in the Edexcel specification. Your role is to generate PRACTICE problems and guide students through solving them independently.`,
         style: `Your teaching style in PRACTICE mode:
-1. Generate appropriate practice problems matching AQA exam style
+1. Generate appropriate practice problems matching Edexcel exam style
 2. Start with the problem, then wait for the student's attempt
 3. Provide hints rather than solutions when students are stuck
-4. Grade difficulty appropriately (state if it's C1/C2/C3/C4 level or equivalent)
+4. Grade difficulty appropriately (state if it's Pure 1/2, Stats 1, Mechanics 1 level)
 5. After they solve it, offer a similar problem for reinforcement
 6. Use proper mathematical notation with LaTeX
 7. Celebrate correct answers and explain any errors kindly
 8. Mix problem types to build comprehensive understanding`
       },
       check: {
-        intro: `You are an expert A-Level Mathematics tutor specializing in the AQA specification. Your role is to CHECK the student's working and help them identify and correct any errors.`,
+        intro: `You are an expert A-Level Mathematics tutor specializing in the Edexcel specification. Your role is to CHECK the student's working and help them identify and correct any errors.`,
         style: `Your teaching style in CHECK mode:
 1. Carefully review all working shown by the student
 2. Identify specific errors and explain WHY they're wrong
@@ -128,9 +128,9 @@ serve(async (req) => {
     
     let systemPrompt = `${currentMode.intro}
 
-## AQA A-Level Maths Curriculum Coverage
+## Edexcel A-Level Maths Curriculum Coverage
 
-You are an expert in ALL areas of the AQA A-Level Mathematics specification:
+You are an expert in ALL areas of the Edexcel A-Level Mathematics specification:
 
 **Pure Mathematics:**
 - Proof (mathematical argument and notation)
@@ -212,7 +212,7 @@ ${currentMode.style}
     } else if (trigger === 'task_completed') {
       systemPrompt += `\n\nThe student just completed a study topic${triggerContext?.taskName ? ` called "${triggerContext.taskName}"` : ''}. Celebrate this achievement and suggest what to study next.`;
     } else if (trigger === 'first_interaction') {
-      systemPrompt += `\n\nThis is the student's first interaction. Welcome them warmly, introduce yourself as their A-Level Maths tutor, and ask what topic they'd like help with today. Mention you cover the full AQA specification.`;
+      systemPrompt += `\n\nThis is the student's first interaction. Welcome them warmly, introduce yourself as their A-Level Maths tutor, and ask what topic they'd like help with today. Mention you cover the full Edexcel specification.`;
     }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
