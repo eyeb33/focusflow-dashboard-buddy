@@ -483,7 +483,7 @@ const MathsTutorInterface: React.FC = () => {
                   )}
                 </div>
               )}
-              <p className="text-xs text-muted-foreground">AQA Specification</p>
+              <p className="text-xs text-muted-foreground">Edexcel Specification</p>
             </div>
           </div>
           
@@ -550,7 +550,7 @@ const MathsTutorInterface: React.FC = () => {
           <div className="text-center text-muted-foreground mt-8 px-4">
             <GraduationCap className="w-16 h-16 mx-auto mb-4 text-primary/50" />
             <h4 className="text-lg font-semibold mb-2">Welcome to your A-Level Maths Tutor!</h4>
-            <p className="mb-4">I'm here to help you master the AQA A-Level Maths curriculum.</p>
+            <p className="mb-4">I'm here to help you master the Edexcel A-Level Maths curriculum.</p>
             <div className="text-sm text-left bg-muted/50 rounded-lg p-4 max-w-md mx-auto">
               <p className="font-medium mb-2">I can help you with:</p>
               <ul className="list-disc list-inside space-y-1">
