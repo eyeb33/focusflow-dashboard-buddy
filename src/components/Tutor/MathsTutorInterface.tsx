@@ -1,13 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Send, GraduationCap, BookOpen, PenTool, CheckCircle, Plus, Pencil, Check, X } from 'lucide-react';
+import { Send, GraduationCap, BookOpen, PenTool, CheckCircle, Plus, Pencil, Check, X, Settings, Key } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import MathsMessage from './MathsMessage';
 import ChatSessionDrawer from './ChatSessionDrawer';
+import SettingsDrawer from '@/components/Settings/SettingsDrawer';
 import { useChatSessions, ChatMessage } from '@/hooks/useChatSessions';
 import * as taskService from '@/services/taskService';
 import { fetchSubTasks, addSubTask, updateSubTaskCompletion, deleteSubTask } from '@/services/subTaskService';
@@ -60,6 +62,8 @@ const MathsTutorInterface: React.FC = () => {
   const [editTitleValue, setEditTitleValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showQuickActions, setShowQuickActions] = useState(true);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -284,8 +288,19 @@ const MathsTutorInterface: React.FC = () => {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
+          
+          // Handle specific error codes
+          if (errorData.code === 'NO_API_KEY' || errorData.code === 'INVALID_API_KEY') {
+            setShowApiKeyPrompt(true);
+            setIsLoading(false);
+            return;
+          }
+          
           throw new Error(errorData.error || 'Failed to get response');
         }
+        
+        // Reset API key prompt if we got a successful response
+        setShowApiKeyPrompt(false);
 
         // Handle streaming response
         const reader = response.body?.getReader();
@@ -492,6 +507,15 @@ const MathsTutorInterface: React.FC = () => {
               variant="ghost"
               size="icon"
               className="h-8 w-8"
+              onClick={() => setShowSettings(true)}
+              title="Settings"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
               onClick={handleNewChat}
               title="New chat"
             >
@@ -507,6 +531,24 @@ const MathsTutorInterface: React.FC = () => {
             />
           </div>
         </div>
+        
+        {/* API Key Prompt */}
+        {showApiKeyPrompt && (
+          <Alert className="mt-3 bg-amber-500/10 border-amber-500/30">
+            <Key className="h-4 w-4 text-amber-500" />
+            <AlertDescription className="text-sm">
+              <span className="font-medium">Gemini API key required.</span>{' '}
+              <Button 
+                variant="link" 
+                className="h-auto p-0 text-primary" 
+                onClick={() => setShowSettings(true)}
+              >
+                Add your free API key in Settings
+              </Button>{' '}
+              to start using the AI tutor.
+            </AlertDescription>
+          </Alert>
+        )}
         
         {/* Mode Selection */}
         <div className="flex gap-2">
@@ -652,6 +694,9 @@ const MathsTutorInterface: React.FC = () => {
           Tip: Use $ for inline maths like $x^2$ and $$ for display equations
         </p>
       </div>
+      
+      {/* Settings Drawer */}
+      <SettingsDrawer open={showSettings} onOpenChange={setShowSettings} />
     </div>
   );
 };

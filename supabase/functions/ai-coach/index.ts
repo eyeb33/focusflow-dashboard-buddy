@@ -39,6 +39,25 @@ serve(async (req) => {
 
     console.log('Maths tutor request from user:', user.id, 'mode:', mode, 'trigger:', trigger);
 
+    // Fetch user's Gemini API key from profile
+    const { data: profileData } = await supabaseClient
+      .from('profiles')
+      .select('gemini_api_key')
+      .eq('user_id', user.id)
+      .single();
+
+    const userGeminiApiKey = profileData?.gemini_api_key;
+    
+    if (!userGeminiApiKey) {
+      return new Response(JSON.stringify({ 
+        error: "No Gemini API key configured. Please add your API key in Settings to use the AI tutor.",
+        code: "NO_API_KEY"
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Gather user context for study tracking
     const last7Days = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const today = new Date().toISOString().split('T')[0];
@@ -215,12 +234,7 @@ ${currentMode.style}
       systemPrompt += `\n\nThis is the student's first interaction. Welcome them warmly, introduce yourself as their A-Level Maths tutor, and ask what topic they'd like help with today. Mention you cover the full Edexcel specification.`;
     }
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
-    }
-
-    // Define available tools for the AI
+    // Define available tools for the AI (OpenAI format for Gemini compatibility)
     const tools = [
       {
         type: "function",
@@ -231,7 +245,7 @@ ${currentMode.style}
             type: "object",
             properties: {
               name: { type: "string", description: "The topic name (e.g., 'Integration by Parts', 'Normal Distribution')" },
-              estimated_pomodoros: { type: "integer", description: "Estimated study sessions needed (default: 1)", default: 1 }
+              estimated_pomodoros: { type: "integer", description: "Estimated study sessions needed (default: 1)" }
             },
             required: ["name"]
           }
@@ -256,10 +270,7 @@ ${currentMode.style}
         function: {
           name: "start_timer",
           description: "Start the study timer for a focused session",
-          parameters: {
-            type: "object",
-            properties: {}
-          }
+          parameters: { type: "object", properties: {} }
         }
       },
       {
@@ -267,10 +278,7 @@ ${currentMode.style}
         function: {
           name: "pause_timer",
           description: "Pause the study timer",
-          parameters: {
-            type: "object",
-            properties: {}
-          }
+          parameters: { type: "object", properties: {} }
         }
       },
       {
@@ -306,10 +314,7 @@ ${currentMode.style}
         function: {
           name: "get_tasks",
           description: "Get the current list of study topics",
-          parameters: {
-            type: "object",
-            properties: {}
-          }
+          parameters: { type: "object", properties: {} }
         }
       },
       {
@@ -357,6 +362,19 @@ ${currentMode.style}
       }
     ];
 
+    // Convert tools to Gemini format
+    const geminiTools = [{
+      functionDeclarations: tools.map(t => ({
+        name: t.function.name,
+        description: t.function.description,
+        parameters: t.function.parameters
+      }))
+    }];
+
+    // Convert messages to Gemini format
+    const geminiContents: any[] = [];
+    
+    // Add system instruction separately
     const sanitizedMessages = (messages || []).map((msg: any) => {
       if (typeof msg.content === 'string') {
         return {
@@ -367,65 +385,153 @@ ${currentMode.style}
       return msg;
     });
 
-    // Call Lovable AI with tools
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...sanitizedMessages.map((msg: any) => {
-            const mappedMsg: any = {
-              role: msg.role,
-              content: msg.content || ''
-            };
-            
-            if (msg.tool_calls) {
-              mappedMsg.tool_calls = msg.tool_calls;
+    for (const msg of sanitizedMessages) {
+      if (msg.role === 'user') {
+        geminiContents.push({
+          role: 'user',
+          parts: [{ text: msg.content || '' }]
+        });
+      } else if (msg.role === 'assistant') {
+        const parts: any[] = [];
+        if (msg.content) {
+          parts.push({ text: msg.content });
+        }
+        if (msg.tool_calls) {
+          for (const tc of msg.tool_calls) {
+            parts.push({
+              functionCall: {
+                name: tc.function.name,
+                args: JSON.parse(tc.function.arguments || '{}')
+              }
+            });
+          }
+        }
+        if (parts.length > 0) {
+          geminiContents.push({ role: 'model', parts });
+        }
+      } else if (msg.role === 'tool') {
+        // Tool results go as user messages with functionResponse
+        geminiContents.push({
+          role: 'user',
+          parts: [{
+            functionResponse: {
+              name: msg.name,
+              response: { result: msg.content }
             }
-            
-            if (msg.tool_call_id) {
-              mappedMsg.tool_call_id = msg.tool_call_id;
-              mappedMsg.name = msg.name;
-            }
-            
-            return mappedMsg;
-          })
-        ],
-        tools,
-        stream: true,
-      }),
-    });
+          }]
+        });
+      }
+    }
 
-    if (!aiResponse.ok) {
-      if (aiResponse.status === 429) {
+    // Call Google Gemini API directly with user's API key
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${userGeminiApiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: geminiContents,
+          tools: geminiTools,
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 4096
+          }
+        })
+      }
+    );
+
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error('Gemini API error:', geminiResponse.status, errorText);
+      
+      if (geminiResponse.status === 429) {
         return new Response(JSON.stringify({ 
-          error: "I'm getting a lot of requests right now. Let's try again in a moment." 
+          error: "Rate limit exceeded on your Gemini API key. Please wait a moment and try again." 
         }), {
           status: 429,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      if (aiResponse.status === 402) {
+      if (geminiResponse.status === 400 && errorText.includes('API_KEY_INVALID')) {
         return new Response(JSON.stringify({ 
-          error: "AI service credits depleted. Please add funds to your workspace." 
+          error: "Your Gemini API key is invalid. Please update it in Settings.",
+          code: "INVALID_API_KEY"
         }), {
-          status: 402,
+          status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
       
-      const errorText = await aiResponse.text();
-      console.error('AI gateway error:', aiResponse.status, errorText);
-      throw new Error('AI gateway error');
+      throw new Error(`Gemini API error: ${geminiResponse.status}`);
     }
 
-    // Stream the response
-    return new Response(aiResponse.body, {
+    // Transform Gemini SSE stream to OpenAI-compatible format
+    const transformStream = new TransformStream({
+      transform(chunk, controller) {
+        const text = new TextDecoder().decode(chunk);
+        const lines = text.split('\n');
+        
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const jsonStr = line.slice(6).trim();
+          if (!jsonStr || jsonStr === '[DONE]') continue;
+          
+          try {
+            const geminiData = JSON.parse(jsonStr);
+            const candidate = geminiData.candidates?.[0];
+            if (!candidate) continue;
+            
+            const parts = candidate.content?.parts || [];
+            
+            for (const part of parts) {
+              if (part.text) {
+                // Convert to OpenAI format
+                const openaiChunk = {
+                  choices: [{
+                    delta: { content: part.text },
+                    index: 0
+                  }]
+                };
+                controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(openaiChunk)}\n\n`));
+              }
+              
+              if (part.functionCall) {
+                // Convert function call to OpenAI format
+                const openaiChunk = {
+                  choices: [{
+                    delta: {
+                      tool_calls: [{
+                        id: `call_${Date.now()}`,
+                        type: 'function',
+                        function: {
+                          name: part.functionCall.name,
+                          arguments: JSON.stringify(part.functionCall.args || {})
+                        }
+                      }]
+                    },
+                    index: 0
+                  }]
+                };
+                controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(openaiChunk)}\n\n`));
+              }
+            }
+            
+            // Check for finish reason
+            if (candidate.finishReason) {
+              controller.enqueue(new TextEncoder().encode(`data: [DONE]\n\n`));
+            }
+          } catch (e) {
+            // Skip malformed JSON
+            console.log('Skipping malformed chunk:', jsonStr.slice(0, 100));
+          }
+        }
+      }
+    });
+
+    const transformedStream = geminiResponse.body?.pipeThrough(transformStream);
+
+    return new Response(transformedStream, {
       headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
     });
 
