@@ -21,10 +21,10 @@ const CoachMessage: React.FC<CoachMessageProps> = ({ message }) => {
     )}>
       <div className={cn(
         "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
-        isUser ? "bg-secondary" : "bg-primary"
+        isUser ? "bg-muted" : "bg-primary"
       )}>
         {isUser ? (
-          <User className="w-4 h-4 text-secondary-foreground" />
+          <User className="w-4 h-4 text-muted-foreground" />
         ) : (
           <Heart className="w-4 h-4 text-primary-foreground" />
         )}
@@ -33,8 +33,8 @@ const CoachMessage: React.FC<CoachMessageProps> = ({ message }) => {
       <div className={cn(
         "rounded-lg p-3 max-w-[80%]",
         isUser 
-          ? "bg-secondary text-secondary-foreground" 
-          : "bg-muted text-foreground"
+          ? "bg-muted text-foreground" 
+          : "bg-primary/10 text-foreground"
       )}>
         <p className="text-sm whitespace-pre-wrap">{message.content}</p>
         <span className="text-xs opacity-50 mt-1 block">
