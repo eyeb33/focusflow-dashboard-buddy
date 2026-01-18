@@ -5,12 +5,12 @@
  
 @layer base {
   :root {
-    /* Base - Warm cream instead of harsh white */
-    --background: 30 20% 98%;           /* Soft cream */
+    /* Base - Pure white background */
+    --background: 0 0% 100%;            /* Pure white */
     --foreground: 240 10% 20%;          /* Soft charcoal, not pure black */
     
-    /* Muted tones - subtle grays with warmth */
-    --muted: 30 15% 94%;
+    /* Muted tones - subtle grays */
+    --muted: 210 20% 96%;
     --muted-foreground: 240 6% 45%;
     
     /* Cards - elevated surfaces */
@@ -21,25 +21,25 @@
     --popover-foreground: 240 10% 20%;
     
     /* Borders - barely visible */
-    --border: 240 10% 88%;
-    --input: 240 10% 90%;
+    --border: 210 20% 88%;
+    --input: 210 20% 90%;
     
-    /* Primary - sophisticated purple-gray */
-    --primary: 250 40% 62%;             /* Soft purple */
+    /* Primary - Summit dark blue #2b3e92 */
+    --primary: 227 55% 37%;             /* Dark blue #2b3e92 */
     --primary-foreground: 0 0% 100%;
     
-    /* Secondary - warm neutral */
-    --secondary: 30 15% 92%;
-    --secondary-foreground: 240 10% 20%;
+    /* Secondary - Summit light blue #0480bf */
+    --secondary: 199 98% 38%;           /* Light blue #0480bf */
+    --secondary-foreground: 0 0% 100%;
     
-    /* Accent - subtle highlight */
-    --accent: 250 50% 96%;
-    --accent-foreground: 250 40% 62%;
+    /* Accent - light blue tint */
+    --accent: 199 70% 95%;
+    --accent-foreground: 227 55% 37%;
     
     --destructive: 0 70% 60%;
     --destructive-foreground: 0 0% 100%;
     
-    --ring: 250 40% 62%;
+    --ring: 227 55% 37%;
     
     --radius: 0.75rem;                  /* Slightly larger radius for premium feel */
 
@@ -50,8 +50,8 @@
     --timer-break-bg: 99 19% 48%;       /* Green #738f66 */
     --timer-break-accent: 99 19% 42%;   /* Darker green */
     
-    --timer-longbreak-bg: 179 53% 62%;  /* Blue #70cccb */
-    --timer-longbreak-accent: 179 53% 52%; /* Darker blue */
+    --timer-longbreak-bg: 163 24% 68%;  /* Blue #a4c2b6 */
+    --timer-longbreak-accent: 163 24% 58%; /* Darker blue */
   }
  
   .dark {
@@ -91,8 +91,8 @@
     --timer-break-bg: 140 45% 50%;      /* Forest green */
     --timer-break-accent: 140 60% 55%;  /* Bright green */
     
-    --timer-longbreak-bg: 179 53% 62%;  /* Blue #70cccb */
-    --timer-longbreak-accent: 179 53% 52%; /* Darker blue */
+    --timer-longbreak-bg: 163 24% 68%;  /* Blue #a4c2b6 */
+    --timer-longbreak-accent: 163 24% 58%; /* Darker blue */
   }
 
   /* Breathing animation for calm effect */
