@@ -17,8 +17,8 @@ const ThemeToggle = () => {
       <Switch 
         checked={theme === "dark"}
         onCheckedChange={toggleTheme}
-        className="data-[state=checked]:bg-purple-600 data-[state=unchecked]:bg-purple-300 
-                   dark:data-[state=checked]:bg-purple-400 dark:data-[state=unchecked]:bg-purple-700"
+        className="data-[state=checked]:bg-secondary data-[state=unchecked]:bg-secondary/70 
+                   dark:data-[state=checked]:bg-secondary dark:data-[state=unchecked]:bg-secondary/50"
       />
       <Moon className="h-[1.2rem] w-[1.2rem] text-indigo-500 dark:text-indigo-300" />
     </div>
