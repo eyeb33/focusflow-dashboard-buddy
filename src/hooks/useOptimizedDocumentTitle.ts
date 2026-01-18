@@ -35,7 +35,7 @@ export const useOptimizedDocumentTitle = ({
     
     const newTitle = (isRunning || timeRemaining > 0)
       ? `${circle} ${formattedTime}`
-      : 'FocusFlow';
+      : 'Summit';
     
     if (document.title !== newTitle) {
       document.title = newTitle;

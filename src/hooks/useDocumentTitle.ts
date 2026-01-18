@@ -36,7 +36,7 @@ export const useDocumentTitle = ({
       }
     };
 
-    const baseTitle = 'FocusFlow';
+    const baseTitle = 'Summit';
     const circle = getCircleColor();
     
     // Format time for display

@@ -1,12 +1,12 @@
 
 import React from 'react';
-import logo from '@/assets/logo.png';
+import summitLogo from '@/assets/summit-logo.png';
 
 const AuthHeader = () => {
   return (
     <div className="mb-8">
       <div className="flex items-center justify-center">
-        <img src={logo} alt="TimeBubble" className="h-32 w-auto" />
+        <img src={summitLogo} alt="Summit" className="h-32 w-auto" />
       </div>
     </div>
   );
