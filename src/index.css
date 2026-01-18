@@ -24,22 +24,22 @@
     --border: 210 20% 88%;
     --input: 210 20% 90%;
     
-    /* Primary - Summit dark blue #2b3e92 */
-    --primary: 227 55% 37%;             /* Dark blue #2b3e92 */
+    /* Primary - Summit blue #08579c for tabs/buttons */
+    --primary: 207 93% 32%;             /* Blue #08579c */
     --primary-foreground: 0 0% 100%;
     
-    /* Secondary - Summit light blue #0480bf */
-    --secondary: 199 98% 38%;           /* Light blue #0480bf */
+    /* Secondary - Interactive blue #049db1 for toggles/chat */
+    --secondary: 186 96% 36%;           /* Teal blue #049db1 */
     --secondary-foreground: 0 0% 100%;
     
     /* Accent - light blue tint */
-    --accent: 199 70% 95%;
-    --accent-foreground: 227 55% 37%;
+    --accent: 186 70% 95%;
+    --accent-foreground: 207 93% 32%;
     
     --destructive: 0 70% 60%;
     --destructive-foreground: 0 0% 100%;
     
-    --ring: 227 55% 37%;
+    --ring: 207 93% 32%;
     
     --radius: 0.75rem;                  /* Slightly larger radius for premium feel */
 
