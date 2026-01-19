@@ -135,6 +135,57 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
         )}
       </div>
 
+      {/* Control buttons - vertical, right of timer */}
+      {showControls && (
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col items-center gap-3 -mr-2">
+          <button 
+            onClick={handleResetClick}
+            className={cn(
+              "w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200",
+              "hover:scale-110 active:scale-95",
+              theme === "dark" 
+                ? "bg-white/10 hover:bg-white/20 text-white/70" 
+                : "bg-black/5 hover:bg-black/10 text-gray-500"
+            )}
+            aria-label="Reset timer"
+            type="button"
+            data-testid="reset-button"
+          >
+            <RotateCcw className="h-6 w-6" />
+          </button>
+          
+          <button 
+            onClick={handlePlayPauseClick}
+            className={cn(
+              "w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200",
+              "hover:scale-110 active:scale-95",
+              theme === "dark" 
+                ? "bg-white/10 hover:bg-white/20" 
+                : "bg-black/5 hover:bg-black/10"
+            )}
+            style={{ color: colors.solid }}
+            aria-label={isRunning ? "Pause timer" : "Start timer"}
+            type="button"
+            data-testid={isRunning ? "pause-button" : "play-button"}
+          >
+            {isRunning ? (
+              <Pause className="h-6 w-6" fill="currentColor" />
+            ) : (
+              <svg 
+                className="h-6 w-6 ml-0.5" 
+                viewBox="0 0 24 24" 
+                fill="currentColor"
+                stroke="currentColor"
+                strokeWidth="0.5"
+                strokeLinejoin="round"
+              >
+                <path d="M6 4.5 L6 19.5 L20 12 Z" rx="2" ry="2" />
+              </svg>
+            )}
+          </button>
+        </div>
+      )}
+
       {/* Mood Character above timer */}
       <TimerMoodCharacter 
         mode={mode} 
@@ -231,7 +282,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
         </svg>
       </div>
       
-      {/* Time display and compact controls */}
+      {/* Time display */}
       <div className="absolute flex flex-col items-center z-20">
         <div className={cn(
           "flex items-baseline justify-center",
@@ -244,48 +295,6 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
             :{seconds.toString().padStart(2, '0')}
           </span>
         </div>
-        
-        {/* Compact controls inside the circle */}
-        {showControls && (
-          <div className="flex items-center gap-4 mt-1">
-            <button 
-              onClick={handleResetClick}
-              className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200",
-                "hover:scale-110 active:scale-95",
-                theme === "dark" 
-                  ? "bg-white/10 hover:bg-white/20 text-white/70" 
-                  : "bg-black/5 hover:bg-black/10 text-gray-500"
-              )}
-              aria-label="Reset timer"
-              type="button"
-              data-testid="reset-button"
-            >
-              <RotateCcw className="h-4 w-4" />
-            </button>
-            
-            <button 
-              onClick={handlePlayPauseClick}
-              className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200",
-                "hover:scale-110 active:scale-95",
-                theme === "dark" 
-                  ? "bg-white/10 hover:bg-white/20" 
-                  : "bg-black/5 hover:bg-black/10"
-              )}
-              style={{ color: colors.solid }}
-              aria-label={isRunning ? "Pause timer" : "Start timer"}
-              type="button"
-              data-testid={isRunning ? "pause-button" : "play-button"}
-            >
-              {isRunning ? (
-                <Pause className="h-4 w-4" fill="currentColor" />
-              ) : (
-                <Play className="h-4 w-4 ml-0.5" fill="currentColor" />
-              )}
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
