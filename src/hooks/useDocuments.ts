@@ -20,6 +20,11 @@ export interface Document {
   processed_at: string | null;
 }
 
+const sortByMostRecentFirst = (docs: Document[]) =>
+  [...docs].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+
 export const useDocuments = () => {
   const { user } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -28,7 +33,7 @@ export const useDocuments = () => {
 
   const fetchDocuments = useCallback(async () => {
     if (!user) return;
-    
+
     try {
       const { data, error } = await supabase
         .from('documents')
@@ -37,7 +42,7 @@ export const useDocuments = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setDocuments((data as Document[]) || []);
+      setDocuments(((data as Document[]) || []).slice());
     } catch (error) {
       console.error('Error fetching documents:', error);
       toast.error('Failed to load documents');
@@ -66,13 +71,19 @@ export const useDocuments = () => {
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            setDocuments(prev => [payload.new as Document, ...prev]);
+            setDocuments((prev) => sortByMostRecentFirst([payload.new as Document, ...prev]));
           } else if (payload.eventType === 'UPDATE') {
-            setDocuments(prev => 
-              prev.map(doc => doc.id === payload.new.id ? payload.new as Document : doc)
+            setDocuments((prev) =>
+              sortByMostRecentFirst(
+                prev.map((doc) =>
+                  doc.id === (payload.new as any).id ? (payload.new as Document) : doc
+                )
+              )
             );
           } else if (payload.eventType === 'DELETE') {
-            setDocuments(prev => prev.filter(doc => doc.id !== payload.old.id));
+            setDocuments((prev) =>
+              sortByMostRecentFirst(prev.filter((doc) => doc.id !== (payload.old as any).id))
+            );
           }
         }
       )
@@ -175,8 +186,8 @@ export const useDocuments = () => {
 
   const deleteDocument = async (documentId: string) => {
     try {
-      const document = documents.find(d => d.id === documentId);
-      
+      const document = documents.find((d) => d.id === documentId);
+
       if (document) {
         // Delete file from storage
         await supabase.storage
@@ -185,10 +196,7 @@ export const useDocuments = () => {
       }
 
       // Delete document record (chunks will cascade)
-      const { error } = await supabase
-        .from('documents')
-        .delete()
-        .eq('id', documentId);
+      const { error } = await supabase.from('documents').delete().eq('id', documentId);
 
       if (error) throw error;
 
@@ -200,32 +208,46 @@ export const useDocuments = () => {
   };
 
   const updateDocumentTitle = async (documentId: string, newTitle: string) => {
+    if (!user) {
+      toast.error('You must be logged in');
+      return false;
+    }
+
     if (!newTitle.trim()) {
       toast.error('Title cannot be empty');
       return false;
     }
 
     const trimmedTitle = newTitle.trim();
-    
+
     // Optimistically update local state
-    setDocuments(prev => 
-      prev.map(doc => doc.id === documentId ? { ...doc, title: trimmedTitle } : doc)
+    setDocuments((prev) =>
+      prev.map((doc) => (doc.id === documentId ? { ...doc, title: trimmedTitle } : doc))
     );
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('documents')
         .update({ title: trimmedTitle })
-        .eq('id', documentId);
+        // extra safety with RLS + ensures we only ever update our own row
+        .eq('id', documentId)
+        .eq('user_id', user.id)
+        .select('*')
+        .single();
 
       if (error) throw error;
+
+      // Ensure local state matches the persisted row (and stays sorted)
+      setDocuments((prev) =>
+        sortByMostRecentFirst(prev.map((doc) => (doc.id === documentId ? (data as Document) : doc)))
+      );
 
       toast.success('Title updated');
       return true;
     } catch (error) {
       console.error('Error updating document title:', error);
       toast.error('Failed to update title');
-      // Revert on error
+      // Re-sync from server so navigating away/back never "loses" edits
       await fetchDocuments();
       return false;
     }
