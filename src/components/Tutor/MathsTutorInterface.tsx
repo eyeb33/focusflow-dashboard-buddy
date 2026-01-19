@@ -74,6 +74,9 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
   const [showQuickActions, setShowQuickActions] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
 
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [nowTs, setNowTs] = useState(() => Date.now());
+
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // Expose openTaskSession and linkedTaskIds via ref for parent components
@@ -97,6 +100,25 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       scrollToBottom();
     });
   }, [messages]);
+
+  useEffect(() => {
+    if (!cooldownUntil) return;
+
+    const t = window.setInterval(() => setNowTs(Date.now()), 250);
+    return () => window.clearInterval(t);
+  }, [cooldownUntil]);
+
+  const cooldownSecondsRemaining = cooldownUntil
+    ? Math.max(0, Math.ceil((cooldownUntil - nowTs) / 1000))
+    : 0;
+
+  const isRateLimited = cooldownUntil !== null && cooldownSecondsRemaining > 0;
+
+  useEffect(() => {
+    if (cooldownUntil && cooldownSecondsRemaining === 0) {
+      setCooldownUntil(null);
+    }
+  }, [cooldownUntil, cooldownSecondsRemaining]);
 
   useEffect(() => {
     if (currentSession) {
@@ -242,11 +264,26 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
 
   const handleSend = async () => {
     if (!inputValue.trim() || isLoading || !user) return;
-    
+    if (isRateLimited) {
+      toast({
+        title: 'Rate limit exceeded',
+        description: `Please wait ${cooldownSecondsRemaining}s before trying again.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const messageContent = inputValue.trim();
     setInputValue('');
     setShowQuickActions(false);
     setIsLoading(true);
+
+    // Unlock background AI only after the user explicitly sends their first tutor message
+    try {
+      localStorage.setItem('syllabuddy_ai_enabled', 'true');
+    } catch {
+      // ignore
+    }
 
     try {
       // Ensure we have a session
@@ -313,14 +350,27 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          
+
           // Handle specific error codes - directly open settings for API key issues
           if (errorData.code === 'NO_API_KEY' || errorData.code === 'INVALID_API_KEY') {
             setShowSettings(true); // Directly open settings drawer
             setIsLoading(false);
             return;
           }
-          
+
+          // Rate limit handling (Gemini free tier)
+          if (response.status === 429 || errorData.code === 'RATE_LIMIT') {
+            setCooldownUntil(Date.now() + 60_000);
+            toast({
+              title: 'Rate limit exceeded',
+              description:
+                'Rate limit exceeded. Gemini free tier allows 15 requests/minute and 1,500/day. Please wait a moment and try again.',
+              variant: 'destructive',
+            });
+            setIsLoading(false);
+            return;
+          }
+
           throw new Error(errorData.error || 'Failed to get response');
         }
 
@@ -685,18 +735,23 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
 
       {/* Input - Fixed at bottom */}
       <div className="flex-shrink-0 p-4 border-t border-border bg-background/80">
+        {isRateLimited && (
+          <div className="mb-3 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+            Rate limit exceeded. Try again in <span className="font-medium text-foreground">{cooldownSecondsRemaining}s</span>.
+          </div>
+        )}
         <div className="flex gap-3">
           <Input
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Ask a question or paste a problem..."
-            disabled={isLoading}
+            disabled={isLoading || isRateLimited}
             className="flex-1 h-12 text-base"
           />
           <Button
             onClick={handleSend}
-            disabled={!inputValue.trim() || isLoading}
+            disabled={!inputValue.trim() || isLoading || isRateLimited}
             size="icon"
             className="h-12 w-12"
           >
