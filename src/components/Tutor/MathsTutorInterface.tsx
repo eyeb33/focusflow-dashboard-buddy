@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import MathsMessage from './MathsMessage';
+import MathsMessage, { RAGSource } from './MathsMessage';
 import ChatSessionDrawer from './ChatSessionDrawer';
 import SettingsDrawer from '@/components/Settings/SettingsDrawer';
 import ApiStatsDrawer from './ApiStatsDrawer';
@@ -434,7 +434,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       // Handle streaming response (single request)
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
-      const accumulated = { content: '', toolCalls: new Map<number, ToolCall>() };
+      const accumulated = { content: '', toolCalls: new Map<number, ToolCall>(), ragSources: [] as RAGSource[] };
       const assistantMessageId = `temp-assistant-${Date.now()}`;
 
       // Add initial assistant message placeholder
@@ -445,6 +445,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
           role: 'assistant',
           content: '',
           created_at: new Date().toISOString(),
+          sources: [],
         },
       ]);
 
@@ -467,6 +468,19 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
 
             try {
               const parsed = JSON.parse(jsonStr);
+              
+              // Check for RAG sources event
+              if (parsed.type === 'rag_sources' && parsed.sources) {
+                accumulated.ragSources = parsed.sources;
+                // Update message with sources
+                queueMicrotask(() => {
+                  setMessages((prev) =>
+                    prev.map((m) => (m.id === assistantMessageId ? { ...m, sources: parsed.sources } : m))
+                  );
+                });
+                continue;
+              }
+              
               parseStreamChunk(parsed, accumulated);
 
               // Update UI with content as it streams

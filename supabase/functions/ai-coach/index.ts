@@ -7,6 +7,47 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// RAG: Create embedding using OpenAI
+async function createEmbedding(text: string, openaiKey: string): Promise<number[] | null> {
+  try {
+    const response = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'text-embedding-3-small',
+        input: text,
+      }),
+    });
+    
+    if (!response.ok) {
+      console.warn('[ai-coach] OpenAI embedding error:', await response.text());
+      return null;
+    }
+    
+    const data = await response.json();
+    return data.data[0].embedding;
+  } catch (error) {
+    console.warn('[ai-coach] Error creating embedding:', error);
+    return null;
+  }
+}
+
+interface RAGSource {
+  id: string;
+  content: string;
+  metadata: {
+    topic?: string;
+    subtopic?: string;
+    page_number?: number;
+    document_title?: string;
+    content_type?: string;
+  };
+  similarity: number;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -86,6 +127,65 @@ serve(async (req) => {
     // Gather user context for study tracking
     const last7Days = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const today = new Date().toISOString().split('T')[0];
+
+    // Get OpenAI API key for RAG embeddings
+    const openaiKey = Deno.env.get('OPENAI_API_KEY');
+    
+    // RAG: Search for relevant curriculum content if we have a user message
+    let ragSources: RAGSource[] = [];
+    let ragContext = '';
+    
+    if (lastUserMessage && openaiKey) {
+      console.log('[ai-coach] Performing RAG search for query:', lastUserMessage.slice(0, 100));
+      
+      try {
+        const queryEmbedding = await createEmbedding(lastUserMessage, openaiKey);
+        
+        if (queryEmbedding) {
+          // Use admin client for RAG search to bypass RLS for document access
+          const supabaseAdmin = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+          );
+          
+          const { data: matches, error: searchError } = await supabaseAdmin
+            .rpc('match_documents', {
+              query_embedding: queryEmbedding,
+              match_threshold: 0.5,
+              match_count: 5,
+            });
+          
+          if (!searchError && matches && matches.length > 0) {
+            ragSources = matches.map((m: any) => ({
+              id: m.id,
+              content: m.content,
+              metadata: m.metadata || {},
+              similarity: m.similarity,
+            }));
+            
+            console.log(`[ai-coach] Found ${ragSources.length} relevant curriculum sections`);
+            
+            // Build context from sources
+            ragContext = `\n\n## 📚 CURRICULUM REFERENCE (from official Edexcel specification)
+
+The following sections from the curriculum specification are relevant to this question. Use them to ground your response and cite them when appropriate:
+
+${ragSources.map((source, i) => {
+  const meta = source.metadata;
+  const citation = meta.topic ? `[${meta.topic}${meta.page_number ? `, p.${meta.page_number}` : ''}]` : `[Source ${i + 1}]`;
+  return `### ${citation}
+${source.content}
+`;
+}).join('\n')}
+
+**IMPORTANT**: When your answer uses information from these curriculum sections, include a citation like "According to the specification..." or "The Edexcel curriculum states..." to help students connect to official materials.`;
+          }
+        }
+      } catch (ragError) {
+        console.warn('[ai-coach] RAG search failed (non-fatal):', ragError);
+        // Continue without RAG - it's an enhancement, not a requirement
+      }
+    }
 
     const [sessionsResult, tasksResult, streakResult] = await Promise.all([
       supabaseClient
@@ -257,6 +357,11 @@ ${currentMode.style}
       systemPrompt += `\n\nThe student just completed a study topic${triggerContext?.taskName ? ` called "${triggerContext.taskName}"` : ''}. Celebrate this achievement and suggest what to study next.`;
     } else if (trigger === 'first_interaction') {
       systemPrompt += `\n\nThis is the student's first interaction. Welcome them warmly, introduce yourself as their A-Level Maths tutor, and ask what topic they'd like help with today. Mention you cover the full Edexcel specification.`;
+    }
+
+    // Add RAG context from curriculum documents
+    if (ragContext) {
+      systemPrompt += ragContext;
     }
 
     // Define available tools for the AI (OpenAI format for Gemini compatibility)
@@ -524,7 +629,8 @@ ${currentMode.style}
       throw new Error(`Gemini API error: ${geminiResponse.status}`);
     }
 
-    // Transform Gemini SSE stream to OpenAI-compatible format
+    // Transform Gemini SSE stream to OpenAI-compatible format with RAG sources
+    let sourcesSent = false;
     const transformStream = new TransformStream({
       transform(chunk, controller) {
         const text = new TextDecoder().decode(chunk);
@@ -575,8 +681,26 @@ ${currentMode.style}
               }
             }
             
-            // Check for finish reason
-            if (candidate.finishReason) {
+            // Check for finish reason - send sources before [DONE]
+            if (candidate.finishReason && !sourcesSent) {
+              sourcesSent = true;
+              
+              // Send RAG sources as a custom event if we have any
+              if (ragSources.length > 0) {
+                const sourcesEvent = {
+                  type: 'rag_sources',
+                  sources: ragSources.map(s => ({
+                    id: s.id,
+                    topic: s.metadata.topic,
+                    page_number: s.metadata.page_number,
+                    document_title: s.metadata.document_title,
+                    content_preview: s.content.slice(0, 150) + (s.content.length > 150 ? '...' : ''),
+                    similarity: Math.round(s.similarity * 100),
+                  }))
+                };
+                controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(sourcesEvent)}\n\n`));
+              }
+              
               controller.enqueue(new TextEncoder().encode(`data: [DONE]\n\n`));
             }
           } catch (e) {

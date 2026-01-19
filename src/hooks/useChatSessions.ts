@@ -20,6 +20,14 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   created_at: string;
+  sources?: Array<{
+    id: string;
+    topic?: string;
+    page_number?: number;
+    document_title?: string;
+    content_preview: string;
+    similarity: number;
+  }>;
 }
 
 export const useChatSessions = () => {
