@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Trash, Edit, Check, Square, ChevronDown, ChevronRight } from "lucide-react";
+import { Trash, Edit, Check, Square, ChevronDown, ChevronRight, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Task } from '@/types/task';
@@ -18,6 +18,7 @@ interface TaskItemProps {
   isCompleting?: boolean;
   allTasks?: Task[];
   onTaskClick?: (taskId: string, taskName: string) => void;
+  hasLinkedSession?: boolean;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({ 
@@ -30,7 +31,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   isDragging,
   isCompleting,
   allTasks = [],
-  onTaskClick
+  onTaskClick,
+  hasLinkedSession = false
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const { 
@@ -82,12 +84,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
     ) {
       return;
     }
-    // If onTaskClick is provided, trigger it and open the chat session
+    // Toggle expand/collapse on card click (not open chat)
+    setIsExpanded(!isExpanded);
+  };
+
+  const handleOpenChat = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (onTaskClick) {
       onTaskClick(task.id, task.name);
-    } else {
-      // Fallback to expand/collapse behavior
-      setIsExpanded(!isExpanded);
     }
   };
 
@@ -154,6 +158,33 @@ const TaskItem: React.FC<TaskItemProps> = ({
         
         <div className="flex items-center gap-2">
           <div className="flex items-center text-sm text-muted-foreground mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            {/* Chat icon - filled if session exists, outlined if not */}
+            {onTaskClick && (
+              hasLinkedSession ? (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-7 w-7 p-0"
+                  onClick={handleOpenChat}
+                  title="Open chat session"
+                >
+                  <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                    <GraduationCap className="h-3 w-3 text-primary-foreground" />
+                  </div>
+                </Button>
+              ) : (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-7 w-7" 
+                  onClick={handleOpenChat}
+                  title="Start chat session"
+                >
+                  <GraduationCap className="h-3.5 w-3.5" />
+                </Button>
+              )
+            )}
+            
             <Button 
               variant="ghost" 
               size="icon" 

@@ -42,6 +42,7 @@ interface ToolResult {
 
 export interface MathsTutorInterfaceRef {
   openTaskSession: (taskId: string, taskName: string) => Promise<void>;
+  linkedTaskIds: Set<string>;
 }
 
 interface MathsTutorInterfaceProps {
@@ -62,6 +63,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     updateSessionTitle,
     deleteSession,
     openTaskSession,
+    linkedTaskIds,
   } = useChatSessions();
 
   const [inputValue, setInputValue] = useState('');
@@ -76,12 +78,13 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  // Expose openTaskSession via ref for parent components
+  // Expose openTaskSession and linkedTaskIds via ref for parent components
   useImperativeHandle(ref, () => ({
     openTaskSession: async (taskId: string, taskName: string) => {
       await openTaskSession(taskId, taskName);
-    }
-  }), [openTaskSession]);
+    },
+    linkedTaskIds
+  }), [openTaskSession, linkedTaskIds]);
 
   const scrollToBottom = () => {
     // Use container scroll instead of scrollIntoView to prevent page scroll

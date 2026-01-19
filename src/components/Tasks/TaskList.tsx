@@ -13,6 +13,7 @@ interface TaskListProps {
   onReorderTasks?: (newOrderedTasks: Task[]) => void;
   completingTaskId?: string | null;
   onTaskClick?: (taskId: string, taskName: string) => void;
+  linkedTaskIds?: Set<string>;
 }
 
 const TaskList: React.FC<TaskListProps> = ({ 
@@ -24,7 +25,8 @@ const TaskList: React.FC<TaskListProps> = ({
   onDragOverList,
   onReorderTasks,
   completingTaskId,
-  onTaskClick
+  onTaskClick,
+  linkedTaskIds = new Set()
 }) => {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
@@ -183,6 +185,7 @@ const TaskList: React.FC<TaskListProps> = ({
             isCompleting={completingTaskId === task.id}
             allTasks={tasks}
             onTaskClick={onTaskClick}
+            hasLinkedSession={linkedTaskIds.has(task.id)}
           />
         </div>
       ))}
