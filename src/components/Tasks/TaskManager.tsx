@@ -85,29 +85,41 @@ const TaskManager: React.FC = () => {
 
   return (
     <>
-      <div className="flex-1 flex flex-col">
-        <div className="pb-3">
-          <h2 className="text-2xl font-display font-semibold tracking-tight">Tasks</h2>
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="pb-3 flex-shrink-0">
+          <h2 className="text-2xl font-display font-semibold tracking-tight">Study Topics</h2>
         </div>
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <TaskInput onAddTask={handleAddTask} />
-          
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {isLoading ? (
-            <div className="space-y-3 mt-4">
+            <div className="space-y-3 flex-1">
               {[...Array(3)].map((_, i) => (
                 <Skeleton key={i} className="w-full h-16" />
               ))}
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto mt-4">
-              <TaskList 
-                tasks={tasks.filter(t => !t.completed)} 
-                onDeleteTask={handleDeleteTask}
-                onToggleComplete={handleToggleComplete}
-                onEditTask={handleEditTask}
-                completingTaskId={completingTaskId}
-              />
-            </div>
+            <>
+              {/* Scrollable task list with gradient fades */}
+              <div className="flex-1 min-h-0 relative">
+                {/* Top fade gradient */}
+                <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-background to-transparent z-10 pointer-events-none" />
+                
+                <TaskList 
+                  tasks={tasks.filter(t => !t.completed)} 
+                  onDeleteTask={handleDeleteTask}
+                  onToggleComplete={handleToggleComplete}
+                  onEditTask={handleEditTask}
+                  completingTaskId={completingTaskId}
+                />
+                
+                {/* Bottom fade gradient */}
+                <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-background to-transparent z-10 pointer-events-none" />
+              </div>
+              
+              {/* Fixed input at bottom */}
+              <div className="flex-shrink-0 mt-2">
+                <TaskInput onAddTask={handleAddTask} />
+              </div>
+            </>
           )}
           
           {!user && (
