@@ -102,7 +102,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
   return (
     <div className="relative flex items-center justify-center p-6 overflow-visible">
       {/* Session dots - vertical, left of timer */}
-      <div className="absolute left-0 top-1/2 -translate-y-1/2 flex flex-col items-center gap-3 -ml-2">
+      <div className="absolute left-0 top-1/2 -translate-y-1/2 flex flex-col items-center gap-3 -ml-4">
         {!isFreeStudy ? (
           Array.from({ length: totalSessions }).map((_, dotIndex) => {
             const isActive = dotIndex === currentSessionIndex;
@@ -137,7 +137,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
 
       {/* Control buttons - vertical, right of timer */}
       {showControls && (
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col items-center gap-3 -mr-2">
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col items-center gap-3 -mr-7">
           <button 
             onClick={handleResetClick}
             className={cn(

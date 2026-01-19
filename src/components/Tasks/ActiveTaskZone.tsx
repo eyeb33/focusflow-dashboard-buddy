@@ -40,10 +40,10 @@ const ActiveTaskZone: React.FC<ActiveTaskZoneProps> = ({
   return (
     <div 
       className={cn(
-        "mt-6 p-4 border-2 border-dashed rounded-lg min-h-[80px] flex items-center justify-center transition-all",
+        "mt-6 p-4 rounded-lg min-h-[80px] flex items-center justify-center transition-all",
         isRunning && activeTask 
-          ? "border-primary/50 bg-primary/10" 
-          : "border-primary/30 bg-primary/5 hover:border-primary/50"
+          ? "border-2 border-dashed border-primary/50 bg-primary/10" 
+          : "border-2 border-dashed border-primary/30 bg-primary/5 hover:border-primary/50"
       )}
       onDrop={onDrop}
       onDragOver={onDragOver}
