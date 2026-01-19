@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Eye, EyeOff, Key, CheckCircle, XCircle, Loader2, ExternalLink, Info } from 'lucide-react';
+import { Eye, EyeOff, Key, CheckCircle, Loader2, ExternalLink, Info } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -15,8 +15,6 @@ const GeminiApiKeySettings: React.FC = () => {
   const [maskedKey, setMaskedKey] = useState<string | null>(null);
   const [showKey, setShowKey] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isValidating, setIsValidating] = useState(false);
-  const [isValid, setIsValid] = useState<boolean | null>(null);
   const [hasExistingKey, setHasExistingKey] = useState(false);
 
   useEffect(() => {
@@ -47,55 +45,21 @@ const GeminiApiKeySettings: React.FC = () => {
     }
   };
 
-  const validateApiKey = async (key: string): Promise<boolean> => {
-    // Basic format validation - just check it starts with AIza and has reasonable length
-    if (!key.startsWith('AIza') || key.length < 30) {
-      return false;
-    }
-
-    try {
-      // Test the key by listing available models (lighter than generating content)
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`,
-        {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-      
-      // If we get a 200, the key is valid
-      if (response.ok) return true;
-      
-      // 400 with specific errors might still indicate a valid key
-      if (response.status === 400) {
-        const data = await response.json().catch(() => ({}));
-        // Some valid keys may have quota issues but are still valid
-        if (data.error?.status === 'RESOURCE_EXHAUSTED') {
-          return true; // Key is valid but quota exhausted
-        }
-      }
-      
-      return false;
-    } catch {
-      // Network error - give benefit of the doubt if format is correct
-      console.warn('Could not validate API key due to network error');
-      return true; // Allow saving, will fail at runtime if truly invalid
-    }
+  const isPlausibleApiKey = (key: string) => {
+    // Important: do NOT make any network calls here.
+    // We only do a light client-side format check.
+    const trimmed = key.trim();
+    return trimmed.startsWith('AIza') && trimmed.length >= 30;
   };
 
   const handleSaveKey = async () => {
     if (!user || !apiKey.trim()) return;
 
-    setIsValidating(true);
-    const valid = await validateApiKey(apiKey);
-    setIsValid(valid);
-    setIsValidating(false);
-
-    if (!valid) {
+    if (!isPlausibleApiKey(apiKey)) {
       toast({
-        title: "Invalid API Key",
-        description: "The API key couldn't be validated. Please check it's correct and has access to Gemini.",
-        variant: "destructive",
+        title: 'Invalid API Key',
+        description: 'Please paste a valid Gemini API key (it usually starts with “AIza…”).',
+        variant: 'destructive',
       });
       return;
     }
@@ -108,7 +72,7 @@ const GeminiApiKeySettings: React.FC = () => {
         .upsert(
           {
             user_id: user.id,
-            gemini_api_key: apiKey,
+            gemini_api_key: apiKey.trim(),
             updated_at: new Date().toISOString(),
           },
           { onConflict: 'user_id' }
@@ -117,19 +81,18 @@ const GeminiApiKeySettings: React.FC = () => {
       if (error) throw error;
 
       toast({
-        title: "API Key Saved",
-        description: "Your Gemini API key has been saved successfully. The AI tutor will now use your quota.",
+        title: 'API Key Saved',
+        description: 'Saved. The tutor will only contact Gemini when you send a message.',
       });
-      
+
       setHasExistingKey(true);
-      setMaskedKey(`${apiKey.slice(0, 8)}${'•'.repeat(20)}${apiKey.slice(-4)}`);
+      setMaskedKey(`${apiKey.trim().slice(0, 8)}${'•'.repeat(20)}${apiKey.trim().slice(-4)}`);
       setApiKey('');
-      setIsValid(null);
     } catch (error: any) {
       toast({
-        title: "Error Saving Key",
+        title: 'Error Saving Key',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
@@ -216,7 +179,6 @@ const GeminiApiKeySettings: React.FC = () => {
                 value={apiKey}
                 onChange={(e) => {
                   setApiKey(e.target.value);
-                  setIsValid(null);
                 }}
                 className="pr-10"
               />
@@ -235,33 +197,12 @@ const GeminiApiKeySettings: React.FC = () => {
               </Button>
             </div>
 
-            {isValid !== null && (
-              <div className={`flex items-center gap-2 text-sm ${isValid ? 'text-green-600' : 'text-destructive'}`}>
-                {isValid ? (
-                  <>
-                    <CheckCircle className="h-4 w-4" />
-                    <span>API key is valid!</span>
-                  </>
-                ) : (
-                  <>
-                    <XCircle className="h-4 w-4" />
-                    <span>Invalid API key. Please check and try again.</span>
-                  </>
-                )}
-              </div>
-            )}
-
             <Button 
               onClick={handleSaveKey} 
-              disabled={!apiKey.trim() || isLoading || isValidating}
+              disabled={!apiKey.trim() || isLoading}
               className="w-full"
             >
-              {isValidating ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Validating...
-                </>
-              ) : isLoading ? (
+              {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   Saving...

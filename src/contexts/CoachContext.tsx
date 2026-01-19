@@ -926,6 +926,16 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const triggerProactiveCoaching = useCallback(async (trigger: string, context?: any) => {
     if (!user || isLoading) return;
 
+    // CRITICAL: Do not make any AI calls until the user explicitly sends a tutor message.
+    // This prevents consuming user Gemini quota unexpectedly (e.g., on load or timer events).
+    try {
+      if (localStorage.getItem('syllabuddy_ai_enabled') !== 'true') {
+        return;
+      }
+    } catch {
+      return;
+    }
+
     // Throttle proactive triggers (30 seconds cooldown)
     const now = Date.now();
     if (now - lastTriggerTime < 30000) {

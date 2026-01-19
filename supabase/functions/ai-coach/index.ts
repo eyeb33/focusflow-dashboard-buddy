@@ -448,14 +448,20 @@ ${currentMode.style}
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
       console.error('Gemini API error:', geminiResponse.status, errorText);
-      
+
       if (geminiResponse.status === 429) {
-        return new Response(JSON.stringify({ 
-          error: "Rate limit exceeded on your Gemini API key. Please wait a moment and try again." 
-        }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(
+          JSON.stringify({
+            error:
+              'Rate limit exceeded. Gemini free tier allows 15 requests/minute and 1,500/day. Please wait a moment and try again.',
+            code: 'RATE_LIMIT',
+            retry_after_seconds: 60,
+          }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
       }
       if (geminiResponse.status === 400 && errorText.includes('API_KEY_INVALID')) {
         return new Response(JSON.stringify({ 
@@ -466,7 +472,7 @@ ${currentMode.style}
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      
+
       throw new Error(`Gemini API error: ${geminiResponse.status}`);
     }
 
