@@ -205,10 +205,17 @@ export const useDocuments = () => {
       return false;
     }
 
+    const trimmedTitle = newTitle.trim();
+    
+    // Optimistically update local state
+    setDocuments(prev => 
+      prev.map(doc => doc.id === documentId ? { ...doc, title: trimmedTitle } : doc)
+    );
+
     try {
       const { error } = await supabase
         .from('documents')
-        .update({ title: newTitle.trim() })
+        .update({ title: trimmedTitle })
         .eq('id', documentId);
 
       if (error) throw error;
@@ -218,6 +225,8 @@ export const useDocuments = () => {
     } catch (error) {
       console.error('Error updating document title:', error);
       toast.error('Failed to update title');
+      // Revert on error
+      await fetchDocuments();
       return false;
     }
   };
