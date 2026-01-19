@@ -337,7 +337,7 @@ const Index = () => {
 
                 {/* Bottom row (row 2): Chat input slot (col 2) */}
                 {user && (
-                  <div ref={setChatInputSlot} className="flex-shrink-0 border-l border-border/20 pl-6" />
+                  <div ref={setChatInputSlot} className="flex-shrink-0 pl-6" />
                 )}
               </div>
             </div>
