@@ -173,7 +173,7 @@ const TaskList: React.FC<TaskListProps> = ({
   return (
     <div 
       ref={setRefs}
-      className={`h-full overflow-y-auto space-y-1 p-2 rounded-lg border-2 border-dashed transition-all duration-150 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent ${
+      className={`h-full overflow-y-auto space-y-1 px-1 py-2 rounded-lg border-2 border-dashed transition-all duration-150 task-list-scroll ${
         isDraggingOver 
           ? 'border-primary bg-primary/5' 
           : 'border-transparent'
