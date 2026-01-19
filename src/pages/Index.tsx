@@ -36,9 +36,6 @@ const Index = () => {
   const tutorRef = useRef<MathsTutorInterfaceRef>(null);
   const [linkedTaskIds, setLinkedTaskIds] = useState<Set<string>>(new Set());
 
-  // Slot for portaling the tutor input into the shared grid bottom row
-  const [chatInputSlot, setChatInputSlot] = useState<HTMLDivElement | null>(null);
-
   // Handle clicking on a study topic to open its chat session
   const handleTaskClick = useCallback((taskId: string, taskName: string) => {
     tutorRef.current?.openTaskSession(taskId, taskName);
@@ -247,104 +244,106 @@ const Index = () => {
           : "bg-gradient-to-t from-transparent via-transparent to-white/30"
       )} />
 
-      <main className="flex-1 flex flex-col overflow-hidden relative z-10">
-        <div className="relative flex flex-col items-center justify-start py-6 px-4 md:px-8 h-full">
-          <div className="w-full max-w-[92%] mx-auto bg-white dark:bg-card rounded-3xl shadow-2xl p-6 flex flex-col relative h-[calc(100vh-80px)]">
+      <main className="flex-1 flex flex-col overflow-hidden relative z-10 p-4 md:p-5">
+        {/* Header bar above the cards */}
+        <div className="w-full max-w-[1600px] mx-auto mb-4 px-2">
+          <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
+        </div>
 
-            <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
-            
-            <div className="mt-4 flex-1 min-h-0 overflow-hidden">
-              {/* Two-column GRID with shared bottom row for perfect input alignment */}
-              <div className={cn(
-                "grid h-full min-h-0",
-                user 
-                  ? "grid-cols-[2fr_3fr] grid-rows-[1fr_auto] gap-x-0 gap-y-4"
-                  : "grid-cols-1 grid-rows-[1fr_auto] gap-4"
-              )}>
-                {/* Left Column: Timer + Topics (row 1, col 1) */}
-                <div className="min-h-0 overflow-hidden flex flex-col pr-6">
-                  <div className="flex-shrink-0">
-                    <TimerContainer
-                      activeTask={activeTask}
-                      tasks={tasks}
-                      onRemoveActiveTask={handleRemoveActiveTask}
-                      onCompleteActiveTask={handleCompleteActiveTask}
-                      onDrop={handleDrop}
-                      onDragOver={handleDragOver}
-                      onQuickAddTask={async (name) => {
-                        return await addTask(name, 1);
-                      }}
-                      onSetActiveTask={async (taskId) => {
-                        const task = tasks.find(t => t.id === taskId);
-                        if (task) {
-                          setActiveTask(task);
-                          setActiveTaskId(taskId);
-                          await setTaskActive(taskId);
-                        }
-                      }}
-                    />
-                  </div>
-
-                  <div className="flex-1 flex flex-col border-t border-border/20 pt-4 min-h-0 overflow-hidden">
-                    <TaskManagerWithDrop
-                      activeTaskId={activeTask?.id ?? null} 
-                      onDropToList={handleDropToList} 
-                      onDragOverList={handleDragOver}
-                      onReorderTasks={handleReorderTasks}
-                      tasks={tasks}
-                      isLoading={isLoading}
-                      toggleComplete={handleToggleCompleteFromList}
-                      editTask={editTask}
-                      deleteTask={deleteTask}
-                      completingTaskId={completingTaskId}
-                      onTaskClick={handleTaskClick}
-                      linkedTaskIds={tutorRef.current?.linkedTaskIds || linkedTaskIds}
-                    />
-                  </div>
-                </div>
-
-                {/* Right Column: Tutor (row 1, col 2) */}
-                {user && (
-                  <div className="min-h-0 overflow-hidden pl-6 flex flex-col">
-                    <MathsTutorInterface ref={tutorRef} inputPortalTarget={chatInputSlot} />
-                  </div>
-                )}
-
-                {/* Bottom row (row 2): Task input (col 1) */}
-                <div className={cn(
-                  "flex-shrink-0 py-4 border-t border-border bg-background/80",
-                  user ? "pr-6" : ""
-                )}>
-                  <TaskInput onAddTask={(taskName, estimatedPomodoros) => {
-                    if (!user) {
-                      toast({
-                        title: "Authentication required",
-                        description: "Please log in to add tasks.",
-                        variant: "destructive",
-                      });
-                      return;
+        {/* Floating Card Layout */}
+        <div className={cn(
+          "flex-1 w-full max-w-[1600px] mx-auto grid gap-5 min-h-0",
+          user 
+            ? "grid-cols-1 lg:grid-cols-[2fr_3fr]"
+            : "grid-cols-1"
+        )}>
+          {/* Left Panel: Timer & Study Topics */}
+          <div className={cn(
+            "bg-white dark:bg-card rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300",
+            "border-l-4 border-l-[#08579c]",
+            "flex flex-col min-h-0 overflow-hidden"
+          )}>
+            <div className="p-6 flex flex-col h-full min-h-0">
+              {/* Timer Section */}
+              <div className="flex-shrink-0">
+                <TimerContainer
+                  activeTask={activeTask}
+                  tasks={tasks}
+                  onRemoveActiveTask={handleRemoveActiveTask}
+                  onCompleteActiveTask={handleCompleteActiveTask}
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onQuickAddTask={async (name) => {
+                    return await addTask(name, 1);
+                  }}
+                  onSetActiveTask={async (taskId) => {
+                    const task = tasks.find(t => t.id === taskId);
+                    if (task) {
+                      setActiveTask(task);
+                      setActiveTaskId(taskId);
+                      await setTaskActive(taskId);
                     }
-                    addTask(taskName, estimatedPomodoros).then(taskId => {
-                      if (taskId) {
-                        toast({
-                          title: "Task added",
-                          description: `"${taskName}" has been added to your tasks`,
-                        });
-                      }
-                    });
-                  }} />
-                </div>
+                  }}
+                />
+              </div>
 
-                {/* Bottom row (row 2): Chat input slot (col 2) */}
-                {user && (
-                  <div ref={setChatInputSlot} className="flex-shrink-0 pl-6" />
-                )}
+              {/* Study Topics Section */}
+              <div className="flex-1 flex flex-col border-t border-border/20 pt-4 min-h-0 overflow-hidden">
+                <TaskManagerWithDrop
+                  activeTaskId={activeTask?.id ?? null} 
+                  onDropToList={handleDropToList} 
+                  onDragOverList={handleDragOver}
+                  onReorderTasks={handleReorderTasks}
+                  tasks={tasks}
+                  isLoading={isLoading}
+                  toggleComplete={handleToggleCompleteFromList}
+                  editTask={editTask}
+                  deleteTask={deleteTask}
+                  completingTaskId={completingTaskId}
+                  onTaskClick={handleTaskClick}
+                  linkedTaskIds={tutorRef.current?.linkedTaskIds || linkedTaskIds}
+                />
+              </div>
+
+              {/* Task Input - bottom of left panel */}
+              <div className="flex-shrink-0 pt-4 border-t border-border/20 mt-4">
+                <TaskInput onAddTask={(taskName, estimatedPomodoros) => {
+                  if (!user) {
+                    toast({
+                      title: "Authentication required",
+                      description: "Please log in to add tasks.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  addTask(taskName, estimatedPomodoros).then(taskId => {
+                    if (taskId) {
+                      toast({
+                        title: "Task added",
+                        description: `"${taskName}" has been added to your tasks`,
+                      });
+                    }
+                  });
+                }} />
               </div>
             </div>
           </div>
-          
-          {!user && <AuthPrompt onSignupClick={handleSignupClick} />}
+
+          {/* Right Panel: AI Tutor Chat */}
+          {user && (
+            <div className={cn(
+              "bg-white dark:bg-card rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300",
+              "border-l-4 border-l-[#049db1]",
+              "flex flex-col min-h-0 overflow-hidden"
+            )}>
+              <div className="p-6 flex flex-col h-full min-h-0">
+                <MathsTutorInterface ref={tutorRef} inputPortalTarget={null} />
+              </div>
+            </div>
+          )}
         </div>
+        
+        {!user && <AuthPrompt onSignupClick={handleSignupClick} />}
       </main>
       
       <MobileNav />
