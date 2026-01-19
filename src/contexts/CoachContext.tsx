@@ -56,7 +56,7 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isMinimized, setIsMinimized] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const [checkInModalOpen, setCheckInModalOpen] = useState(false);
-  const [lastTriggerTime, setLastTriggerTime] = useState<number>(0);
+  
   const [currentAction, setCurrentAction] = useState<CoachAction | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [subTasks, setSubTasks] = useState<SubTask[]>([]);
@@ -867,137 +867,13 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [user, messages, isLoading, conversationId, isMinimized]);
 
-  const triggerProactiveCoaching = useCallback(async (trigger: string, context?: any) => {
-    if (!user || isLoading) return;
+  const triggerProactiveCoaching = useCallback(async (_trigger: string, _context?: any) => {
+    // IMPORTANT: Do not make ANY background/proactive AI calls.
+    // Gemini requests must only happen when the user explicitly sends a message in the tutor chat.
+    // This prevents surprise quota usage and avoids bursts that cause 429 errors.
+    return;
+  }, []);
 
-    // CRITICAL: Do not make any AI calls until the user explicitly sends a tutor message.
-    // This prevents consuming user Gemini quota unexpectedly (e.g., on load or timer events).
-    try {
-      if (localStorage.getItem('syllabuddy_ai_enabled') !== 'true') {
-        return;
-      }
-    } catch {
-      return;
-    }
-
-    // Throttle proactive triggers (30 seconds cooldown)
-    const now = Date.now();
-    if (now - lastTriggerTime < 30000) {
-      console.log('Throttling proactive trigger');
-      return;
-    }
-    setLastTriggerTime(now);
-
-    setIsLoading(true);
-    try {
-      const convId = await createConversationIfNeeded();
-      if (!convId) throw new Error('No conversation');
-
-      // Get user's session token for edge function auth
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('No session found');
-
-      // Call AI with trigger context and current state
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-coach`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messages: messages.map(m => ({
-              role: m.role,
-              content: m.content
-            })),
-            trigger,
-            triggerContext: context,
-            mode,
-            ...getCurrentState()
-          }),
-        }
-      );
-
-      if (!response.ok) throw new Error('Failed to trigger coaching');
-
-      // Stream response
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let assistantContent = '';
-      let assistantMessageId = `temp-assistant-${Date.now()}`;
-
-      setMessages(prev => [...prev, {
-        id: assistantMessageId,
-        role: 'assistant',
-        content: '',
-        created_at: new Date().toISOString()
-      }]);
-
-      if (reader) {
-        let buffer = '';
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
-
-          for (const line of lines) {
-            if (!line.trim() || line.startsWith(':')) continue;
-            if (!line.startsWith('data: ')) continue;
-
-            const jsonStr = line.slice(6).trim();
-            if (jsonStr === '[DONE]') continue;
-
-            try {
-              const parsed = JSON.parse(jsonStr);
-              const content = parsed.choices?.[0]?.delta?.content;
-              if (content) {
-                assistantContent += content;
-                // Use functional update with queueMicrotask to ensure smooth streaming
-                queueMicrotask(() => {
-                  setMessages(prev => prev.map(m => 
-                    m.id === assistantMessageId 
-                      ? { ...m, content: assistantContent }
-                      : m
-                  ));
-                });
-              }
-            } catch (e) {
-              console.error('Parse error:', e);
-            }
-          }
-        }
-      }
-
-      // Save to DB
-      await supabase
-        .from('coach_messages')
-        .insert({
-          conversation_id: convId,
-          user_id: user.id,
-          role: 'assistant',
-          content: assistantContent
-        });
-
-      await supabase
-        .from('coach_conversations')
-        .update({ last_message_at: new Date().toISOString() })
-        .eq('id', convId);
-
-      // Increment unread if minimized
-      if (isMinimized) {
-        setUnreadCount(prev => prev + 1);
-      }
-
-    } catch (error) {
-      console.error('Error triggering proactive coaching:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, messages, isLoading, conversationId, isMinimized, lastTriggerTime]);
 
   const showCheckIn = useCallback(() => {
     setCheckInModalOpen(true);
@@ -1019,8 +895,8 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       setCheckInModalOpen(false);
 
-      // Trigger coach response about the check-in
-      await triggerProactiveCoaching('wellbeing_check_in', { mood, energy, stress, notes });
+      // NOTE: We intentionally do NOT trigger any AI call after a check-in.
+      // Gemini requests must only happen when the user explicitly sends a tutor message.
 
       toast({
         title: 'Check-in saved',

@@ -17,7 +17,7 @@ import TaskInput from '@/components/Tasks/TaskInput';
 import TaskList from '@/components/Tasks/TaskList';
 import { Skeleton } from '@/components/ui/skeleton';
 import MathsTutorInterface, { MathsTutorInterfaceRef } from '@/components/Tutor/MathsTutorInterface';
-import { useCoach } from '@/contexts/CoachContext';
+
 import bgWork from '@/assets/bg-work.png';
 import bgBreak from '@/assets/bg-break.png';
 import bgLongBreak from '@/assets/bg-longbreak.png';
@@ -31,7 +31,7 @@ const Index = () => {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
   const { toast } = useToast();
-  const { triggerProactiveCoaching } = useCoach();
+  
   const suppressRestoreRef = React.useRef<string | null>(null);
   const tutorRef = useRef<MathsTutorInterfaceRef>(null);
   const [linkedTaskIds, setLinkedTaskIds] = useState<Set<string>>(new Set());
@@ -188,13 +188,9 @@ const Index = () => {
           description: `Great work!${timeMessage}`,
         });
         
-        // Trigger coach response for task completion
-        if (user) {
-          triggerProactiveCoaching('task_completed', {
-            taskName: task.name,
-            timeSpent: elapsedMinutes
-          });
-        }
+        // NOTE: We intentionally do NOT trigger any AI calls here.
+        // Gemini requests must only happen when the user explicitly clicks Send in the tutor chat.
+        // (This avoids unexpected background calls that can burn the 15 RPM free-tier quota.)
       }
     } finally {
       // Clear suppression after state/queries have a chance to settle
