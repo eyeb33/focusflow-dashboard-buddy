@@ -37,13 +37,7 @@ const Index = () => {
   const [linkedTaskIds, setLinkedTaskIds] = useState<Set<string>>(new Set());
 
   // Slot for portaling the tutor input into the shared grid bottom row
-  const chatInputSlotRef = useRef<HTMLDivElement | null>(null);
-  const [, forceRerender] = useState(0);
-  const setChatInputSlotRef = (el: HTMLDivElement | null) => {
-    chatInputSlotRef.current = el;
-    // Ensure we re-render once the slot exists so the portal mounts.
-    forceRerender((v) => v + 1);
-  };
+  const [chatInputSlot, setChatInputSlot] = useState<HTMLDivElement | null>(null);
 
   // Handle clicking on a study topic to open its chat session
   const handleTaskClick = useCallback((taskId: string, taskName: string) => {
@@ -307,7 +301,7 @@ const Index = () => {
                 {/* Right Column: Tutor (row 1, col 2) */}
                 {user && (
                   <div className="min-h-0 overflow-hidden border-l border-border/20 pl-6 flex flex-col">
-                    <MathsTutorInterface ref={tutorRef} inputPortalTarget={chatInputSlotRef.current} />
+                    <MathsTutorInterface ref={tutorRef} inputPortalTarget={chatInputSlot} />
                   </div>
                 )}
 
@@ -335,7 +329,7 @@ const Index = () => {
 
                 {/* Bottom row (row 2): Chat input slot (col 2) */}
                 {user && (
-                  <div ref={setChatInputSlotRef} className="flex-shrink-0" />
+                  <div ref={setChatInputSlot} className="flex-shrink-0" />
                 )}
               </div>
             </div>
