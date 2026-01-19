@@ -1,9 +1,9 @@
 
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, Timer, LayoutDashboard } from 'lucide-react';
 import ThemeToggle from '@/components/Theme/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/components/Theme/ThemeProvider';
@@ -24,7 +24,11 @@ const Header: React.FC<HeaderProps> = ({
   const isMobile = useIsMobile();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { theme } = useTheme();
+  
+  const isOnDashboard = location.pathname === '/dashboard';
+  const isOnTimer = location.pathname === '/';
   
   const handleLoginClick = () => {
     if (onLoginClick) {
@@ -43,7 +47,7 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="border-b border-border/50 backdrop-blur-md bg-background/80 sticky top-0 z-50">
+    <header className="border-b border-border/50 backdrop-blur-md bg-background/80 sticky top-0 z-50 pb-2.5">
       <div className="w-full px-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
@@ -61,15 +65,48 @@ const Header: React.FC<HeaderProps> = ({
             
             {user ? (
               <div className="flex items-center gap-2">
-                <Link to="/dashboard">
-                  <Button variant="ghost" size={isMobile ? "icon" : "default"}>
-                    {isMobile ? (
-                      <User className="h-5 w-5" />
-                    ) : (
-                      "Dashboard"
-                    )}
-                  </Button>
-                </Link>
+                {/* Page Toggle */}
+                <div className="flex items-center bg-muted rounded-full p-1">
+                  <Link to="/">
+                    <button
+                      className={cn(
+                        "px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-1.5",
+                        isOnTimer 
+                          ? "bg-primary text-primary-foreground shadow-sm" 
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {isMobile ? (
+                        <Timer className="h-4 w-4" />
+                      ) : (
+                        <>
+                          <Timer className="h-4 w-4" />
+                          Timer
+                        </>
+                      )}
+                    </button>
+                  </Link>
+                  <Link to="/dashboard">
+                    <button
+                      className={cn(
+                        "px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-1.5",
+                        isOnDashboard 
+                          ? "bg-primary text-primary-foreground shadow-sm" 
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {isMobile ? (
+                        <LayoutDashboard className="h-4 w-4" />
+                      ) : (
+                        <>
+                          <LayoutDashboard className="h-4 w-4" />
+                          Dashboard
+                        </>
+                      )}
+                    </button>
+                  </Link>
+                </div>
+                
                 <Button 
                   variant="ghost" 
                   size={isMobile ? "icon" : "default"}
