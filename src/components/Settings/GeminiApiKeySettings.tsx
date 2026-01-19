@@ -43,27 +43,38 @@ const GeminiApiKeySettings: React.FC = () => {
   };
 
   const validateApiKey = async (key: string): Promise<boolean> => {
-    // Basic format validation
+    // Basic format validation - just check it starts with AIza and has reasonable length
     if (!key.startsWith('AIza') || key.length < 30) {
       return false;
     }
 
     try {
-      // Test the key with a simple API call
+      // Test the key by listing available models (lighter than generating content)
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`,
         {
-          method: 'POST',
+          method: 'GET',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: 'Hi' }] }]
-          })
         }
       );
       
-      return response.ok;
-    } catch {
+      // If we get a 200, the key is valid
+      if (response.ok) return true;
+      
+      // 400 with specific errors might still indicate a valid key
+      if (response.status === 400) {
+        const data = await response.json().catch(() => ({}));
+        // Some valid keys may have quota issues but are still valid
+        if (data.error?.status === 'RESOURCE_EXHAUSTED') {
+          return true; // Key is valid but quota exhausted
+        }
+      }
+      
       return false;
+    } catch {
+      // Network error - give benefit of the doubt if format is correct
+      console.warn('Could not validate API key due to network error');
+      return true; // Allow saving, will fail at runtime if truly invalid
     }
   };
 
