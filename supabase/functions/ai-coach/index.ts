@@ -13,8 +13,17 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, trigger, triggerContext, timerState, taskState, mode = 'explain' } = await req.json();
-    
+    const rawBody = await req.json();
+    const {
+      messages,
+      trigger,
+      triggerContext,
+      timerState,
+      taskState,
+      mode = 'explain',
+      request_id: requestId,
+    } = rawBody ?? {};
+
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'No authorization header' }), {
@@ -37,7 +46,19 @@ serve(async (req) => {
       });
     }
 
-    console.log('Maths tutor request from user:', user.id, 'mode:', mode, 'trigger:', trigger);
+    const lastUserMessage = Array.isArray(messages)
+      ? [...messages].reverse().find((m: any) => m?.role === 'user' && typeof m?.content === 'string')?.content
+      : undefined;
+
+    console.log('[ai-coach] incoming_request', {
+      requestId: requestId ?? null,
+      userId: user.id,
+      mode,
+      trigger: trigger ?? null,
+      messageChars: typeof lastUserMessage === 'string' ? lastUserMessage.length : null,
+      messagePreview: typeof lastUserMessage === 'string' ? lastUserMessage.slice(0, 120) : null,
+      timestamp: new Date().toISOString(),
+    });
 
     // Fetch user's Gemini API key from profile
     const { data: profileData, error: profileError } = await supabaseClient
@@ -428,24 +449,38 @@ ${currentMode.style}
     }
 
     // Call Google Gemini API directly with user's API key
-    // NOTE: Use a model that is available on the Gemini free tier for most accounts.
-    // (Some newer models can report free-tier limits as 0, causing immediate 429s.)
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${userGeminiApiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          contents: geminiContents,
-          tools: geminiTools,
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 4096
-          }
-        })
-      }
-    );
+    // NOTE: Keep this on a model you have enabled in your Gemini project.
+    const geminiUrl =
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${userGeminiApiKey}`;
+
+    console.log('[ai-coach] gemini_call_start', {
+      requestId: requestId ?? null,
+      userId: user.id,
+      model: 'gemini-2.5-flash',
+      timestamp: new Date().toISOString(),
+    });
+
+    const geminiResponse = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: geminiContents,
+        tools: geminiTools,
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 4096,
+        },
+      }),
+    });
+
+    console.log('[ai-coach] gemini_call_end', {
+      requestId: requestId ?? null,
+      userId: user.id,
+      ok: geminiResponse.ok,
+      status: geminiResponse.status,
+      timestamp: new Date().toISOString(),
+    });
 
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();

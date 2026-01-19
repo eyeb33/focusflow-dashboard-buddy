@@ -659,6 +659,15 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const sendMessage = useCallback(async (content: string) => {
     if (!user || isLoading) return;
 
+    const requestId = (globalThis.crypto?.randomUUID?.() ?? `req_${Date.now()}_${Math.random().toString(16).slice(2)}`);
+    console.log('[coach] sendMessage called', {
+      requestId,
+      userId: user.id,
+      mode,
+      contentChars: content.length,
+      ts: new Date().toISOString(),
+    });
+
     setIsLoading(true);
     try {
       const convId = await createConversationIfNeeded();
@@ -669,43 +678,49 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         id: `temp-${Date.now()}`,
         role: 'user',
         content,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
-      setMessages(prev => [...prev, userMessage]);
+      setMessages((prev) => [...prev, userMessage]);
 
       // Save user message to DB
-      await supabase
-        .from('coach_messages')
-        .insert({
-          conversation_id: convId,
-          user_id: user.id,
-          role: 'user',
-          content
-        });
+      await supabase.from('coach_messages').insert({
+        conversation_id: convId,
+        user_id: user.id,
+        role: 'user',
+        content,
+      });
 
       // Get user's session token for edge function auth
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) throw new Error('No session found');
 
+      console.log('[coach] invoking ai-coach', {
+        requestId,
+        conversationId: convId,
+        ts: new Date().toISOString(),
+      });
+
       // Stream AI response with tool support
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-coach`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messages: [...messages, userMessage].map(m => ({
-              role: m.role,
-              content: m.content
-            })),
-            mode,
-            ...getCurrentState()
-          }),
-        }
-      );
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-coach`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          request_id: requestId,
+          messages: [...messages, userMessage].map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
+          mode,
+          ...getCurrentState(),
+        }),
+      });
+
+      console.log('[coach] ai-coach response', { requestId, status: response.status, ok: response.ok });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
