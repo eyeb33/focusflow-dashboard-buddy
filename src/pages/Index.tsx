@@ -305,7 +305,7 @@ const Index = () => {
 
                 {/* Right Column: Tutor (row 1, col 2) */}
                 {user && (
-                  <div className="min-h-0 overflow-hidden border-l border-border/20 pl-6 flex flex-col">
+                  <div className="min-h-0 overflow-hidden pl-6 flex flex-col">
                     <MathsTutorInterface ref={tutorRef} inputPortalTarget={chatInputSlot} />
                   </div>
                 )}
