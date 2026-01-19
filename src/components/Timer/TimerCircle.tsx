@@ -108,8 +108,8 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
         progress={progress}
       />
       
-      {/* Soft glow effect - only when running */}
-      {secondsLeft > 0 && secondsLeft < totalSeconds && (
+      {/* Soft glow effect - only when running in pomodoro mode */}
+      {!isFreeStudy && secondsLeft > 0 && secondsLeft < totalSeconds && (
         <div 
           className="absolute inset-0 rounded-full animate-glow"
           style={{
@@ -119,8 +119,10 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
         />
       )}
       
-      <div className={cn(secondsLeft > 0 && secondsLeft < totalSeconds && "animate-breathe")}
-      >
+      <div className={cn(
+        !isFreeStudy && secondsLeft > 0 && secondsLeft < totalSeconds && "animate-breathe",
+        isFreeStudy && isRunning && "animate-breathe-slow"
+      )}>
         <svg 
           width={size} 
           height={size} 
@@ -150,22 +152,39 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
             stroke={theme === "dark" ? "#2a2a2a" : "#f0f0f0"}
             strokeWidth={strokeWidth}
           />
-          {/* Progress circle */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="transparent"
-            stroke={colors.solid}
-            strokeWidth={strokeWidth}
-            strokeDasharray={circumference}
-            strokeDashoffset={dashOffset}
-            strokeLinecap="round"
-            style={{ 
-              transition: 'stroke-dashoffset 0.3s ease-out',
-              filter: 'drop-shadow(0 0 6px ' + colors.glow + ')'
-            }}
-          />
+          {/* Progress circle - different for free study vs pomodoro */}
+          {isFreeStudy ? (
+            // Free study: soft light blue full ring
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="transparent"
+              stroke={theme === "dark" ? "hsl(200, 60%, 40%)" : "hsl(200, 70%, 75%)"}
+              strokeWidth={strokeWidth}
+              strokeLinecap="round"
+              style={{ 
+                opacity: 0.6
+              }}
+            />
+          ) : (
+            // Pomodoro: progress-based ring
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="transparent"
+              stroke={colors.solid}
+              strokeWidth={strokeWidth}
+              strokeDasharray={circumference}
+              strokeDashoffset={dashOffset}
+              strokeLinecap="round"
+              style={{ 
+                transition: 'stroke-dashoffset 0.3s ease-out',
+                filter: 'drop-shadow(0 0 6px ' + colors.glow + ')'
+              }}
+            />
+          )}
           {/* Bubble highlight overlay */}
           <circle
             cx={size / 2}
