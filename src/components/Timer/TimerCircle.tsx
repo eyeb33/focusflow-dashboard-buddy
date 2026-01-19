@@ -234,6 +234,22 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
         {showControls && (
           <div className="flex items-center gap-4 mt-1">
             <button 
+              onClick={handleResetClick}
+              className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200",
+                "hover:scale-110 active:scale-95",
+                theme === "dark" 
+                  ? "bg-white/10 hover:bg-white/20 text-white/70" 
+                  : "bg-black/5 hover:bg-black/10 text-gray-500"
+              )}
+              aria-label="Reset timer"
+              type="button"
+              data-testid="reset-button"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </button>
+            
+            <button 
               onClick={handlePlayPauseClick}
               className={cn(
                 "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200",
@@ -252,22 +268,6 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
               ) : (
                 <Play className="h-4 w-4 ml-0.5" fill="currentColor" />
               )}
-            </button>
-            
-            <button 
-              onClick={handleResetClick}
-              className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200",
-                "hover:scale-110 active:scale-95",
-                theme === "dark" 
-                  ? "bg-white/10 hover:bg-white/20 text-white/70" 
-                  : "bg-black/5 hover:bg-black/10 text-gray-500"
-              )}
-              aria-label="Reset timer"
-              type="button"
-              data-testid="reset-button"
-            >
-              <RotateCcw className="h-4 w-4" />
             </button>
           </div>
         )}
