@@ -8,7 +8,8 @@ import ThemeToggle from '@/components/Theme/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/components/Theme/ThemeProvider';
 import { cn } from '@/lib/utils';
-import syllabuddyLogo from '@/assets/syllabuddy-logo.png';
+import syllabuddyLogoLight from '@/assets/syllabuddy-logo-light.png';
+import syllabuddyLogoDark from '@/assets/syllabuddy-logo-dark.png';
 
 interface HeaderProps {
   isAuthenticated?: boolean;
@@ -43,11 +44,15 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="border-b border-border/50 backdrop-blur-md bg-background/80 sticky top-0 z-50">
-      <div className="container px-6 py-5">
+      <div className="container px-0 py-0">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Link to="/" className="flex items-center gap-2">
-              <img src={syllabuddyLogo} alt="Syllabuddy" className="h-20 w-auto" />
+          <div className="flex items-center">
+            <Link to="/" className="flex items-center">
+              <img 
+                src={theme === 'dark' ? syllabuddyLogoDark : syllabuddyLogoLight} 
+                alt="Syllabuddy" 
+                className="h-14 w-auto" 
+              />
             </Link>
           </div>
           
