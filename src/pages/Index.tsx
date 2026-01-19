@@ -54,8 +54,8 @@ const Index = () => {
     const session = await getOrCreateSession(topicId, topicName);
     if (!session) return;
 
-    // 2. Open the chat session with the topic
-    tutorRef.current?.openTaskSession(topicId, topicName);
+    // 2. Open the chat session with the topic (pass isTopicId=true for curriculum topics)
+    tutorRef.current?.openTaskSession(topicId, topicName, true);
     
     // 3. Set this topic as active in both curriculum and timer contexts
     await setTopicActive(topicId);

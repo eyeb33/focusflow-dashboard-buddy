@@ -125,6 +125,7 @@ export type Database = {
           id: string
           last_message_at: string
           linked_task_id: string | null
+          linked_topic_id: string | null
           persona: string | null
           started_at: string
           title: string | null
@@ -137,6 +138,7 @@ export type Database = {
           id?: string
           last_message_at?: string
           linked_task_id?: string | null
+          linked_topic_id?: string | null
           persona?: string | null
           started_at?: string
           title?: string | null
@@ -149,6 +151,7 @@ export type Database = {
           id?: string
           last_message_at?: string
           linked_task_id?: string | null
+          linked_topic_id?: string | null
           persona?: string | null
           started_at?: string
           title?: string | null
