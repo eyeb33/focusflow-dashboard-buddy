@@ -40,11 +40,15 @@ serve(async (req) => {
     console.log('Maths tutor request from user:', user.id, 'mode:', mode, 'trigger:', trigger);
 
     // Fetch user's Gemini API key from profile
-    const { data: profileData } = await supabaseClient
+    const { data: profileData, error: profileError } = await supabaseClient
       .from('profiles')
       .select('gemini_api_key')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
+
+    if (profileError) {
+      console.warn('Failed to fetch profile for API key:', profileError.message);
+    }
 
     const userGeminiApiKey = profileData?.gemini_api_key;
     
