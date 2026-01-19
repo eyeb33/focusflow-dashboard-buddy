@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Send, GraduationCap, BookOpen, PenTool, CheckCircle, Plus, Pencil, Check, X, Settings, BarChart3 } from 'lucide-react';
+import { Send, GraduationCap, BookOpen, PenTool, CheckCircle, Plus, Pencil, Check, X, Settings, BarChart3, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -616,6 +616,21 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
           </div>
           
           <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="relative group">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                title="Maths formatting tip"
+              >
+                <Lightbulb className="h-4 w-4" />
+              </Button>
+              <div className="absolute right-0 top-full mt-1 z-50 hidden group-hover:block">
+                <div className="bg-popover text-popover-foreground border border-border rounded-md shadow-md px-3 py-2 text-xs whitespace-nowrap">
+                  Tip: Use <code className="bg-muted px-1 rounded">$</code> for inline maths like <code className="bg-muted px-1 rounded">$x^2$</code> and <code className="bg-muted px-1 rounded">$$</code> for display equations
+                </div>
+              </div>
+            </div>
             <Button
               variant="ghost"
               size="icon"
@@ -779,9 +794,6 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       {(() => {
         const inputEl = (
           <div className="flex-shrink-0 py-4 border-t border-border bg-background/80">
-            <p className="text-xs text-muted-foreground mb-2 text-center">
-              Tip: Use $ for inline maths like $x^2$ and $$ for display equations
-            </p>
             {isRateLimited && (
               <div className="mb-3 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
                 Rate limit exceeded. Try again in <span className="font-medium text-foreground">{cooldownSecondsRemaining}s</span>.
