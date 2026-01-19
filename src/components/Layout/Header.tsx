@@ -3,7 +3,7 @@ import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { LogOut, User, Timer, LayoutDashboard } from 'lucide-react';
+import { LogOut, User, Timer, LayoutDashboard, BookOpen } from 'lucide-react';
 import ThemeToggle from '@/components/Theme/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/components/Theme/ThemeProvider';
@@ -27,8 +27,13 @@ const Header: React.FC<HeaderProps> = ({
   const location = useLocation();
   const { theme } = useTheme();
   
+  // Admin user ID for curriculum access
+  const ADMIN_USER_ID = '9d326b17-8987-4a2f-a104-0ef900b6c382';
+  const isAdmin = user?.id === ADMIN_USER_ID;
+  
   const isOnDashboard = location.pathname === '/dashboard';
   const isOnTimer = location.pathname === '/';
+  const isOnCurriculum = location.pathname === '/curriculum';
   
   const handleLoginClick = () => {
     if (onLoginClick) {
@@ -105,9 +110,31 @@ const Header: React.FC<HeaderProps> = ({
                       )}
                     </button>
                   </Link>
+                  {isAdmin && (
+                    <Link to="/curriculum">
+                      <button
+                        className={cn(
+                          "px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-1.5",
+                          isOnCurriculum 
+                            ? "bg-primary text-primary-foreground shadow-sm" 
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                        title="Curriculum Manager"
+                      >
+                        {isMobile ? (
+                          <BookOpen className="h-4 w-4" />
+                        ) : (
+                          <>
+                            <BookOpen className="h-4 w-4" />
+                            Curriculum
+                          </>
+                        )}
+                      </button>
+                    </Link>
+                  )}
                 </div>
                 
-                <Button 
+                <Button
                   variant="ghost" 
                   size={isMobile ? "icon" : "default"}
                   onClick={() => signOut()}
