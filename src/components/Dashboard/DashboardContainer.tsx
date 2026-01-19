@@ -50,11 +50,17 @@ const DashboardContainer = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header />
-      <div className="flex-1 container max-w-7xl mx-auto px-4 py-8">
-        <DashboardHeader />
-        <DashboardContent />
-      </div>
+      <main className="flex-1 flex flex-col overflow-hidden relative z-10">
+        <div className="relative flex flex-col items-center justify-start py-6 px-4 md:px-8 h-full">
+          <div className="w-full max-w-[92%] mx-auto bg-white dark:bg-card rounded-3xl shadow-2xl p-6 flex flex-col relative h-[calc(100vh-80px)] overflow-auto">
+            <Header />
+            <div className="mt-4 flex-1">
+              <DashboardHeader />
+              <DashboardContent />
+            </div>
+          </div>
+        </div>
+      </main>
       <MobileNav />
     </div>
   );
