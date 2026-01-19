@@ -778,7 +778,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       {/* Input - Fixed at bottom (optionally portaled to parent grid) */}
       {(() => {
         const inputEl = (
-          <div className="flex-shrink-0 p-4 border-t border-border bg-background/80">
+          <div className="flex-shrink-0 py-4 border-t border-border bg-background/80">
             <p className="text-xs text-muted-foreground mb-2 text-center">
               Tip: Use $ for inline maths like $x^2$ and $$ for display equations
             </p>

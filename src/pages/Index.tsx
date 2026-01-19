@@ -255,9 +255,14 @@ const Index = () => {
             
             <div className="mt-4 flex-1 min-h-0 overflow-hidden">
               {/* Two-column GRID with shared bottom row for perfect input alignment */}
-              <div className="grid grid-cols-[2fr_3fr] grid-rows-[1fr_auto] gap-6 h-full min-h-0">
+              <div className={cn(
+                "grid h-full min-h-0",
+                user 
+                  ? "grid-cols-[2fr_3fr] grid-rows-[1fr_auto] gap-x-0 gap-y-4"
+                  : "grid-cols-1 grid-rows-[1fr_auto] gap-4"
+              )}>
                 {/* Left Column: Timer + Topics (row 1, col 1) */}
-                <div className="min-h-0 overflow-hidden flex flex-col">
+                <div className="min-h-0 overflow-hidden flex flex-col pr-6">
                   <div className="flex-shrink-0">
                     <TimerContainer
                       activeTask={activeTask}
@@ -306,7 +311,10 @@ const Index = () => {
                 )}
 
                 {/* Bottom row (row 2): Task input (col 1) */}
-                <div className="flex-shrink-0 p-4 border-t border-border bg-background/80">
+                <div className={cn(
+                  "flex-shrink-0 py-4 border-t border-border bg-background/80",
+                  user ? "pr-6" : ""
+                )}>
                   <TaskInput onAddTask={(taskName, estimatedPomodoros) => {
                     if (!user) {
                       toast({
@@ -329,7 +337,7 @@ const Index = () => {
 
                 {/* Bottom row (row 2): Chat input slot (col 2) */}
                 {user && (
-                  <div ref={setChatInputSlot} className="flex-shrink-0" />
+                  <div ref={setChatInputSlot} className="flex-shrink-0 border-l border-border/20 pl-6" />
                 )}
               </div>
             </div>
