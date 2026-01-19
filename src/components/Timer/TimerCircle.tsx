@@ -101,6 +101,40 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
 
   return (
     <div className="relative flex items-center justify-center p-6 overflow-visible">
+      {/* Session dots - vertical, left of timer */}
+      <div className="absolute left-0 top-1/2 -translate-y-1/2 flex flex-col items-center gap-3 -ml-2">
+        {!isFreeStudy ? (
+          Array.from({ length: totalSessions }).map((_, dotIndex) => {
+            const isActive = dotIndex === currentSessionIndex;
+            const isComplete = dotIndex < currentSessionIndex;
+            
+            return (
+              <div
+                key={dotIndex}
+                className={cn(
+                  "rounded-full transition-all duration-300",
+                  isActive ? "w-4 h-4" : "w-3 h-3"
+                )}
+                style={{
+                  backgroundColor: isActive || isComplete
+                    ? colors.solid
+                    : theme === "dark" ? "#444" : "#d1d5db"
+                }}
+              />
+            );
+          })
+        ) : (
+          // Greyed out dots for free study
+          Array.from({ length: 4 }).map((_, dotIndex) => (
+            <div
+              key={dotIndex}
+              className="w-3 h-3 rounded-full opacity-30"
+              style={{ backgroundColor: theme === "dark" ? "#444" : "#d1d5db" }}
+            />
+          ))
+        )}
+      </div>
+
       {/* Mood Character above timer */}
       <TimerMoodCharacter 
         mode={mode} 
@@ -199,44 +233,6 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
       
       {/* Time display and compact controls */}
       <div className="absolute flex flex-col items-center z-20">
-        {/* Session dots - inside circle, above time */}
-        {!isFreeStudy && (
-          <div className="flex justify-center items-center mb-2 space-x-1.5">
-            {Array.from({ length: totalSessions }).map((_, dotIndex) => {
-              const isActive = dotIndex === currentSessionIndex;
-              const isComplete = dotIndex < currentSessionIndex;
-              
-              return (
-                <div
-                  key={dotIndex}
-                  className={cn(
-                    "rounded-full transition-all duration-300",
-                    isActive ? "w-2 h-2" : "w-1.5 h-1.5"
-                  )}
-                  style={{
-                    backgroundColor: isActive || isComplete
-                      ? colors.solid
-                      : theme === "dark" ? "#444" : "#d1d5db"
-                  }}
-                />
-              );
-            })}
-          </div>
-        )}
-        
-        {/* Greyed out dots placeholder for free study */}
-        {isFreeStudy && (
-          <div className="flex justify-center items-center mb-2 space-x-1.5 opacity-30">
-            {Array.from({ length: 4 }).map((_, dotIndex) => (
-              <div
-                key={dotIndex}
-                className="w-1.5 h-1.5 rounded-full"
-                style={{ backgroundColor: theme === "dark" ? "#444" : "#d1d5db" }}
-              />
-            ))}
-          </div>
-        )}
-        
         <div className={cn(
           "flex items-baseline justify-center",
           theme === "dark" ? "text-white" : "text-gray-900"
