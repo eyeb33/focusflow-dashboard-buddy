@@ -181,11 +181,14 @@ const Index = () => {
               <div className={cn(
                 "grid h-full min-h-0",
                 user 
-                  ? "grid-cols-[2fr_3fr] grid-rows-[1fr_auto] gap-x-0 gap-y-4"
+                  ? "grid-cols-[2fr_3fr] grid-rows-[1fr_auto] gap-x-0 gap-y-0"
                   : "grid-cols-1 grid-rows-[1fr_auto] gap-4"
               )}>
-                {/* Left Column: Timer + Curriculum Topics (row 1, col 1) */}
-                <div className="min-h-0 overflow-hidden flex flex-col pr-6">
+                {/* Left Column: Timer + Curriculum Topics - spans both rows to match chat height */}
+                <div className={cn(
+                  "min-h-0 overflow-hidden flex flex-col pr-6",
+                  user && "row-span-2"
+                )}>
                   <div className="flex-shrink-0">
                     <TimerContainer
                       activeTask={activeTask}
@@ -224,15 +227,7 @@ const Index = () => {
                   </div>
                 )}
 
-                {/* Bottom row (row 2): Empty left side */}
-                <div className={cn(
-                  "flex-shrink-0 py-4",
-                  user ? "pr-6" : ""
-                )}>
-                  {/* Curriculum topics are now pre-populated, no input needed */}
-                </div>
-
-                {/* Bottom row (row 2): Chat input slot (col 2) */}
+                {/* Bottom row (row 2): Chat input slot (col 2 only - left column spans both rows) */}
                 {user && (
                   <div ref={setChatInputSlot} className="flex-shrink-0 pl-6" />
                 )}
