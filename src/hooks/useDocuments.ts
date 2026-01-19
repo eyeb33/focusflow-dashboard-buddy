@@ -199,6 +199,29 @@ export const useDocuments = () => {
     }
   };
 
+  const updateDocumentTitle = async (documentId: string, newTitle: string) => {
+    if (!newTitle.trim()) {
+      toast.error('Title cannot be empty');
+      return false;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('documents')
+        .update({ title: newTitle.trim() })
+        .eq('id', documentId);
+
+      if (error) throw error;
+
+      toast.success('Title updated');
+      return true;
+    } catch (error) {
+      console.error('Error updating document title:', error);
+      toast.error('Failed to update title');
+      return false;
+    }
+  };
+
   return {
     documents,
     isLoading,
@@ -206,6 +229,7 @@ export const useDocuments = () => {
     uploadDocument,
     reprocessDocument,
     deleteDocument,
+    updateDocumentTitle,
     refetch: fetchDocuments,
   };
 };
