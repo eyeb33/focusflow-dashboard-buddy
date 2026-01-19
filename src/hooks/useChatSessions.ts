@@ -12,6 +12,7 @@ export interface ChatSession {
   created_at: string;
   updated_at: string;
   last_message_at: string;
+  linked_task_id?: string | null;
 }
 
 export interface ChatMessage {
@@ -51,6 +52,7 @@ export const useChatSessions = () => {
         created_at: s.created_at,
         updated_at: s.updated_at,
         last_message_at: s.last_message_at,
+        linked_task_id: (s as any).linked_task_id || null,
       }));
 
       setSessions(mappedSessions);
@@ -96,11 +98,11 @@ export const useChatSessions = () => {
   }, [user]);
 
   // Create a new session
-  const createNewSession = useCallback(async (persona: string = 'explain') => {
+  const createNewSession = useCallback(async (persona: string = 'explain', linkedTaskId?: string, taskName?: string) => {
     if (!user) return null;
     
     try {
-      const title = `New session – ${format(new Date(), 'MMM d, yyyy')}`;
+      const title = taskName || `New session – ${format(new Date(), 'MMM d, yyyy')}`;
       
       const { data, error } = await supabase
         .from('coach_conversations')
@@ -111,6 +113,7 @@ export const useChatSessions = () => {
           exam_board: 'Edexcel',
           started_at: new Date().toISOString(),
           last_message_at: new Date().toISOString(),
+          linked_task_id: linkedTaskId || null,
         } as any)
         .select()
         .single();
@@ -125,6 +128,7 @@ export const useChatSessions = () => {
         created_at: data.created_at,
         updated_at: data.updated_at,
         last_message_at: data.last_message_at,
+        linked_task_id: (data as any).linked_task_id || null,
       };
 
       setSessions(prev => [newSession, ...prev]);
@@ -142,6 +146,56 @@ export const useChatSessions = () => {
       return null;
     }
   }, [user]);
+
+  // Find or create a session linked to a specific task
+  const openTaskSession = useCallback(async (taskId: string, taskName: string) => {
+    if (!user) return null;
+    
+    // First check if we already have a session for this task in local state
+    const existingSession = sessions.find(s => s.linked_task_id === taskId);
+    if (existingSession) {
+      setCurrentSession(existingSession);
+      await loadMessages(existingSession.id);
+      return existingSession;
+    }
+    
+    // Check the database for an existing session
+    try {
+      const { data, error } = await supabase
+        .from('coach_conversations')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('linked_task_id', taskId)
+        .single();
+
+      if (data && !error) {
+        const session: ChatSession = {
+          id: data.id,
+          title: (data as any).title || taskName,
+          persona: (data as any).persona || 'explain',
+          exam_board: (data as any).exam_board || 'Edexcel',
+          created_at: data.created_at,
+          updated_at: data.updated_at,
+          last_message_at: data.last_message_at,
+          linked_task_id: (data as any).linked_task_id,
+        };
+        
+        // Add to sessions if not already there
+        setSessions(prev => {
+          if (prev.some(s => s.id === session.id)) return prev;
+          return [session, ...prev];
+        });
+        setCurrentSession(session);
+        await loadMessages(session.id);
+        return session;
+      }
+    } catch (e) {
+      // No existing session found, will create new one
+    }
+    
+    // Create a new session linked to this task
+    return createNewSession('explain', taskId, taskName);
+  }, [user, sessions, loadMessages, createNewSession]);
 
   // Switch to a different session
   const switchSession = useCallback(async (sessionId: string) => {
@@ -293,5 +347,6 @@ export const useChatSessions = () => {
     updateSessionTitle,
     deleteSession,
     addMessage,
+    openTaskSession,
   };
 };

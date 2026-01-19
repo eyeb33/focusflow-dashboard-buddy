@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import TaskInput from '@/components/Tasks/TaskInput';
 import TaskList from '@/components/Tasks/TaskList';
 import { Skeleton } from '@/components/ui/skeleton';
-import MathsTutorInterface from '@/components/Tutor/MathsTutorInterface';
+import MathsTutorInterface, { MathsTutorInterfaceRef } from '@/components/Tutor/MathsTutorInterface';
 import { useCoach } from '@/contexts/CoachContext';
 import bgWork from '@/assets/bg-work.png';
 import bgBreak from '@/assets/bg-break.png';
@@ -33,6 +33,12 @@ const Index = () => {
   const { toast } = useToast();
   const { triggerProactiveCoaching } = useCoach();
   const suppressRestoreRef = React.useRef<string | null>(null);
+  const tutorRef = useRef<MathsTutorInterfaceRef>(null);
+
+  // Handle clicking on a study topic to open its chat session
+  const handleTaskClick = useCallback((taskId: string, taskName: string) => {
+    tutorRef.current?.openTaskSession(taskId, taskName);
+  }, []);
 
   // Restore active task from database after tasks load
   useEffect(() => {
@@ -273,6 +279,7 @@ const Index = () => {
                     editTask={editTask}
                     deleteTask={deleteTask}
                     completingTaskId={completingTaskId}
+                    onTaskClick={handleTaskClick}
                   />
                 </div>
               </div>
@@ -280,7 +287,7 @@ const Index = () => {
               {/* Right Column: Maths Tutor (60%) - Fixed container with internal scroll */}
               {user && (
                 <div className="flex flex-col w-3/5 border-l border-border/20 pl-6 min-h-0 overflow-hidden">
-                  <MathsTutorInterface />
+                  <MathsTutorInterface ref={tutorRef} />
                 </div>
               )}
             </div>
@@ -295,7 +302,6 @@ const Index = () => {
   );
 };
 
-// Wrapper component to pass drop handlers to TaskManager
 const TaskManagerWithDrop: React.FC<{ 
   onDropToList: (e: React.DragEvent, dropIndex: number | null) => void;
   onDragOverList: (e: React.DragEvent) => void;
@@ -308,7 +314,8 @@ const TaskManagerWithDrop: React.FC<{
   editTask: (id: string, name: string, estimatedPomodoros: number) => Promise<boolean>;
   deleteTask: (id: string) => Promise<boolean>;
   completingTaskId: string | null;
-}> = ({ onDropToList, onDragOverList, onReorderTasks, activeTaskId, tasks, isLoading, addTask, toggleComplete, editTask, deleteTask, completingTaskId }) => {
+  onTaskClick?: (taskId: string, taskName: string) => void;
+}> = ({ onDropToList, onDragOverList, onReorderTasks, activeTaskId, tasks, isLoading, addTask, toggleComplete, editTask, deleteTask, completingTaskId, onTaskClick }) => {
   const [editingTask, setEditingTask] = React.useState<any>(null);
   const [editName, setEditName] = React.useState('');
   const [editPomodoros, setEditPomodoros] = React.useState(1);
@@ -400,6 +407,7 @@ const TaskManagerWithDrop: React.FC<{
               onDragOverList={onDragOverList}
               onReorderTasks={onReorderTasks}
               completingTaskId={completingTaskId}
+              onTaskClick={onTaskClick}
             />
           </div>
         )}
