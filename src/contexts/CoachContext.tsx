@@ -602,12 +602,11 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             created_at: m.created_at
           })));
         }
-      } else if (messages.length === 0) {
-        // First time user - trigger welcome message
-        setTimeout(() => {
-          triggerProactiveCoaching('first_interaction');
-        }, 1000);
       }
+      // Note: We intentionally do NOT auto-trigger a first_interaction AI call on load.
+      // The UI already shows a local welcome state when there are no messages.
+      // This prevents consuming user quota (and hitting rate limits) without an explicit user action.
+
     };
 
     loadConversation();
@@ -616,11 +615,13 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Listen for coaching triggers from TimerContext
   useEffect(() => {
     const handlePomodoroEvents = (e: Event) => {
+      if (isMinimized) return; // don't consume AI quota while coach is closed
       const customEvent = e as CustomEvent;
       triggerProactiveCoaching('pomodoro_cycle_complete', customEvent.detail);
     };
 
     const handleExtendedWork = (e: Event) => {
+      if (isMinimized) return; // don't consume AI quota while coach is closed
       const customEvent = e as CustomEvent;
       triggerProactiveCoaching('extended_work_detected', customEvent.detail);
     };
@@ -632,7 +633,7 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       window.removeEventListener('coach:pomodoro-cycle', handlePomodoroEvents);
       window.removeEventListener('coach:extended-work', handleExtendedWork);
     };
-  }, []);
+  }, [isMinimized]);
 
   const createConversationIfNeeded = async () => {
     if (!user) return null;
