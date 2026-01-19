@@ -328,141 +328,117 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       const taskState = { tasks: tasks.map(t => ({ id: t.id, name: t.name, is_active: t.isActive, completed: t.completed })) };
 
       let finalContent = '';
-      let continueConversation = true;
-      let currentMessages: AIMessage[] = conversationMessages;
 
-      while (continueConversation) {
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-coach`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              messages: currentMessages,
-              mode,
-              taskState,
-            }),
-          }
-        );
+      const callAi = async () =>
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-coach`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages: conversationMessages,
+            mode,
+            taskState,
+          }),
+        });
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
+      // Exactly ONE attempt per message, with a single retry after 5s on 429.
+      let response = await callAi();
+      if (response.status === 429) {
+        await new Promise((r) => setTimeout(r, 5000));
+        response = await callAi();
+      }
 
-          // Handle specific error codes - directly open settings for API key issues
-          if (errorData.code === 'NO_API_KEY' || errorData.code === 'INVALID_API_KEY') {
-            setShowSettings(true); // Directly open settings drawer
-            setIsLoading(false);
-            return;
-          }
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
 
-          // Rate limit handling (Gemini free tier)
-          if (response.status === 429 || errorData.code === 'RATE_LIMIT') {
-            setCooldownUntil(Date.now() + 60_000);
-            toast({
-              title: 'Rate limit exceeded',
-              description:
-                'Rate limit exceeded. Gemini free tier allows 15 requests/minute and 1,500/day. Please wait a moment and try again.',
-              variant: 'destructive',
-            });
-            setIsLoading(false);
-            return;
-          }
-
-          throw new Error(errorData.error || 'Failed to get response');
+        // Handle specific error codes - directly open settings for API key issues
+        if (errorData.code === 'NO_API_KEY' || errorData.code === 'INVALID_API_KEY') {
+          setShowSettings(true); // Directly open settings drawer
+          setIsLoading(false);
+          return;
         }
 
-        // Handle streaming response
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-        const accumulated = { content: '', toolCalls: new Map<number, ToolCall>() };
-        let assistantMessageId = `temp-assistant-${Date.now()}`;
-
-        // Add initial assistant message placeholder
-        if (!finalContent) {
-          setMessages(prev => [...prev, {
-            id: assistantMessageId,
-            role: 'assistant',
-            content: '',
-            created_at: new Date().toISOString()
-          }]);
+        // Rate limit handling (Gemini free tier)
+        if (response.status === 429 || errorData.code === 'RATE_LIMIT') {
+          setCooldownUntil(Date.now() + 60_000);
+          toast({
+            title: 'Rate limit exceeded',
+            description: 'Rate limit exceeded. You can make 15 requests per minute. Please wait 60 seconds.',
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+          return;
         }
 
-        if (reader) {
-          let buffer = '';
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
+        throw new Error(errorData.error || 'Failed to get response');
+      }
 
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || '';
+      // Handle streaming response (single request)
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      const accumulated = { content: '', toolCalls: new Map<number, ToolCall>() };
+      const assistantMessageId = `temp-assistant-${Date.now()}`;
 
-            for (const line of lines) {
-              if (!line.trim() || line.startsWith(':')) continue;
-              if (!line.startsWith('data: ')) continue;
+      // Add initial assistant message placeholder
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: assistantMessageId,
+          role: 'assistant',
+          content: '',
+          created_at: new Date().toISOString(),
+        },
+      ]);
 
-              const jsonStr = line.slice(6).trim();
-              if (jsonStr === '[DONE]') continue;
+      if (reader) {
+        let buffer = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-              try {
-                const parsed = JSON.parse(jsonStr);
-                parseStreamChunk(parsed, accumulated);
-                
-                // Update UI with content as it streams
-                if (accumulated.content) {
-                  finalContent = accumulated.content;
-                  queueMicrotask(() => {
-                    setMessages(prev => prev.map(m => 
-                      m.id === assistantMessageId 
-                        ? { ...m, content: finalContent }
-                        : m
-                    ));
-                  });
-                }
-              } catch (e) {
-                console.error('Parse error:', e);
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (!line.trim() || line.startsWith(':')) continue;
+            if (!line.startsWith('data: ')) continue;
+
+            const jsonStr = line.slice(6).trim();
+            if (jsonStr === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(jsonStr);
+              parseStreamChunk(parsed, accumulated);
+
+              // Update UI with content as it streams
+              if (accumulated.content) {
+                finalContent = accumulated.content;
+                queueMicrotask(() => {
+                  setMessages((prev) =>
+                    prev.map((m) => (m.id === assistantMessageId ? { ...m, content: finalContent } : m))
+                  );
+                });
               }
+            } catch (e) {
+              console.error('Parse error:', e);
             }
           }
         }
+      }
 
-        // Check if we have tool calls to execute
-        if (accumulated.toolCalls.size > 0) {
-          console.log('Executing tool calls:', Array.from(accumulated.toolCalls.values()));
-          
-          const toolResults: ToolResult[] = [];
-          for (const toolCall of accumulated.toolCalls.values()) {
-            const result = await executeToolCall(toolCall);
-            toolResults.push(result);
-            console.log('Tool result:', result);
+      // Execute tool calls (if any) but DO NOT call the AI again.
+      // This ensures one backend/Gemini call per user message.
+      if (accumulated.toolCalls.size > 0) {
+        console.log('Executing tool calls (no follow-up AI call):', Array.from(accumulated.toolCalls.values()));
+        for (const toolCall of accumulated.toolCalls.values()) {
+          try {
+            await executeToolCall(toolCall);
+          } catch (e) {
+            console.warn('Tool execution failed:', e);
           }
-
-          // Prepare messages for continuation with tool results
-          const assistantMessage = {
-            role: 'assistant' as const,
-            content: accumulated.content || null,
-            tool_calls: Array.from(accumulated.toolCalls.values())
-          };
-
-          currentMessages = [
-            ...currentMessages,
-            assistantMessage as AIMessage,
-            ...toolResults.map(tr => ({
-              role: 'tool' as const,
-              content: tr.content,
-              tool_call_id: tr.tool_call_id,
-              name: tr.name
-            } as AIMessage))
-          ];
-
-          // Continue the loop to get AI's response after tool execution
-          continueConversation = true;
-        } else {
-          // No tool calls, we're done
-          continueConversation = false;
         }
       }
 

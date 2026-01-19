@@ -819,65 +819,9 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           });
         }
 
-        // Get AI's follow-up response about what it did
-        const followUpResponse = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-coach`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              messages: [
-                ...messages.map(m => ({ role: m.role, content: m.content })),
-                { role: 'user', content },
-                { role: 'assistant', content: assistantContent || null, tool_calls: toolCalls },
-                ...toolResults
-              ],
-              mode,
-              ...getCurrentState()
-            }),
-          }
-        );
-
-        if (followUpResponse.ok && followUpResponse.body) {
-          const followUpReader = followUpResponse.body.getReader();
-          let followUpBuffer = '';
-          
-          while (true) {
-            const { done, value } = await followUpReader.read();
-            if (done) break;
-
-            followUpBuffer += decoder.decode(value, { stream: true });
-            const lines = followUpBuffer.split('\n');
-            followUpBuffer = lines.pop() || '';
-
-            for (const line of lines) {
-              if (!line.trim() || line.startsWith(':')) continue;
-              if (!line.startsWith('data: ')) continue;
-              const jsonStr = line.slice(6).trim();
-              if (jsonStr === '[DONE]') continue;
-
-              try {
-                const parsed = JSON.parse(jsonStr);
-                const content = parsed.choices?.[0]?.delta?.content;
-                if (content) {
-                  assistantContent += content;
-                  queueMicrotask(() => {
-                    setMessages(prev => prev.map(m => 
-                      m.id === assistantMessageId 
-                        ? { ...m, content: assistantContent }
-                        : m
-                    ));
-                  });
-                }
-              } catch (e) {
-                console.error('Follow-up parse error:', e);
-              }
-            }
-          }
-        }
+        // NOTE: We intentionally do NOT make a follow-up AI call after tool execution.
+        // Doing so can create 2+ Gemini requests per single user message.
+        // The assistant's primary response is the streamed content above.
       }
 
       // Save assistant message to DB
