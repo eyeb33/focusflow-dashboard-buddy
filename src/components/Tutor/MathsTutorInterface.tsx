@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Send, GraduationCap, BookOpen, PenTool, CheckCircle, Plus, Pencil, Check, X, Settings, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,7 +47,7 @@ export interface MathsTutorInterfaceRef {
 }
 
 interface MathsTutorInterfaceProps {
-  // Optional props for future use
+  inputPortalTarget?: HTMLElement | null;
 }
 
 const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfaceProps>((props, ref) => {
@@ -774,35 +775,44 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         </div>
       )}
 
-      {/* Input - Fixed at bottom */}
-      <div className="flex-shrink-0 p-4 border-t border-border bg-background/80">
-        {isRateLimited && (
-          <div className="mb-3 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-            Rate limit exceeded. Try again in <span className="font-medium text-foreground">{cooldownSecondsRemaining}s</span>.
+      {/* Input - Fixed at bottom (optionally portaled to parent grid) */}
+      {(() => {
+        const inputEl = (
+          <div className="flex-shrink-0 p-4 border-t border-border bg-background/80">
+            <p className="text-xs text-muted-foreground mb-2 text-center">
+              Tip: Use $ for inline maths like $x^2$ and $$ for display equations
+            </p>
+            {isRateLimited && (
+              <div className="mb-3 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+                Rate limit exceeded. Try again in <span className="font-medium text-foreground">{cooldownSecondsRemaining}s</span>.
+              </div>
+            )}
+            <div className="flex gap-3">
+              <Input
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Ask a question or paste a problem..."
+                disabled={isLoading || isRateLimited}
+                className="flex-1 h-12 text-base"
+              />
+              <Button
+                onClick={handleSend}
+                disabled={!inputValue.trim() || isLoading || isRateLimited}
+                size="icon"
+                className="h-12 w-12"
+              >
+                <Send className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
-        )}
-        <div className="flex gap-3">
-          <Input
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Ask a question or paste a problem..."
-            disabled={isLoading || isRateLimited}
-            className="flex-1 h-12 text-base"
-          />
-          <Button
-            onClick={handleSend}
-            disabled={!inputValue.trim() || isLoading || isRateLimited}
-            size="icon"
-            className="h-12 w-12"
-          >
-            <Send className="w-5 h-5" />
-          </Button>
-        </div>
-        <p className="text-xs text-muted-foreground mt-2 text-center">
-          Tip: Use $ for inline maths like $x^2$ and $$ for display equations
-        </p>
-      </div>
+        );
+
+        if (props.inputPortalTarget) {
+          return createPortal(inputEl, props.inputPortalTarget);
+        }
+        return inputEl;
+      })()}
       
       {/* Settings Drawer */}
       <SettingsDrawer 
