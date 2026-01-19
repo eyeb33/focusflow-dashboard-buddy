@@ -44,14 +44,14 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="border-b border-border/50 backdrop-blur-md bg-background/80 sticky top-0 z-50">
-      <div className="container px-0 py-0">
+      <div className="w-full px-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <Link to="/" className="flex items-center">
+            <Link to="/" className="flex items-center -ml-2">
               <img 
                 src={theme === 'dark' ? syllabuddyLogoDark : syllabuddyLogoLight} 
                 alt="Syllabuddy" 
-                className="h-14 w-auto" 
+                className="h-20 w-auto" 
               />
             </Link>
           </div>
