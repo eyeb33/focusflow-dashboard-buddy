@@ -74,6 +74,9 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
   const [showQuickActions, setShowQuickActions] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
 
+  // Hard lock to prevent double-submits (Enter + click, double-click, etc.)
+  const inFlightSendRef = useRef(false);
+
   const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
   const [nowTs, setNowTs] = useState(() => Date.now());
 
@@ -264,14 +267,18 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
 
   const handleSend = async () => {
     if (!inputValue.trim() || isLoading || !user) return;
+    if (inFlightSendRef.current) return;
+
     if (isRateLimited) {
       toast({
         title: 'Rate limit exceeded',
-        description: `Please wait ${cooldownSecondsRemaining}s before trying again.`,
+        description: `Rate limit exceeded. You can make 15 requests per minute. Please wait 60 seconds.`,
         variant: 'destructive',
       });
       return;
     }
+
+    inFlightSendRef.current = true;
 
     const messageContent = inputValue.trim();
     setInputValue('');
@@ -343,9 +350,27 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
           }),
         });
 
-      // Exactly ONE attempt per message, with a single retry after 5s on 429.
+      // One call per message. If Gemini is temporarily rate-limiting, retry ONCE after 5s
+      // only when the backend doesn't instruct a longer wait.
       let response = await callAi();
+
       if (response.status === 429) {
+        const firstError = await response.json().catch(() => ({}));
+        const retryAfterSeconds = Number(firstError?.retry_after_seconds ?? 0);
+
+        // If backend suggests a long wait (typical free-tier RPM), do NOT retry after 5s.
+        if (retryAfterSeconds > 5) {
+          setCooldownUntil(Date.now() + 60_000);
+          toast({
+            title: 'Rate limit exceeded',
+            description: 'Rate limit exceeded. You can make 15 requests per minute. Please wait 60 seconds.',
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        // Otherwise retry once after 5 seconds.
         await new Promise((r) => setTimeout(r, 5000));
         response = await callAi();
       }
@@ -468,6 +493,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         variant: 'destructive',
       });
     } finally {
+      inFlightSendRef.current = false;
       setIsLoading(false);
     }
   };

@@ -428,8 +428,10 @@ ${currentMode.style}
     }
 
     // Call Google Gemini API directly with user's API key
+    // NOTE: Use a model that is available on the Gemini free tier for most accounts.
+    // (Some newer models can report free-tier limits as 0, causing immediate 429s.)
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${userGeminiApiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${userGeminiApiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
