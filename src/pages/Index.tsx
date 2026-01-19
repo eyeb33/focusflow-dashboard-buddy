@@ -34,11 +34,26 @@ const Index = () => {
   const { triggerProactiveCoaching } = useCoach();
   const suppressRestoreRef = React.useRef<string | null>(null);
   const tutorRef = useRef<MathsTutorInterfaceRef>(null);
+  const [linkedTaskIds, setLinkedTaskIds] = useState<Set<string>>(new Set());
 
   // Handle clicking on a study topic to open its chat session
   const handleTaskClick = useCallback((taskId: string, taskName: string) => {
     tutorRef.current?.openTaskSession(taskId, taskName);
+    // Optimistically update linked task IDs
+    setLinkedTaskIds(prev => new Set([...prev, taskId]));
   }, []);
+
+  // Sync linkedTaskIds from the tutor component when it updates
+  useEffect(() => {
+    const syncLinkedIds = () => {
+      if (tutorRef.current?.linkedTaskIds) {
+        setLinkedTaskIds(tutorRef.current.linkedTaskIds);
+      }
+    };
+    // Initial sync after a short delay for ref to be populated
+    const timer = setTimeout(syncLinkedIds, 500);
+    return () => clearTimeout(timer);
+  }, [user]);
 
   // Restore active task from database after tasks load
   useEffect(() => {
@@ -280,6 +295,7 @@ const Index = () => {
                     deleteTask={deleteTask}
                     completingTaskId={completingTaskId}
                     onTaskClick={handleTaskClick}
+                    linkedTaskIds={tutorRef.current?.linkedTaskIds || linkedTaskIds}
                   />
                 </div>
               </div>
@@ -315,7 +331,8 @@ const TaskManagerWithDrop: React.FC<{
   deleteTask: (id: string) => Promise<boolean>;
   completingTaskId: string | null;
   onTaskClick?: (taskId: string, taskName: string) => void;
-}> = ({ onDropToList, onDragOverList, onReorderTasks, activeTaskId, tasks, isLoading, addTask, toggleComplete, editTask, deleteTask, completingTaskId, onTaskClick }) => {
+  linkedTaskIds?: Set<string>;
+}> = ({ onDropToList, onDragOverList, onReorderTasks, activeTaskId, tasks, isLoading, addTask, toggleComplete, editTask, deleteTask, completingTaskId, onTaskClick, linkedTaskIds }) => {
   const [editingTask, setEditingTask] = React.useState<any>(null);
   const [editName, setEditName] = React.useState('');
   const [editPomodoros, setEditPomodoros] = React.useState(1);
@@ -408,6 +425,7 @@ const TaskManagerWithDrop: React.FC<{
               onReorderTasks={onReorderTasks}
               completingTaskId={completingTaskId}
               onTaskClick={onTaskClick}
+              linkedTaskIds={linkedTaskIds}
             />
           </div>
         )}

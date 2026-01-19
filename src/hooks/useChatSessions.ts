@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -333,6 +333,17 @@ export const useChatSessions = () => {
     }
   }, [currentSession?.id, loadMessages]);
 
+  // Compute set of task IDs that have linked sessions
+  const linkedTaskIds = useMemo(() => {
+    const ids = new Set<string>();
+    sessions.forEach(s => {
+      if (s.linked_task_id) {
+        ids.add(s.linked_task_id);
+      }
+    });
+    return ids;
+  }, [sessions]);
+
   return {
     sessions,
     currentSession,
@@ -348,5 +359,6 @@ export const useChatSessions = () => {
     deleteSession,
     addMessage,
     openTaskSession,
+    linkedTaskIds,
   };
 };
