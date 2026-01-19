@@ -252,7 +252,7 @@ const Index = () => {
             
             <div className="flex-1 flex gap-6 mt-4 min-h-0 overflow-hidden">
               {/* Left Column: Timer + Tasks (40%) - Fixed height with internal scroll */}
-              <div className="flex flex-col w-2/5 gap-4 overflow-hidden">
+              <div className="flex flex-col w-2/5 overflow-hidden">
                 {/* Timer Section - Fixed */}
                 <div className="flex-shrink-0">
                   <TimerContainer
@@ -276,8 +276,8 @@ const Index = () => {
                   />
                 </div>
               
-                {/* Study Topics Section - Scrollable */}
-                <div className="flex flex-col flex-1 border-t border-border/20 pt-4 min-h-0 overflow-hidden">
+                {/* Study Topics Section - Scrollable (takes remaining space) */}
+                <div className="flex-1 flex flex-col border-t border-border/20 pt-4 min-h-0 overflow-hidden">
                   <TaskManagerWithDrop
                     activeTaskId={activeTask?.id ?? null} 
                     onDropToList={handleDropToList} 
@@ -285,7 +285,6 @@ const Index = () => {
                     onReorderTasks={handleReorderTasks}
                     tasks={tasks}
                     isLoading={isLoading}
-                    addTask={addTask}
                     toggleComplete={handleToggleCompleteFromList}
                     editTask={editTask}
                     deleteTask={deleteTask}
@@ -293,6 +292,28 @@ const Index = () => {
                     onTaskClick={handleTaskClick}
                     linkedTaskIds={tutorRef.current?.linkedTaskIds || linkedTaskIds}
                   />
+                </div>
+
+                {/* Task Input - Fixed at bottom, aligned with chat input */}
+                <div className="flex-shrink-0 pt-3">
+                  <TaskInput onAddTask={(taskName, estimatedPomodoros) => {
+                    if (!user) {
+                      toast({
+                        title: "Authentication required",
+                        description: "Please log in to add tasks.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    addTask(taskName, estimatedPomodoros).then(taskId => {
+                      if (taskId) {
+                        toast({
+                          title: "Task added",
+                          description: `"${taskName}" has been added to your tasks`,
+                        });
+                      }
+                    });
+                  }} />
                 </div>
               </div>
               
@@ -321,39 +342,17 @@ const TaskManagerWithDrop: React.FC<{
   activeTaskId?: string | null;
   tasks: Task[];
   isLoading: boolean;
-  addTask: (taskName: string, estimatedPomodoros: number) => Promise<string | null>;
   toggleComplete: (id: string) => void;
   editTask: (id: string, name: string, estimatedPomodoros: number) => Promise<boolean>;
   deleteTask: (id: string) => Promise<boolean>;
   completingTaskId: string | null;
   onTaskClick?: (taskId: string, taskName: string) => void;
   linkedTaskIds?: Set<string>;
-}> = ({ onDropToList, onDragOverList, onReorderTasks, activeTaskId, tasks, isLoading, addTask, toggleComplete, editTask, deleteTask, completingTaskId, onTaskClick, linkedTaskIds }) => {
+}> = ({ onDropToList, onDragOverList, onReorderTasks, activeTaskId, tasks, isLoading, toggleComplete, editTask, deleteTask, completingTaskId, onTaskClick, linkedTaskIds }) => {
   const [editingTask, setEditingTask] = React.useState<any>(null);
   const [editName, setEditName] = React.useState('');
   const [editPomodoros, setEditPomodoros] = React.useState(1);
   const { toast } = useToast();
-  const { user } = useAuth();
-
-  const handleAddTask = (taskName: string, estimatedPomodoros: number) => {
-    if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please log in to add tasks.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    addTask(taskName, estimatedPomodoros).then(taskId => {
-      if (taskId) {
-        toast({
-          title: "Task added",
-          description: `"${taskName}" has been added to your tasks`,
-        });
-      }
-    });
-  };
 
   const handleDeleteTask = (id: string) => {
     deleteTask(id).then(success => {
@@ -406,37 +405,23 @@ const TaskManagerWithDrop: React.FC<{
           ))}
         </div>
       ) : (
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          {/* Scrollable topics list */}
-          <div className="flex-1 min-h-0 relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-b from-background to-transparent z-10 pointer-events-none" />
+        <div className="flex-1 min-h-0 relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-b from-background to-transparent z-10 pointer-events-none" />
 
-            <TaskList 
-              tasks={tasks.filter(t => !t.isActive && !t.completed)} 
-              onDeleteTask={handleDeleteTask}
-              onToggleComplete={handleToggleComplete}
-              onEditTask={handleEditTask}
-              onDropToList={onDropToList}
-              onDragOverList={onDragOverList}
-              onReorderTasks={onReorderTasks}
-              completingTaskId={completingTaskId}
-              onTaskClick={onTaskClick}
-              linkedTaskIds={linkedTaskIds}
-            />
+          <TaskList 
+            tasks={tasks.filter(t => !t.isActive && !t.completed)} 
+            onDeleteTask={handleDeleteTask}
+            onToggleComplete={handleToggleComplete}
+            onEditTask={handleEditTask}
+            onDropToList={onDropToList}
+            onDragOverList={onDragOverList}
+            onReorderTasks={onReorderTasks}
+            completingTaskId={completingTaskId}
+            onTaskClick={onTaskClick}
+            linkedTaskIds={linkedTaskIds}
+          />
 
-            <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-t from-background to-transparent z-10 pointer-events-none" />
-          </div>
-
-          {/* Fixed input at bottom */}
-          <div className="flex-shrink-0 pt-3 border-t border-border/50">
-            <TaskInput onAddTask={handleAddTask} />
-          </div>
-        </div>
-      )}
-
-      {!user && (
-        <div className="text-center py-4 text-muted-foreground flex-shrink-0">
-          <p>Sign in to save and sync your tasks across devices</p>
+          <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-t from-background to-transparent z-10 pointer-events-none" />
         </div>
       )}
     </div>
