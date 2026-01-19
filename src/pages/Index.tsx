@@ -31,10 +31,19 @@ const Index = () => {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
   const { toast } = useToast();
-  
+
   const suppressRestoreRef = React.useRef<string | null>(null);
   const tutorRef = useRef<MathsTutorInterfaceRef>(null);
   const [linkedTaskIds, setLinkedTaskIds] = useState<Set<string>>(new Set());
+
+  // Slot for portaling the tutor input into the shared grid bottom row
+  const chatInputSlotRef = useRef<HTMLDivElement | null>(null);
+  const [, forceRerender] = useState(0);
+  const setChatInputSlotRef = (el: HTMLDivElement | null) => {
+    chatInputSlotRef.current = el;
+    // Ensure we re-render once the slot exists so the portal mounts.
+    forceRerender((v) => v + 1);
+  };
 
   // Handle clicking on a study topic to open its chat session
   const handleTaskClick = useCallback((taskId: string, taskName: string) => {
@@ -250,51 +259,59 @@ const Index = () => {
 
             <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
             
-            <div className="flex-1 flex gap-6 mt-4 min-h-0 overflow-hidden">
-              {/* Left Column: Timer + Tasks (40%) - Fixed height with internal scroll */}
-              <div className="flex flex-col w-2/5 overflow-hidden">
-                {/* Timer Section - Fixed */}
-                <div className="flex-shrink-0">
-                  <TimerContainer
-                    activeTask={activeTask}
-                    tasks={tasks}
-                    onRemoveActiveTask={handleRemoveActiveTask}
-                    onCompleteActiveTask={handleCompleteActiveTask}
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    onQuickAddTask={async (name) => {
-                      return await addTask(name, 1);
-                    }}
-                    onSetActiveTask={async (taskId) => {
-                      const task = tasks.find(t => t.id === taskId);
-                      if (task) {
-                        setActiveTask(task);
-                        setActiveTaskId(taskId);
-                        await setTaskActive(taskId);
-                      }
-                    }}
-                  />
-                </div>
-              
-                {/* Study Topics Section - Scrollable (takes remaining space) */}
-                <div className="flex-1 flex flex-col border-t border-border/20 pt-4 min-h-0 overflow-hidden">
-                  <TaskManagerWithDrop
-                    activeTaskId={activeTask?.id ?? null} 
-                    onDropToList={handleDropToList} 
-                    onDragOverList={handleDragOver}
-                    onReorderTasks={handleReorderTasks}
-                    tasks={tasks}
-                    isLoading={isLoading}
-                    toggleComplete={handleToggleCompleteFromList}
-                    editTask={editTask}
-                    deleteTask={deleteTask}
-                    completingTaskId={completingTaskId}
-                    onTaskClick={handleTaskClick}
-                    linkedTaskIds={tutorRef.current?.linkedTaskIds || linkedTaskIds}
-                  />
+            <div className="mt-4 flex-1 min-h-0 overflow-hidden">
+              {/* Two-column GRID with shared bottom row for perfect input alignment */}
+              <div className="grid grid-cols-[2fr_3fr] grid-rows-[1fr_auto] gap-6 h-full min-h-0">
+                {/* Left Column: Timer + Topics (row 1, col 1) */}
+                <div className="min-h-0 overflow-hidden flex flex-col">
+                  <div className="flex-shrink-0">
+                    <TimerContainer
+                      activeTask={activeTask}
+                      tasks={tasks}
+                      onRemoveActiveTask={handleRemoveActiveTask}
+                      onCompleteActiveTask={handleCompleteActiveTask}
+                      onDrop={handleDrop}
+                      onDragOver={handleDragOver}
+                      onQuickAddTask={async (name) => {
+                        return await addTask(name, 1);
+                      }}
+                      onSetActiveTask={async (taskId) => {
+                        const task = tasks.find(t => t.id === taskId);
+                        if (task) {
+                          setActiveTask(task);
+                          setActiveTaskId(taskId);
+                          await setTaskActive(taskId);
+                        }
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex-1 flex flex-col border-t border-border/20 pt-4 min-h-0 overflow-hidden">
+                    <TaskManagerWithDrop
+                      activeTaskId={activeTask?.id ?? null} 
+                      onDropToList={handleDropToList} 
+                      onDragOverList={handleDragOver}
+                      onReorderTasks={handleReorderTasks}
+                      tasks={tasks}
+                      isLoading={isLoading}
+                      toggleComplete={handleToggleCompleteFromList}
+                      editTask={editTask}
+                      deleteTask={deleteTask}
+                      completingTaskId={completingTaskId}
+                      onTaskClick={handleTaskClick}
+                      linkedTaskIds={tutorRef.current?.linkedTaskIds || linkedTaskIds}
+                    />
+                  </div>
                 </div>
 
-                {/* Task Input - Fixed at bottom, aligned with chat input */}
+                {/* Right Column: Tutor (row 1, col 2) */}
+                {user && (
+                  <div className="min-h-0 overflow-hidden border-l border-border/20 pl-6 flex flex-col">
+                    <MathsTutorInterface ref={tutorRef} inputPortalTarget={chatInputSlotRef.current} />
+                  </div>
+                )}
+
+                {/* Bottom row (row 2): Task input (col 1) */}
                 <div className="flex-shrink-0 p-4 border-t border-border bg-background/80">
                   <TaskInput onAddTask={(taskName, estimatedPomodoros) => {
                     if (!user) {
@@ -315,14 +332,12 @@ const Index = () => {
                     });
                   }} />
                 </div>
+
+                {/* Bottom row (row 2): Chat input slot (col 2) */}
+                {user && (
+                  <div ref={setChatInputSlotRef} className="flex-shrink-0" />
+                )}
               </div>
-              
-              {/* Right Column: Maths Tutor (60%) - Fixed container with internal scroll */}
-              {user && (
-                <div className="flex flex-col w-3/5 border-l border-border/20 pl-6 min-h-0 overflow-hidden">
-                  <MathsTutorInterface ref={tutorRef} />
-                </div>
-              )}
             </div>
           </div>
           
