@@ -91,6 +91,7 @@ export type Database = {
           exam_board: string | null
           id: string
           last_message_at: string
+          linked_task_id: string | null
           persona: string | null
           started_at: string
           title: string | null
@@ -102,6 +103,7 @@ export type Database = {
           exam_board?: string | null
           id?: string
           last_message_at?: string
+          linked_task_id?: string | null
           persona?: string | null
           started_at?: string
           title?: string | null
@@ -113,13 +115,22 @@ export type Database = {
           exam_board?: string | null
           id?: string
           last_message_at?: string
+          linked_task_id?: string | null
           persona?: string | null
           started_at?: string
           title?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "coach_conversations_linked_task_id_fkey"
+            columns: ["linked_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       coach_messages: {
         Row: {

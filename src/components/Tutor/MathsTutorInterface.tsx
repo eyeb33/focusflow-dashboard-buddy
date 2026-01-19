@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import { Send, GraduationCap, BookOpen, PenTool, CheckCircle, Plus, Pencil, Check, X, Settings, Key } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,7 +40,15 @@ interface ToolResult {
   content: string;
 }
 
-const MathsTutorInterface: React.FC = () => {
+export interface MathsTutorInterfaceRef {
+  openTaskSession: (taskId: string, taskName: string) => Promise<void>;
+}
+
+interface MathsTutorInterfaceProps {
+  // Optional props for future use
+}
+
+const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfaceProps>((props, ref) => {
   const { user } = useAuth();
   const {
     sessions,
@@ -53,6 +61,7 @@ const MathsTutorInterface: React.FC = () => {
     switchSession,
     updateSessionTitle,
     deleteSession,
+    openTaskSession,
   } = useChatSessions();
 
   const [inputValue, setInputValue] = useState('');
@@ -66,6 +75,13 @@ const MathsTutorInterface: React.FC = () => {
   const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  // Expose openTaskSession via ref for parent components
+  useImperativeHandle(ref, () => ({
+    openTaskSession: async (taskId: string, taskName: string) => {
+      await openTaskSession(taskId, taskName);
+    }
+  }), [openTaskSession]);
 
   const scrollToBottom = () => {
     // Use container scroll instead of scrollIntoView to prevent page scroll
@@ -490,23 +506,31 @@ const MathsTutorInterface: React.FC = () => {
                   </Button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-base truncate">
-                    {currentSession?.title || 'A-Level Maths Tutor'}
-                  </h3>
-                  {currentSession && (
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6 flex-shrink-0"
-                      onClick={() => setIsEditingTitle(true)}
-                    >
-                      <Pencil className="h-3 w-3" />
-                    </Button>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-base truncate">
+                      {currentSession?.title || 'A-Level Maths Tutor'}
+                    </h3>
+                    {currentSession && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6 flex-shrink-0"
+                        onClick={() => setIsEditingTitle(true)}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                  {currentSession?.linked_task_id ? (
+                    <p className="text-xs text-primary font-medium">
+                      Currently studying: {currentSession.title}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Edexcel Specification</p>
                   )}
                 </div>
               )}
-              <p className="text-xs text-muted-foreground">Edexcel Specification</p>
             </div>
           </div>
           
@@ -707,6 +731,8 @@ const MathsTutorInterface: React.FC = () => {
       <SettingsDrawer open={showSettings} onOpenChange={setShowSettings} />
     </div>
   );
-};
+});
+
+MathsTutorInterface.displayName = 'MathsTutorInterface';
 
 export default MathsTutorInterface;

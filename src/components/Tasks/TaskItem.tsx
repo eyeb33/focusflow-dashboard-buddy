@@ -17,6 +17,7 @@ interface TaskItemProps {
   isDragging?: boolean;
   isCompleting?: boolean;
   allTasks?: Task[];
+  onTaskClick?: (taskId: string, taskName: string) => void;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({ 
@@ -28,7 +29,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onDragEnd,
   isDragging,
   isCompleting,
-  allTasks = []
+  allTasks = [],
+  onTaskClick
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const { 
@@ -71,7 +73,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Don't expand if clicking on interactive elements
+    // Don't trigger if clicking on interactive elements
     const target = e.target as HTMLElement;
     if (
       target.closest('button') || 
@@ -80,7 +82,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
     ) {
       return;
     }
-    setIsExpanded(!isExpanded);
+    // If onTaskClick is provided, trigger it and open the chat session
+    if (onTaskClick) {
+      onTaskClick(task.id, task.name);
+    } else {
+      // Fallback to expand/collapse behavior
+      setIsExpanded(!isExpanded);
+    }
   };
 
   const handleCheckboxClick = (e: React.MouseEvent) => {
