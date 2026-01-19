@@ -16,7 +16,8 @@ const DEFAULT_TIMER_SETTINGS = {
   showNotifications: true,
   soundEnabled: true,
   soundVolume: 0.75,
-  soundId: 'zen-bell'
+  soundId: 'zen-bell',
+  timerType: 'pomodoro' as const
 };
 
 /**

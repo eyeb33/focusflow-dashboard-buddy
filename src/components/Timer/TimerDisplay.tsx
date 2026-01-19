@@ -10,11 +10,15 @@ interface TimerDisplayProps {
   totalSeconds: number;
   theme: string;
   isRunning?: boolean;
+  isFreeStudy?: boolean;
   // Control handlers for compact controls inside circle
   onStart?: () => void;
   onPause?: () => void;
   onReset?: () => void;
   showControls?: boolean;
+  // Session dots props
+  totalSessions?: number;
+  currentSessionIndex?: number;
 }
 
 const TimerDisplay: React.FC<TimerDisplayProps> = ({
@@ -23,10 +27,13 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
   totalSeconds,
   theme,
   isRunning = false,
+  isFreeStudy = false,
   onStart,
   onPause,
   onReset,
   showControls = false,
+  totalSessions = 4,
+  currentSessionIndex = 0,
 }) => {
   // Map timerMode to the format expected by TimerCircle
   const getTimerCircleMode = () => {
@@ -38,31 +45,9 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
     }
   };
 
-  // Get a user-friendly mode label
-  const getModeLabel = () => {
-    switch(timerMode) {
-      case 'work': return 'Focus';
-      case 'break': return 'Short Break';
-      case 'longBreak': return 'Long Break';
-      default: return 'Focus';
-    }
-  };
-
-  // Check for valid values and calculate progress
-  const validTotalSeconds = totalSeconds > 0 ? totalSeconds : 1;
-  
-  // CRITICAL FIX: Ensure timeRemaining is capped by totalSeconds
-  // This prevents displaying time higher than the intended duration
-  const validTimeRemaining = Math.min(Math.max(0, timeRemaining), validTotalSeconds);
-  
-  const progress = Math.round(((validTotalSeconds - validTimeRemaining) / validTotalSeconds) * 100);
-
-  // Format time for more readable logs
-  const formatTimeForDisplay = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
-  };
+  // Check for valid values
+  const validTotalSeconds = isFreeStudy ? 1 : (totalSeconds > 0 ? totalSeconds : 1);
+  const validTimeRemaining = isFreeStudy ? timeRemaining : Math.min(Math.max(0, timeRemaining), validTotalSeconds);
 
   return (
     <div className="flex-1 flex items-center justify-center">
@@ -71,10 +56,13 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
         totalSeconds={validTotalSeconds}
         mode={getTimerCircleMode()}
         isRunning={isRunning}
+        isFreeStudy={isFreeStudy}
         onStart={onStart}
         onPause={onPause}
         onReset={onReset}
         showControls={showControls}
+        totalSessions={totalSessions}
+        currentSessionIndex={currentSessionIndex}
       />
     </div>
   );

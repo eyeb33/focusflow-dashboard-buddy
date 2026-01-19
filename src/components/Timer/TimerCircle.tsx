@@ -10,11 +10,15 @@ interface TimerCircleProps {
   totalSeconds: number;
   mode?: 'focus' | 'break' | 'longBreak';
   isRunning?: boolean;
+  isFreeStudy?: boolean;
   // Compact controls inside the circle
   onStart?: () => void;
   onPause?: () => void;
   onReset?: () => void;
   showControls?: boolean;
+  // Session dots props
+  totalSessions?: number;
+  currentSessionIndex?: number;
 }
 
 const TimerCircle: React.FC<TimerCircleProps> = ({ 
@@ -22,10 +26,13 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
   totalSeconds,
   mode = 'focus',
   isRunning = false,
+  isFreeStudy = false,
   onStart,
   onPause,
   onReset,
-  showControls = false
+  showControls = false,
+  totalSessions = 4,
+  currentSessionIndex = 0
 }) => {
   const { theme } = useTheme();
   
@@ -173,6 +180,44 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
       
       {/* Time display and compact controls */}
       <div className="absolute flex flex-col items-center z-20">
+        {/* Session dots - inside circle, above time */}
+        {!isFreeStudy && (
+          <div className="flex justify-center items-center mb-2 space-x-1.5">
+            {Array.from({ length: totalSessions }).map((_, dotIndex) => {
+              const isActive = dotIndex === currentSessionIndex;
+              const isComplete = dotIndex < currentSessionIndex;
+              
+              return (
+                <div
+                  key={dotIndex}
+                  className={cn(
+                    "rounded-full transition-all duration-300",
+                    isActive ? "w-2 h-2" : "w-1.5 h-1.5"
+                  )}
+                  style={{
+                    backgroundColor: isActive || isComplete
+                      ? colors.solid
+                      : theme === "dark" ? "#444" : "#d1d5db"
+                  }}
+                />
+              );
+            })}
+          </div>
+        )}
+        
+        {/* Greyed out dots placeholder for free study */}
+        {isFreeStudy && (
+          <div className="flex justify-center items-center mb-2 space-x-1.5 opacity-30">
+            {Array.from({ length: 4 }).map((_, dotIndex) => (
+              <div
+                key={dotIndex}
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: theme === "dark" ? "#444" : "#d1d5db" }}
+              />
+            ))}
+          </div>
+        )}
+        
         <div className={cn(
           "flex items-baseline justify-center",
           theme === "dark" ? "text-white" : "text-gray-900"

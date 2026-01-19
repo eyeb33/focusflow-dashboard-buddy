@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { TimerMode } from '@/utils/timerContextUtils';
-import { useTimerSettings } from '@/hooks/useTimerSettings';
+import { useTimerSettings, TimerType } from '@/hooks/useTimerSettings';
 import { useTimerLogic } from '@/hooks/useTimerLogic';
 import { useOptimizedDocumentTitle } from '@/hooks/useOptimizedDocumentTitle';
 import { formatTime as formatTimeUtil, getModeLabel as getModeLabelUtil } from '@/utils/timerUtils';
@@ -31,6 +31,7 @@ interface TimerContextType {
   saveSessionReflection: (quality: 'completed' | 'progress' | 'distracted', reflection: string) => Promise<void>;
   onSessionComplete?: (sessionData: { mode: TimerMode; duration: number; taskId?: string }) => void;
   setOnSessionComplete: (callback: (sessionData: { mode: TimerMode; duration: number; taskId?: string }) => void) => void;
+  timerType: TimerType;
 }
 
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
@@ -161,7 +162,8 @@ const getElapsedSeconds = (): number => {
     setSessionGoal,
     saveSessionReflection,
     onSessionComplete: onSessionCompleteCallbackRef.current,
-    setOnSessionComplete
+    setOnSessionComplete,
+    timerType: settings.timerType
   };
 
   return (
