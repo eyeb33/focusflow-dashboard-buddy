@@ -203,6 +203,39 @@ export type Database = {
           },
         ]
       }
+      curriculum_topics: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          name: string
+          sort_order: number | null
+          subtopics: string[] | null
+          topic_id: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number | null
+          subtopics?: string[] | null
+          topic_id: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number | null
+          subtopics?: string[] | null
+          topic_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       document_chunks: {
         Row: {
           chunk_index: number
@@ -535,6 +568,48 @@ export type Database = {
           sort_order?: number | null
           time_spent?: number
           time_spent_seconds?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      topic_sessions: {
+        Row: {
+          completed_subtopics: string[] | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          last_accessed: string | null
+          message_count: number | null
+          topic_id: string
+          topic_name: string
+          total_time_seconds: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_subtopics?: string[] | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_accessed?: string | null
+          message_count?: number | null
+          topic_id: string
+          topic_name: string
+          total_time_seconds?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_subtopics?: string[] | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_accessed?: string | null
+          message_count?: number | null
+          topic_id?: string
+          topic_name?: string
+          total_time_seconds?: number | null
           updated_at?: string
           user_id?: string
         }

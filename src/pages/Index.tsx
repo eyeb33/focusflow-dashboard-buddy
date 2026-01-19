@@ -9,13 +9,12 @@ import AuthPrompt from "@/components/Auth/AuthPrompt";
 import { useTheme } from "@/components/Theme/ThemeProvider";
 import { cn } from "@/lib/utils";
 import { useTimerContext } from '@/contexts/TimerContext';
-import { useTasks } from '@/hooks/useTasks';
-import { Task } from '@/types/task';
 import { useToast } from '@/hooks/use-toast';
-import TaskInput from '@/components/Tasks/TaskInput';
-import TaskList from '@/components/Tasks/TaskList';
 import { Skeleton } from '@/components/ui/skeleton';
 import MathsTutorInterface, { MathsTutorInterfaceRef } from '@/components/Tutor/MathsTutorInterface';
+import CurriculumTopicList from '@/components/Curriculum/CurriculumTopicList';
+import { useCurriculumTopics } from '@/hooks/useCurriculumTopics';
+import { Task } from '@/types/task';
 
 import bgWork from '@/assets/bg-work.png';
 import bgBreak from '@/assets/bg-break.png';
@@ -26,40 +25,57 @@ const Index = () => {
   const { user } = useAuth();
   const { theme } = useTheme();
   const { timerMode, setActiveTaskId, getElapsedMinutes, getElapsedSeconds, isRunning, handleStart, activeTaskId } = useTimerContext();
-  const { tasks, isLoading, addTask, toggleComplete, editTask, deleteTask, setActiveTask: setTaskActive, updateTaskTime, reorderTasks } = useTasks();
-  const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const suppressRestoreRef = React.useRef<string | null>(null);
   const tutorRef = useRef<MathsTutorInterfaceRef>(null);
   const [linkedTaskIds, setLinkedTaskIds] = useState<Set<string>>(new Set());
+
+  // Curriculum topics hook
+  const {
+    categorizedTopics,
+    topicsWithSessions,
+    categoryProgress,
+    isLoading: isCurriculumLoading,
+    activeTopicId,
+    activeSession,
+    toggleCategory,
+    getOrCreateSession,
+    setTopicActive,
+    updateSessionTime,
+    toggleSubtopicComplete
+  } = useCurriculumTopics();
 
   // Slot for portaling the tutor input into the shared grid bottom row
   const [chatInputSlot, setChatInputSlot] = useState<HTMLDivElement | null>(null);
 
-  // Get the active task from tasks list based on activeTaskId
-  const activeTask = tasks.find(t => t.id === activeTaskId) || null;
+  // Handle clicking on a curriculum topic - opens chat, sets as active, and starts timer
+  const handleTopicClick = useCallback(async (topicId: string, topicName: string) => {
+    // 1. Ensure session exists for this topic
+    const session = await getOrCreateSession(topicId, topicName);
+    if (!session) return;
 
-  // Handle clicking on a study topic - opens chat, sets as active, and starts timer
-  const handleTaskClick = useCallback(async (taskId: string, taskName: string) => {
-    // 1. Open the chat session
-    tutorRef.current?.openTaskSession(taskId, taskName);
+    // 2. Open the chat session with the topic
+    tutorRef.current?.openTaskSession(topicId, topicName);
     
-    // 2. Set this task as active
-    setActiveTaskId(taskId);
-    await setTaskActive(taskId).catch(console.error);
+    // 3. Set this topic as active in both curriculum and timer contexts
+    await setTopicActive(topicId);
+    setActiveTaskId(topicId);
     
-    // 3. Auto-start the timer if not already running
+    // 4. Auto-start the timer if not already running
     if (!isRunning) {
-      // Small delay to ensure state is updated
       setTimeout(() => {
         handleStart();
       }, 100);
     }
     
     // Optimistically update linked task IDs
-    setLinkedTaskIds(prev => new Set([...prev, taskId]));
-  }, [setActiveTaskId, setTaskActive, isRunning, handleStart]);
+    setLinkedTaskIds(prev => new Set([...prev, topicId]));
+  }, [getOrCreateSession, setTopicActive, setActiveTaskId, isRunning, handleStart]);
+
+  // Handle subtopic completion toggle
+  const handleSubtopicToggle = useCallback(async (topicId: string, subtopic: string) => {
+    await toggleSubtopicComplete(topicId, subtopic);
+  }, [toggleSubtopicComplete]);
 
   // Sync linkedTaskIds from the tutor component when it updates
   useEffect(() => {
@@ -73,17 +89,28 @@ const Index = () => {
     return () => clearTimeout(timer);
   }, [user]);
 
-  // Restore active task from database after tasks load
+  // Restore active topic from curriculum session after load
   useEffect(() => {
-    if (!isLoading && tasks.length > 0 && !activeTaskId) {
-      const currentActiveTask = tasks.find(t => t.isActive && !t.completed && t.id !== suppressRestoreRef.current);
-      if (currentActiveTask) {
-        setActiveTaskId(currentActiveTask.id);
-      }
+    if (!isCurriculumLoading && activeSession && !activeTaskId) {
+      setActiveTaskId(activeSession.topicId);
     }
-  }, [isLoading, tasks, activeTaskId, setActiveTaskId]);
+  }, [isCurriculumLoading, activeSession, activeTaskId, setActiveTaskId]);
 
-  
+  // Save timer time to topic session when timer stops or topic changes
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (isRunning && activeTopicId) {
+        const elapsedSeconds = getElapsedMinutes() * 60 + getElapsedSeconds();
+        if (elapsedSeconds > 0) {
+          updateSessionTime(activeTopicId, elapsedSeconds);
+        }
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isRunning, activeTopicId, getElapsedMinutes, getElapsedSeconds, updateSessionTime]);
+
   const handleLoginClick = useCallback(() => {
     navigate('/auth', {
       state: {
@@ -100,68 +127,7 @@ const Index = () => {
     });
   }, [navigate]);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  }, []);
-
-  const handleReorderTasks = useCallback((newOrderedTasks: any[]) => {
-    reorderTasks(newOrderedTasks);
-  }, [reorderTasks]);
-
-  // Unified completion handler - saves time, clears active state, marks complete
-  const completeTask = useCallback(async (id: string, showToast: boolean = false) => {
-    const task = tasks.find(t => t.id === id);
-    if (!task || !user) return;
-
-    const isCurrentlyActive = activeTaskId === id;
-    const elapsedMinutes = isCurrentlyActive ? getElapsedMinutes() : 0;
-    const elapsedSeconds = isCurrentlyActive ? getElapsedSeconds() : 0;
-
-    // Suppress restoration of this task while completion is processing
-    suppressRestoreRef.current = id;
-
-    // Clear active state immediately
-    if (isCurrentlyActive) {
-      setActiveTaskId(null);
-    }
-
-    try {
-      // Always save time to ensure task appears on dashboard
-      await updateTaskTime(id, elapsedMinutes, elapsedSeconds);
-
-      // Mark complete and clear active status
-      await toggleComplete(id);
-      if (isCurrentlyActive) {
-        await setTaskActive(null);
-      }
-
-      // Show toast for active task completions
-      if (showToast && isCurrentlyActive) {
-        const timeMessage = elapsedSeconds > 0 ? ` ${elapsedMinutes}m ${elapsedSeconds % 60}s tracked.` : '';
-        toast({
-          title: "Task completed",
-          description: `Great work!${timeMessage}`,
-        });
-      }
-    } finally {
-      // Clear suppression after state/queries have a chance to settle
-      setTimeout(() => {
-        if (suppressRestoreRef.current === id) suppressRestoreRef.current = null;
-      }, 0);
-    }
-  }, [tasks, activeTaskId, user, getElapsedMinutes, getElapsedSeconds, updateTaskTime, toggleComplete, setTaskActive, setActiveTaskId, toast]);
-
-  const handleToggleCompleteFromList = useCallback((id: string) => {
-    setCompletingTaskId(id);
-    setTimeout(() => {
-      completeTask(id, false);
-      setTimeout(() => setCompletingTaskId(null), 300);
-    }, 400);
-  }, [completeTask]);
-  
   const getPageBackground = () => {
-    // Always use images for backgrounds, dark mode will have overlay
     switch(timerMode) {
       case 'work': return bgWork;
       case 'break': return bgBreak;
@@ -171,6 +137,20 @@ const Index = () => {
   };
 
   const background = getPageBackground();
+
+  // Create a mock active task for the timer to display
+  const activeTask: Task | null = activeSession ? {
+    id: activeSession.topicId,
+    name: activeSession.topicName,
+    estimatedPomodoros: 1,
+    completed: false,
+    completedPomodoros: 0,
+    isActive: true,
+    timeSpent: Math.floor(activeSession.totalTimeSeconds / 60),
+    timeSpentSeconds: activeSession.totalTimeSeconds,
+    createdAt: activeSession.createdAt,
+    updatedAt: activeSession.updatedAt
+  } : null;
 
   return (
     <div 
@@ -204,7 +184,7 @@ const Index = () => {
                   ? "grid-cols-[2fr_3fr] grid-rows-[1fr_auto] gap-x-0 gap-y-4"
                   : "grid-cols-1 grid-rows-[1fr_auto] gap-4"
               )}>
-                {/* Left Column: Timer + Topics (row 1, col 1) */}
+                {/* Left Column: Timer + Curriculum Topics (row 1, col 1) */}
                 <div className="min-h-0 overflow-hidden flex flex-col pr-6">
                   <div className="flex-shrink-0">
                     <TimerContainer
@@ -213,19 +193,27 @@ const Index = () => {
                   </div>
 
                   <div className="flex-1 flex flex-col pt-4 min-h-0 overflow-hidden">
-                    <TaskManagerWithDrop
-                      activeTaskId={activeTaskId} 
-                      onDragOverList={handleDragOver}
-                      onReorderTasks={handleReorderTasks}
-                      tasks={tasks}
-                      isLoading={isLoading}
-                      toggleComplete={handleToggleCompleteFromList}
-                      editTask={editTask}
-                      deleteTask={deleteTask}
-                      completingTaskId={completingTaskId}
-                      onTaskClick={handleTaskClick}
-                      linkedTaskIds={tutorRef.current?.linkedTaskIds || linkedTaskIds}
-                    />
+                    <div className="pb-2 flex-shrink-0">
+                      <h2 className="text-xl font-display font-semibold tracking-tight">A-Level Maths Curriculum</h2>
+                      <p className="text-xs text-muted-foreground mt-0.5">Edexcel Specification</p>
+                    </div>
+                    
+                    <div className="flex-1 min-h-0 relative overflow-hidden">
+                      <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-b from-background to-transparent z-10 pointer-events-none" />
+                      
+                      <CurriculumTopicList
+                        categories={categorizedTopics}
+                        topicsWithSessions={topicsWithSessions}
+                        categoryProgress={categoryProgress}
+                        isLoading={isCurriculumLoading}
+                        activeTopicId={activeTopicId}
+                        onTopicClick={handleTopicClick}
+                        onSubtopicToggle={handleSubtopicToggle}
+                        onCategoryToggle={toggleCategory}
+                      />
+                      
+                      <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-t from-background to-transparent z-10 pointer-events-none" />
+                    </div>
                   </div>
                 </div>
 
@@ -236,29 +224,12 @@ const Index = () => {
                   </div>
                 )}
 
-                {/* Bottom row (row 2): Task input (col 1) */}
+                {/* Bottom row (row 2): Empty left side */}
                 <div className={cn(
-                  "flex-shrink-0 py-4 border-t border-border bg-background/80",
+                  "flex-shrink-0 py-4",
                   user ? "pr-6" : ""
                 )}>
-                  <TaskInput onAddTask={(taskName, estimatedPomodoros) => {
-                    if (!user) {
-                      toast({
-                        title: "Authentication required",
-                        description: "Please log in to add tasks.",
-                        variant: "destructive",
-                      });
-                      return;
-                    }
-                    addTask(taskName, estimatedPomodoros).then(taskId => {
-                      if (taskId) {
-                        toast({
-                          title: "Task added",
-                          description: `"${taskName}" has been added to your tasks`,
-                        });
-                      }
-                    });
-                  }} />
+                  {/* Curriculum topics are now pre-populated, no input needed */}
                 </div>
 
                 {/* Bottom row (row 2): Chat input slot (col 2) */}
@@ -274,98 +245,6 @@ const Index = () => {
       </main>
       
       <MobileNav />
-    </div>
-  );
-};
-
-const TaskManagerWithDrop: React.FC<{ 
-  onDragOverList: (e: React.DragEvent) => void;
-  onReorderTasks: (newOrderedTasks: any[]) => void;
-  activeTaskId?: string | null;
-  tasks: Task[];
-  isLoading: boolean;
-  toggleComplete: (id: string) => void;
-  editTask: (id: string, name: string, estimatedPomodoros: number) => Promise<boolean>;
-  deleteTask: (id: string) => Promise<boolean>;
-  completingTaskId: string | null;
-  onTaskClick?: (taskId: string, taskName: string) => void;
-  linkedTaskIds?: Set<string>;
-}> = ({ onDragOverList, onReorderTasks, activeTaskId, tasks, isLoading, toggleComplete, editTask, deleteTask, completingTaskId, onTaskClick, linkedTaskIds }) => {
-  const [editingTask, setEditingTask] = React.useState<any>(null);
-  const [editName, setEditName] = React.useState('');
-  const [editPomodoros, setEditPomodoros] = React.useState(1);
-  const { toast } = useToast();
-
-  const handleDeleteTask = (id: string) => {
-    deleteTask(id).then(success => {
-      if (success) {
-        toast({
-          title: "Task deleted",
-          description: "The task has been removed",
-        });
-      }
-    });
-  };
-
-  const handleToggleComplete = (id: string) => {
-    toggleComplete(id);
-  };
-
-  const handleEditTask = (id: string) => {
-    const task = tasks.find(t => t.id === id);
-    if (task) {
-      setEditingTask(task);
-      setEditName(task.name);
-      setEditPomodoros(task.estimatedPomodoros);
-    }
-  };
-
-  const handleSaveEdit = () => {
-    if (editingTask && editName.trim()) {
-      editTask(editingTask.id, editName, editPomodoros).then(success => {
-        if (success) {
-          setEditingTask(null);
-          toast({
-            title: "Task updated",
-            description: "Your task has been updated",
-          });
-        }
-      });
-    }
-  };
-
-  return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-      <div className="pb-2 flex-shrink-0">
-        <h2 className="text-xl font-display font-semibold tracking-tight">Study Topics</h2>
-      </div>
-
-      {isLoading ? (
-        <div className="space-y-3 flex-1">
-          {[...Array(3)].map((_, i) => (
-            <Skeleton key={i} className="w-full h-16" />
-          ))}
-        </div>
-      ) : (
-        <div className="flex-1 min-h-0 relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-b from-background to-transparent z-10 pointer-events-none" />
-
-          <TaskList 
-            tasks={tasks.filter(t => !t.completed)} 
-            onDeleteTask={handleDeleteTask}
-            onToggleComplete={handleToggleComplete}
-            onEditTask={handleEditTask}
-            onDragOverList={onDragOverList}
-            onReorderTasks={onReorderTasks}
-            completingTaskId={completingTaskId}
-            onTaskClick={onTaskClick}
-            linkedTaskIds={linkedTaskIds}
-            activeTaskId={activeTaskId}
-          />
-
-          <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-t from-background to-transparent z-10 pointer-events-none" />
-        </div>
-      )}
     </div>
   );
 };
