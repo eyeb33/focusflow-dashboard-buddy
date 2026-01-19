@@ -395,22 +395,22 @@ const TaskManagerWithDrop: React.FC<{
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-      <div className="pb-3 flex-shrink-0">
-        <h2 className="text-xl font-bold">Study Topics</h2>
+      <div className="pb-2 flex-shrink-0">
+        <h2 className="text-xl font-display font-semibold tracking-tight">Study Topics</h2>
       </div>
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        <div className="flex-shrink-0">
-          <TaskInput onAddTask={handleAddTask} />
+
+      {isLoading ? (
+        <div className="space-y-3 flex-1">
+          {[...Array(3)].map((_, i) => (
+            <Skeleton key={i} className="w-full h-16" />
+          ))}
         </div>
-        
-        {isLoading ? (
-          <div className="space-y-3 mt-4">
-            {[...Array(3)].map((_, i) => (
-              <Skeleton key={i} className="w-full h-16" />
-            ))}
-          </div>
-        ) : (
-          <div className="mt-4 flex-1 overflow-y-auto pr-2">
+      ) : (
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          {/* Scrollable topics list */}
+          <div className="flex-1 min-h-0 relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-b from-background to-transparent z-10 pointer-events-none" />
+
             <TaskList 
               tasks={tasks.filter(t => !t.isActive && !t.completed)} 
               onDeleteTask={handleDeleteTask}
@@ -423,15 +423,22 @@ const TaskManagerWithDrop: React.FC<{
               onTaskClick={onTaskClick}
               linkedTaskIds={linkedTaskIds}
             />
+
+            <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-t from-background to-transparent z-10 pointer-events-none" />
           </div>
-        )}
-        
-        {!user && (
-          <div className="text-center py-4 text-muted-foreground flex-shrink-0">
-            <p>Sign in to save and sync your tasks across devices</p>
+
+          {/* Fixed input at bottom */}
+          <div className="flex-shrink-0 pt-3 border-t border-border/50">
+            <TaskInput onAddTask={handleAddTask} />
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {!user && (
+        <div className="text-center py-4 text-muted-foreground flex-shrink-0">
+          <p>Sign in to save and sync your tasks across devices</p>
+        </div>
+      )}
     </div>
   );
 };
