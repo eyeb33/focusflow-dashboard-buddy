@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_usage: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          last_request_at: string | null
+          request_count: number
+          token_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          last_request_at?: string | null
+          request_count?: number
+          token_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          last_request_at?: string | null
+          request_count?: number
+          token_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       coach_actions: {
         Row: {
           action_params: Json | null
@@ -423,6 +456,10 @@ export type Database = {
       generate_user_insight: {
         Args: { p_content: string; p_title: string; p_user_id: string }
         Returns: string
+      }
+      increment_api_usage: {
+        Args: { p_tokens?: number; p_user_id: string }
+        Returns: undefined
       }
       save_session_progress: {
         Args: {
