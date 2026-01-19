@@ -269,6 +269,18 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     if (!inputValue.trim() || isLoading || !user) return;
     if (inFlightSendRef.current) return;
 
+    // A per-send request id to correlate frontend -> backend -> Gemini logs.
+    const requestId = (globalThis.crypto?.randomUUID?.() ?? `req_${Date.now()}_${Math.random().toString(16).slice(2)}`);
+
+    console.log('[tutor] handleSend called', {
+      requestId,
+      userId: user.id,
+      mode,
+      isLoading,
+      isRateLimited,
+      ts: new Date().toISOString(),
+    });
+
     if (isRateLimited) {
       toast({
         title: 'Rate limit exceeded',
@@ -308,55 +320,69 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         content: messageContent,
         created_at: new Date().toISOString(),
       };
-      setMessages(prev => [...prev, tempUserMessage]);
+      setMessages((prev) => [...prev, tempUserMessage]);
 
       // Save user message to DB
-      await supabase
-        .from('coach_messages')
-        .insert({
-          conversation_id: sessionId,
-          user_id: user.id,
-          role: 'user',
-          content: messageContent,
-        });
+      await supabase.from('coach_messages').insert({
+        conversation_id: sessionId,
+        user_id: user.id,
+        role: 'user',
+        content: messageContent,
+      });
 
       // Get user's session token for edge function auth
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) throw new Error('No session found');
 
       // Prepare messages for AI, including tool messages from context
-      const conversationMessages: AIMessage[] = [...messages, tempUserMessage].map(m => ({
+      const conversationMessages: AIMessage[] = [...messages, tempUserMessage].map((m) => ({
         role: m.role as 'user' | 'assistant',
-        content: m.content
+        content: m.content,
       }));
 
       // Fetch current tasks for context
       const tasks = await taskService.fetchTasks(user.id);
-      const taskState = { tasks: tasks.map(t => ({ id: t.id, name: t.name, is_active: t.isActive, completed: t.completed })) };
+      const taskState = {
+        tasks: tasks.map((t) => ({ id: t.id, name: t.name, is_active: t.isActive, completed: t.completed })),
+      };
 
       let finalContent = '';
 
-      const callAi = async () =>
-        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-coach`, {
+      const callAi = async () => {
+        console.log('[tutor] invoking ai-coach', {
+          requestId,
+          conversationId: sessionId,
+          messageChars: messageContent.length,
+          ts: new Date().toISOString(),
+        });
+
+        return fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-coach`, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
+            request_id: requestId,
             messages: conversationMessages,
             mode,
             taskState,
           }),
         });
+      };
 
       // One call per message. If Gemini is temporarily rate-limiting, retry ONCE after 5s
       // only when the backend doesn't instruct a longer wait.
       let response = await callAi();
+      console.log('[tutor] ai-coach response', { requestId, status: response.status, ok: response.ok });
 
       if (response.status === 429) {
         const firstError = await response.json().catch(() => ({}));
         const retryAfterSeconds = Number(firstError?.retry_after_seconds ?? 0);
+
+        console.warn('[tutor] rate limited (first attempt)', { requestId, retryAfterSeconds, firstError });
 
         // If backend suggests a long wait (typical free-tier RPM), do NOT retry after 5s.
         if (retryAfterSeconds > 5) {
@@ -373,10 +399,12 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         // Otherwise retry once after 5 seconds.
         await new Promise((r) => setTimeout(r, 5000));
         response = await callAi();
+        console.log('[tutor] ai-coach response (retry)', { requestId, status: response.status, ok: response.ok });
       }
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.warn('[tutor] ai-coach non-ok response', { requestId, status: response.status, errorData });
 
         // Handle specific error codes - directly open settings for API key issues
         if (errorData.code === 'NO_API_KEY' || errorData.code === 'INVALID_API_KEY') {
