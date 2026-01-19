@@ -25,12 +25,15 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
   // Core timer state
   const [timerMode, setTimerMode] = useState<TimerMode>('work');
   const [isRunning, setIsRunning] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(settings.workDuration * 60);
+  const [timeRemaining, setTimeRemaining] = useState(settings.timerType === 'freeStudy' ? 0 : settings.workDuration * 60);
   const [completedSessions, setCompletedSessions] = useState(0);
   const [totalTimeToday, setTotalTimeToday] = useState(0);
   const [currentSessionIndex, setCurrentSessionIndex] = useState(0);
   const [sessionGoal, setSessionGoal] = useState<string>('');
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  
+  // Free study elapsed time (counts up from 0)
+  const [freeStudyElapsed, setFreeStudyElapsed] = useState(0);
   
   // Refs for timer management
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -38,19 +41,23 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
   const lastRecordedFullMinutesRef = useRef<number>(0);
   const pausedTimeRef = useRef<number | null>(null);
   const targetEndTimeRef = useRef<number | null>(null);
+  const freeStudyStartTimeRef = useRef<number | null>(null);
+  
+  const isFreeStudy = settings.timerType === 'freeStudy';
   
   // Get total time for current mode
   const getTotalTimeForMode = useCallback(() => {
+    if (isFreeStudy) return 0; // No limit for free study
     switch(timerMode) {
       case 'work': return settings.workDuration * 60;
       case 'break': return settings.breakDuration * 60;
       case 'longBreak': return settings.longBreakDuration * 60;
       default: return settings.workDuration * 60;
     }
-  }, [timerMode, settings]);
+  }, [timerMode, settings, isFreeStudy]);
   
-  // Calculate progress
-  const progress = (getTotalTimeForMode() - timeRemaining) / getTotalTimeForMode() * 100;
+  // Calculate progress - for free study it's always 0 (no progress ring)
+  const progress = isFreeStudy ? 0 : (getTotalTimeForMode() - timeRemaining) / getTotalTimeForMode() * 100;
   
   // Clear timer helper
   const clearTimer = useCallback(() => {
@@ -198,18 +205,25 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
       setSessionGoal(goal);
     }
     
-    // Use paused time if available
-    const startTime = pausedTimeRef.current || timeRemaining;
-    setTimeRemaining(startTime);
-    setIsRunning(true);
-    
-    if (!sessionStartTimeRef.current) {
+    if (isFreeStudy) {
+      // Free study mode - start counting up
+      setIsRunning(true);
+      freeStudyStartTimeRef.current = Date.now() - (freeStudyElapsed * 1000);
       sessionStartTimeRef.current = new Date().toISOString();
+    } else {
+      // Pomodoro mode - count down
+      const startTime = pausedTimeRef.current || timeRemaining;
+      setTimeRemaining(startTime);
+      setIsRunning(true);
+      
+      if (!sessionStartTimeRef.current) {
+        sessionStartTimeRef.current = new Date().toISOString();
+      }
+      
+      // Clear paused time since we're starting
+      pausedTimeRef.current = null;
     }
-    
-    // Clear paused time since we're starting
-    pausedTimeRef.current = null;
-  }, [isRunning, timeRemaining]);
+  }, [isRunning, timeRemaining, isFreeStudy, freeStudyElapsed]);
   
   // Save session reflection
   const saveSessionReflection = useCallback(async (quality: 'completed' | 'progress' | 'distracted', reflection: string) => {
@@ -232,7 +246,7 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
   }, [user, currentSessionId]);
   
   // Pause timer
-  const handlePause = useCallback(() => {
+  const handlePause = useCallback(async () => {
     // CRITICAL: Store current time as paused time FIRST
     pausedTimeRef.current = timeRemaining;
     
@@ -240,18 +254,35 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
     clearTimer();
     setIsRunning(false);
     
-    // Save partial session if needed
-    if (user && sessionStartTimeRef.current) {
-      const totalTime = getTotalTimeForMode();
-      savePartialSession(
-        user.id,
-        timerMode,
-        totalTime,
-        timeRemaining,
-        lastRecordedFullMinutesRef.current
-      );
+    if (isFreeStudy) {
+      // Save free study session when pausing
+      if (user && freeStudyElapsed >= 60 && activeTaskId) {
+        try {
+          const { updateTaskTimeSpent } = await import('@/services/taskService');
+          const elapsedMinutes = Math.floor(freeStudyElapsed / 60);
+          await updateTaskTimeSpent(user.id, activeTaskId, elapsedMinutes);
+          
+          // Invalidate queries
+          queryClient.invalidateQueries({ queryKey: ['stats'] });
+          queryClient.invalidateQueries({ queryKey: ['dailyProductivity'] });
+        } catch (error) {
+          console.error('Error updating task time:', error);
+        }
+      }
+    } else {
+      // Save partial session if needed (Pomodoro mode)
+      if (user && sessionStartTimeRef.current) {
+        const totalTime = getTotalTimeForMode();
+        savePartialSession(
+          user.id,
+          timerMode,
+          totalTime,
+          timeRemaining,
+          lastRecordedFullMinutesRef.current
+        );
+      }
     }
-  }, [timeRemaining, clearTimer, user, timerMode, getTotalTimeForMode]);
+  }, [timeRemaining, clearTimer, user, timerMode, getTotalTimeForMode, isFreeStudy, freeStudyElapsed, activeTaskId, queryClient]);
   
   // Reset timer
   const handleReset = useCallback(() => {
@@ -259,8 +290,14 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
     setIsRunning(false);
     pausedTimeRef.current = null;
     
-    const newTime = getTotalTimeForMode();
-    setTimeRemaining(newTime);
+    if (isFreeStudy) {
+      setFreeStudyElapsed(0);
+      setTimeRemaining(0);
+      freeStudyStartTimeRef.current = null;
+    } else {
+      const newTime = getTotalTimeForMode();
+      setTimeRemaining(newTime);
+    }
     
     sessionStartTimeRef.current = null;
     lastRecordedFullMinutesRef.current = 0;
@@ -268,7 +305,7 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
     if (timerMode === 'work') {
       setCurrentSessionIndex(0);
     }
-  }, [clearTimer, getTotalTimeForMode, timerMode]);
+  }, [clearTimer, getTotalTimeForMode, timerMode, isFreeStudy]);
   
   // Change timer mode
   const handleModeChange = useCallback((newMode: TimerMode) => {
@@ -295,67 +332,103 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
       return;
     }
     
-    // Only set target end time when starting
-    if (targetEndTimeRef.current === null) {
-      const now = Date.now();
-      targetEndTimeRef.current = now + (timeRemaining * 1000);
+    if (isFreeStudy) {
+      // Free study mode - count UP
+      if (freeStudyStartTimeRef.current === null) {
+        freeStudyStartTimeRef.current = Date.now() - (freeStudyElapsed * 1000);
+      }
+      
+      timerRef.current = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - (freeStudyStartTimeRef.current || Date.now())) / 1000);
+        setFreeStudyElapsed(elapsed);
+        setTimeRemaining(elapsed); // Use timeRemaining to display elapsed time
+      }, 200);
+    } else {
+      // Pomodoro mode - count DOWN
+      if (targetEndTimeRef.current === null) {
+        const now = Date.now();
+        targetEndTimeRef.current = now + (timeRemaining * 1000);
+      }
+      
+      timerRef.current = setInterval(() => {
+        const currentTime = Date.now();
+        
+        if (targetEndTimeRef.current !== null) {
+          const remainingMs = targetEndTimeRef.current - currentTime;
+          const newSecondsRemaining = Math.max(0, Math.ceil(remainingMs / 1000));
+          
+          setTimeRemaining(prev => {
+            if (newSecondsRemaining !== prev) {
+              if (newSecondsRemaining <= 0) {
+                handleTimerComplete();
+                return 0;
+              }
+              
+              // Save partial session at minute boundaries
+              if (user && timerMode === 'work') {
+                const totalTime = getTotalTimeForMode();
+                const elapsedSeconds = totalTime - newSecondsRemaining;
+                const newFullMinutes = Math.floor(elapsedSeconds / 60);
+                
+                if (newFullMinutes > lastRecordedFullMinutesRef.current) {
+                  const startDate = sessionStartTimeRef.current
+                    ? new Date(sessionStartTimeRef.current).toISOString().split('T')[0]
+                    : new Date().toISOString().split('T')[0];
+                  
+                  savePartialSession(
+                    user.id,
+                    timerMode,
+                    totalTime,
+                    newSecondsRemaining,
+                    lastRecordedFullMinutesRef.current,
+                    startDate
+                  );
+                  
+                  lastRecordedFullMinutesRef.current = newFullMinutes;
+                }
+              }
+              
+              return newSecondsRemaining;
+            }
+            return prev;
+          });
+        }
+      }, 200);
     }
     
-    timerRef.current = setInterval(() => {
-      const currentTime = Date.now();
-      
-      if (targetEndTimeRef.current !== null) {
-        const remainingMs = targetEndTimeRef.current - currentTime;
-        const newSecondsRemaining = Math.max(0, Math.ceil(remainingMs / 1000));
-        
-        setTimeRemaining(prev => {
-          if (newSecondsRemaining !== prev) {
-            if (newSecondsRemaining <= 0) {
-              handleTimerComplete();
-              return 0;
-            }
-            
-            // Save partial session at minute boundaries
-            if (user && timerMode === 'work') {
-              const totalTime = getTotalTimeForMode();
-              const elapsedSeconds = totalTime - newSecondsRemaining;
-              const newFullMinutes = Math.floor(elapsedSeconds / 60);
-              
-              if (newFullMinutes > lastRecordedFullMinutesRef.current) {
-                const startDate = sessionStartTimeRef.current
-                  ? new Date(sessionStartTimeRef.current).toISOString().split('T')[0]
-                  : new Date().toISOString().split('T')[0];
-                
-                savePartialSession(
-                  user.id,
-                  timerMode,
-                  totalTime,
-                  newSecondsRemaining,
-                  lastRecordedFullMinutesRef.current,
-                  startDate
-                );
-                
-                lastRecordedFullMinutesRef.current = newFullMinutes;
-              }
-            }
-            
-            return newSecondsRemaining;
-          }
-          return prev;
-        });
-      }
-    }, 200);
-    
     return () => clearTimer();
-  }, [isRunning, handleTimerComplete, user, timerMode, getTotalTimeForMode, clearTimer]);
+  }, [isRunning, handleTimerComplete, user, timerMode, getTotalTimeForMode, clearTimer, isFreeStudy, freeStudyElapsed]);
   
   // Update time when settings change (only if not running and not paused)
   useEffect(() => {
     if (!isRunning && pausedTimeRef.current === null) {
+      if (isFreeStudy) {
+        setTimeRemaining(freeStudyElapsed);
+      } else {
+        const newTime = getTotalTimeForMode();
+        setTimeRemaining(newTime);
+      }
+    }
+  }, [settings, timerMode, isRunning, getTotalTimeForMode, isFreeStudy, freeStudyElapsed]);
+  
+  // Reset when timer type changes
+  useEffect(() => {
+    clearTimer();
+    setIsRunning(false);
+    pausedTimeRef.current = null;
+    
+    if (isFreeStudy) {
+      setFreeStudyElapsed(0);
+      setTimeRemaining(0);
+      freeStudyStartTimeRef.current = null;
+    } else {
       const newTime = getTotalTimeForMode();
       setTimeRemaining(newTime);
     }
-  }, [settings, timerMode, isRunning, getTotalTimeForMode]);
+    
+    sessionStartTimeRef.current = null;
+    lastRecordedFullMinutesRef.current = 0;
+  }, [settings.timerType]);
   
   return {
     timerMode,

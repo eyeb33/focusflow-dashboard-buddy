@@ -1,6 +1,8 @@
 
 import { useEffect, useState } from "react";
 
+export type TimerType = 'pomodoro' | 'freeStudy';
+
 export interface TimerSettings {
   workDuration: number;
   breakDuration: number;
@@ -12,6 +14,7 @@ export interface TimerSettings {
   soundEnabled: boolean;
   soundVolume: number;
   soundId: string;
+  timerType: TimerType;
 }
 
 const DEFAULT_SETTINGS: TimerSettings = {
@@ -24,7 +27,8 @@ const DEFAULT_SETTINGS: TimerSettings = {
   showNotifications: true,
   soundEnabled: true,
   soundVolume: 0.75,
-  soundId: 'zen-bell'
+  soundId: 'zen-bell',
+  timerType: 'pomodoro'
 };
 
 export function useTimerSettings() {

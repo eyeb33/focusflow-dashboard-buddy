@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from 'react';
 import TimerHeader from './TimerHeader';
 import TimerDisplay from './TimerDisplay';
-import SessionDots from './SessionDots';
 import TimerObserver from './TimerObserver';
 import ActiveTaskZone from '../Tasks/ActiveTaskZone';
 import { SessionStartModal } from './SessionStartModal';
@@ -135,6 +134,8 @@ const TimerContainer: React.FC<TimerContainerProps> = ({
           settings={settings}
           onSettingsChange={handleSettingsChange}
           onReset={handleReset}
+          timerType={settings.timerType}
+          onTimerTypeChange={(type) => updateSettings({ timerType: type })}
         />
 
         <TimerDisplay 
@@ -143,20 +144,16 @@ const TimerContainer: React.FC<TimerContainerProps> = ({
           totalSeconds={getTotalSeconds()}
           theme={theme}
           isRunning={isRunning}
+          isFreeStudy={settings.timerType === 'freeStudy'}
           onStart={handleStartWithModal}
           onPause={handlePause}
           onReset={handleReset}
           showControls={true}
-        />
-
-        {/* Session dots immediately below timer circle */}
-        <SessionDots 
-          totalSessions={settings?.sessionsUntilLongBreak || 4} 
+          totalSessions={settings?.sessionsUntilLongBreak || 4}
           currentSessionIndex={currentSessionIndex}
-          mode={timerMode}
         />
 
-        <ActiveTaskZone 
+        <ActiveTaskZone
           activeTask={activeTask}
           onRemoveTask={onRemoveActiveTask}
           onCompleteTask={onCompleteActiveTask}

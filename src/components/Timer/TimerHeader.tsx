@@ -3,13 +3,17 @@ import React from 'react';
 import TimerModeTabs from './TimerModeTabs';
 import TimerSettings from './TimerSettings';
 import { TimerMode } from '@/utils/timerContextUtils';
+import { TimerType } from '@/hooks/useTimerSettings';
+import { cn } from '@/lib/utils';
 
 interface TimerHeaderProps {
   timerMode: TimerMode;
   handleModeChange: (mode: TimerMode) => void;
   settings: any;
   onSettingsChange: (settings: any) => void;
-  onReset?: () => void; // Add optional reset handler
+  onReset?: () => void;
+  timerType: TimerType;
+  onTimerTypeChange: (type: TimerType) => void;
 }
 
 const TimerHeader: React.FC<TimerHeaderProps> = ({ 
@@ -17,7 +21,9 @@ const TimerHeader: React.FC<TimerHeaderProps> = ({
   handleModeChange,
   settings,
   onSettingsChange,
-  onReset
+  onReset,
+  timerType,
+  onTimerTypeChange
 }) => {
   const durations = {
     focus: settings?.workDuration || 25,
@@ -38,21 +44,25 @@ const TimerHeader: React.FC<TimerHeaderProps> = ({
     
     onSettingsChange(updatedSettings);
   };
+  
+  const isFreeStudy = timerType === 'freeStudy';
 
   return (
-    <div className="w-full flex flex-col md:flex-row justify-between items-center mb-4">
-      <div className="w-full mb-2 md:mb-0 md:flex-1">
+    <div className="w-full flex items-center gap-2 mb-4">
+      <div className={cn("flex-1", isFreeStudy && "opacity-40 pointer-events-none")}>
         <TimerModeTabs
           currentMode={timerMode}
           onModeChange={handleModeChange}
         />
       </div>
       
-      <div className="ml-auto">
+      <div className="flex items-center h-full">
         <TimerSettings 
           durations={durations} 
-          onChange={handleSettingsChange} 
-          onReset={onReset} // Pass reset handler to TimerSettings
+          timerType={timerType}
+          onChange={handleSettingsChange}
+          onTimerTypeChange={onTimerTypeChange}
+          onReset={onReset}
         />
       </div>
     </div>

@@ -15,6 +15,7 @@ const PomodoroTimer = () => {
 
   const [mode, setMode] = useState<"focus" | "break" | "longBreak">("focus");
   const [durations, setDurations] = useState(defaultDurations);
+  const [timerType, setTimerType] = useState<'pomodoro' | 'freeStudy'>('pomodoro');
   const [secondsLeft, setSecondsLeft] = useState(durations.focus * 60);
   const [totalSeconds, setTotalSeconds] = useState(durations.focus * 60);
   const [isRunning, setIsRunning] = useState(false);
@@ -172,7 +173,12 @@ const PomodoroTimer = () => {
       
       {/* Settings button */}
       <div className="absolute top-4 right-4">
-        <TimerSettings durations={durations} onChange={handleDurationChange} />
+        <TimerSettings 
+          durations={durations} 
+          timerType={timerType}
+          onChange={handleDurationChange}
+          onTimerTypeChange={setTimerType}
+        />
       </div>
     </div>
   );
