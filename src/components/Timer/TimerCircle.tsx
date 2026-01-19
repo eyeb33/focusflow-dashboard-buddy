@@ -2,6 +2,7 @@
 import React from 'react';
 import { useTheme } from "@/components/Theme/ThemeProvider";
 import { cn } from "@/lib/utils";
+import { Play, Pause, RotateCcw } from "lucide-react";
 import TimerMoodCharacter from './TimerMoodCharacter';
 
 interface TimerCircleProps {
@@ -9,13 +10,22 @@ interface TimerCircleProps {
   totalSeconds: number;
   mode?: 'focus' | 'break' | 'longBreak';
   isRunning?: boolean;
+  // Compact controls inside the circle
+  onStart?: () => void;
+  onPause?: () => void;
+  onReset?: () => void;
+  showControls?: boolean;
 }
 
 const TimerCircle: React.FC<TimerCircleProps> = ({ 
   secondsLeft, 
   totalSeconds,
   mode = 'focus',
-  isRunning = false
+  isRunning = false,
+  onStart,
+  onPause,
+  onReset,
+  showControls = false
 }) => {
   const { theme } = useTheme();
   
@@ -64,21 +74,26 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
   };
   const colors = getColorVars();
 
-  // Get text for the status message
-  const getStatusText = () => {
-    switch (mode) {
-      case 'break':
-        return "Take a short break";
-      case 'longBreak':
-        return "Enjoy your long break";
-      case 'focus':
-      default:
-        return "Focus on your task";
+  // Handle play/pause click
+  const handlePlayPauseClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isRunning) {
+      onPause?.();
+    } else {
+      onStart?.();
     }
   };
 
+  // Handle reset click
+  const handleResetClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onReset?.();
+  };
+
   return (
-    <div className="relative flex items-center justify-center p-8 overflow-visible">
+    <div className="relative flex items-center justify-center p-6 overflow-visible">
       {/* Mood Character above timer */}
       <TimerMoodCharacter 
         mode={mode} 
@@ -155,6 +170,8 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
           />
         </svg>
       </div>
+      
+      {/* Time display and compact controls */}
       <div className="absolute flex flex-col items-center z-20">
         <div className={cn(
           "flex items-baseline justify-center",
@@ -167,6 +184,48 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
             :{seconds.toString().padStart(2, '0')}
           </span>
         </div>
+        
+        {/* Compact controls inside the circle */}
+        {showControls && (
+          <div className="flex items-center gap-4 mt-1">
+            <button 
+              onClick={handlePlayPauseClick}
+              className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200",
+                "hover:scale-110 active:scale-95",
+                theme === "dark" 
+                  ? "bg-white/10 hover:bg-white/20" 
+                  : "bg-black/5 hover:bg-black/10"
+              )}
+              style={{ color: colors.solid }}
+              aria-label={isRunning ? "Pause timer" : "Start timer"}
+              type="button"
+              data-testid={isRunning ? "pause-button" : "play-button"}
+            >
+              {isRunning ? (
+                <Pause className="h-4 w-4" fill="currentColor" />
+              ) : (
+                <Play className="h-4 w-4 ml-0.5" fill="currentColor" />
+              )}
+            </button>
+            
+            <button 
+              onClick={handleResetClick}
+              className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200",
+                "hover:scale-110 active:scale-95",
+                theme === "dark" 
+                  ? "bg-white/10 hover:bg-white/20 text-white/70" 
+                  : "bg-black/5 hover:bg-black/10 text-gray-500"
+              )}
+              aria-label="Reset timer"
+              type="button"
+              data-testid="reset-button"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

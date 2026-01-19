@@ -67,7 +67,7 @@ const SessionDots: React.FC<SessionDotsProps> = ({
   const colors = getDotColors();
 
   return (
-    <div className="flex justify-center items-center mt-2 mb-1 space-x-2">
+    <div className="flex justify-center items-center mt-0 mb-2 space-x-2">
       {dots.map((dotIndex) => {
         let isActive = false;
         let isComplete = false;
