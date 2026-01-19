@@ -8,7 +8,7 @@ const Dashboard = () => {
   return (
     <>
       <Helmet>
-        <title>Dashboard - Summit</title>
+        <title>Dashboard - Syllabuddy</title>
       </Helmet>
       <DashboardProvider>
         <DashboardContainer />

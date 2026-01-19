@@ -36,7 +36,7 @@ export const useDocumentTitle = ({
       }
     };
 
-    const baseTitle = 'Summit';
+    const baseTitle = 'Syllabuddy';
     const circle = getCircleColor();
     
     // Format time for display

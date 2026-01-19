@@ -8,7 +8,7 @@ import ThemeToggle from '@/components/Theme/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/components/Theme/ThemeProvider';
 import { cn } from '@/lib/utils';
-import summitLogo from '@/assets/summit-logo.png';
+import syllabuddyLogo from '@/assets/syllabuddy-logo.png';
 
 interface HeaderProps {
   isAuthenticated?: boolean;
@@ -47,7 +47,7 @@ const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Link to="/" className="flex items-center gap-2">
-              <img src={summitLogo} alt="Summit" className="h-16 w-auto" />
+              <img src={syllabuddyLogo} alt="Syllabuddy" className="h-20 w-auto" />
             </Link>
           </div>
           
