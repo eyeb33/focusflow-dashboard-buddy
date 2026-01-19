@@ -10,6 +10,11 @@ interface TimerDisplayProps {
   totalSeconds: number;
   theme: string;
   isRunning?: boolean;
+  // Control handlers for compact controls inside circle
+  onStart?: () => void;
+  onPause?: () => void;
+  onReset?: () => void;
+  showControls?: boolean;
 }
 
 const TimerDisplay: React.FC<TimerDisplayProps> = ({
@@ -18,6 +23,10 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
   totalSeconds,
   theme,
   isRunning = false,
+  onStart,
+  onPause,
+  onReset,
+  showControls = false,
 }) => {
   // Map timerMode to the format expected by TimerCircle
   const getTimerCircleMode = () => {
@@ -54,19 +63,6 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
     const remainingSeconds = seconds % 60;
     return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
   };
-  
-  // Enhanced debugging output with more useful information
-  useEffect(() => {
-    console.log("TimerDisplay rendering with:", {
-      mode: timerMode, 
-      actualTimeRemaining: timeRemaining,
-      validatedTimeRemaining: validTimeRemaining,
-      formattedTime: formatTimeForDisplay(validTimeRemaining),
-      actualTotalSeconds: totalSeconds,
-      validatedTotalSeconds: validTotalSeconds,
-      progress: progress
-    });
-  }, [timerMode, timeRemaining, validTimeRemaining, totalSeconds, validTotalSeconds, progress]);
 
   return (
     <div className="flex-1 flex items-center justify-center">
@@ -75,6 +71,10 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
         totalSeconds={validTotalSeconds}
         mode={getTimerCircleMode()}
         isRunning={isRunning}
+        onStart={onStart}
+        onPause={onPause}
+        onReset={onReset}
+        showControls={showControls}
       />
     </div>
   );
