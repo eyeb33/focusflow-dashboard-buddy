@@ -75,11 +75,11 @@ const MathsMessage: React.FC<MathsMessageProps> = ({
     return renderMathContent(message.content);
   }, [message.content]);
   return <div className={cn("flex gap-3 items-start", isUser ? "flex-row-reverse" : "flex-row")}>
-      <div className={cn("w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm", isUser ? "bg-secondary" : "bg-primary")}>
-        {isUser ? <User className="w-5 h-5 text-secondary-foreground" /> : <GraduationCap className="w-5 h-5 text-primary-foreground" />}
+      <div className={cn("w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm", isUser ? "bg-muted" : "bg-primary")}>
+        {isUser ? <User className="w-5 h-5 text-muted-foreground" /> : <GraduationCap className="w-5 h-5 text-primary-foreground" />}
       </div>
       
-      <div className={cn("rounded-xl px-4 py-3 max-w-[85%] shadow-sm bg-muted", isUser ? "bg-secondary text-secondary-foreground" : "bg-muted text-foreground")}>
+      <div className={cn("rounded-xl px-4 py-3 max-w-[85%] shadow-sm", isUser ? "bg-muted text-foreground" : "bg-primary/10 text-foreground")}>
         <div className="text-sm whitespace-pre-wrap leading-relaxed maths-content text-gray-900" dangerouslySetInnerHTML={{
         __html: renderedContent
       }} />
