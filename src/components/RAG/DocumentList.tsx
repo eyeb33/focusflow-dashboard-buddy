@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { 
   FileText, 
   Trash2, 
@@ -10,7 +11,10 @@ import {
   AlertCircle, 
   Loader2,
   Clock,
-  Database
+  Database,
+  Pencil,
+  Check,
+  X
 } from 'lucide-react';
 import { useDocuments, Document } from '@/hooks/useDocuments';
 import { formatDistanceToNow } from 'date-fns';
@@ -54,11 +58,46 @@ const DocumentRow: React.FC<{
   document: Document;
   onReprocess: (id: string) => void;
   onDelete: (id: string) => void;
-}> = ({ document, onReprocess, onDelete }) => {
+  onUpdateTitle: (id: string, newTitle: string) => Promise<boolean>;
+}> = ({ document, onReprocess, onDelete, onUpdateTitle }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(document.title);
+  const [isSaving, setIsSaving] = useState(false);
+
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const handleSave = async () => {
+    if (editTitle.trim() === document.title) {
+      setIsEditing(false);
+      return;
+    }
+    
+    setIsSaving(true);
+    const success = await onUpdateTitle(document.id, editTitle);
+    setIsSaving(false);
+    
+    if (success) {
+      setIsEditing(false);
+    } else {
+      setEditTitle(document.title);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditTitle(document.title);
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    } else if (e.key === 'Escape') {
+      handleCancel();
+    }
   };
 
   return (
@@ -69,8 +108,54 @@ const DocumentRow: React.FC<{
       
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <h4 className="font-medium truncate">{document.title}</h4>
-          <StatusBadge status={document.status} />
+          {isEditing ? (
+            <div className="flex items-center gap-2 flex-1">
+              <Input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="h-7 text-sm font-medium"
+                autoFocus
+                disabled={isSaving}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-green-600 hover:text-green-700"
+                onClick={handleSave}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4" />
+                )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={handleCancel}
+                disabled={isSaving}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <>
+              <h4 className="font-medium truncate">{document.title}</h4>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 opacity-0 group-hover:opacity-100 hover:opacity-100"
+                onClick={() => setIsEditing(true)}
+                title="Edit title"
+              >
+                <Pencil className="h-3 w-3" />
+              </Button>
+              <StatusBadge status={document.status} />
+            </>
+          )}
         </div>
         
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -98,6 +183,14 @@ const DocumentRow: React.FC<{
       </div>
 
       <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsEditing(true)}
+          title="Edit title"
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
         {(document.status === 'error' || document.status === 'ready') && (
           <Button 
             variant="ghost" 
@@ -123,7 +216,7 @@ const DocumentRow: React.FC<{
 };
 
 export const DocumentList: React.FC = () => {
-  const { documents, isLoading, reprocessDocument, deleteDocument } = useDocuments();
+  const { documents, isLoading, reprocessDocument, deleteDocument, updateDocumentTitle } = useDocuments();
 
   if (isLoading) {
     return (
@@ -167,6 +260,7 @@ export const DocumentList: React.FC = () => {
                 document={doc}
                 onReprocess={reprocessDocument}
                 onDelete={deleteDocument}
+                onUpdateTitle={updateDocumentTitle}
               />
             ))}
           </div>
