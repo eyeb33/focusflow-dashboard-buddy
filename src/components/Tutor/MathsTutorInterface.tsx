@@ -65,12 +65,20 @@ const MathsTutorInterface: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
 
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Use container scroll instead of scrollIntoView to prevent page scroll
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   };
 
   useEffect(() => {
-    scrollToBottom();
+    // Delay scroll to ensure content is rendered
+    requestAnimationFrame(() => {
+      scrollToBottom();
+    });
   }, [messages]);
 
   useEffect(() => {
@@ -583,7 +591,7 @@ const MathsTutorInterface: React.FC = () => {
       </div>
 
       {/* Messages - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
         {isLoadingMessages ? (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
