@@ -13,6 +13,7 @@ export interface ChatSession {
   updated_at: string;
   last_message_at: string;
   linked_task_id?: string | null;
+  linked_topic_id?: string | null;
 }
 
 export interface ChatMessage {
@@ -61,6 +62,7 @@ export const useChatSessions = () => {
         updated_at: s.updated_at,
         last_message_at: s.last_message_at,
         linked_task_id: (s as any).linked_task_id || null,
+        linked_topic_id: (s as any).linked_topic_id || null,
       }));
 
       setSessions(mappedSessions);
@@ -106,7 +108,12 @@ export const useChatSessions = () => {
   }, [user]);
 
   // Create a new session
-  const createNewSession = useCallback(async (persona: string = 'explain', linkedTaskId?: string, taskName?: string) => {
+  const createNewSession = useCallback(async (
+    persona: string = 'explain', 
+    linkedTaskId?: string, 
+    taskName?: string,
+    linkedTopicId?: string
+  ) => {
     if (!user) return null;
     
     try {
@@ -122,6 +129,7 @@ export const useChatSessions = () => {
           started_at: new Date().toISOString(),
           last_message_at: new Date().toISOString(),
           linked_task_id: linkedTaskId || null,
+          linked_topic_id: linkedTopicId || null,
         } as any)
         .select()
         .single();
@@ -137,6 +145,7 @@ export const useChatSessions = () => {
         updated_at: data.updated_at,
         last_message_at: data.last_message_at,
         linked_task_id: (data as any).linked_task_id || null,
+        linked_topic_id: (data as any).linked_topic_id || null,
       };
 
       setSessions(prev => [newSession, ...prev]);
@@ -155,12 +164,18 @@ export const useChatSessions = () => {
     }
   }, [user]);
 
-  // Find or create a session linked to a specific task
-  const openTaskSession = useCallback(async (taskId: string, taskName: string) => {
+  // Find or create a session linked to a specific task or topic
+  const openTaskSession = useCallback(async (taskOrTopicId: string, taskName: string, isTopicId: boolean = false) => {
     if (!user) return null;
     
-    // First check if we already have a session for this task in local state
-    const existingSession = sessions.find(s => s.linked_task_id === taskId);
+    // Determine which field to use based on whether this is a topic ID or task ID
+    const fieldName = isTopicId ? 'linked_topic_id' : 'linked_task_id';
+    const localField = isTopicId ? 'linked_topic_id' : 'linked_task_id';
+    
+    // First check if we already have a session for this task/topic in local state
+    const existingSession = sessions.find(s => 
+      isTopicId ? s.linked_topic_id === taskOrTopicId : s.linked_task_id === taskOrTopicId
+    );
     if (existingSession) {
       setCurrentSession(existingSession);
       await loadMessages(existingSession.id);
@@ -173,7 +188,7 @@ export const useChatSessions = () => {
         .from('coach_conversations')
         .select('*')
         .eq('user_id', user.id)
-        .eq('linked_task_id', taskId)
+        .eq(fieldName, taskOrTopicId)
         .single();
 
       if (data && !error) {
@@ -186,6 +201,7 @@ export const useChatSessions = () => {
           updated_at: data.updated_at,
           last_message_at: data.last_message_at,
           linked_task_id: (data as any).linked_task_id,
+          linked_topic_id: (data as any).linked_topic_id,
         };
         
         // Add to sessions if not already there
@@ -201,8 +217,12 @@ export const useChatSessions = () => {
       // No existing session found, will create new one
     }
     
-    // Create a new session linked to this task
-    return createNewSession('explain', taskId, taskName);
+    // Create a new session linked to this task/topic
+    if (isTopicId) {
+      return createNewSession('explain', undefined, taskName, taskOrTopicId);
+    } else {
+      return createNewSession('explain', taskOrTopicId, taskName);
+    }
   }, [user, sessions, loadMessages, createNewSession]);
 
   // Switch to a different session

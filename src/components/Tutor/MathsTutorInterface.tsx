@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Send, GraduationCap, BookOpen, PenTool, CheckCircle, Plus, Pencil, Check, X, Settings, BarChart3, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -42,8 +42,9 @@ interface ToolResult {
 }
 
 export interface MathsTutorInterfaceRef {
-  openTaskSession: (taskId: string, taskName: string) => Promise<void>;
+  openTaskSession: (taskId: string, taskName: string, isTopicId?: boolean) => Promise<void>;
   linkedTaskIds: Set<string>;
+  linkedTopicIds: Set<string>;
 }
 
 interface MathsTutorInterfaceProps {
@@ -85,13 +86,25 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
+  // Compute set of topic IDs that have linked sessions
+  const linkedTopicIds = useMemo(() => {
+    const ids = new Set<string>();
+    sessions.forEach(s => {
+      if ((s as any).linked_topic_id) {
+        ids.add((s as any).linked_topic_id);
+      }
+    });
+    return ids;
+  }, [sessions]);
+
   // Expose openTaskSession and linkedTaskIds via ref for parent components
   useImperativeHandle(ref, () => ({
-    openTaskSession: async (taskId: string, taskName: string) => {
-      await openTaskSession(taskId, taskName);
+    openTaskSession: async (taskId: string, taskName: string, isTopicId: boolean = false) => {
+      await openTaskSession(taskId, taskName, isTopicId);
     },
-    linkedTaskIds
-  }), [openTaskSession, linkedTaskIds]);
+    linkedTaskIds,
+    linkedTopicIds
+  }), [openTaskSession, linkedTaskIds, linkedTopicIds]);
 
   const scrollToBottom = () => {
     // Use container scroll instead of scrollIntoView to prevent page scroll
