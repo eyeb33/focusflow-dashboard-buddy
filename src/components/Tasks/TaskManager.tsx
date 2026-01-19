@@ -85,49 +85,48 @@ const TaskManager: React.FC = () => {
 
   return (
     <>
-      <div className="flex-1 flex flex-col min-h-0">
-        <div className="pb-3 flex-shrink-0">
-          <h2 className="text-2xl font-display font-semibold tracking-tight">Study Topics</h2>
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="pb-2 flex-shrink-0">
+          <h2 className="text-xl font-display font-semibold tracking-tight">Study Topics</h2>
         </div>
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          {isLoading ? (
-            <div className="space-y-3 flex-1">
-              {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="w-full h-16" />
-              ))}
-            </div>
-          ) : (
-            <>
-              {/* Scrollable task list with gradient fades */}
-              <div className="flex-1 min-h-0 relative">
-                {/* Top fade gradient */}
-                <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-background to-transparent z-10 pointer-events-none" />
-                
-                <TaskList 
-                  tasks={tasks.filter(t => !t.completed)} 
-                  onDeleteTask={handleDeleteTask}
-                  onToggleComplete={handleToggleComplete}
-                  onEditTask={handleEditTask}
-                  completingTaskId={completingTaskId}
-                />
-                
-                {/* Bottom fade gradient */}
-                <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-background to-transparent z-10 pointer-events-none" />
-              </div>
+        
+        {isLoading ? (
+          <div className="space-y-3 flex-1">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="w-full h-16" />
+            ))}
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            {/* Scrollable task list area */}
+            <div className="flex-1 min-h-0 relative overflow-hidden">
+              {/* Top fade gradient */}
+              <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-b from-background to-transparent z-10 pointer-events-none" />
               
-              {/* Fixed input at bottom */}
-              <div className="flex-shrink-0 mt-2">
-                <TaskInput onAddTask={handleAddTask} />
-              </div>
-            </>
-          )}
-          
-          {!user && (
-            <div className="text-center py-4 text-muted-foreground">
-              <p>Sign in to save and sync your tasks across devices</p>
+              <TaskList 
+                tasks={tasks.filter(t => !t.completed)} 
+                onDeleteTask={handleDeleteTask}
+                onToggleComplete={handleToggleComplete}
+                onEditTask={handleEditTask}
+                completingTaskId={completingTaskId}
+              />
+              
+              {/* Bottom fade gradient */}
+              <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-t from-background to-transparent z-10 pointer-events-none" />
             </div>
-          )}
-        </div>
+            
+            {/* Fixed input at bottom */}
+            <div className="flex-shrink-0 pt-3 border-t border-border/50">
+              <TaskInput onAddTask={handleAddTask} />
+            </div>
+          </div>
+        )}
+        
+        {!user && (
+          <div className="text-center py-4 text-muted-foreground">
+            <p>Sign in to save and sync your tasks across devices</p>
+          </div>
+        )}
       </div>
 
       <Dialog open={!!editingTask} onOpenChange={(open) => !open && setEditingTask(null)}>
