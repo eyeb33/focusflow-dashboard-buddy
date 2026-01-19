@@ -27,16 +27,21 @@ const GeminiApiKeySettings: React.FC = () => {
 
   const fetchExistingKey = async () => {
     if (!user) return;
-    
+
     const { data, error } = await supabase
       .from('profiles')
       .select('gemini_api_key')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (!error && data?.gemini_api_key) {
+    if (error) {
+      // Non-fatal; if there's no profile row yet, user can still save via upsert.
+      console.warn('Failed to fetch existing Gemini API key:', error.message);
+      return;
+    }
+
+    if (data?.gemini_api_key) {
       setHasExistingKey(true);
-      // Mask the key for display
       const key = data.gemini_api_key;
       setMaskedKey(`${key.slice(0, 8)}${'•'.repeat(20)}${key.slice(-4)}`);
     }
@@ -97,10 +102,17 @@ const GeminiApiKeySettings: React.FC = () => {
 
     setIsLoading(true);
     try {
+      // Use upsert so this works even if the profile row doesn't exist yet
       const { error } = await supabase
         .from('profiles')
-        .update({ gemini_api_key: apiKey })
-        .eq('user_id', user.id);
+        .upsert(
+          {
+            user_id: user.id,
+            gemini_api_key: apiKey,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id' }
+        );
 
       if (error) throw error;
 
