@@ -11,6 +11,7 @@ import { CoachProvider } from "@/contexts/CoachContext";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
+import Curriculum from "./pages/Curriculum";
 import NotFound from "./pages/NotFound";
 import React from 'react'; // Import React explicitly
 
@@ -32,6 +33,7 @@ const App = () => (
                     <Route path="/" element={<Index />} />
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/auth" element={<Auth />} />
+                    <Route path="/curriculum" element={<Curriculum />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </CoachProvider>

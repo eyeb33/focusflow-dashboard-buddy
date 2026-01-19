@@ -8,3 +8,9 @@ verify_jwt = true
 
 [functions.synthesize-speech]
 verify_jwt = true
+
+[functions.process-document]
+verify_jwt = true
+
+[functions.rag-search]
+verify_jwt = true
