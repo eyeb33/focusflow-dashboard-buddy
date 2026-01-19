@@ -805,7 +805,11 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       </div>
       
       {/* Settings Drawer */}
-      <SettingsDrawer open={showSettings} onOpenChange={setShowSettings} />
+      <SettingsDrawer 
+        open={showSettings} 
+        onOpenChange={setShowSettings} 
+        onOpenApiStats={() => setShowApiStats(true)}
+      />
       
       {/* API Stats Drawer */}
       <ApiStatsDrawer 
