@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
-import { Send, GraduationCap, BookOpen, PenTool, CheckCircle, Plus, Pencil, Check, X, Settings, Key } from 'lucide-react';
+import { Send, GraduationCap, BookOpen, PenTool, CheckCircle, Plus, Pencil, Check, X, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -74,7 +73,6 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showQuickActions, setShowQuickActions] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
-  const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -316,18 +314,15 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           
-          // Handle specific error codes
+          // Handle specific error codes - directly open settings for API key issues
           if (errorData.code === 'NO_API_KEY' || errorData.code === 'INVALID_API_KEY') {
-            setShowApiKeyPrompt(true);
+            setShowSettings(true); // Directly open settings drawer
             setIsLoading(false);
             return;
           }
           
           throw new Error(errorData.error || 'Failed to get response');
         }
-        
-        // Reset API key prompt if we got a successful response
-        setShowApiKeyPrompt(false);
 
         // Handle streaming response
         const reader = response.body?.getReader();
@@ -567,23 +562,6 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
           </div>
         </div>
         
-        {/* API Key Prompt */}
-        {showApiKeyPrompt && (
-          <Alert className="mt-3 bg-amber-500/10 border-amber-500/30">
-            <Key className="h-4 w-4 text-amber-500" />
-            <AlertDescription className="text-sm">
-              <span className="font-medium">Gemini API key required.</span>{' '}
-              <Button 
-                variant="link" 
-                className="h-auto p-0 text-primary" 
-                onClick={() => setShowSettings(true)}
-              >
-                Add your free API key in Settings
-              </Button>{' '}
-              to start using the AI tutor.
-            </AlertDescription>
-          </Alert>
-        )}
         
         {/* Mode Selection */}
         <div className="flex gap-2">
