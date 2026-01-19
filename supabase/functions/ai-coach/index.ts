@@ -482,6 +482,17 @@ ${currentMode.style}
       timestamp: new Date().toISOString(),
     });
 
+    // Track API usage (only on successful call, before checking response status)
+    // We count even failed calls to accurately track quota consumption
+    try {
+      await supabaseClient.rpc('increment_api_usage', { 
+        p_user_id: user.id,
+        p_tokens: 0 // We don't have token count from streaming, estimate later
+      });
+    } catch (usageErr) {
+      console.warn('[ai-coach] Failed to track API usage:', usageErr);
+    }
+
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
       console.error('Gemini API error:', geminiResponse.status, errorText);

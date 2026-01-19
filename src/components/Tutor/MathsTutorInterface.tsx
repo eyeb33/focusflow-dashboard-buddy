@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
-import { Send, GraduationCap, BookOpen, PenTool, CheckCircle, Plus, Pencil, Check, X, Settings } from 'lucide-react';
+import { Send, GraduationCap, BookOpen, PenTool, CheckCircle, Plus, Pencil, Check, X, Settings, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -9,6 +9,7 @@ import { toast } from '@/hooks/use-toast';
 import MathsMessage from './MathsMessage';
 import ChatSessionDrawer from './ChatSessionDrawer';
 import SettingsDrawer from '@/components/Settings/SettingsDrawer';
+import ApiStatsDrawer from './ApiStatsDrawer';
 import { useChatSessions, ChatMessage } from '@/hooks/useChatSessions';
 import * as taskService from '@/services/taskService';
 import { fetchSubTasks, addSubTask, updateSubTaskCompletion, deleteSubTask } from '@/services/subTaskService';
@@ -73,6 +74,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showQuickActions, setShowQuickActions] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const [showApiStats, setShowApiStats] = useState(false);
 
   // Hard lock to prevent double-submits (Enter + click, double-click, etc.)
   const inFlightSendRef = useRef(false);
@@ -631,6 +633,15 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
             >
               <Plus className="h-4 w-4" />
             </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setShowApiStats(true)}
+              title="API Stats"
+            >
+              <BarChart3 className="h-4 w-4" />
+            </Button>
             <ChatSessionDrawer
               sessions={sessions}
               currentSessionId={currentSession?.id || null}
@@ -795,6 +806,13 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       
       {/* Settings Drawer */}
       <SettingsDrawer open={showSettings} onOpenChange={setShowSettings} />
+      
+      {/* API Stats Drawer */}
+      <ApiStatsDrawer 
+        open={showApiStats} 
+        onOpenChange={setShowApiStats}
+        onOpenSettings={() => setShowSettings(true)}
+      />
     </div>
   );
 });
