@@ -8,7 +8,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-const GeminiApiKeySettings: React.FC = () => {
+interface GeminiApiKeySettingsProps {
+  onOpenApiStats?: () => void;
+}
+
+const GeminiApiKeySettings: React.FC<GeminiApiKeySettingsProps> = ({ onOpenApiStats }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [apiKey, setApiKey] = useState('');
@@ -160,14 +164,30 @@ const GeminiApiKeySettings: React.FC = () => {
         {hasExistingKey ? (
           <div className="space-y-3">
             <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-              <CheckCircle className="h-4 w-4 text-green-500" />
-              <span className="text-sm font-mono flex-1">{maskedKey}</span>
-              <Button variant="outline" size="sm" onClick={handleRemoveKey} disabled={isLoading}>
-                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Remove'}
-              </Button>
+              <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+              <span className="text-sm font-mono flex-1 truncate">{maskedKey}</span>
             </div>
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              onClick={handleRemoveKey} 
+              disabled={isLoading}
+            >
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {isLoading ? 'Removing...' : 'Remove API Key'}
+            </Button>
             <p className="text-xs text-muted-foreground">
-              Your AI tutor is using your personal Gemini quota.
+              Your AI tutor is using{' '}
+              {onOpenApiStats ? (
+                <button 
+                  onClick={onOpenApiStats}
+                  className="text-primary hover:underline font-medium"
+                >
+                  your personal Gemini quota
+                </button>
+              ) : (
+                'your personal Gemini quota'
+              )}.
             </p>
           </div>
         ) : (
