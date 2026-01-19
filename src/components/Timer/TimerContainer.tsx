@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import TimerHeader from './TimerHeader';
 import TimerDisplay from './TimerDisplay';
 import TimerObserver from './TimerObserver';
-import ActiveTaskZone from '../Tasks/ActiveTaskZone';
 import { SessionStartModal } from './SessionStartModal';
 import { SessionReflectionModal } from './SessionReflectionModal';
 import { useTimerContext } from '@/contexts/TimerContext';
@@ -13,24 +12,10 @@ import { Task } from '@/types/task';
 
 interface TimerContainerProps {
   activeTask: Task | null;
-  tasks: Task[];
-  onRemoveActiveTask: () => void;
-  onCompleteActiveTask: () => void;
-  onDrop: (e: React.DragEvent) => void;
-  onDragOver: (e: React.DragEvent) => void;
-  onQuickAddTask: (taskName: string) => Promise<string | null>;
-  onSetActiveTask: (taskId: string) => Promise<void>;
 }
 
 const TimerContainer: React.FC<TimerContainerProps> = ({ 
   activeTask,
-  tasks,
-  onRemoveActiveTask,
-  onCompleteActiveTask,
-  onDrop,
-  onDragOver,
-  onQuickAddTask,
-  onSetActiveTask
 }) => {
   const {
     timerMode,
@@ -55,7 +40,6 @@ const TimerContainer: React.FC<TimerContainerProps> = ({
   const { playStartChime } = useTimerAudio();
   
   // Modal states
-  const [showStartModal, setShowStartModal] = useState(false);
   const [showReflectionModal, setShowReflectionModal] = useState(false);
   const [completedSessionData, setCompletedSessionData] = useState<{
     taskName?: string;
@@ -95,24 +79,10 @@ const TimerContainer: React.FC<TimerContainerProps> = ({
     updateSettings(newDurations);
   };
   
-  // Handle start with modal check
-  const handleStartWithModal = () => {
-    if (timerMode === 'work' && !activeTask && !isRunning) {
-      setShowStartModal(true);
-    } else {
-      playStartChime();
-      handleStart();
-    }
-  };
-  
-  // Handle session start from modal
-  const handleSessionStart = async (taskId: string | null, goal: string) => {
-    if (taskId && taskId !== activeTask?.id) {
-      await onSetActiveTask(taskId);
-    }
-    setSessionGoal(goal);
+  // Handle start with chime
+  const handleStartWithChime = () => {
     playStartChime();
-    handleStart(goal);
+    handleStart();
   };
   
   // Handle reflection submission
@@ -145,7 +115,7 @@ const TimerContainer: React.FC<TimerContainerProps> = ({
           theme={theme}
           isRunning={isRunning}
           isFreeStudy={settings.timerType === 'freeStudy'}
-          onStart={handleStartWithModal}
+          onStart={handleStartWithChime}
           onPause={handlePause}
           onReset={handleReset}
           showControls={true}
@@ -153,28 +123,16 @@ const TimerContainer: React.FC<TimerContainerProps> = ({
           currentSessionIndex={currentSessionIndex}
         />
 
-        <ActiveTaskZone
-          activeTask={activeTask}
-          onRemoveTask={onRemoveActiveTask}
-          onCompleteTask={onCompleteActiveTask}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
-          sessionGoal={sessionGoal}
-          timeRemaining={timeRemaining}
-          totalTime={getTotalSeconds()}
-          isRunning={isRunning}
-        />
+        {/* Show active topic name below timer if one is selected */}
+        {activeTask && (
+          <div className="mt-4 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20">
+            <p className="text-sm text-center">
+              <span className="text-muted-foreground">Tracking: </span>
+              <span className="font-medium text-primary">{activeTask.name}</span>
+            </p>
+          </div>
+        )}
       </div>
-      
-      {/* Session Start Modal */}
-      <SessionStartModal
-        open={showStartModal}
-        onClose={() => setShowStartModal(false)}
-        onStart={handleSessionStart}
-        tasks={tasks}
-        activeTask={activeTask}
-        onQuickAddTask={onQuickAddTask}
-      />
       
       {/* Session Reflection Modal */}
       {completedSessionData && (

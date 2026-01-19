@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Trash, Edit, Check, Square, ChevronDown, ChevronRight, GraduationCap } from "lucide-react";
+import { Trash, Edit, Check, Square, ChevronDown, ChevronRight, GraduationCap, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Task } from '@/types/task';
@@ -19,6 +19,7 @@ interface TaskItemProps {
   allTasks?: Task[];
   onTaskClick?: (taskId: string, taskName: string) => void;
   hasLinkedSession?: boolean;
+  isActive?: boolean;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({ 
@@ -32,7 +33,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   isCompleting,
   allTasks = [],
   onTaskClick,
-  hasLinkedSession = false
+  hasLinkedSession = false,
+  isActive = false
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const { 
@@ -100,9 +102,26 @@ const TaskItem: React.FC<TaskItemProps> = ({
     onToggleComplete(task.id);
   };
 
+  // Format time spent
+  const formatTimeSpent = () => {
+    const mins = task.timeSpent || 0;
+    const secs = task.timeSpentSeconds || 0;
+    if (mins === 0 && secs === 0) return null;
+    if (mins > 0) return `${mins}m`;
+    return `${secs}s`;
+  };
+
+  const timeSpentDisplay = formatTimeSpent();
+
   return (
     <div 
-      className={`group rounded-md border mb-2 transition-all ${task.completed ? 'bg-muted/50' : 'bg-card'} ${isDragging ? 'opacity-40 scale-95' : ''} ${isCompleting ? 'animate-fade-out' : ''}`}
+      className={`group rounded-md border mb-2 transition-all ${
+        isActive 
+          ? 'bg-primary/10 border-primary ring-2 ring-primary/30' 
+          : task.completed 
+            ? 'bg-muted/50' 
+            : 'bg-card'
+      } ${isDragging ? 'opacity-40 scale-95' : ''} ${isCompleting ? 'animate-fade-out' : ''}`}
       data-task-id={task.id}
     >
       <div
@@ -142,9 +161,22 @@ const TaskItem: React.FC<TaskItemProps> = ({
           </Button>
           
           <div className="flex-1">
-            <span className={`${task.completed ? 'line-through text-muted-foreground' : ''}`}>
-              {task.name}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className={`${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+                {task.name}
+              </span>
+              {isActive && (
+                <span className="text-xs px-1.5 py-0.5 rounded bg-primary text-primary-foreground font-medium">
+                  Active
+                </span>
+              )}
+              {timeSpentDisplay && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {timeSpentDisplay}
+                </span>
+              )}
+            </div>
             {!isExpanded && subTaskProgress && (
               <div className="flex items-center gap-2 mt-1">
                 <Progress value={subTaskProgress.percentage} className="h-1.5 w-24" />

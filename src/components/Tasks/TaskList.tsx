@@ -9,12 +9,12 @@ interface TaskListProps {
   onDeleteTask: (id: string) => void;
   onToggleComplete: (id: string) => void;
   onEditTask: (id: string) => void;
-  onDropToList?: (e: React.DragEvent, dropIndex: number | null) => void;
   onDragOverList?: (e: React.DragEvent) => void;
   onReorderTasks?: (newOrderedTasks: Task[]) => void;
   completingTaskId?: string | null;
   onTaskClick?: (taskId: string, taskName: string) => void;
   linkedTaskIds?: Set<string>;
+  activeTaskId?: string | null;
 }
 
 const TaskList: React.FC<TaskListProps> = ({ 
@@ -22,12 +22,12 @@ const TaskList: React.FC<TaskListProps> = ({
   onDeleteTask, 
   onToggleComplete,
   onEditTask,
-  onDropToList,
   onDragOverList,
   onReorderTasks,
   completingTaskId,
   onTaskClick,
-  linkedTaskIds = new Set()
+  linkedTaskIds = new Set(),
+  activeTaskId
 }) => {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
@@ -105,7 +105,6 @@ const TaskList: React.FC<TaskListProps> = ({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const taskId = e.dataTransfer.getData('taskId');
-    const activeTaskId = e.dataTransfer.getData('activeTaskId');
 
     // Recompute a reliable drop index at drop time (dragleave may have cleared state)
     const container = listRef.current;
@@ -124,12 +123,8 @@ const TaskList: React.FC<TaskListProps> = ({
     }
     const effectiveIndex = dropIndex ?? computedIndex;
 
-    // If dropping from active zone, let parent handle it with effective drop index
-    if (activeTaskId) {
-      onDropToList?.(e, effectiveIndex);
-    }
     // If reordering within list
-    else if (taskId && effectiveIndex !== null && onReorderTasks) {
+    if (taskId && effectiveIndex !== null && onReorderTasks) {
       const draggedTask = tasks.find(t => t.id === taskId);
       if (draggedTask) {
         const filteredTasks = tasks.filter(t => t.id !== taskId);
@@ -204,6 +199,7 @@ const TaskList: React.FC<TaskListProps> = ({
             allTasks={tasks}
             onTaskClick={onTaskClick}
             hasLinkedSession={linkedTaskIds.has(task.id)}
+            isActive={activeTaskId === task.id}
           />
         </div>
       ))}

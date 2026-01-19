@@ -2,7 +2,6 @@
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import Header from "@/components/Layout/Header";
 import MobileNav from "@/components/Layout/MobileNav";
-import TaskManager from "@/components/Tasks/TaskManager";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
 import TimerContainer from "@/components/Timer/TimerContainer";
@@ -26,9 +25,8 @@ const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { theme } = useTheme();
-  const { timerMode, setActiveTaskId, getElapsedMinutes, getElapsedSeconds, isRunning } = useTimerContext();
+  const { timerMode, setActiveTaskId, getElapsedMinutes, getElapsedSeconds, isRunning, handleStart, activeTaskId } = useTimerContext();
   const { tasks, isLoading, addTask, toggleComplete, editTask, deleteTask, setActiveTask: setTaskActive, updateTaskTime, reorderTasks } = useTasks();
-  const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -39,12 +37,29 @@ const Index = () => {
   // Slot for portaling the tutor input into the shared grid bottom row
   const [chatInputSlot, setChatInputSlot] = useState<HTMLDivElement | null>(null);
 
-  // Handle clicking on a study topic to open its chat session
-  const handleTaskClick = useCallback((taskId: string, taskName: string) => {
+  // Get the active task from tasks list based on activeTaskId
+  const activeTask = tasks.find(t => t.id === activeTaskId) || null;
+
+  // Handle clicking on a study topic - opens chat, sets as active, and starts timer
+  const handleTaskClick = useCallback(async (taskId: string, taskName: string) => {
+    // 1. Open the chat session
     tutorRef.current?.openTaskSession(taskId, taskName);
+    
+    // 2. Set this task as active
+    setActiveTaskId(taskId);
+    await setTaskActive(taskId).catch(console.error);
+    
+    // 3. Auto-start the timer if not already running
+    if (!isRunning) {
+      // Small delay to ensure state is updated
+      setTimeout(() => {
+        handleStart();
+      }, 100);
+    }
+    
     // Optimistically update linked task IDs
     setLinkedTaskIds(prev => new Set([...prev, taskId]));
-  }, []);
+  }, [setActiveTaskId, setTaskActive, isRunning, handleStart]);
 
   // Sync linkedTaskIds from the tutor component when it updates
   useEffect(() => {
@@ -60,14 +75,13 @@ const Index = () => {
 
   // Restore active task from database after tasks load
   useEffect(() => {
-    if (!isLoading && tasks.length > 0) {
+    if (!isLoading && tasks.length > 0 && !activeTaskId) {
       const currentActiveTask = tasks.find(t => t.isActive && !t.completed && t.id !== suppressRestoreRef.current);
-      if (currentActiveTask && !activeTask) {
-        setActiveTask(currentActiveTask);
+      if (currentActiveTask) {
         setActiveTaskId(currentActiveTask.id);
       }
     }
-  }, [isLoading, tasks, activeTask, setActiveTaskId]);
+  }, [isLoading, tasks, activeTaskId, setActiveTaskId]);
 
   
   const handleLoginClick = useCallback(() => {
@@ -86,69 +100,10 @@ const Index = () => {
     });
   }, [navigate]);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const taskId = e.dataTransfer.getData('taskId');
-    const task = tasks.find(t => t.id === taskId);
-    
-    if (task && !task.completed) {
-      // Instant UI update
-      setActiveTask(task);
-      setActiveTaskId(taskId);
-      // Database update in background (non-blocking)
-      setTaskActive(taskId).catch(console.error);
-    }
-  }, [tasks, setTaskActive, setActiveTaskId]);
-
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
   }, []);
-
-  const handleRemoveActiveTask = useCallback(() => {
-    setActiveTask(null);
-    setTaskActive(null);
-    setActiveTaskId(null);
-  }, [setTaskActive, setActiveTaskId]);
-
-  const handleDropToList = useCallback((e: React.DragEvent, dropIndex: number | null) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const activeTaskId = e.dataTransfer.getData('activeTaskId');
-    if (activeTaskId) {
-      // Get the active task and clear its active flag
-      const returnedTask = tasks.find(t => t.id === activeTaskId);
-      if (returnedTask) {
-        // Get all non-active tasks (what's currently visible in the list)
-        const visibleTasks = tasks.filter(t => t.id !== activeTaskId && !t.isActive);
-        
-        // Insert the returned task at the dropIndex with isActive cleared
-        const insertAt = dropIndex !== null ? dropIndex : visibleTasks.length;
-        const taskToInsert = { ...returnedTask, isActive: false };
-        const newOrderedTasks = [
-          ...visibleTasks.slice(0, insertAt),
-          taskToInsert,
-          ...visibleTasks.slice(insertAt)
-        ];
-        
-        // First clear active task in UI
-        setActiveTask(null);
-        setActiveTaskId(null);
-        
-        // Then reorder with the new position
-        reorderTasks(newOrderedTasks);
-        
-        // Database update in background (non-blocking)
-        setTaskActive(null).catch(console.error);
-        
-        toast({
-          title: "Task returned to list",
-          description: "Time spent has been saved",
-        });
-      }
-    }
-  }, [tasks, setTaskActive, setActiveTaskId, reorderTasks, toast]);
 
   const handleReorderTasks = useCallback((newOrderedTasks: any[]) => {
     reorderTasks(newOrderedTasks);
@@ -159,41 +114,35 @@ const Index = () => {
     const task = tasks.find(t => t.id === id);
     if (!task || !user) return;
 
-    const isActiveTask = activeTask?.id === id;
-    const elapsedMinutes = isActiveTask ? getElapsedMinutes() : 0;
-    const elapsedSeconds = isActiveTask ? getElapsedSeconds() : 0;
+    const isCurrentlyActive = activeTaskId === id;
+    const elapsedMinutes = isCurrentlyActive ? getElapsedMinutes() : 0;
+    const elapsedSeconds = isCurrentlyActive ? getElapsedSeconds() : 0;
 
     // Suppress restoration of this task while completion is processing
     suppressRestoreRef.current = id;
 
-    // Clear from active zone immediately
-    if (isActiveTask) {
-      setActiveTask(null);
+    // Clear active state immediately
+    if (isCurrentlyActive) {
       setActiveTaskId(null);
     }
 
     try {
       // Always save time to ensure task appears on dashboard
-      // Even if 0, this ensures timeSpent fields are set
       await updateTaskTime(id, elapsedMinutes, elapsedSeconds);
 
       // Mark complete and clear active status
       await toggleComplete(id);
-      if (isActiveTask) {
+      if (isCurrentlyActive) {
         await setTaskActive(null);
       }
 
       // Show toast for active task completions
-      if (showToast && isActiveTask) {
+      if (showToast && isCurrentlyActive) {
         const timeMessage = elapsedSeconds > 0 ? ` ${elapsedMinutes}m ${elapsedSeconds % 60}s tracked.` : '';
         toast({
           title: "Task completed",
           description: `Great work!${timeMessage}`,
         });
-        
-        // NOTE: We intentionally do NOT trigger any AI calls here.
-        // Gemini requests must only happen when the user explicitly clicks Send in the tutor chat.
-        // (This avoids unexpected background calls that can burn the 15 RPM free-tier quota.)
       }
     } finally {
       // Clear suppression after state/queries have a chance to settle
@@ -201,7 +150,7 @@ const Index = () => {
         if (suppressRestoreRef.current === id) suppressRestoreRef.current = null;
       }, 0);
     }
-  }, [tasks, activeTask, user, getElapsedMinutes, getElapsedSeconds, updateTaskTime, toggleComplete, setTaskActive, setActiveTaskId, toast]);
+  }, [tasks, activeTaskId, user, getElapsedMinutes, getElapsedSeconds, updateTaskTime, toggleComplete, setTaskActive, setActiveTaskId, toast]);
 
   const handleToggleCompleteFromList = useCallback((id: string) => {
     setCompletingTaskId(id);
@@ -210,12 +159,6 @@ const Index = () => {
       setTimeout(() => setCompletingTaskId(null), 300);
     }, 400);
   }, [completeTask]);
-
-  const handleCompleteActiveTask = useCallback(async () => {
-    if (activeTask) {
-      await completeTask(activeTask.id, true);
-    }
-  }, [activeTask, completeTask]);
   
   const getPageBackground = () => {
     // Always use images for backgrounds, dark mode will have overlay
@@ -266,29 +209,12 @@ const Index = () => {
                   <div className="flex-shrink-0">
                     <TimerContainer
                       activeTask={activeTask}
-                      tasks={tasks}
-                      onRemoveActiveTask={handleRemoveActiveTask}
-                      onCompleteActiveTask={handleCompleteActiveTask}
-                      onDrop={handleDrop}
-                      onDragOver={handleDragOver}
-                      onQuickAddTask={async (name) => {
-                        return await addTask(name, 1);
-                      }}
-                      onSetActiveTask={async (taskId) => {
-                        const task = tasks.find(t => t.id === taskId);
-                        if (task) {
-                          setActiveTask(task);
-                          setActiveTaskId(taskId);
-                          await setTaskActive(taskId);
-                        }
-                      }}
                     />
                   </div>
 
                   <div className="flex-1 flex flex-col pt-4 min-h-0 overflow-hidden">
                     <TaskManagerWithDrop
-                      activeTaskId={activeTask?.id ?? null} 
-                      onDropToList={handleDropToList} 
+                      activeTaskId={activeTaskId} 
                       onDragOverList={handleDragOver}
                       onReorderTasks={handleReorderTasks}
                       tasks={tasks}
@@ -353,7 +279,6 @@ const Index = () => {
 };
 
 const TaskManagerWithDrop: React.FC<{ 
-  onDropToList: (e: React.DragEvent, dropIndex: number | null) => void;
   onDragOverList: (e: React.DragEvent) => void;
   onReorderTasks: (newOrderedTasks: any[]) => void;
   activeTaskId?: string | null;
@@ -365,7 +290,7 @@ const TaskManagerWithDrop: React.FC<{
   completingTaskId: string | null;
   onTaskClick?: (taskId: string, taskName: string) => void;
   linkedTaskIds?: Set<string>;
-}> = ({ onDropToList, onDragOverList, onReorderTasks, activeTaskId, tasks, isLoading, toggleComplete, editTask, deleteTask, completingTaskId, onTaskClick, linkedTaskIds }) => {
+}> = ({ onDragOverList, onReorderTasks, activeTaskId, tasks, isLoading, toggleComplete, editTask, deleteTask, completingTaskId, onTaskClick, linkedTaskIds }) => {
   const [editingTask, setEditingTask] = React.useState<any>(null);
   const [editName, setEditName] = React.useState('');
   const [editPomodoros, setEditPomodoros] = React.useState(1);
@@ -426,16 +351,16 @@ const TaskManagerWithDrop: React.FC<{
           <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-b from-background to-transparent z-10 pointer-events-none" />
 
           <TaskList 
-            tasks={tasks.filter(t => !t.isActive && !t.completed)} 
+            tasks={tasks.filter(t => !t.completed)} 
             onDeleteTask={handleDeleteTask}
             onToggleComplete={handleToggleComplete}
             onEditTask={handleEditTask}
-            onDropToList={onDropToList}
             onDragOverList={onDragOverList}
             onReorderTasks={onReorderTasks}
             completingTaskId={completingTaskId}
             onTaskClick={onTaskClick}
             linkedTaskIds={linkedTaskIds}
+            activeTaskId={activeTaskId}
           />
 
           <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-t from-background to-transparent z-10 pointer-events-none" />
