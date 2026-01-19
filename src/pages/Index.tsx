@@ -295,7 +295,7 @@ const Index = () => {
                 </div>
 
                 {/* Task Input - Fixed at bottom, aligned with chat input */}
-                <div className="flex-shrink-0 pt-3">
+                <div className="flex-shrink-0 p-4 border-t border-border bg-background/80">
                   <TaskInput onAddTask={(taskName, estimatedPomodoros) => {
                     if (!user) {
                       toast({
