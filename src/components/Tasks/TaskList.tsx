@@ -1,7 +1,8 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import TaskItem from './TaskItem';
 import { Task } from '@/types/task';
+import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 
 interface TaskListProps {
   tasks: Task[];
@@ -31,7 +32,19 @@ const TaskList: React.FC<TaskListProps> = ({
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
+  const internalListRef = useRef<HTMLDivElement | null>(null);
+  
+  // Scroll animation hook
+  const taskIds = useMemo(() => tasks.map(t => t.id), [tasks]);
+  const { containerRef: scrollContainerRef, getItemStyle } = useScrollAnimation(taskIds);
+  
+  // Combine refs
   const listRef = useRef<HTMLDivElement | null>(null);
+  const setRefs = (el: HTMLDivElement | null) => {
+    listRef.current = el;
+    internalListRef.current = el;
+    (scrollContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+  };
 
   // Global safety net: ensure drag state resets even if source unmounts during drag
   React.useEffect(() => {
@@ -143,7 +156,7 @@ const TaskList: React.FC<TaskListProps> = ({
   if (tasks.length === 0) {
     return (
       <div 
-        className={`text-center py-6 rounded-lg border-2 border-dashed transition-all duration-150 ${
+        className={`h-full flex items-center justify-center text-center py-6 rounded-lg border-2 border-dashed transition-all duration-150 ${
           isDraggingOver 
             ? 'border-primary bg-primary/5' 
             : 'border-transparent text-muted-foreground'
@@ -152,15 +165,15 @@ const TaskList: React.FC<TaskListProps> = ({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
       >
-        {isDraggingOver ? 'Drop task here' : 'No tasks yet. Add a task to get started!'}
+        {isDraggingOver ? 'Drop task here' : 'No topics yet. Add a topic to get started!'}
       </div>
     );
   }
 
   return (
     <div 
-      ref={listRef}
-      className={`space-y-1 p-2 rounded-lg border-2 border-dashed transition-all duration-150 ${
+      ref={setRefs}
+      className={`h-full overflow-y-auto space-y-1 p-2 rounded-lg border-2 border-dashed transition-all duration-150 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent ${
         isDraggingOver 
           ? 'border-primary bg-primary/5' 
           : 'border-transparent'
@@ -170,9 +183,14 @@ const TaskList: React.FC<TaskListProps> = ({
       onDragLeave={handleDragLeave}
     >
       {tasks.map((task, index) => (
-        <div key={task.id} className="contents" data-lov-wrapper>
+        <div 
+          key={task.id} 
+          className="transform-gpu" 
+          data-lov-wrapper
+          style={getItemStyle(task.id)}
+        >
           {dropIndex === index && (
-            <div className="h-2 my-1 rounded bg-[hsl(var(--primary))]/40" />
+            <div className="h-2 my-1 rounded bg-primary/40" />
           )}
           <TaskItem
             task={task}
@@ -190,7 +208,7 @@ const TaskList: React.FC<TaskListProps> = ({
         </div>
       ))}
       {dropIndex !== null && dropIndex >= tasks.length && (
-        <div className="h-2 my-1 rounded bg-[hsl(var(--primary))]/40" />
+        <div className="h-2 my-1 rounded bg-primary/40" />
       )}
     </div>
   );

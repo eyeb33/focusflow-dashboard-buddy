@@ -20,7 +20,7 @@ const TaskInput: React.FC<TaskInputProps> = ({ onAddTask }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2 mb-4">
+    <form onSubmit={handleSubmit} className="flex gap-2 pt-3 border-t border-border">
       <div className="flex-1">
         <Input
           type="text"
@@ -34,7 +34,7 @@ const TaskInput: React.FC<TaskInputProps> = ({ onAddTask }) => {
         type="submit" 
         size="icon" 
         disabled={!taskName.trim()}
-        className="bg-red-500 hover:bg-red-600 text-white disabled:bg-red-500/50"
+        className="bg-primary hover:bg-primary/90 text-primary-foreground disabled:bg-primary/50"
       >
         <Plus className="h-5 w-5" strokeWidth={3} />
       </Button>
