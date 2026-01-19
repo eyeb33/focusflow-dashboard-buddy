@@ -80,7 +80,7 @@ const MathsMessage: React.FC<MathsMessageProps> = ({
       </div>
       
       <div className={cn("rounded-xl px-4 py-3 max-w-[85%] shadow-sm", isUser ? "bg-muted text-foreground" : "bg-primary/10 text-foreground")}>
-        <div className="text-sm whitespace-pre-wrap leading-relaxed maths-content text-gray-900" dangerouslySetInnerHTML={{
+        <div className="text-sm whitespace-pre-wrap leading-relaxed maths-content text-foreground" dangerouslySetInnerHTML={{
         __html: renderedContent
       }} />
         <span className="text-xs opacity-50 mt-2 block">
