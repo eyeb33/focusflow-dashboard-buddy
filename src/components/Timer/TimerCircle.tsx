@@ -137,7 +137,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
 
       {/* Control buttons - vertical, right of timer */}
       {showControls && (
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col items-center gap-3 -mr-7">
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col items-center gap-3 -mr-12">
           <button 
             onClick={handleResetClick}
             className={cn(
