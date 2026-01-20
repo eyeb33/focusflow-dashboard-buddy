@@ -197,7 +197,7 @@ const Index = () => {
 
                   <div className="flex-1 flex flex-col pt-4 min-h-0 overflow-hidden">
                     <div className="pb-2 flex-shrink-0">
-                      <h2 className="text-xl font-display font-semibold tracking-tight">A-Level Maths Curriculum</h2>
+                      <h2 className="text-xl font-display font-semibold tracking-tight">Task List: A-Level Maths Curriculum</h2>
                       <p className="text-xs text-muted-foreground mt-0.5">Edexcel Specification</p>
                     </div>
                     

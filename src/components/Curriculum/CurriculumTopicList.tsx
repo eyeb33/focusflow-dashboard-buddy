@@ -58,7 +58,7 @@ const CurriculumTopicList: React.FC<CurriculumTopicListProps> = ({
   const overallProgress = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
 
   return (
-    <div className="h-full overflow-y-auto space-y-4 px-1 py-2 task-list-scroll">
+    <div className="h-[calc(100%-20px)] overflow-y-auto space-y-4 px-1 py-2 task-list-scroll">
       {/* Overall progress header */}
       <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 border border-primary/20">
         <div className="flex items-center justify-between mb-2">
