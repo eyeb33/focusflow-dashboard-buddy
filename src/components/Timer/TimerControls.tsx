@@ -72,18 +72,18 @@ const TimerControls: React.FC<TimerControlsProps> = ({
         data-testid={isRunning ? "pause-button" : "play-button"}
       >
         {isRunning ? (
-          <Pause className="h-9 w-9 text-white" fill="white" />
+          <Pause className="h-8 w-8 text-white" fill="white" />
         ) : (
           <svg 
-            className="h-9 w-9 ml-1 text-white" 
+            className="h-10 w-10 ml-0.5" 
             viewBox="0 0 24 24" 
-            fill="white"
+            fill="none"
+            stroke="white"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
-            <path 
-              d="M6 4.5C6 3.5 7 3 7.8 3.5L19 12L7.8 20.5C7 21 6 20.5 6 19.5V4.5Z" 
-              rx="2"
-              strokeLinejoin="round"
-            />
+            <polygon points="6,4 20,12 6,20" />
           </svg>
         )}
       </button>

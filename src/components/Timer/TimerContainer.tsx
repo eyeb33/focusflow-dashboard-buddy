@@ -123,15 +123,7 @@ const TimerContainer: React.FC<TimerContainerProps> = ({
           currentSessionIndex={currentSessionIndex}
         />
 
-        {/* Show active topic name below timer if one is selected */}
-        {activeTask && (
-          <div className="mt-4 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20">
-            <p className="text-sm text-center">
-              <span className="text-muted-foreground">Tracking: </span>
-              <span className="font-medium text-primary">{activeTask.name}</span>
-            </p>
-          </div>
-        )}
+        {/* Active task tracking removed - now shown via highlighted card in curriculum list */}
       </div>
       
       {/* Session Reflection Modal */}
