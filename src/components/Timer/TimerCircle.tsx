@@ -169,17 +169,18 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
             data-testid={isRunning ? "pause-button" : "play-button"}
           >
             {isRunning ? (
-              <Pause className="h-6 w-6" fill="currentColor" />
+              <Pause className="h-7 w-7" fill="currentColor" />
             ) : (
               <svg 
-                className="h-6 w-6 ml-0.5" 
+                className="h-8 w-8 ml-0.5" 
                 viewBox="0 0 24 24" 
-                fill="currentColor"
+                fill="none"
                 stroke="currentColor"
-                strokeWidth="0.5"
+                strokeWidth="2.5"
+                strokeLinecap="round"
                 strokeLinejoin="round"
               >
-                <path d="M6 4.5 L6 19.5 L20 12 Z" rx="2" ry="2" />
+                <polygon points="6,4 20,12 6,20" />
               </svg>
             )}
           </button>
