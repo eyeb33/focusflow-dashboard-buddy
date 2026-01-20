@@ -177,65 +177,62 @@ const Index = () => {
             <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
             
             <div className="mt-4 flex-1 min-h-0 overflow-hidden">
-              {/* Two-column GRID with shared bottom row for perfect input alignment */}
-              <div className={cn(
-                "grid h-full min-h-0",
-                user 
-                  ? "grid-cols-[2fr_3fr] grid-rows-[1fr_auto] gap-x-0 gap-y-0"
-                  : "grid-cols-1 grid-rows-[1fr_auto] gap-4"
-              )}>
-                {/* Left Column: Timer + Curriculum Topics - spans both rows to match chat height */}
-                <div className={cn(
-                  "min-h-0 overflow-hidden flex flex-col pr-6",
-                  user && "row-span-2"
-                )}>
-                  <div className="flex-shrink-0">
-                    <TimerContainer
-                      activeTask={activeTask}
-                    />
-                  </div>
-
-                  <div className="flex-1 flex flex-col pt-4 min-h-0 overflow-hidden">
-                    <div className="pb-2 flex-shrink-0">
-                      <h2 className="text-xl font-display font-semibold tracking-tight">Task List: A-Level Maths Curriculum</h2>
-                      <p className="text-xs text-muted-foreground mt-0.5">Edexcel Specification</p>
-                    </div>
-                    
-                    <div className="flex-1 min-h-0 relative overflow-hidden">
-                      <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-b from-background to-transparent z-10 pointer-events-none" />
-                      
-                      <CurriculumTopicList
-                        categories={categorizedTopics}
-                        topicsWithSessions={topicsWithSessions}
-                        categoryProgress={categoryProgress}
-                        isLoading={isCurriculumLoading}
-                        activeTopicId={activeTopicId}
-                        onTopicClick={handleTopicClick}
-                        onSubtopicToggle={handleSubtopicToggle}
-                        onCategoryToggle={toggleCategory}
+              {user ? (
+                /* Authenticated: Two-column GRID with shared bottom row for perfect input alignment */
+                <div className="grid h-full min-h-0 grid-cols-[2fr_3fr] grid-rows-[1fr_auto] gap-x-0 gap-y-0">
+                  {/* Left Column: Timer + Curriculum Topics - spans both rows to match chat height */}
+                  <div className="min-h-0 overflow-hidden flex flex-col pr-6 row-span-2">
+                    <div className="flex-shrink-0">
+                      <TimerContainer
+                        activeTask={activeTask}
                       />
+                    </div>
+
+                    <div className="flex-1 flex flex-col pt-4 min-h-0 overflow-hidden">
+                      <div className="pb-2 flex-shrink-0">
+                        <h2 className="text-xl font-display font-semibold tracking-tight">Task List: A-Level Maths Curriculum</h2>
+                        <p className="text-xs text-muted-foreground mt-0.5">Edexcel Specification</p>
+                      </div>
                       
-                      <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-t from-background to-transparent z-10 pointer-events-none" />
+                      <div className="flex-1 min-h-0 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-b from-background to-transparent z-10 pointer-events-none" />
+                        
+                        <CurriculumTopicList
+                          categories={categorizedTopics}
+                          topicsWithSessions={topicsWithSessions}
+                          categoryProgress={categoryProgress}
+                          isLoading={isCurriculumLoading}
+                          activeTopicId={activeTopicId}
+                          onTopicClick={handleTopicClick}
+                          onSubtopicToggle={handleSubtopicToggle}
+                          onCategoryToggle={toggleCategory}
+                        />
+                        
+                        <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-t from-background to-transparent z-10 pointer-events-none" />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Right Column: Tutor (row 1, col 2) */}
-                {user && (
+                  {/* Right Column: Tutor (row 1, col 2) */}
                   <div className="min-h-0 overflow-hidden pl-6 flex flex-col">
                     <MathsTutorInterface ref={tutorRef} inputPortalTarget={chatInputSlot} />
                   </div>
-                )}
 
-                {/* Bottom row (row 2): Chat input slot (col 2 only - left column spans both rows) */}
-                {user && (
+                  {/* Bottom row (row 2): Chat input slot (col 2 only - left column spans both rows) */}
                   <div ref={setChatInputSlot} className="flex-shrink-0 pl-6" />
-                )}
-              </div>
+                </div>
+              ) : (
+                /* Non-authenticated: Timer centered with onboarding prompt below */
+                <div className="flex flex-col h-full items-center">
+                  <div className="flex-shrink-0">
+                    <TimerContainer activeTask={null} />
+                  </div>
+                  
+                  <AuthPrompt onSignupClick={handleSignupClick} />
+                </div>
+              )}
             </div>
           </div>
-          
-          {!user && <AuthPrompt onSignupClick={handleSignupClick} />}
         </div>
       </main>
       
