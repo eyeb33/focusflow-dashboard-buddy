@@ -431,6 +431,7 @@ export type Database = {
           display_name: string | null
           gemini_api_key: string | null
           id: string
+          is_admin: boolean | null
           updated_at: string
           user_id: string
         }
@@ -440,6 +441,7 @@ export type Database = {
           display_name?: string | null
           gemini_api_key?: string | null
           id?: string
+          is_admin?: boolean | null
           updated_at?: string
           user_id: string
         }
@@ -449,6 +451,7 @@ export type Database = {
           display_name?: string | null
           gemini_api_key?: string | null
           id?: string
+          is_admin?: boolean | null
           updated_at?: string
           user_id?: string
         }
@@ -613,6 +616,30 @@ export type Database = {
           topic_id?: string
           topic_name?: string
           total_time_seconds?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_secrets: {
+        Row: {
+          created_at: string
+          gemini_api_key: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          gemini_api_key?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          gemini_api_key?: string | null
+          id?: string
           updated_at?: string
           user_id?: string
         }
