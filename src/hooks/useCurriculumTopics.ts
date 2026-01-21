@@ -41,7 +41,7 @@ export const useCurriculumTopics = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTopicId, setActiveTopicId] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set(['Pure Mathematics', 'Statistics', 'Mechanics'])
+    new Set(['Pure Mathematics']) // Only one open by default
   );
 
   // Fetch curriculum topics
@@ -294,16 +294,15 @@ export const useCurriculumTopics = () => {
     }
   }, [user, topicSessions]);
 
-  // Toggle category expansion
+  // Toggle category expansion (accordion behavior - only one open at a time)
   const toggleCategory = useCallback((category: string) => {
     setExpandedCategories(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(category)) {
-        newSet.delete(category);
-      } else {
-        newSet.add(category);
+      // If clicking the already open category, close it
+      if (prev.has(category) && prev.size === 1) {
+        return new Set();
       }
-      return newSet;
+      // Otherwise, open only the clicked category
+      return new Set([category]);
     });
   }, []);
 
