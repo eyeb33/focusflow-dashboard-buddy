@@ -143,14 +143,14 @@ const Index = () => {
           <div className="h-full grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-[3vw]">
             
             {/* Column 1: Timer (centered, fixed size) */}
-            <div className="flex flex-col items-center lg:items-stretch bg-card rounded-xl border border-border/50 p-4 shadow-sm">
+            <div className="flex flex-col items-center lg:items-stretch bg-card rounded-xl border border-border/50 p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-border/80 dark:border-border/30 dark:hover:border-border/50">
               <div className="flex-shrink-0">
                 <TimerContainer activeTask={activeTask} />
               </div>
             </div>
 
             {/* Column 2: Curriculum Topics List */}
-            <div className="flex flex-col min-h-0 overflow-hidden bg-card rounded-xl border border-border/50 p-4 shadow-sm">
+            <div className="flex flex-col min-h-0 overflow-hidden bg-card rounded-xl border border-border/50 p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-border/80 dark:border-border/30 dark:hover:border-border/50">
               <div className="pb-3 flex-shrink-0">
                 <h2 className="text-lg font-display font-semibold tracking-tight">Task List: A-Level Maths Curriculum</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">Edexcel Specification</p>
@@ -177,7 +177,7 @@ const Index = () => {
             </div>
 
             {/* Column 3: AI Tutor Chat */}
-            <div className="min-h-0 flex flex-col overflow-hidden bg-card rounded-xl border border-border/50 p-4 shadow-sm">
+            <div className="min-h-0 flex flex-col overflow-hidden bg-card rounded-xl border border-border/50 p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-border/80 dark:border-border/30 dark:hover:border-border/50">
               <MathsTutorInterface ref={tutorRef} inputPortalTarget={chatInputSlot} />
               <div ref={setChatInputSlot} className="flex-shrink-0" />
             </div>
