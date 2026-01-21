@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         title: "Welcome back!",
         description: "You've successfully signed in.",
       });
-      navigate('/dashboard');
+      navigate('/');
     } catch (error: any) {
       toast({
         title: "Sign in failed",
@@ -86,7 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         title: "Account created!",
         description: "Welcome to FocusFlow.",
       });
-      navigate('/dashboard');
+      navigate('/');
     } catch (error: any) {
       toast({
         title: "Sign up failed",
