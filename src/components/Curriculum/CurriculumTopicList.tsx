@@ -109,26 +109,31 @@ const CurriculumTopicList: React.FC<CurriculumTopicListProps> = ({
               </div>
             </button>
 
-            {/* Topics in category */}
-            {category.isExpanded && (
-              <div className="pl-2 space-y-1 animate-accordion-down">
-                {category.topics.map(topic => {
-                  const topicData = topicsWithSessions.find(
-                    t => t.topic.topicId === topic.topicId
-                  );
-                  if (!topicData) return null;
+            {/* Topics in category - animated container */}
+            <div 
+              className={cn(
+                "pl-2 space-y-1 overflow-hidden transition-all duration-300 ease-out",
+                category.isExpanded 
+                  ? "max-h-[2000px] opacity-100" 
+                  : "max-h-0 opacity-0"
+              )}
+            >
+              {category.topics.map(topic => {
+                const topicData = topicsWithSessions.find(
+                  t => t.topic.topicId === topic.topicId
+                );
+                if (!topicData) return null;
 
-                  return (
-                    <CurriculumTopicCard
-                      key={topic.topicId}
-                      topicData={topicData}
-                      onTopicClick={onTopicClick}
-                      onSubtopicToggle={onSubtopicToggle}
-                    />
-                  );
-                })}
-              </div>
-            )}
+                return (
+                  <CurriculumTopicCard
+                    key={topic.topicId}
+                    topicData={topicData}
+                    onTopicClick={onTopicClick}
+                    onSubtopicToggle={onSubtopicToggle}
+                  />
+                );
+              })}
+            </div>
           </div>
         );
       })}
