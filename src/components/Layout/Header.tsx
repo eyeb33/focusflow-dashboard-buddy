@@ -11,16 +11,7 @@ import { cn } from '@/lib/utils';
 import syllabuddyLogoLight from '@/assets/syllabuddy-logo-light.png';
 import syllabuddyLogoDark from '@/assets/syllabuddy-logo-dark.png';
 
-interface HeaderProps {
-  isAuthenticated?: boolean;
-  onLoginClick?: () => void;
-  onSignupClick?: () => void;
-}
-
-const Header: React.FC<HeaderProps> = ({
-  onLoginClick,
-  onSignupClick,
-}) => {
+const Header: React.FC = () => {
   const isMobile = useIsMobile();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -34,22 +25,6 @@ const Header: React.FC<HeaderProps> = ({
   const isOnDashboard = location.pathname === '/dashboard';
   const isOnTimer = location.pathname === '/';
   const isOnCurriculum = location.pathname === '/curriculum';
-  
-  const handleLoginClick = () => {
-    if (onLoginClick) {
-      onLoginClick();
-    } else {
-      navigate('/auth', { state: { mode: 'login' } });
-    }
-  };
-  
-  const handleSignupClick = () => {
-    if (onSignupClick) {
-      onSignupClick();
-    } else {
-      navigate('/auth', { state: { mode: 'signup' } });
-    }
-  };
 
   return (
     <header className="border-b border-border/50 backdrop-blur-md bg-background/80 sticky top-0 z-50 pb-2.5">
@@ -146,16 +121,7 @@ const Header: React.FC<HeaderProps> = ({
                   )}
                 </Button>
               </div>
-            ) : (
-              <>
-                <Button variant="ghost" onClick={handleLoginClick} size={isMobile ? "sm" : "default"}>
-                  Login
-                </Button>
-                <Button variant="default" onClick={handleSignupClick} size={isMobile ? "sm" : "default"} className="bg-pomodoro-work hover:bg-pomodoro-work/90">
-                  Sign Up
-                </Button>
-              </>
-            )}
+            ) : null}
           </nav>
         </div>
       </div>
