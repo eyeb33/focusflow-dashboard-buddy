@@ -134,28 +134,32 @@ const Index = () => {
   } : null;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
       <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
       
-      <main className="flex-1 container max-w-7xl mx-auto py-6 px-4 md:px-6 lg:px-8 overflow-auto">
-        {user ? (
-          /* Authenticated: Two-column layout */
-          <div className="grid h-full min-h-[calc(100vh-120px)] grid-cols-1 lg:grid-cols-[2fr_3fr] gap-6">
-            {/* Left Column: Timer + Curriculum Topics */}
-            <div className="flex flex-col min-h-0">
+      {user ? (
+        /* Authenticated: 3-column responsive layout with internal scrolling */
+        <main className="flex-1 min-h-0 container max-w-[1600px] mx-auto py-4 px-4 md:px-6">
+          <div className="h-full grid grid-cols-1 lg:grid-cols-[280px_1fr_1fr] xl:grid-cols-[320px_minmax(300px,1fr)_minmax(400px,1.5fr)] gap-4 lg:gap-6">
+            
+            {/* Column 1: Timer (centered, fixed size) */}
+            <div className="flex flex-col items-center lg:items-stretch">
               <div className="flex-shrink-0">
                 <TimerContainer activeTask={activeTask} />
               </div>
+            </div>
 
-              <div className="flex-1 flex flex-col pt-4 min-h-0 overflow-hidden">
-                <div className="pb-2 flex-shrink-0">
-                  <h2 className="text-xl font-display font-semibold tracking-tight">Task List: A-Level Maths Curriculum</h2>
-                  <p className="text-xs text-muted-foreground mt-0.5">Edexcel Specification</p>
-                </div>
+            {/* Column 2: Curriculum Topics List */}
+            <div className="flex flex-col min-h-0 overflow-hidden">
+              <div className="pb-3 flex-shrink-0">
+                <h2 className="text-lg font-display font-semibold tracking-tight">Task List: A-Level Maths Curriculum</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Edexcel Specification</p>
+              </div>
+              
+              <div className="flex-1 min-h-0 relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-b from-background to-transparent z-10 pointer-events-none" />
                 
-                <div className="flex-1 min-h-0 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-b from-background to-transparent z-10 pointer-events-none" />
-                  
+                <div className="h-full overflow-y-auto">
                   <CurriculumTopicList
                     categories={categorizedTopics}
                     topicsWithSessions={topicsWithSessions}
@@ -166,29 +170,29 @@ const Index = () => {
                     onSubtopicToggle={handleSubtopicToggle}
                     onCategoryToggle={toggleCategory}
                   />
-                  
-                  <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-t from-background to-transparent z-10 pointer-events-none" />
                 </div>
+                
+                <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-t from-background to-transparent z-10 pointer-events-none" />
               </div>
             </div>
 
-            {/* Right Column: Tutor */}
-            <div className="min-h-0 overflow-hidden flex flex-col">
+            {/* Column 3: AI Tutor Chat */}
+            <div className="min-h-0 flex flex-col overflow-hidden">
               <MathsTutorInterface ref={tutorRef} inputPortalTarget={chatInputSlot} />
               <div ref={setChatInputSlot} className="flex-shrink-0" />
             </div>
           </div>
-        ) : (
-          /* Non-authenticated: Timer centered with onboarding prompt below */
-          <div className="flex flex-col items-center justify-center min-h-[calc(100vh-120px)]">
-            <div className="flex-shrink-0">
-              <TimerContainer activeTask={null} />
-            </div>
-            
-            <AuthPrompt onSignupClick={handleSignupClick} />
+        </main>
+      ) : (
+        /* Non-authenticated: Timer centered with onboarding prompt below */
+        <main className="flex-1 min-h-0 flex flex-col items-center justify-center px-4 overflow-auto">
+          <div className="flex-shrink-0">
+            <TimerContainer activeTask={null} />
           </div>
-        )}
-      </main>
+          
+          <AuthPrompt onSignupClick={handleSignupClick} />
+        </main>
+      )}
       
       <MobileNav />
     </div>
