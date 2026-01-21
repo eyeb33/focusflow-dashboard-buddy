@@ -26,7 +26,14 @@ const CurriculumTopicCard: React.FC<CurriculumTopicCardProps> = ({
   onSubtopicToggle
 }) => {
   const { topic, session, progressPercent, isActive } = topicData;
-  const [isExpanded, setIsExpanded] = React.useState(false);
+  const [isExpanded, setIsExpanded] = React.useState(isActive);
+
+  // Auto-expand when topic becomes active
+  React.useEffect(() => {
+    if (isActive) {
+      setIsExpanded(true);
+    }
+  }, [isActive]);
 
   const isCompleted = progressPercent === 100 && topic.subtopics.length > 0;
 
