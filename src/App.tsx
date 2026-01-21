@@ -12,6 +12,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import Curriculum from "./pages/Curriculum";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import React from 'react'; // Import React explicitly
 
@@ -34,6 +35,7 @@ const App = () => (
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/curriculum" element={<Curriculum />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </CoachProvider>
