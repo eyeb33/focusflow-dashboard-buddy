@@ -23,11 +23,11 @@ export const useUserProfile = () => {
         return null;
       }
 
-      // First check if profile exists
+      // Explicitly select only needed columns (never use SELECT *)
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
-        .eq('id', user.id)
+        .select('id, user_id, display_name, avatar_url, created_at, updated_at')
+        .eq('user_id', user.id)
         .single();
 
       if (error) {
