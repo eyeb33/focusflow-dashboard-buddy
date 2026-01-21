@@ -171,9 +171,17 @@ export const useCurriculumTopics = () => {
     }
   }, [user, topicSessions]);
 
-  // Set a topic as active (unset others)
+  // Set a topic as active (unset others) and auto-expand its category
   const setTopicActive = useCallback(async (topicId: string | null) => {
     if (!user) return;
+
+    // Auto-expand the category containing this topic
+    if (topicId) {
+      const topic = curriculumTopics.find(t => t.topicId === topicId);
+      if (topic) {
+        setExpandedCategories(new Set([topic.category]));
+      }
+    }
 
     try {
       // First unset all active topics for this user
@@ -207,7 +215,7 @@ export const useCurriculumTopics = () => {
     } catch (error) {
       console.error('Error setting active topic:', error);
     }
-  }, [user]);
+  }, [user, curriculumTopics]);
 
   // Update topic session time
   const updateSessionTime = useCallback(async (topicId: string, additionalSeconds: number) => {
