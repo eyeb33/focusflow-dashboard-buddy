@@ -79,6 +79,11 @@ const CurriculumTopicList: React.FC<CurriculumTopicListProps> = ({
         const categoryPercent = progress 
           ? Math.round((progress.completed / progress.total) * 100) 
           : 0;
+        
+        // Check if this category contains the active topic
+        const hasActiveTopic = category.topics.some(
+          topic => topic.topicId === activeTopicId
+        );
 
         return (
           <div key={category.name} className="space-y-2">
@@ -86,7 +91,8 @@ const CurriculumTopicList: React.FC<CurriculumTopicListProps> = ({
             <button
               className={cn(
                 'w-full flex items-center justify-between p-3 rounded-lg transition-colors',
-                'bg-muted/50 hover:bg-muted'
+                'bg-muted/50 hover:bg-muted',
+                hasActiveTopic && !category.isExpanded && 'ring-2 ring-primary/30 bg-primary/5'
               )}
               onClick={() => onCategoryToggle(category.name)}
             >
@@ -100,6 +106,13 @@ const CurriculumTopicList: React.FC<CurriculumTopicListProps> = ({
                 <span className="text-sm text-muted-foreground">
                   ({progress?.completed || 0}/{progress?.total || 0})
                 </span>
+                {/* Active topic indicator when collapsed */}
+                {hasActiveTopic && !category.isExpanded && (
+                  <span className="flex items-center gap-1 ml-1 px-2 py-0.5 text-xs font-medium bg-primary/20 text-primary rounded-full">
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+                    Active
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <Progress value={categoryPercent} className="h-2 w-20" />
