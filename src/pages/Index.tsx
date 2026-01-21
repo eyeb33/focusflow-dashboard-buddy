@@ -1,10 +1,9 @@
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import Header from "@/components/Layout/Header";
 import MobileNav from "@/components/Layout/MobileNav";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
 import TimerContainer from "@/components/Timer/TimerContainer";
-import AuthPrompt from "@/components/Auth/AuthPrompt";
+import HeroAuthCard from "@/components/Auth/HeroAuthCard";
 import { useTimerContext } from '@/contexts/TimerContext';
 import MathsTutorInterface, { MathsTutorInterfaceRef } from '@/components/Tutor/MathsTutorInterface';
 import CurriculumTopicList from '@/components/Curriculum/CurriculumTopicList';
@@ -13,7 +12,6 @@ import { Task } from '@/types/task';
 
 
 const Index = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const { setActiveTaskId, getElapsedMinutes, getElapsedSeconds, isRunning, handleStart, activeTaskId } = useTimerContext();
 
@@ -102,21 +100,6 @@ const Index = () => {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isRunning, activeTopicId, getElapsedMinutes, getElapsedSeconds, updateSessionTime]);
 
-  const handleLoginClick = useCallback(() => {
-    navigate('/auth', {
-      state: {
-        mode: 'login'
-      }
-    });
-  }, [navigate]);
-  
-  const handleSignupClick = useCallback(() => {
-    navigate('/auth', {
-      state: {
-        mode: 'signup'
-      }
-    });
-  }, [navigate]);
 
 
   // Create a mock active task for the timer to display
@@ -135,7 +118,7 @@ const Index = () => {
 
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
-      <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
+      <Header />
       
       {user ? (
         /* Authenticated: 3-column responsive layout with internal scrolling */
@@ -184,13 +167,9 @@ const Index = () => {
           </div>
         </main>
       ) : (
-        /* Non-authenticated: Timer centered with onboarding prompt below */
-        <main className="flex-1 min-h-0 flex flex-col items-center justify-center px-4 overflow-auto">
-          <div className="flex-shrink-0">
-            <TimerContainer activeTask={null} />
-          </div>
-          
-          <AuthPrompt onSignupClick={handleSignupClick} />
+        /* Non-authenticated: Hero landing with embedded auth */
+        <main className="flex-1 min-h-0 overflow-auto">
+          <HeroAuthCard />
         </main>
       )}
       
