@@ -3,6 +3,7 @@ import { GraduationCap, User, BookOpen, ChevronDown, ChevronUp, ExternalLink } f
 import { cn } from '@/lib/utils';
 import 'katex/dist/katex.min.css';
 import katex from 'katex';
+import DOMPurify from 'dompurify';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -26,7 +27,23 @@ interface MathsMessageProps {
   };
 }
 
-// Parse and render LaTeX in content
+// Configure DOMPurify for KaTeX output
+const createSanitizer = () => {
+  // Allow KaTeX-specific tags and attributes
+  return (html: string) => DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: [
+      'span', 'div', 'br', 'p', 'strong', 'em', 'sup', 'sub',
+      'math', 'annotation', 'semantics', 'mrow', 'mi', 'mo', 'mn', 'msup', 'msub', 'mfrac', 'mroot', 'msqrt',
+      'svg', 'line', 'path', 'rect', 'g'
+    ],
+    ALLOWED_ATTR: ['class', 'style', 'aria-hidden', 'xmlns', 'd', 'viewBox', 'width', 'height', 'x1', 'y1', 'x2', 'y2', 'fill', 'stroke', 'stroke-width'],
+    ALLOW_DATA_ATTR: false,
+  });
+};
+
+const sanitize = createSanitizer();
+
+// Parse and render LaTeX in content with sanitization
 const renderMathContent = (content: string): string => {
   // Handle display math ($$...$$)
   let result = content.replace(/\$\$(.*?)\$\$/gs, (_, math) => {
@@ -34,7 +51,7 @@ const renderMathContent = (content: string): string => {
       return katex.renderToString(math.trim(), {
         displayMode: true,
         throwOnError: false,
-        strict: false
+        strict: 'warn'
       });
     } catch (e) {
       return `$$${math}$$`;
@@ -47,7 +64,7 @@ const renderMathContent = (content: string): string => {
       return katex.renderToString(math.trim(), {
         displayMode: false,
         throwOnError: false,
-        strict: false
+        strict: 'warn'
       });
     } catch (e) {
       return `$${math}$`;
@@ -60,7 +77,7 @@ const renderMathContent = (content: string): string => {
       return katex.renderToString(math.trim(), {
         displayMode: true,
         throwOnError: false,
-        strict: false
+        strict: 'warn'
       });
     } catch (e) {
       return `\\[${math}\\]`;
@@ -73,13 +90,15 @@ const renderMathContent = (content: string): string => {
       return katex.renderToString(math.trim(), {
         displayMode: false,
         throwOnError: false,
-        strict: false
+        strict: 'warn'
       });
     } catch (e) {
       return `\\(${math}\\)`;
     }
   });
-  return result;
+  
+  // Sanitize the final HTML to prevent XSS
+  return sanitize(result);
 };
 
 const SourcesDisplay: React.FC<{ sources: RAGSource[] }> = ({ sources }) => {
