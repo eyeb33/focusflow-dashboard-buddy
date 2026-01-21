@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Eye, EyeOff, Loader2, Timer, BookOpen, Brain, BarChart3, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import ForgotPasswordForm from './ForgotPasswordForm';
+import PasswordStrengthIndicator from './PasswordStrengthIndicator';
 
 const signupSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -208,6 +209,7 @@ const HeroAuthCard = () => {
                               </Button>
                             </div>
                           </FormControl>
+                          <PasswordStrengthIndicator password={field.value} />
                           <FormMessage />
                         </FormItem>
                       )}
