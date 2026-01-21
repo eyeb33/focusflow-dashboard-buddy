@@ -1,4 +1,3 @@
-
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import Header from "@/components/Layout/Header";
 import MobileNav from "@/components/Layout/MobileNav";
@@ -6,28 +5,20 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
 import TimerContainer from "@/components/Timer/TimerContainer";
 import AuthPrompt from "@/components/Auth/AuthPrompt";
-import { useTheme } from "@/components/Theme/ThemeProvider";
-import { cn } from "@/lib/utils";
 import { useTimerContext } from '@/contexts/TimerContext';
-import { useToast } from '@/hooks/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
 import MathsTutorInterface, { MathsTutorInterfaceRef } from '@/components/Tutor/MathsTutorInterface';
 import CurriculumTopicList from '@/components/Curriculum/CurriculumTopicList';
 import { useCurriculumTopics } from '@/hooks/useCurriculumTopics';
 import { Task } from '@/types/task';
 
-import bgWork from '@/assets/bg-work.png';
-import bgBreak from '@/assets/bg-break.png';
-import bgLongBreak from '@/assets/bg-longbreak.png';
 
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { theme } = useTheme();
-  const { timerMode, setActiveTaskId, getElapsedMinutes, getElapsedSeconds, isRunning, handleStart, activeTaskId } = useTimerContext();
-  const { toast } = useToast();
+  const { setActiveTaskId, getElapsedMinutes, getElapsedSeconds, isRunning, handleStart, activeTaskId } = useTimerContext();
 
   const tutorRef = useRef<MathsTutorInterfaceRef>(null);
+
   const [linkedTaskIds, setLinkedTaskIds] = useState<Set<string>>(new Set());
 
   // Curriculum topics hook
@@ -127,16 +118,6 @@ const Index = () => {
     });
   }, [navigate]);
 
-  const getPageBackground = () => {
-    switch(timerMode) {
-      case 'work': return bgWork;
-      case 'break': return bgBreak;
-      case 'longBreak': return bgLongBreak;
-      default: return bgWork;
-    }
-  };
-
-  const background = getPageBackground();
 
   // Create a mock active task for the timer to display
   const activeTask: Task | null = activeSession ? {
@@ -153,87 +134,60 @@ const Index = () => {
   } : null;
 
   return (
-    <div 
-      className="min-h-screen flex flex-col transition-colors duration-500 relative overflow-hidden"
-      style={{
-        backgroundImage: `url(${background})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
-      }}
-    >
-      {/* Dark overlay for dark mode + gradient fade to top */}
-      <div className={cn(
-        "absolute inset-0 pointer-events-none transition-colors duration-500",
-        theme === 'dark' 
-          ? "bg-gradient-to-t from-black/90 via-black/85 to-black/80" 
-          : "bg-gradient-to-t from-transparent via-transparent to-white/30"
-      )} />
+    <div className="min-h-screen bg-background flex flex-col">
+      <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
+      
+      <main className="flex-1 container max-w-7xl mx-auto py-6 px-4 md:px-6 lg:px-8 overflow-auto">
+        {user ? (
+          /* Authenticated: Two-column layout */
+          <div className="grid h-full min-h-[calc(100vh-120px)] grid-cols-1 lg:grid-cols-[2fr_3fr] gap-6">
+            {/* Left Column: Timer + Curriculum Topics */}
+            <div className="flex flex-col min-h-0">
+              <div className="flex-shrink-0">
+                <TimerContainer activeTask={activeTask} />
+              </div>
 
-      <main className="flex-1 flex flex-col overflow-hidden relative z-10">
-        <div className="relative flex flex-col items-center justify-start py-6 px-4 md:px-8 h-full">
-          <div className="w-full max-w-[92%] mx-auto bg-white dark:bg-card rounded-3xl shadow-2xl p-6 flex flex-col relative h-[calc(100vh-80px)]">
-
-            <Header onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
-            
-            <div className="mt-4 flex-1 min-h-0 overflow-hidden">
-              {user ? (
-                /* Authenticated: Two-column GRID with shared bottom row for perfect input alignment */
-                <div className="grid h-full min-h-0 grid-cols-[2fr_3fr] grid-rows-[1fr_auto] gap-x-0 gap-y-0">
-                  {/* Left Column: Timer + Curriculum Topics - spans both rows to match chat height */}
-                  <div className="min-h-0 overflow-hidden flex flex-col pr-6 row-span-2">
-                    <div className="flex-shrink-0">
-                      <TimerContainer
-                        activeTask={activeTask}
-                      />
-                    </div>
-
-                    <div className="flex-1 flex flex-col pt-4 min-h-0 overflow-hidden">
-                      <div className="pb-2 flex-shrink-0">
-                        <h2 className="text-xl font-display font-semibold tracking-tight">Task List: A-Level Maths Curriculum</h2>
-                        <p className="text-xs text-muted-foreground mt-0.5">Edexcel Specification</p>
-                      </div>
-                      
-                      <div className="flex-1 min-h-0 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-b from-background to-transparent z-10 pointer-events-none" />
-                        
-                        <CurriculumTopicList
-                          categories={categorizedTopics}
-                          topicsWithSessions={topicsWithSessions}
-                          categoryProgress={categoryProgress}
-                          isLoading={isCurriculumLoading}
-                          activeTopicId={activeTopicId}
-                          onTopicClick={handleTopicClick}
-                          onSubtopicToggle={handleSubtopicToggle}
-                          onCategoryToggle={toggleCategory}
-                        />
-                        
-                        <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-t from-background to-transparent z-10 pointer-events-none" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right Column: Tutor (row 1, col 2) */}
-                  <div className="min-h-0 overflow-hidden pl-6 flex flex-col">
-                    <MathsTutorInterface ref={tutorRef} inputPortalTarget={chatInputSlot} />
-                  </div>
-
-                  {/* Bottom row (row 2): Chat input slot (col 2 only - left column spans both rows) */}
-                  <div ref={setChatInputSlot} className="flex-shrink-0 pl-6" />
+              <div className="flex-1 flex flex-col pt-4 min-h-0 overflow-hidden">
+                <div className="pb-2 flex-shrink-0">
+                  <h2 className="text-xl font-display font-semibold tracking-tight">Task List: A-Level Maths Curriculum</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">Edexcel Specification</p>
                 </div>
-              ) : (
-                /* Non-authenticated: Timer centered with onboarding prompt below */
-                <div className="flex flex-col h-full items-center">
-                  <div className="flex-shrink-0">
-                    <TimerContainer activeTask={null} />
-                  </div>
+                
+                <div className="flex-1 min-h-0 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-b from-background to-transparent z-10 pointer-events-none" />
                   
-                  <AuthPrompt onSignupClick={handleSignupClick} />
+                  <CurriculumTopicList
+                    categories={categorizedTopics}
+                    topicsWithSessions={topicsWithSessions}
+                    categoryProgress={categoryProgress}
+                    isLoading={isCurriculumLoading}
+                    activeTopicId={activeTopicId}
+                    onTopicClick={handleTopicClick}
+                    onSubtopicToggle={handleSubtopicToggle}
+                    onCategoryToggle={toggleCategory}
+                  />
+                  
+                  <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-t from-background to-transparent z-10 pointer-events-none" />
                 </div>
-              )}
+              </div>
+            </div>
+
+            {/* Right Column: Tutor */}
+            <div className="min-h-0 overflow-hidden flex flex-col">
+              <MathsTutorInterface ref={tutorRef} inputPortalTarget={chatInputSlot} />
+              <div ref={setChatInputSlot} className="flex-shrink-0" />
             </div>
           </div>
-        </div>
+        ) : (
+          /* Non-authenticated: Timer centered with onboarding prompt below */
+          <div className="flex flex-col items-center justify-center min-h-[calc(100vh-120px)]">
+            <div className="flex-shrink-0">
+              <TimerContainer activeTask={null} />
+            </div>
+            
+            <AuthPrompt onSignupClick={handleSignupClick} />
+          </div>
+        )}
       </main>
       
       <MobileNav />
