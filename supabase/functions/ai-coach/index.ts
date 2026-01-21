@@ -101,18 +101,23 @@ serve(async (req) => {
       timestamp: new Date().toISOString(),
     });
 
-    // Fetch user's Gemini API key from profile
-    const { data: profileData, error: profileError } = await supabaseClient
-      .from('profiles')
+    // Fetch user's Gemini API key from secure user_secrets table (requires service role)
+    const supabaseAdminAuth = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { data: secretsData, error: secretsError } = await supabaseAdminAuth
+      .from('user_secrets')
       .select('gemini_api_key')
       .eq('user_id', user.id)
       .maybeSingle();
 
-    if (profileError) {
-      console.warn('Failed to fetch profile for API key:', profileError.message);
+    if (secretsError) {
+      console.warn('Failed to fetch user secrets for API key:', secretsError.message);
     }
 
-    const userGeminiApiKey = profileData?.gemini_api_key;
+    const userGeminiApiKey = secretsData?.gemini_api_key;
     
     if (!userGeminiApiKey) {
       return new Response(JSON.stringify({ 

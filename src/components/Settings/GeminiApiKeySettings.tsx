@@ -30,28 +30,27 @@ const GeminiApiKeySettings: React.FC<GeminiApiKeySettingsProps> = ({ onOpenApiSt
   const fetchExistingKey = async () => {
     if (!user) return;
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('gemini_api_key')
-      .eq('user_id', user.id)
-      .maybeSingle();
+    try {
+      // Use the secure edge function to check if key exists (never returns actual key)
+      const { data, error } = await supabase.functions.invoke('manage-api-key', {
+        body: { action: 'check' }
+      });
 
-    if (error) {
-      // Non-fatal; if there's no profile row yet, user can still save via upsert.
-      console.warn('Failed to fetch existing Gemini API key:', error.message);
-      return;
-    }
+      if (error) {
+        console.warn('Failed to check Gemini API key status:', error.message);
+        return;
+      }
 
-    if (data?.gemini_api_key) {
-      setHasExistingKey(true);
-      const key = data.gemini_api_key;
-      setMaskedKey(`${key.slice(0, 8)}${'•'.repeat(20)}${key.slice(-4)}`);
+      if (data?.hasKey) {
+        setHasExistingKey(true);
+        setMaskedKey(data.maskedKey);
+      }
+    } catch (err) {
+      console.warn('Error checking API key:', err);
     }
   };
 
   const isPlausibleApiKey = (key: string) => {
-    // Important: do NOT make any network calls here.
-    // We only do a light client-side format check.
     const trimmed = key.trim();
     return trimmed.startsWith('AIza') && trimmed.length >= 30;
   };
@@ -62,7 +61,7 @@ const GeminiApiKeySettings: React.FC<GeminiApiKeySettingsProps> = ({ onOpenApiSt
     if (!isPlausibleApiKey(apiKey)) {
       toast({
         title: 'Invalid API Key',
-        description: 'Please paste a valid Gemini API key (it usually starts with “AIza…”).',
+        description: 'Please paste a valid Gemini API key (it usually starts with "AIza…").',
         variant: 'destructive',
       });
       return;
@@ -70,19 +69,13 @@ const GeminiApiKeySettings: React.FC<GeminiApiKeySettingsProps> = ({ onOpenApiSt
 
     setIsLoading(true);
     try {
-      // Use upsert so this works even if the profile row doesn't exist yet
-      const { error } = await supabase
-        .from('profiles')
-        .upsert(
-          {
-            user_id: user.id,
-            gemini_api_key: apiKey.trim(),
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'user_id' }
-        );
+      // Use the secure edge function to save the key
+      const { data, error } = await supabase.functions.invoke('manage-api-key', {
+        body: { action: 'save', api_key: apiKey.trim() }
+      });
 
       if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Failed to save API key');
 
       toast({
         title: 'API Key Saved',
@@ -90,7 +83,7 @@ const GeminiApiKeySettings: React.FC<GeminiApiKeySettingsProps> = ({ onOpenApiSt
       });
 
       setHasExistingKey(true);
-      setMaskedKey(`${apiKey.trim().slice(0, 8)}${'•'.repeat(20)}${apiKey.trim().slice(-4)}`);
+      setMaskedKey(data.maskedKey);
       setApiKey('');
     } catch (error: any) {
       toast({
@@ -108,12 +101,13 @@ const GeminiApiKeySettings: React.FC<GeminiApiKeySettingsProps> = ({ onOpenApiSt
 
     setIsLoading(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ gemini_api_key: null })
-        .eq('user_id', user.id);
+      // Use the secure edge function to remove the key
+      const { data, error } = await supabase.functions.invoke('manage-api-key', {
+        body: { action: 'remove' }
+      });
 
       if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Failed to remove API key');
 
       toast({
         title: "API Key Removed",

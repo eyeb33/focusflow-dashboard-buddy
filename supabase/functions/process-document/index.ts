@@ -147,16 +147,32 @@ serve(async (req) => {
       });
     }
 
-    // Fetch the document
+    // Check if user is admin
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('is_admin')
+      .eq('user_id', user.id)
+      .single();
+
+    if (profileError || !profile?.is_admin) {
+      console.error(`[process-document] Non-admin user ${user.id} attempted to process document`);
+      return new Response(JSON.stringify({ error: 'Admin access required' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log(`[process-document] Admin user ${user.id} processing document ${document_id}`);
+
+    // Fetch the document (admin can access any document via service role)
     const { data: document, error: docError } = await supabaseAdmin
       .from('documents')
       .select('*')
       .eq('id', document_id)
-      .eq('user_id', user.id)
       .single();
 
     if (docError || !document) {
-      return new Response(JSON.stringify({ error: 'Document not found or access denied' }), {
+      return new Response(JSON.stringify({ error: 'Document not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
