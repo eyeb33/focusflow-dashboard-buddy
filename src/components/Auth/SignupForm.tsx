@@ -8,6 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import PasswordStrengthIndicator from './PasswordStrengthIndicator';
 
 const signupSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -106,6 +107,7 @@ const SignupForm = ({ onSubmit, isLoading, showPassword, onTogglePassword }: Sig
                     </Button>
                   </div>
                 </FormControl>
+                <PasswordStrengthIndicator password={field.value} />
                 <FormMessage />
               </FormItem>
             )}

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Eye, EyeOff, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import PasswordStrengthIndicator from '@/components/Auth/PasswordStrengthIndicator';
 
 const resetPasswordSchema = z.object({
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
@@ -159,6 +160,7 @@ const ResetPassword = () => {
                         </Button>
                       </div>
                     </FormControl>
+                    <PasswordStrengthIndicator password={field.value} />
                     <FormMessage />
                   </FormItem>
                 )}
