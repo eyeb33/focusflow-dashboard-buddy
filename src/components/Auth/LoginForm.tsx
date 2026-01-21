@@ -21,9 +21,10 @@ interface LoginFormProps {
   isLoading: boolean;
   showPassword: boolean;
   onTogglePassword: () => void;
+  onForgotPassword?: () => void;
 }
 
-const LoginForm = ({ onSubmit, isLoading, showPassword, onTogglePassword }: LoginFormProps) => {
+const LoginForm = ({ onSubmit, isLoading, showPassword, onTogglePassword, onForgotPassword }: LoginFormProps) => {
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -67,7 +68,13 @@ const LoginForm = ({ onSubmit, isLoading, showPassword, onTogglePassword }: Logi
               <FormItem>
                 <div className="flex justify-between items-center">
                   <FormLabel>Password</FormLabel>
-                  <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs">
+                  <Button 
+                    type="button" 
+                    variant="link" 
+                    size="sm" 
+                    className="h-auto p-0 text-xs"
+                    onClick={onForgotPassword}
+                  >
                     Forgot password?
                   </Button>
                 </div>

@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff, Loader2, Timer, BookOpen, Brain, BarChart3, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import ForgotPasswordForm from './ForgotPasswordForm';
 
 const signupSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -53,6 +54,7 @@ const HeroAuthCard = () => {
   const { signIn, signUp, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<'signup' | 'login'>('signup');
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const signupForm = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -70,6 +72,10 @@ const HeroAuthCard = () => {
 
   const onLogin = async (values: LoginFormValues) => {
     await signIn(values.email, values.password);
+  };
+
+  const handleBackFromForgotPassword = () => {
+    setShowForgotPassword(false);
   };
 
   return (
@@ -129,6 +135,9 @@ const HeroAuthCard = () => {
 
         {/* Right: Auth Card with Tabs */}
         <Card className="shadow-lg border-border/50">
+          {showForgotPassword ? (
+            <ForgotPasswordForm onBack={handleBackFromForgotPassword} />
+          ) : (
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'signup' | 'login')}>
             <TabsList className="grid w-full grid-cols-2 m-0 rounded-b-none">
               <TabsTrigger value="signup">Sign up</TabsTrigger>
@@ -251,7 +260,13 @@ const HeroAuthCard = () => {
                         <FormItem>
                           <div className="flex justify-between items-center">
                             <FormLabel>Password</FormLabel>
-                            <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs">
+                            <Button 
+                              type="button" 
+                              variant="link" 
+                              size="sm" 
+                              className="h-auto p-0 text-xs"
+                              onClick={() => setShowForgotPassword(true)}
+                            >
                               Forgot password?
                             </Button>
                           </div>
@@ -297,6 +312,7 @@ const HeroAuthCard = () => {
               </Form>
             </TabsContent>
           </Tabs>
+          )}
         </Card>
       </div>
     </div>
