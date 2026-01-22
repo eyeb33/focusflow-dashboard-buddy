@@ -118,11 +118,12 @@ const Index = () => {
 
   // Different layout containers for authenticated vs unauthenticated
   if (!user) {
-    // Unauthenticated: content-sized layout that fits naturally
+    // Unauthenticated: keep the page within the viewport (no document scroll),
+    // and allow scrolling only if content actually exceeds the viewport.
     return (
-      <div className="min-h-screen flex flex-col bg-background">
+      <div className="h-screen flex flex-col bg-background overflow-hidden">
         <Header />
-        <main className="flex-1">
+        <main className="flex-1 min-h-0 overflow-y-auto">
           <HeroAuthCard />
         </main>
         <MobileNav />
