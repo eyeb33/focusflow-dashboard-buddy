@@ -3,7 +3,7 @@ import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { LogOut, User, Timer, LayoutDashboard, BookOpen } from 'lucide-react';
+import { LogOut, User, Bot, LayoutDashboard, BookOpen } from 'lucide-react';
 import ThemeToggle from '@/components/Theme/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/components/Theme/ThemeProvider';
@@ -57,11 +57,11 @@ const Header: React.FC = () => {
                       )}
                     >
                       {isMobile ? (
-                        <Timer className="h-4 w-4" />
+                        <Bot className="h-4 w-4" />
                       ) : (
                         <>
-                          <Timer className="h-4 w-4" />
-                          Timer
+                          <Bot className="h-4 w-4" />
+                          Buddy
                         </>
                       )}
                     </button>
