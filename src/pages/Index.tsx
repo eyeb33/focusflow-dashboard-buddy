@@ -116,62 +116,69 @@ const Index = () => {
     updatedAt: activeSession.updatedAt
   } : null;
 
+  // Different layout containers for authenticated vs unauthenticated
+  if (!user) {
+    // Unauthenticated: content-sized layout that fits naturally
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-1">
+          <HeroAuthCard />
+        </main>
+        <MobileNav />
+      </div>
+    );
+  }
+
+  // Authenticated: fixed viewport layout with internal scrolling
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       <Header />
       
-      {user ? (
-        /* Authenticated: 3-column responsive layout with internal scrolling */
-        <main className="flex-1 min-h-0 w-full py-4 px-3 md:px-4 lg:px-[3vw]">
-          <div className="h-full grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 lg:gap-[2vw] xl:gap-[3vw]">
-            
-            {/* Column 1: Timer (centered, fixed size) */}
-            <div className="flex flex-col items-center lg:items-stretch bg-card rounded-xl border border-border/50 p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-border/80 dark:border-border/30 dark:hover:border-border/50">
-              <div className="flex-shrink-0">
-                <TimerContainer activeTask={activeTask} />
-              </div>
-            </div>
-
-            {/* Column 2: Curriculum Topics List */}
-            <div className="flex flex-col min-h-0 overflow-hidden bg-card rounded-xl border border-border/50 p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-border/80 dark:border-border/30 dark:hover:border-border/50">
-              <div className="pb-3 flex-shrink-0">
-                <h2 className="text-lg font-display font-semibold tracking-tight">Task List: A-Level Maths Curriculum</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">Edexcel Specification</p>
-              </div>
-              
-              <div className="flex-1 min-h-0 relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-b from-card to-transparent z-10 pointer-events-none" />
-                
-                <div className="h-full overflow-y-auto">
-                  <CurriculumTopicList
-                    categories={categorizedTopics}
-                    topicsWithSessions={topicsWithSessions}
-                    categoryProgress={categoryProgress}
-                    isLoading={isCurriculumLoading}
-                    activeTopicId={activeTopicId}
-                    onTopicClick={handleTopicClick}
-                    onSubtopicToggle={handleSubtopicToggle}
-                    onCategoryToggle={toggleCategory}
-                  />
-                </div>
-                
-                <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-t from-card to-transparent z-10 pointer-events-none" />
-              </div>
-            </div>
-
-            {/* Column 3: AI Tutor Chat */}
-            <div className="min-h-0 flex flex-col overflow-hidden bg-card rounded-xl border border-border/50 p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-border/80 dark:border-border/30 dark:hover:border-border/50">
-              <MathsTutorInterface ref={tutorRef} inputPortalTarget={chatInputSlot} />
-              <div ref={setChatInputSlot} className="flex-shrink-0" />
+      <main className="flex-1 min-h-0 w-full py-4 px-3 md:px-4 lg:px-[3vw]">
+        <div className="h-full grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 lg:gap-[2vw] xl:gap-[3vw]">
+          
+          {/* Column 1: Timer (centered, fixed size) */}
+          <div className="flex flex-col items-center lg:items-stretch bg-card rounded-xl border border-border/50 p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-border/80 dark:border-border/30 dark:hover:border-border/50">
+            <div className="flex-shrink-0">
+              <TimerContainer activeTask={activeTask} />
             </div>
           </div>
-        </main>
-      ) : (
-        /* Non-authenticated: Hero landing with embedded auth */
-        <main className="flex-1 min-h-0 overflow-auto">
-          <HeroAuthCard />
-        </main>
-      )}
+
+          {/* Column 2: Curriculum Topics List */}
+          <div className="flex flex-col min-h-0 overflow-hidden bg-card rounded-xl border border-border/50 p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-border/80 dark:border-border/30 dark:hover:border-border/50">
+            <div className="pb-3 flex-shrink-0">
+              <h2 className="text-lg font-display font-semibold tracking-tight">Task List: A-Level Maths Curriculum</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Edexcel Specification</p>
+            </div>
+            
+            <div className="flex-1 min-h-0 relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-b from-card to-transparent z-10 pointer-events-none" />
+              
+              <div className="h-full overflow-y-auto">
+                <CurriculumTopicList
+                  categories={categorizedTopics}
+                  topicsWithSessions={topicsWithSessions}
+                  categoryProgress={categoryProgress}
+                  isLoading={isCurriculumLoading}
+                  activeTopicId={activeTopicId}
+                  onTopicClick={handleTopicClick}
+                  onSubtopicToggle={handleSubtopicToggle}
+                  onCategoryToggle={toggleCategory}
+                />
+              </div>
+              
+              <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-t from-card to-transparent z-10 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Column 3: AI Tutor Chat */}
+          <div className="min-h-0 flex flex-col overflow-hidden bg-card rounded-xl border border-border/50 p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-border/80 dark:border-border/30 dark:hover:border-border/50">
+            <MathsTutorInterface ref={tutorRef} inputPortalTarget={chatInputSlot} />
+            <div ref={setChatInputSlot} className="flex-shrink-0" />
+          </div>
+        </div>
+      </main>
       
       <MobileNav />
     </div>
