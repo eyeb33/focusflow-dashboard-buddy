@@ -152,10 +152,10 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Allow content to scroll when needed */
+  /* Prevent page overscroll */
   html, body, #root {
-    max-height: 100vh;
-    overflow-y: auto;
+    height: 100%;
+    overflow: hidden;
   }
 }
 
