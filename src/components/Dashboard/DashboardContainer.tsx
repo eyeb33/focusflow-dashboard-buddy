@@ -46,12 +46,14 @@ const DashboardContainer = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
       <Header />
       
-      <main className="flex-1 container max-w-7xl mx-auto py-6 px-4 md:px-6 lg:px-8 overflow-auto">
-        <DashboardHeader />
-        <DashboardContent />
+      <main className="flex-1 min-h-0 overflow-y-auto">
+        <div className="container max-w-7xl mx-auto py-6 px-4 md:px-6 lg:px-8">
+          <DashboardHeader />
+          <DashboardContent />
+        </div>
       </main>
       
       <MobileNav />

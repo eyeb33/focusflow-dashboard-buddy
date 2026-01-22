@@ -152,10 +152,9 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Prevent page overscroll */
+  /* Root height setup */
   html, body, #root {
     height: 100%;
-    overflow: hidden;
   }
 }
 
