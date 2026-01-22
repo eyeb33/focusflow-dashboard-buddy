@@ -33,24 +33,26 @@ const Curriculum: React.FC = () => {
       <Helmet>
         <title>Curriculum Manager - Syllabuddy</title>
       </Helmet>
-      <div className="min-h-screen bg-background">
+      <div className="h-screen flex flex-col bg-background overflow-hidden">
         <Header />
-        <main className="container max-w-4xl mx-auto py-8 px-4">
-          <div className="mb-6">
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/')}
-              className="mb-4"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Focus
-            </Button>
-            <h1 className="text-3xl font-bold">Curriculum Manager</h1>
-            <p className="text-muted-foreground mt-1">
-              Upload and manage curriculum documents for RAG-enhanced AI tutoring
-            </p>
+        <main className="flex-1 min-h-0 overflow-y-auto">
+          <div className="container max-w-4xl mx-auto py-8 px-4">
+            <div className="mb-6">
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate('/')}
+                className="mb-4"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Focus
+              </Button>
+              <h1 className="text-3xl font-bold">Curriculum Manager</h1>
+              <p className="text-muted-foreground mt-1">
+                Upload and manage curriculum documents for RAG-enhanced AI tutoring
+              </p>
+            </div>
+            <CurriculumManager />
           </div>
-          <CurriculumManager />
         </main>
       </div>
     </>
