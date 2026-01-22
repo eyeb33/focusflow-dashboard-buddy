@@ -614,29 +614,23 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
                   </Button>
                 </div>
               ) : (
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-base truncate">
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center gap-1 min-w-0">
+                    <h3 className="font-bold text-sm truncate max-w-[120px] lg:max-w-[180px]" title={currentSession?.title || 'A-Level Maths Tutor'}>
                       {currentSession?.title || 'A-Level Maths Tutor'}
                     </h3>
                     {currentSession && (
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-6 w-6 flex-shrink-0"
+                        className="h-5 w-5 flex-shrink-0"
                         onClick={() => setIsEditingTitle(true)}
                       >
                         <Pencil className="h-3 w-3" />
                       </Button>
                     )}
                   </div>
-                  {currentSession?.linked_task_id ? (
-                    <p className="text-xs text-primary font-medium">
-                      Currently studying: {currentSession.title}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">Edexcel Specification</p>
-                  )}
+                  <p className="text-xs text-muted-foreground truncate">Edexcel Specification</p>
                 </div>
               )}
             </div>
@@ -697,34 +691,34 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         </div>
         
         
-        {/* Mode Selection */}
-        <div className="flex gap-2">
+        {/* Mode Selection - responsive icons/text */}
+        <div className="flex gap-1.5">
           <Button
             onClick={() => setMode('explain')}
             variant={mode === 'explain' ? 'default' : 'outline'}
             size="sm"
-            className="flex-1"
+            className="flex-1 px-2 min-w-0"
           >
-            <BookOpen className="w-4 h-4 mr-2" />
-            Explain
+            <BookOpen className="w-4 h-4 flex-shrink-0" />
+            <span className="ml-1.5 truncate hidden lg:inline">Explain</span>
           </Button>
           <Button
             onClick={() => setMode('practice')}
             variant={mode === 'practice' ? 'default' : 'outline'}
             size="sm"
-            className="flex-1"
+            className="flex-1 px-2 min-w-0"
           >
-            <PenTool className="w-4 h-4 mr-2" />
-            Practice
+            <PenTool className="w-4 h-4 flex-shrink-0" />
+            <span className="ml-1.5 truncate hidden lg:inline">Practice</span>
           </Button>
           <Button
             onClick={() => setMode('check')}
             variant={mode === 'check' ? 'default' : 'outline'}
             size="sm"
-            className="flex-1"
+            className="flex-1 px-2 min-w-0"
           >
-            <CheckCircle className="w-4 h-4 mr-2" />
-            Check
+            <CheckCircle className="w-4 h-4 flex-shrink-0" />
+            <span className="ml-1.5 truncate hidden lg:inline">Check</span>
           </Button>
         </div>
       </div>

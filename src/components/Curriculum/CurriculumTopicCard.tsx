@@ -125,16 +125,19 @@ const CurriculumTopicCard: React.FC<CurriculumTopicCardProps> = ({
           </Button>
 
           {/* Topic info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className={cn(
-                'font-medium truncate',
-                isCompleted && 'text-green-700 dark:text-green-400'
-              )}>
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span 
+                className={cn(
+                  'font-medium text-sm truncate flex-1 min-w-0',
+                  isCompleted && 'text-green-700 dark:text-green-400'
+                )}
+                title={topic.name}
+              >
                 {topic.name}
               </span>
               {isActive && (
-                <span className="text-xs px-1.5 py-0.5 rounded bg-primary text-primary-foreground font-medium flex-shrink-0">
+                <span className="text-xs px-1.5 py-0.5 rounded bg-primary text-primary-foreground font-medium flex-shrink-0 whitespace-nowrap">
                   Active
                 </span>
               )}
@@ -179,18 +182,18 @@ const CurriculumTopicCard: React.FC<CurriculumTopicCardProps> = ({
           </div>
         </div>
 
-        {/* Study button */}
+        {/* Study button - icon only on small screens */}
         <Button
           variant={isActive ? 'default' : 'outline'}
           size="sm"
           className={cn(
-            'flex-shrink-0 gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity',
+            'flex-shrink-0 gap-1 opacity-0 group-hover:opacity-100 transition-opacity px-2 lg:px-3',
             isActive && 'opacity-100'
           )}
           onClick={handleStudyClick}
         >
-          <GraduationCap className="h-4 w-4" />
-          {isActive ? 'Studying' : 'Study'}
+          <GraduationCap className="h-4 w-4 flex-shrink-0" />
+          <span className="hidden lg:inline">{isActive ? 'Studying' : 'Study'}</span>
         </Button>
       </div>
 

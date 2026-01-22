@@ -122,8 +122,8 @@ const Index = () => {
       
       {user ? (
         /* Authenticated: 3-column responsive layout with internal scrolling */
-        <main className="flex-1 min-h-0 w-full py-4 px-[3vw]">
-          <div className="h-full grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-[3vw]">
+        <main className="flex-1 min-h-0 w-full py-4 px-3 md:px-4 lg:px-[3vw]">
+          <div className="h-full grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 lg:gap-[2vw] xl:gap-[3vw]">
             
             {/* Column 1: Timer (centered, fixed size) */}
             <div className="flex flex-col items-center lg:items-stretch bg-card rounded-xl border border-border/50 p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-border/80 dark:border-border/30 dark:hover:border-border/50">
