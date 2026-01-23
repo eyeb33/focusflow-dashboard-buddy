@@ -86,6 +86,9 @@ describe('retryWithBackoff', () => {
     
     const resultPromise = retryWithBackoff(operation, { maxRetries: 3 });
     
+    // Attach catch handler immediately to prevent unhandled rejection
+    resultPromise.catch(() => {});
+    
     // First attempt fails immediately
     await vi.advanceTimersByTimeAsync(0);
     
@@ -138,6 +141,9 @@ describe('retryWithBackoff', () => {
       onRetry,
     });
     
+    // Attach catch handler immediately to prevent unhandled rejection
+    resultPromise.catch(() => {});
+    
     // Let the operation run and fail
     await vi.advanceTimersByTimeAsync(0);
     await vi.advanceTimersByTimeAsync(1000); // First retry after 1s
@@ -164,6 +170,9 @@ describe('retryWithBackoff', () => {
       maxDelayMs: 10000,
       onRetry,
     });
+    
+    // Attach catch handler immediately to prevent unhandled rejection
+    resultPromise.catch(() => {});
     
     // Run through all retries
     for (let i = 0; i < 6; i++) {
