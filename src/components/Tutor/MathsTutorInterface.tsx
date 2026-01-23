@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import MathsMessage, { RAGSource } from './MathsMessage';
+import MathsMessage, { RAGSource, TutorMode } from './MathsMessage';
 import ChatSessionDrawer from './ChatSessionDrawer';
 import SettingsDrawer from '@/components/Settings/SettingsDrawer';
 import ApiStatsDrawer from './ApiStatsDrawer';
@@ -15,7 +15,7 @@ import { useChatSessions, ChatMessage } from '@/hooks/useChatSessions';
 import * as taskService from '@/services/taskService';
 import { fetchSubTasks, addSubTask, updateSubTaskCompletion, deleteSubTask } from '@/services/subTaskService';
 
-type TutorMode = 'explain' | 'practice' | 'check';
+// TutorMode is now imported from MathsMessage
 
 interface AIMessage {
   role: 'user' | 'assistant' | 'tool';
@@ -731,30 +731,72 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
           </div>
         ) : messages.length === 0 ? (
           <div className="text-center text-muted-foreground mt-8 px-4">
-            <GraduationCap className="w-16 h-16 mx-auto mb-4 text-primary/50" />
-            <h4 className="text-lg font-semibold mb-2">Welcome to your A-Level Maths Tutor!</h4>
-            <p className="mb-4">I'm here to help you master the Edexcel A-Level Maths curriculum.</p>
-            <div className="text-sm text-left bg-muted/50 rounded-lg p-4 max-w-md mx-auto">
-              <p className="font-medium mb-2">I can help you with:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>Pure Mathematics (Algebra, Calculus, Trigonometry)</li>
-                <li>Statistics & Probability</li>
-                <li>Mechanics</li>
-                <li>Problem-solving techniques</li>
-              </ul>
-              <p className="mt-3 text-xs italic">I'll guide you through problems step-by-step, helping you learn rather than just giving answers.</p>
-            </div>
+            {mode === 'practice' ? (
+              <>
+                <PenTool className="w-16 h-16 mx-auto mb-4 text-primary/50" />
+                <h4 className="text-lg font-semibold mb-2">Practice Mode</h4>
+                <p className="mb-4">I'll give you past paper questions to work through.</p>
+                <div className="text-sm text-left bg-muted/50 rounded-lg p-4 max-w-md mx-auto">
+                  <p className="font-medium mb-2">How it works:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Select a topic from the curriculum</li>
+                    <li>I'll provide exam-style questions</li>
+                    <li>Work through them at your own pace</li>
+                    <li>Switch to Check mode to verify your answers</li>
+                  </ul>
+                  <p className="mt-3 text-xs italic">Try asking: "Give me a quadratics question" or "Practice integration by parts"</p>
+                </div>
+              </>
+            ) : mode === 'check' ? (
+              <>
+                <CheckCircle className="w-16 h-16 mx-auto mb-4 text-primary/50" />
+                <h4 className="text-lg font-semibold mb-2">Check Mode</h4>
+                <p className="mb-4">I'll review your work and help you understand any mistakes.</p>
+                <div className="text-sm text-left bg-muted/50 rounded-lg p-4 max-w-md mx-auto">
+                  <p className="font-medium mb-2">How to use:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Share your working or solution</li>
+                    <li>I'll check if it's correct</li>
+                    <li>If there are mistakes, I'll explain what went wrong</li>
+                    <li>I'll show you how to correct any errors</li>
+                  </ul>
+                  <p className="mt-3 text-xs italic">Try: "Check my answer: $x = 5$" or paste your full working</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <BookOpen className="w-16 h-16 mx-auto mb-4 text-primary/50" />
+                <h4 className="text-lg font-semibold mb-2">Welcome to your A-Level Maths Tutor!</h4>
+                <p className="mb-4">I'm here to help you master the Edexcel A-Level Maths curriculum.</p>
+                <div className="text-sm text-left bg-muted/50 rounded-lg p-4 max-w-md mx-auto">
+                  <p className="font-medium mb-2">I can help you with:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Pure Mathematics (Algebra, Calculus, Trigonometry)</li>
+                    <li>Statistics & Probability</li>
+                    <li>Mechanics</li>
+                    <li>Problem-solving techniques</li>
+                  </ul>
+                  <p className="mt-3 text-xs italic">I'll guide you through problems step-by-step, helping you learn rather than just giving answers.</p>
+                </div>
+              </>
+            )}
           </div>
         ) : (
           messages.map((message) => (
-            <MathsMessage key={message.id} message={message} />
+            <MathsMessage key={message.id} message={message} mode={mode} />
           ))
         )}
 
         {isLoading && (
           <div className="flex gap-3 items-start">
             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-sm">
-              <GraduationCap className="w-5 h-5 text-primary-foreground" />
+              {mode === 'practice' ? (
+                <PenTool className="w-5 h-5 text-primary-foreground" />
+              ) : mode === 'check' ? (
+                <CheckCircle className="w-5 h-5 text-primary-foreground" />
+              ) : (
+                <BookOpen className="w-5 h-5 text-primary-foreground" />
+              )}
             </div>
             <div className="bg-muted rounded-xl px-4 py-3 max-w-[85%]">
               <div className="flex gap-1.5">
