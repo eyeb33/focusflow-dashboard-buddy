@@ -85,7 +85,7 @@ const CurriculumTopicCard: React.FC<CurriculumTopicCardProps> = ({
       className={cn(
         'group rounded-lg border mb-2 transition-all duration-200',
         isActive 
-          ? 'bg-primary/10 border-primary ring-2 ring-primary/30' 
+          ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-500 ring-2 ring-emerald-500/30' 
           : isCompleted
             ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800'
             : 'bg-card hover:bg-accent/50'
@@ -136,11 +136,6 @@ const CurriculumTopicCard: React.FC<CurriculumTopicCardProps> = ({
               >
                 {topic.name}
               </span>
-              {isActive && (
-                <span className="text-xs px-1.5 py-0.5 rounded bg-primary text-primary-foreground font-medium flex-shrink-0 whitespace-nowrap">
-                  Active
-                </span>
-              )}
             </div>
 
             {/* Progress bar - always visible when collapsed */}
@@ -188,7 +183,7 @@ const CurriculumTopicCard: React.FC<CurriculumTopicCardProps> = ({
           size="sm"
           className={cn(
             'flex-shrink-0 gap-1 opacity-0 group-hover:opacity-100 transition-opacity px-2 lg:px-3',
-            isActive && 'opacity-100'
+            isActive && 'opacity-100 bg-emerald-600 hover:bg-emerald-700 border-emerald-600'
           )}
           onClick={handleStudyClick}
         >
