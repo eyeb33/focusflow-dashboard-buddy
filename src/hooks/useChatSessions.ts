@@ -162,6 +162,9 @@ export const useChatSessions = () => {
   const openTaskSession = useCallback(async (taskOrTopicId: string, taskName: string, isTopicId: boolean = false): Promise<ChatSession | null> => {
     if (!user) return null;
     
+    // Immediately clear messages to prevent showing stale content while loading
+    setMessages([]);
+    
     // Determine which field to use based on whether this is a topic ID or task ID
     const fieldName = isTopicId ? 'linked_topic_id' : 'linked_task_id';
     
