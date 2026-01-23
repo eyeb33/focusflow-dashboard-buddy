@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Task } from '@/types/task';
 import { TaskRow, TaskUpdatePayload } from '@/types/database';
-import { sanitizeInput } from '@/lib/utils';
+import { sanitizeInput, retryWithBackoff } from '@/lib/utils';
 
 // Map database row to frontend Task type
 const mapTaskRow = (row: TaskRow): Task => ({
@@ -53,24 +53,32 @@ export const addTask = async (userId: string | undefined, taskName: string, esti
   
   const nextSortOrder = maxData?.sort_order ? maxData.sort_order + 1 : 1;
   
-  const { data, error } = await supabase
-    .from('tasks')
-    .insert([
-      {
-        user_id: userId,
-        name: sanitizedName,
-        estimated_pomodoros: estimatedPomodoros,
-        completed: false,
-        sort_order: nextSortOrder
+  // Insert with retry logic for network resilience
+  const data = await retryWithBackoff(
+    async () => {
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert([
+          {
+            user_id: userId,
+            name: sanitizedName,
+            estimated_pomodoros: estimatedPomodoros,
+            completed: false,
+            sort_order: nextSortOrder
+          }
+        ])
+        .select()
+        .single();
+        
+      if (error) {
+        console.error('Error adding task:', error);
+        throw error;
       }
-    ])
-    .select()
-    .single();
-    
-  if (error) {
-    console.error('Error adding task:', error);
-    throw error;
-  }
+      
+      return data;
+    },
+    { maxRetries: 3 }
+  );
   
   return mapTaskRow(data);
 };
@@ -90,16 +98,22 @@ export const updateTaskCompletion = async (userId: string | undefined, taskId: s
     updateData.completed_at = null;
   }
   
-  const { error } = await supabase
-    .from('tasks')
-    .update(updateData)
-    .eq('id', taskId)
-    .eq('user_id', userId);
-    
-  if (error) {
-    console.error('Error updating task completion:', error);
-    throw error;
-  }
+  // Update with retry logic for network resilience
+  await retryWithBackoff(
+    async () => {
+      const { error } = await supabase
+        .from('tasks')
+        .update(updateData)
+        .eq('id', taskId)
+        .eq('user_id', userId);
+        
+      if (error) {
+        console.error('Error updating task completion:', error);
+        throw error;
+      }
+    },
+    { maxRetries: 3 }
+  );
   
   return true;
 };
@@ -171,36 +185,42 @@ export const setActiveTask = async (userId: string | undefined, taskId: string |
 export const updateTaskTimeSpent = async (userId: string | undefined, taskId: string, additionalMinutes: number, additionalSeconds: number = 0): Promise<boolean> => {
   if (!userId) return false;
   
-  // Fetch current time spent
-  const { data: task, error: fetchError } = await supabase
-    .from('tasks')
-    .select('time_spent, time_spent_seconds')
-    .eq('id', taskId)
-    .eq('user_id', userId)
-    .single();
-    
-  if (fetchError) {
-    console.error('Error fetching task:', fetchError);
-    throw fetchError;
-  }
-  
-  const newTimeSpent = (task?.time_spent ?? 0) + additionalMinutes;
-  const newTimeSpentSeconds = (task?.time_spent_seconds ?? 0) + additionalSeconds;
-  
-  const { error } = await supabase
-    .from('tasks')
-    .update({ 
-      time_spent: newTimeSpent,
-      time_spent_seconds: newTimeSpentSeconds,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', taskId)
-    .eq('user_id', userId);
-    
-  if (error) {
-    console.error('Error updating task time spent:', error);
-    throw error;
-  }
+  // Fetch and update with retry logic for network resilience
+  await retryWithBackoff(
+    async () => {
+      // Fetch current time spent
+      const { data: task, error: fetchError } = await supabase
+        .from('tasks')
+        .select('time_spent, time_spent_seconds')
+        .eq('id', taskId)
+        .eq('user_id', userId)
+        .single();
+        
+      if (fetchError) {
+        console.error('Error fetching task:', fetchError);
+        throw fetchError;
+      }
+      
+      const newTimeSpent = (task?.time_spent ?? 0) + additionalMinutes;
+      const newTimeSpentSeconds = (task?.time_spent_seconds ?? 0) + additionalSeconds;
+      
+      const { error } = await supabase
+        .from('tasks')
+        .update({ 
+          time_spent: newTimeSpent,
+          time_spent_seconds: newTimeSpentSeconds,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', taskId)
+        .eq('user_id', userId);
+        
+      if (error) {
+        console.error('Error updating task time spent:', error);
+        throw error;
+      }
+    },
+    { maxRetries: 3 }
+  );
   
   return true;
 };

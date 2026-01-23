@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { TimerMode, getTotalTime, savePartialSession } from '@/utils/timerContextUtils';
@@ -7,6 +6,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { updateDailyStats } from '@/utils/productivityStats';
 import { useQueryClient } from '@tanstack/react-query';
+import { retryWithBackoff } from '@/lib/utils';
 
 interface UseTimerLogicProps {
   settings: TimerSettings;
@@ -106,7 +106,7 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
                      timerMode === 'break' ? 'Break' : 'Long Break';
     toast.success(`${modeLabel} session completed!`);
     
-    // Save completed session to database
+    // Save completed session to database with retry logic
     let sessionId: string | null = null;
     if (user && sessionStartTimeRef.current) {
       try {
@@ -117,30 +117,48 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
         // Get the session date
         const sessionDate = new Date(sessionStartTimeRef.current).toISOString().split('T')[0];
         
-        // Save completed session with session goal
-        const { data: sessionData, error: sessionError } = await supabase
-          .from('focus_sessions')
-          .insert({
-            user_id: user.id,
-            session_type: sessionType,
-            duration: duration,
-            completed: true,
-            session_goal: sessionGoal || null
-          })
-          .select('id')
-          .single();
+        // Save completed session with retry logic
+        const sessionData = await retryWithBackoff(
+          async () => {
+            const { data, error } = await supabase
+              .from('focus_sessions')
+              .insert({
+                user_id: user.id,
+                session_type: sessionType,
+                duration: duration,
+                completed: true,
+                session_goal: sessionGoal || null
+              })
+              .select('id')
+              .single();
+            
+            if (error) throw error;
+            return data;
+          },
+          {
+            maxRetries: 3,
+            onRetry: (attempt, _err, delay) => {
+              console.log(`Retrying session save (attempt ${attempt}), waiting ${delay}ms`);
+            }
+          }
+        );
         
-        if (sessionError) throw sessionError;
         sessionId = sessionData?.id || null;
         setCurrentSessionId(sessionId);
         
-        // Update daily stats summary
-        await supabase.rpc('save_session_progress', {
-          p_user_id: user.id,
-          p_session_type: sessionType,
-          p_duration: duration,
-          p_completed: true
-        });
+        // Update daily stats summary with retry logic
+        await retryWithBackoff(
+          async () => {
+            const { error } = await supabase.rpc('save_session_progress', {
+              p_user_id: user.id,
+              p_session_type: sessionType,
+              p_duration: duration,
+              p_completed: true
+            });
+            if (error) throw error;
+          },
+          { maxRetries: 3 }
+        );
         
         // Update daily stats if it's a work session
         if (timerMode === 'work') {
@@ -168,7 +186,7 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
         }
       } catch (error) {
         console.error('Error saving completed session:', error);
-        toast.error('Failed to save session progress');
+        toast.error('Failed to save session progress. Please check your connection.');
       }
     }
     
@@ -259,23 +277,30 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
     }
   }, [isRunning, timeRemaining, isFreeStudy, freeStudyElapsed]);
   
-  // Save session reflection
+  // Save session reflection with retry logic
   const saveSessionReflection = useCallback(async (quality: 'completed' | 'progress' | 'distracted', reflection: string) => {
     if (!user || !currentSessionId) return;
     
     try {
-      await supabase
-        .from('focus_sessions')
-        .update({
-          session_quality: quality,
-          session_reflection: reflection
-        })
-        .eq('id', currentSessionId);
+      await retryWithBackoff(
+        async () => {
+          const { error } = await supabase
+            .from('focus_sessions')
+            .update({
+              session_quality: quality,
+              session_reflection: reflection
+            })
+            .eq('id', currentSessionId);
+          
+          if (error) throw error;
+        },
+        { maxRetries: 3 }
+      );
       
       toast.success('Session reflection saved');
     } catch (error) {
       console.error('Error saving reflection:', error);
-      toast.error('Failed to save reflection');
+      toast.error('Failed to save reflection. Please try again.');
     }
   }, [user, currentSessionId]);
   

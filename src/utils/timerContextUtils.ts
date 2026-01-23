@@ -47,7 +47,7 @@ export const loadTodayStats = async (userId: string): Promise<{
   }
 };
 
-// Save partial session using database function
+// Save partial session using database function with retry logic
 export const savePartialSession = async (
   userId: string | undefined,
   mode: TimerMode,
@@ -60,18 +60,29 @@ export const savePartialSession = async (
   
   try {
     const { supabase } = await import('@/integrations/supabase/client');
+    const { retryWithBackoff } = await import('@/lib/utils');
     const elapsedTime = totalTime - remainingTime;
     
     // Only save if at least 1 minute has elapsed
     if (elapsedTime >= 60) {
-      await supabase.rpc('save_session_progress', {
-        p_user_id: userId,
-        p_session_type: mode === 'work' ? 'work' : mode === 'break' ? 'short_break' : 'long_break',
-        p_duration: Math.floor(elapsedTime),
-        p_completed: false
-      });
+      await retryWithBackoff(
+        async () => {
+          const { error } = await supabase.rpc('save_session_progress', {
+            p_user_id: userId,
+            p_session_type: mode === 'work' ? 'work' : mode === 'break' ? 'short_break' : 'long_break',
+            p_duration: Math.floor(elapsedTime),
+            p_completed: false
+          });
+          if (error) throw error;
+        },
+        { 
+          maxRetries: 2, // Fewer retries for background saves
+          initialDelayMs: 500 
+        }
+      );
     }
   } catch (error) {
+    // Silent fail for partial saves - they're not critical
     console.error('Error saving partial session:', error);
   }
 };
