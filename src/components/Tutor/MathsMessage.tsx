@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { GraduationCap, User, BookOpen, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { User, BookOpen, PenTool, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import 'katex/dist/katex.min.css';
 import katex from 'katex';
@@ -7,6 +7,8 @@ import DOMPurify from 'dompurify';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+
+export type TutorMode = 'explain' | 'practice' | 'check';
 
 export interface RAGSource {
   id: string;
@@ -25,6 +27,7 @@ interface MathsMessageProps {
     created_at: string;
     sources?: RAGSource[];
   };
+  mode?: TutorMode;
 }
 
 // Configure DOMPurify for KaTeX output
@@ -153,8 +156,22 @@ const SourcesDisplay: React.FC<{ sources: RAGSource[] }> = ({ sources }) => {
   );
 };
 
+// Get the appropriate icon for the tutor mode
+const getModeIcon = (mode: TutorMode) => {
+  switch (mode) {
+    case 'practice':
+      return <PenTool className="w-5 h-5 text-primary-foreground" />;
+    case 'check':
+      return <CheckCircle className="w-5 h-5 text-primary-foreground" />;
+    case 'explain':
+    default:
+      return <BookOpen className="w-5 h-5 text-primary-foreground" />;
+  }
+};
+
 const MathsMessage: React.FC<MathsMessageProps> = ({
-  message
+  message,
+  mode = 'explain'
 }) => {
   const isUser = message.role === 'user';
   const renderedContent = useMemo(() => {
@@ -170,7 +187,7 @@ const MathsMessage: React.FC<MathsMessageProps> = ({
         {isUser ? (
           <User className="w-5 h-5 text-muted-foreground" />
         ) : (
-          <GraduationCap className="w-5 h-5 text-primary-foreground" />
+          getModeIcon(mode)
         )}
       </div>
       
