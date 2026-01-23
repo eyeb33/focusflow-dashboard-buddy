@@ -138,20 +138,20 @@ const DashboardContent = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {isDemoMode && (
-        <div className="bg-muted p-4 rounded-lg border border-muted-foreground/20 mb-6">
+        <div className="bg-muted p-3 sm:p-4 rounded-lg border border-muted-foreground/20 mb-4 md:mb-6">
           <div className="flex items-center gap-3 mb-2">
-            <AlertCircle className="h-5 w-5 text-amber-500" />
-            <h3 className="font-medium">Demo Dashboard</h3>
+            <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0" />
+            <h3 className="font-medium text-sm sm:text-base">Demo Dashboard</h3>
           </div>
-          <p className="text-sm text-muted-foreground mb-3">
+          <p className="text-xs sm:text-sm text-muted-foreground mb-3">
             You're viewing demo data. Sign up to track your own productivity and create a personalized dashboard.
           </p>
           <div className="flex gap-2">
             <Button 
               size="sm" 
-              className="bg-pomodoro-work hover:bg-pomodoro-work/90"
+              className="bg-pomodoro-work hover:bg-pomodoro-work/90 min-h-[44px] px-4 touch-manipulation"
               onClick={() => navigate('/auth', { state: { mode: 'signup' } })}
             >
               Sign Up Now
@@ -159,6 +159,7 @@ const DashboardContent = () => {
             <Button 
               size="sm" 
               variant="outline"
+              className="min-h-[44px] px-4 touch-manipulation"
               onClick={() => navigate('/auth', { state: { mode: 'login' } })}
             >
               Log In
@@ -167,14 +168,19 @@ const DashboardContent = () => {
         </div>
       )}
       
-      <TimeToggle
-        selectedPeriod={selectedPeriod}
-        onChange={setSelectedPeriod}
-        className="mx-auto mb-6"
-      />
+      {/* TimeToggle - centered on all screens, scrollable on mobile */}
+      <div className="flex justify-center overflow-x-auto pb-2">
+        <TimeToggle
+          selectedPeriod={selectedPeriod}
+          onChange={setSelectedPeriod}
+        />
+      </div>
+      
       <StatCardsGrid stats={getPeriodStats()} />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+      
+      {/* Charts and Calendar - stack on mobile, side-by-side on desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="lg:col-span-2 order-1">
           <ChartsGrid
             dailyData={dashboardData.dailyProductivity}
             weeklyData={dashboardData.weeklyProductivity}
@@ -182,7 +188,7 @@ const DashboardContent = () => {
             selectedPeriod={selectedPeriod}
           />
         </div>
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 order-2">
           <StreakCalendar
             data={dashboardData.streakData}
             currentStreak={dashboardData.stats.currentStreak}
@@ -190,10 +196,12 @@ const DashboardContent = () => {
           />
         </div>
       </div>
-      <div className="mt-6">
+      
+      <div className="mt-4 md:mt-6">
         <ExperimentalRadialChart dailyData={dashboardData.dailyProductivity} />
       </div>
-      <div className="mt-6">
+      
+      <div className="mt-4 md:mt-6">
         <TaskTimeCard tasks={tasks} selectedPeriod={selectedPeriod} onTaskDeleted={deleteTask} />
       </div>
     </div>

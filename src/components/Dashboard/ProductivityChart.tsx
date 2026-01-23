@@ -53,18 +53,31 @@ const ProductivityChart: React.FC<ProductivityChartProps> = ({
 
   return (
     <Card className="h-full">
-      <CardHeader>
-        <CardTitle className="text-lg font-medium">{getChartTitle()}</CardTitle>
+      <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
+        <CardTitle className="text-base sm:text-lg font-medium">{getChartTitle()}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="h-[300px]">
+      <CardContent className="p-4 sm:p-6 pt-0">
+        <div className="h-[220px] sm:h-[280px] md:h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data}>
+            <BarChart data={data} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="name" />
-              <YAxis />
+              <XAxis 
+                dataKey="name" 
+                tick={{ fontSize: 10 }}
+                tickMargin={8}
+                interval="preserveStartEnd"
+              />
+              <YAxis 
+                tick={{ fontSize: 10 }}
+                width={35}
+              />
               <Tooltip 
-                contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #eaeaea' }}
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))', 
+                  borderRadius: '8px', 
+                  border: '1px solid hsl(var(--border))',
+                  fontSize: '12px'
+                }}
                 formatter={(value) => [`${value} mins`, 'Focus Time']}
               />
               <Bar dataKey="minutes" fill="#ea384c" radius={[4, 4, 0, 0]} />
@@ -72,7 +85,7 @@ const ProductivityChart: React.FC<ProductivityChartProps> = ({
           </ResponsiveContainer>
         </div>
         {mostProductiveTime && (
-          <div className="mt-4 text-sm">
+          <div className="mt-3 sm:mt-4 text-xs sm:text-sm">
             <span className="font-medium">Most productive time:</span>
             {' '}{mostProductiveTime}
           </div>

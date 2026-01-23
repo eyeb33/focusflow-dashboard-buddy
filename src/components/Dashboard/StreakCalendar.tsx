@@ -65,44 +65,46 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ data, currentStreak, be
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-lg font-medium">Your Streaks</CardTitle>
+      <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
+        <CardTitle className="text-base sm:text-lg font-medium">Your Streaks</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-4 mb-4">
+      <CardContent className="p-4 sm:p-6 pt-0">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4">
           <div>
-            <p className="text-sm text-muted-foreground">Current Streak</p>
-            <div className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-yellow-400 fill-yellow-400" />
-              <p className="text-2xl font-bold">
-                {currentStreak} {currentStreak === 1 ? 'day' : 'days'}
+            <p className="text-xs sm:text-sm text-muted-foreground">Current Streak</p>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400 fill-yellow-400" />
+              <p className="text-lg sm:text-2xl font-bold">
+                {currentStreak} <span className="text-sm sm:text-base font-normal">{currentStreak === 1 ? 'day' : 'days'}</span>
               </p>
             </div>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Best Streak</p>
-            <p className="text-2xl font-bold">
-              {bestStreak} {bestStreak === 1 ? 'day' : 'days'}
+            <p className="text-xs sm:text-sm text-muted-foreground">Best Streak</p>
+            <p className="text-lg sm:text-2xl font-bold">
+              {bestStreak} <span className="text-sm sm:text-base font-normal">{bestStreak === 1 ? 'day' : 'days'}</span>
             </p>
           </div>
         </div>
 
-        <div className="mt-6">
-          <div className="grid grid-cols-7 gap-1 mb-1">
+        <div className="mt-4 sm:mt-6">
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-1">
             {dayNames.map((day, i) => (
-              <div key={i} className="text-xs font-medium text-center text-muted-foreground">
-                {day}
+              <div key={i} className="text-[10px] sm:text-xs font-medium text-center text-muted-foreground">
+                <span className="hidden sm:inline">{day}</span>
+                <span className="sm:hidden">{day.charAt(0)}</span>
               </div>
             ))}
           </div>
 
           {weeks.map((week, weekIndex) => (
-            <div key={weekIndex} className="grid grid-cols-7 gap-1 mb-1">
+            <div key={weekIndex} className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-0.5 sm:mb-1">
               {week.map((day, dayIndex) => (
                 <div
                   key={dayIndex}
                   className={`
-                    h-6 rounded-sm flex items-center justify-center text-xs
+                    h-5 sm:h-6 rounded-sm flex items-center justify-center text-[10px] sm:text-xs
+                    touch-manipulation
                     ${getIntensityClass(day.completed)}
                     ${!day.isCurrentMonth ? 'opacity-25' : ''}
                     ${day.isToday ? 'ring-2 ring-pomodoro-work' : ''}
