@@ -1,8 +1,10 @@
 
-// Define the TimerMode type to ensure consistency across the app
-export type TimerMode = 'work' | 'break' | 'longBreak';
+// Re-export TimerMode from consolidated hook
+export { type TimerMode, getTotalSecondsForMode } from '@/hooks/useTimerCalculations';
 
-// Function to get total time based on mode and settings
+import type { TimerMode } from '@/hooks/useTimerCalculations';
+
+// Alias for backwards compatibility
 export const getTotalTime = (
   mode: TimerMode, 
   settings: { 

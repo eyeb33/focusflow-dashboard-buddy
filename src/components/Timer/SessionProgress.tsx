@@ -1,8 +1,8 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { cn } from "@/lib/utils";
 import { Circle } from "lucide-react";
-import { TimerMode } from '@/utils/timerContextUtils';
+import { useTimerCalculations, getModeColors, type TimerMode } from '@/hooks/useTimerCalculations';
 
 interface SessionProgressProps {
   completedSessions: number;
@@ -23,55 +23,26 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
   className,
   timeRemaining = 0
 }) => {
-  // Animation state for countdown
-  const [isPulsing, setIsPulsing] = useState(false);
+  // Use shared calculations for last 10 seconds pulse
+  const { isLastTenSeconds } = useTimerCalculations({
+    timeRemaining,
+    totalSeconds: 1, // Not needed for this check
+    mode: currentMode,
+  });
   
-  // Check if we're in the last 10 seconds
-  useEffect(() => {
-    if (
-      !isRunning ||
-      timeRemaining === undefined ||
-      timeRemaining === null ||
-      isNaN(timeRemaining)
-    ) {
-      return;
-    }
-
-    if (timeRemaining <= 10 && timeRemaining > 0) {
-      setIsPulsing(true);
-    } else {
-      setIsPulsing(false);
-    }
-  }, [timeRemaining, isRunning]);
-
-  // Get colors based on timer mode
-  const getColor = (mode: TimerMode): { fill: string, stroke: string } => {
-    switch (mode) {
-      case 'work':
-        return { fill: 'text-red-500', stroke: 'text-red-200' };
-      case 'break':
-        return { fill: 'text-green-500', stroke: 'text-green-200' };
-      case 'longBreak':
-        return { fill: 'text-blue-500', stroke: 'text-blue-200' };
-      default:
-        return { fill: 'text-gray-500', stroke: 'text-gray-200' };
-    }
-  };
+  // Get colors using shared utility
+  const colors = useMemo(() => getModeColors(currentMode), [currentMode]);
+  
+  // Determine if we should pulse
+  const isPulsing = isRunning && isLastTenSeconds;
   
   // Render indicator circles
   const renderIndicators = () => {
-    const colors = getColor(currentMode);
-    
     if (currentMode === 'work') {
       // Render work session indicators (red circles)
       return Array.from({ length: sessionsUntilLongBreak }).map((_, index) => {
-        // A session is filled if its position is less than completedSessions
         const isFilled = index < completedSessions;
-        
-        // Is this the active position?
         const isActive = index === currentSessionIndex;
-        
-        // Size the active indicator slightly larger
         const size = isActive ? 20 : 16;
         
         return (
@@ -94,13 +65,8 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
       const numBreaks = sessionsUntilLongBreak - 1;
       
       return Array.from({ length: numBreaks }).map((_, index) => {
-        // A break is filled if previous work sessions are completed
         const isFilled = index < (completedSessions - 1);
-        
-        // Is this the active position?
         const isActive = index === currentSessionIndex;
-        
-        // Size the active indicator slightly larger
         const size = isActive ? 20 : 16;
         
         return (

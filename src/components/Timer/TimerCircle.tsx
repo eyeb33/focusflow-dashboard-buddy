@@ -4,6 +4,7 @@ import { useTheme } from "@/components/Theme/ThemeProvider";
 import { cn } from "@/lib/utils";
 import { Play, Pause, RotateCcw } from "lucide-react";
 import TimerMoodCharacter from './TimerMoodCharacter';
+import { useTimerCalculations, getModeColors, type TimerMode } from '@/hooks/useTimerCalculations';
 
 interface TimerCircleProps {
   secondsLeft: number;
@@ -11,12 +12,10 @@ interface TimerCircleProps {
   mode?: 'focus' | 'break' | 'longBreak';
   isRunning?: boolean;
   isFreeStudy?: boolean;
-  // Compact controls inside the circle
   onStart?: () => void;
   onPause?: () => void;
   onReset?: () => void;
   showControls?: boolean;
-  // Session dots props
   totalSessions?: number;
   currentSessionIndex?: number;
 }
@@ -36,50 +35,29 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
 }) => {
   const { theme } = useTheme();
   
-  // Use safe values to avoid NaN or issues with invalid inputs
-  const safeSecondsLeft = isNaN(secondsLeft) ? 0 : Math.max(0, secondsLeft);
-  const safeTotalSeconds = isNaN(totalSeconds) ? 1 : Math.max(1, totalSeconds);
+  // Convert display mode to timer mode for calculations
+  const timerMode: TimerMode = mode === 'focus' ? 'work' : mode;
   
-  const minutes = Math.floor(safeSecondsLeft / 60);
-  const seconds = safeSecondsLeft % 60;
-  
-  // Calculate progress percentage (0-100)
-  // This should increase as time decreases (from 0% at start to 100% when done)
-  const progress = safeTotalSeconds > 0 ? ((safeTotalSeconds - safeSecondsLeft) / safeTotalSeconds) * 100 : 0;
+  // Use shared timer calculations
+  const {
+    minutes,
+    seconds,
+    progress,
+    circumference,
+    dashOffset,
+    colors,
+    hasStarted,
+  } = useTimerCalculations({
+    timeRemaining: secondsLeft,
+    totalSeconds,
+    mode: timerMode,
+    isFreeStudy,
+  });
   
   // SVG parameters
   const size = 220;
-  const strokeWidth = 15; // Updated to 15px to match CircularProgress
+  const strokeWidth = 15;
   const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  
-  // Calculate stroke dashoffset (less offset = more circle shown)
-  // At 0% progress we want full offset (empty circle)
-  // At 100% progress we want 0 offset (full circle)
-  const dashOffset = circumference * (1 - progress / 100);
-
-  // Determine color based on mode and theme using design tokens
-  const getColorVars = () => {
-    switch (mode) {
-      case 'break':
-        return {
-          solid: 'hsl(var(--timer-break-bg))',
-          glow: 'hsl(var(--timer-break-bg) / 0.4)'
-        };
-      case 'longBreak':
-        return {
-          solid: 'hsl(var(--timer-longbreak-bg))',
-          glow: 'hsl(var(--timer-longbreak-bg) / 0.4)'
-        };
-      case 'focus':
-      default:
-        return {
-          solid: 'hsl(var(--timer-focus-bg))',
-          glow: 'hsl(var(--timer-focus-bg) / 0.4)'
-        };
-    }
-  };
-  const colors = getColorVars();
 
   // Handle play/pause click
   const handlePlayPauseClick = (e: React.MouseEvent) => {
@@ -145,7 +123,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
         />
         
         {/* Soft glow effect - only when running in pomodoro mode */}
-        {!isFreeStudy && secondsLeft > 0 && secondsLeft < totalSeconds && (
+        {!isFreeStudy && hasStarted && secondsLeft > 0 && (
           <div 
             className="absolute inset-0 rounded-full animate-glow"
             style={{
@@ -156,7 +134,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
         )}
         
         <div className={cn(
-          !isFreeStudy && secondsLeft > 0 && secondsLeft < totalSeconds && "animate-breathe",
+          !isFreeStudy && hasStarted && secondsLeft > 0 && "animate-breathe",
           isFreeStudy && isRunning && "animate-breathe-slow"
         )}>
           <svg 
@@ -199,9 +177,7 @@ const TimerCircle: React.FC<TimerCircleProps> = ({
                 stroke={theme === "dark" ? "hsl(200, 60%, 40%)" : "hsl(200, 70%, 75%)"}
                 strokeWidth={strokeWidth}
                 strokeLinecap="round"
-                style={{ 
-                  opacity: 0.6
-                }}
+                style={{ opacity: 0.6 }}
               />
             ) : (
               // Pomodoro: progress-based ring
