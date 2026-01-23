@@ -1,6 +1,6 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render } from '@testing-library/react'
+import { render, act } from '@testing-library/react'
 import { screen, waitFor, fireEvent } from '@testing-library/dom'
 import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -39,10 +39,19 @@ const getTimeDisplay = (container: HTMLElement): string => {
   return timeContainer?.textContent || '';
 }
 
+// Helper to flush promises and timers
+const flushPromisesAndTimers = async () => {
+  await act(async () => {
+    await Promise.resolve();
+    vi.runOnlyPendingTimers();
+    await Promise.resolve();
+  });
+}
+
 describe('Timer Functionality', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.useFakeTimers()
+    vi.useFakeTimers({ shouldAdvanceTime: true })
   })
 
   afterEach(() => {
@@ -56,11 +65,11 @@ describe('Timer Functionality', () => {
       </TestWrapper>
     )
 
-    // Wait for initial render
-    await waitFor(() => {
-      expect(screen.getByText('Focus')).toBeInTheDocument()
-    }, { timeout: 1000 })
+    await flushPromisesAndTimers();
 
+    // Check Focus tab exists
+    expect(screen.getByText('Focus')).toBeInTheDocument()
+    
     // Check time display (split across elements)
     expect(getTimeDisplay(container)).toBe('25:00')
   })
@@ -72,31 +81,36 @@ describe('Timer Functionality', () => {
       </TestWrapper>
     )
 
-    // Wait for render
-    await waitFor(() => {
-      expect(screen.getByTestId('play-button')).toBeInTheDocument()
-    }, { timeout: 1000 })
+    await flushPromisesAndTimers();
 
     const playButton = screen.getByTestId('play-button')
-    fireEvent.click(playButton)
+    
+    await act(async () => {
+      fireEvent.click(playButton)
+    })
 
-    await waitFor(() => {
-      expect(screen.getByTestId('pause-button')).toBeInTheDocument()
-    }, { timeout: 1000 })
+    await flushPromisesAndTimers();
+
+    expect(screen.getByTestId('pause-button')).toBeInTheDocument()
 
     // Advance timer by 5 seconds
-    vi.advanceTimersByTime(5000)
+    await act(async () => {
+      vi.advanceTimersByTime(5000)
+    })
 
-    await waitFor(() => {
-      expect(getTimeDisplay(container)).toBe('24:55')
-    }, { timeout: 1000 })
+    await flushPromisesAndTimers();
+
+    expect(getTimeDisplay(container)).toBe('24:55')
 
     const pauseButton = screen.getByTestId('pause-button')
-    fireEvent.click(pauseButton)
+    
+    await act(async () => {
+      fireEvent.click(pauseButton)
+    })
 
-    await waitFor(() => {
-      expect(screen.getByTestId('play-button')).toBeInTheDocument()
-    }, { timeout: 1000 })
+    await flushPromisesAndTimers();
+
+    expect(screen.getByTestId('play-button')).toBeInTheDocument()
   })
 
   it('should reset timer correctly', async () => {
@@ -106,28 +120,33 @@ describe('Timer Functionality', () => {
       </TestWrapper>
     )
 
-    // Wait for render
-    await waitFor(() => {
-      expect(screen.getByTestId('play-button')).toBeInTheDocument()
-    }, { timeout: 1000 })
+    await flushPromisesAndTimers();
 
     const playButton = screen.getByTestId('play-button')
-    fireEvent.click(playButton)
+    
+    await act(async () => {
+      fireEvent.click(playButton)
+    })
 
     // Advance timer by 10 seconds
-    vi.advanceTimersByTime(10000)
+    await act(async () => {
+      vi.advanceTimersByTime(10000)
+    })
 
-    await waitFor(() => {
-      expect(getTimeDisplay(container)).toBe('24:50')
-    }, { timeout: 1000 })
+    await flushPromisesAndTimers();
+
+    expect(getTimeDisplay(container)).toBe('24:50')
 
     const resetButton = screen.getByTestId('reset-button')
-    fireEvent.click(resetButton)
+    
+    await act(async () => {
+      fireEvent.click(resetButton)
+    })
 
-    await waitFor(() => {
-      expect(getTimeDisplay(container)).toBe('25:00')
-      expect(screen.getByTestId('play-button')).toBeInTheDocument()
-    }, { timeout: 1000 })
+    await flushPromisesAndTimers();
+
+    expect(getTimeDisplay(container)).toBe('25:00')
+    expect(screen.getByTestId('play-button')).toBeInTheDocument()
   })
 
   it('should switch between timer modes', async () => {
@@ -137,25 +156,30 @@ describe('Timer Functionality', () => {
       </TestWrapper>
     )
 
-    // Wait for render
-    await waitFor(() => {
-      expect(screen.getByText('Focus')).toBeInTheDocument()
-    }, { timeout: 1000 })
+    await flushPromisesAndTimers();
+
+    expect(screen.getByText('Focus')).toBeInTheDocument()
 
     // Switch to break mode
     const breakTab = screen.getByText('Break')
-    fireEvent.click(breakTab)
+    
+    await act(async () => {
+      fireEvent.click(breakTab)
+    })
 
-    await waitFor(() => {
-      expect(getTimeDisplay(container)).toBe('05:00')
-    }, { timeout: 1000 })
+    await flushPromisesAndTimers();
+
+    expect(getTimeDisplay(container)).toBe('05:00')
 
     // Switch to long break mode
     const longBreakTab = screen.getByText('Long Break')
-    fireEvent.click(longBreakTab)
+    
+    await act(async () => {
+      fireEvent.click(longBreakTab)
+    })
 
-    await waitFor(() => {
-      expect(getTimeDisplay(container)).toBe('15:00')
-    }, { timeout: 1000 })
+    await flushPromisesAndTimers();
+
+    expect(getTimeDisplay(container)).toBe('15:00')
   })
 })

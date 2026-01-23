@@ -34,6 +34,50 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
 }))
 
+// Mock audio - with all properties needed
+class AudioMock {
+  src = ''
+  preload = ''
+  volume = 1
+  play = vi.fn(() => Promise.resolve())
+  pause = vi.fn()
+  load = vi.fn()
+  addEventListener = vi.fn()
+  removeEventListener = vi.fn()
+}
+
+Object.defineProperty(window, 'Audio', {
+  writable: true,
+  value: vi.fn().mockImplementation(() => new AudioMock()),
+})
+
+// Mock AudioContext
+class AudioContextMock {
+  createOscillator = vi.fn(() => ({
+    frequency: { value: 0 },
+    connect: vi.fn(),
+    start: vi.fn(),
+    stop: vi.fn(),
+  }))
+  createGain = vi.fn(() => ({
+    gain: { value: 0 },
+    connect: vi.fn(),
+  }))
+  destination = {}
+}
+
+Object.defineProperty(window, 'AudioContext', {
+  writable: true,
+  value: vi.fn().mockImplementation(() => new AudioContextMock()),
+})
+
+// Mock useTimerAudio hook to prevent audio side effects
+vi.mock('@/hooks/useTimerAudio', () => ({
+  useTimerAudio: vi.fn(() => ({
+    playStartChime: vi.fn(),
+  })),
+}))
+
 // Mock Supabase
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
@@ -45,7 +89,7 @@ vi.mock('@/integrations/supabase/client', () => ({
         data: { subscription: { unsubscribe: vi.fn() } }
       })),
       getSession: vi.fn(() => Promise.resolve({ data: { session: null }, error: null })),
-      getUser: vi.fn(),
+      getUser: vi.fn(() => Promise.resolve({ data: { user: null }, error: null })),
     },
     from: vi.fn(() => ({
       select: vi.fn(() => ({
@@ -72,17 +116,6 @@ vi.mock('@/integrations/supabase/client', () => ({
     rpc: vi.fn(() => Promise.resolve({ data: null, error: null })),
   }
 }))
-
-// Mock audio
-Object.defineProperty(window, 'Audio', {
-  writable: true,
-  value: vi.fn().mockImplementation(() => ({
-    play: vi.fn().mockResolvedValue(undefined),
-    pause: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-  })),
-})
 
 // Mock Intersection Observer
 global.IntersectionObserver = vi.fn().mockImplementation(() => ({
