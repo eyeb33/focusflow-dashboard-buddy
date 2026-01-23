@@ -27,6 +27,7 @@ export interface StatsData {
   currentStreak: number;
   bestStreak: number;
   weeklyChange: WeeklyChange;
+  monthlyChange?: WeeklyChange;
   weeklyStats?: WeeklyMonthlyStats;
   monthlyStats?: WeeklyMonthlyStats;
   dailyStats?: DailyStats;

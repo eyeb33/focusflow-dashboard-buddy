@@ -1,8 +1,9 @@
+import { StreakDay } from '@/types/database';
 
 /**
  * Calculates the current streak based on days with completed sessions
  */
-export const calculateStreak = (recentDays: any[] | null, today: string) => {
+export const calculateStreak = (recentDays: StreakDay[] | null, today: string): number => {
   if (!recentDays || recentDays.length === 0) {
     return 0; // No streak if there are no completed sessions
   }

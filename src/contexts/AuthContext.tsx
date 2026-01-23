@@ -1,9 +1,9 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { getErrorMessage } from '@/types/database';
 
 interface AuthContextType {
   session: Session | null;
@@ -44,20 +44,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<void> => {
     setIsLoading(true);
     try {
-      const { error, data } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       toast({
         title: "Welcome back!",
         description: "You've successfully signed in.",
       });
       navigate('/');
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Sign in failed",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     } finally {
@@ -65,11 +65,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signUp = async (email: string, password: string, name: string) => {
+  const signUp = async (email: string, password: string, name: string): Promise<void> => {
     setIsLoading(true);
     try {
       // First, create the user with auth
-      const { error, data } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email, 
         password,
         options: {
@@ -89,10 +89,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "Welcome to FocusFlow.",
       });
       navigate('/');
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Sign up failed",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     } finally {
@@ -100,7 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signOut = async () => {
+  const signOut = async (): Promise<void> => {
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signOut();
@@ -110,10 +110,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "You've been successfully signed out.",
       });
       navigate('/');
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Sign out failed",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     } finally {
@@ -134,10 +134,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "Check your email for a password reset link.",
       });
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Reset failed",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
       return false;
@@ -156,10 +156,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "Your password has been successfully changed.",
       });
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Update failed",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
       return false;
@@ -175,7 +175,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-export const useAuth = () => {
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');

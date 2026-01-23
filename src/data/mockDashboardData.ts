@@ -97,6 +97,12 @@ export const mockDashboardData = {
       dailyAvg: 10,
       isPositive: true
     },
+    monthlyChange: {
+      sessions: 8,
+      minutes: 25,
+      dailyAvg: 5,
+      isPositive: true
+    },
     // Add weekly and monthly stats for the demo dashboard
     weeklyStats: {
       totalSessions: 35,
