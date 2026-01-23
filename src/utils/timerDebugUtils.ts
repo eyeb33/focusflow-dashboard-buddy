@@ -1,21 +1,36 @@
+import { TimerActionData } from '@/types/database';
+
 /**
  * Timer debugging utilities
  */
 
+interface TimerState {
+  isRunning: boolean;
+  timeRemaining: number;
+  pausedTime: number | null;
+}
+
+interface StoredTimerAction {
+  action: string;
+  data: TimerActionData;
+  timestamp: string;
+}
+
+interface TimerAccuracySample {
+  from: number;
+  to: number;
+  mode: string;
+  timestamp: number;
+  expected: number;
+  drift: number;
+}
+
 // Log timer state changes with timestamp
 export const logTimerStateChange = (
   action: string,
-  before: {
-    isRunning: boolean;
-    timeRemaining: number;
-    pausedTime: number | null;
-  },
-  after: {
-    isRunning: boolean;
-    timeRemaining: number;
-    pausedTime: number | null;
-  }
-) => {
+  before: TimerState,
+  after: TimerState
+): void => {
   console.log(`[${new Date().toISOString()}] Timer ${action}:`, {
     before,
     after,
@@ -32,9 +47,9 @@ export const logTimerStateChange = (
 // Track timer actions
 export const trackTimerAction = (
   action: 'start' | 'pause' | 'reset' | 'mode-change',
-  data: any
-) => {
-  const actions = JSON.parse(localStorage.getItem('timerActions') || '[]');
+  data: TimerActionData
+): void => {
+  const actions: StoredTimerAction[] = JSON.parse(localStorage.getItem('timerActions') || '[]');
   
   // Keep only the last 20 actions
   if (actions.length > 20) {
@@ -51,7 +66,7 @@ export const trackTimerAction = (
 };
 
 // Get timer action history
-export const getTimerActionHistory = () => {
+export const getTimerActionHistory = (): StoredTimerAction[] => {
   return JSON.parse(localStorage.getItem('timerActions') || '[]');
 };
 
@@ -61,8 +76,8 @@ export const trackTimerTick = (
   newTime: number,
   mode: string,
   timestamp: number
-) => {
-  const timerAccuracy = JSON.parse(localStorage.getItem('timerAccuracy') || '[]');
+): void => {
+  const timerAccuracy: TimerAccuracySample[] = JSON.parse(localStorage.getItem('timerAccuracy') || '[]');
   
   // Keep only recent samples
   if (timerAccuracy.length > 100) {

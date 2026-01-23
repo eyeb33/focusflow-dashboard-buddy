@@ -8,28 +8,29 @@ import {
   CurriculumCategory,
   TopicWithSession 
 } from '@/types/curriculum';
+import { CurriculumTopicRow, TopicSessionRow } from '@/types/database';
 
 // Map database row to CurriculumTopic
-const mapCurriculumTopic = (row: any): CurriculumTopic => ({
+const mapCurriculumTopic = (row: CurriculumTopicRow): CurriculumTopic => ({
   id: row.id,
   topicId: row.topic_id,
   category: row.category,
   name: row.name,
-  subtopics: row.subtopics || [],
-  sortOrder: row.sort_order
+  subtopics: row.subtopics ?? [],
+  sortOrder: row.sort_order ?? 0
 });
 
 // Map database row to TopicSession
-const mapTopicSession = (row: any): TopicSession => ({
+const mapTopicSession = (row: TopicSessionRow): TopicSession => ({
   id: row.id,
   userId: row.user_id,
   topicId: row.topic_id,
   topicName: row.topic_name,
-  totalTimeSeconds: row.total_time_seconds || 0,
+  totalTimeSeconds: row.total_time_seconds ?? 0,
   lastAccessed: row.last_accessed,
-  completedSubtopics: row.completed_subtopics || [],
-  isActive: row.is_active || false,
-  messageCount: row.message_count || 0,
+  completedSubtopics: row.completed_subtopics ?? [],
+  isActive: row.is_active ?? false,
+  messageCount: row.message_count ?? 0,
   createdAt: row.created_at,
   updatedAt: row.updated_at
 });
@@ -53,7 +54,7 @@ export const useCurriculumTopics = () => {
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
-      setCurriculumTopics((data || []).map(mapCurriculumTopic));
+      setCurriculumTopics((data ?? []).map(mapCurriculumTopic));
     } catch (error) {
       console.error('Error fetching curriculum topics:', error);
       toast.error('Failed to load curriculum');
@@ -75,7 +76,7 @@ export const useCurriculumTopics = () => {
         .order('last_accessed', { ascending: false });
 
       if (error) throw error;
-      const sessions = (data || []).map(mapTopicSession);
+      const sessions = (data ?? []).map(mapTopicSession);
       setTopicSessions(sessions);
 
       // Find active session
@@ -114,13 +115,13 @@ export const useCurriculumTopics = () => {
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            const newSession = mapTopicSession(payload.new);
+            const newSession = mapTopicSession(payload.new as TopicSessionRow);
             setTopicSessions(prev => {
               if (prev.some(s => s.id === newSession.id)) return prev;
               return [newSession, ...prev];
             });
           } else if (payload.eventType === 'UPDATE') {
-            const updated = mapTopicSession(payload.new);
+            const updated = mapTopicSession(payload.new as TopicSessionRow);
             setTopicSessions(prev => 
               prev.map(s => s.id === updated.id ? updated : s)
             );
@@ -128,8 +129,10 @@ export const useCurriculumTopics = () => {
               setActiveTopicId(updated.topicId);
             }
           } else if (payload.eventType === 'DELETE') {
-            const deletedId = (payload.old as any)?.id;
-            setTopicSessions(prev => prev.filter(s => s.id !== deletedId));
+            const deletedId = (payload.old as { id?: string })?.id;
+            if (deletedId) {
+              setTopicSessions(prev => prev.filter(s => s.id !== deletedId));
+            }
           }
         }
       )
@@ -145,7 +148,7 @@ export const useCurriculumTopics = () => {
     if (!user) return null;
 
     // Check if session exists
-    let session = topicSessions.find(s => s.topicId === topicId);
+    const session = topicSessions.find(s => s.topicId === topicId);
     if (session) return session;
 
     // Create new session
@@ -341,7 +344,7 @@ export const useCurriculumTopics = () => {
   const topicsWithSessions = useMemo((): TopicWithSession[] => {
     return curriculumTopics.map(topic => {
       const session = topicSessions.find(s => s.topicId === topic.topicId);
-      const completedCount = session?.completedSubtopics.length || 0;
+      const completedCount = session?.completedSubtopics.length ?? 0;
       const totalSubtopics = topic.subtopics.length;
       const progressPercent = totalSubtopics > 0 
         ? Math.round((completedCount / totalSubtopics) * 100)
@@ -349,7 +352,7 @@ export const useCurriculumTopics = () => {
 
       return {
         topic,
-        session,
+        session: session ?? null,
         progressPercent,
         isActive: activeTopicId === topic.topicId
       };
@@ -376,7 +379,7 @@ export const useCurriculumTopics = () => {
 
   // Get the active session
   const activeSession = useMemo(() => {
-    return topicSessions.find(s => s.isActive) || null;
+    return topicSessions.find(s => s.isActive) ?? null;
   }, [topicSessions]);
 
   return {

@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { CoachConversationRow, CoachMessageRow, TopicSessionRow } from '@/types/database';
 
 export interface ChatSession {
   id: string;
@@ -12,8 +13,8 @@ export interface ChatSession {
   created_at: string;
   updated_at: string;
   last_message_at: string;
-  linked_task_id?: string | null;
-  linked_topic_id?: string | null;
+  linked_task_id: string | null;
+  linked_topic_id: string | null;
 }
 
 export interface ChatMessage {
@@ -30,6 +31,27 @@ export interface ChatMessage {
     similarity: number;
   }>;
 }
+
+// Map database row to ChatSession
+const mapConversationRow = (row: CoachConversationRow): ChatSession => ({
+  id: row.id,
+  title: row.title ?? 'Untitled session',
+  persona: row.persona ?? 'explain',
+  exam_board: row.exam_board ?? 'Edexcel',
+  created_at: row.created_at,
+  updated_at: row.updated_at,
+  last_message_at: row.last_message_at,
+  linked_task_id: row.linked_task_id ?? null,
+  linked_topic_id: row.linked_topic_id ?? null,
+});
+
+// Map database row to ChatMessage
+const mapMessageRow = (row: CoachMessageRow): ChatMessage => ({
+  id: row.id,
+  role: row.role as 'user' | 'assistant',
+  content: row.content,
+  created_at: row.created_at,
+});
 
 export const useChatSessions = () => {
   const { user } = useAuth();
@@ -53,18 +75,7 @@ export const useChatSessions = () => {
 
       if (error) throw error;
 
-      const mappedSessions: ChatSession[] = (data || []).map(s => ({
-        id: s.id,
-        title: (s as any).title || 'Untitled session',
-        persona: (s as any).persona || 'explain',
-        exam_board: (s as any).exam_board || 'Edexcel',
-        created_at: s.created_at,
-        updated_at: s.updated_at,
-        last_message_at: s.last_message_at,
-        linked_task_id: (s as any).linked_task_id || null,
-        linked_topic_id: (s as any).linked_topic_id || null,
-      }));
-
+      const mappedSessions = (data ?? []).map(mapConversationRow);
       setSessions(mappedSessions);
       
       // Set current session to the most recent one if not already set
@@ -92,13 +103,7 @@ export const useChatSessions = () => {
 
       if (error) throw error;
 
-      const mappedMessages: ChatMessage[] = (data || []).map(m => ({
-        id: m.id,
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-        created_at: m.created_at,
-      }));
-
+      const mappedMessages = (data ?? []).map(mapMessageRow);
       setMessages(mappedMessages);
     } catch (error) {
       console.error('Failed to load messages:', error);
@@ -113,7 +118,7 @@ export const useChatSessions = () => {
     linkedTaskId?: string, 
     taskName?: string,
     linkedTopicId?: string
-  ) => {
+  ): Promise<ChatSession | null> => {
     if (!user) return null;
     
     try {
@@ -128,26 +133,15 @@ export const useChatSessions = () => {
           exam_board: 'Edexcel',
           started_at: new Date().toISOString(),
           last_message_at: new Date().toISOString(),
-          linked_task_id: linkedTaskId || null,
-          linked_topic_id: linkedTopicId || null,
-        } as any)
+          linked_task_id: linkedTaskId ?? null,
+          linked_topic_id: linkedTopicId ?? null,
+        })
         .select()
         .single();
 
       if (error) throw error;
 
-      const newSession: ChatSession = {
-        id: data.id,
-        title: (data as any).title || title,
-        persona: (data as any).persona || persona,
-        exam_board: (data as any).exam_board || 'Edexcel',
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        last_message_at: data.last_message_at,
-        linked_task_id: (data as any).linked_task_id || null,
-        linked_topic_id: (data as any).linked_topic_id || null,
-      };
-
+      const newSession = mapConversationRow(data);
       setSessions(prev => [newSession, ...prev]);
       setCurrentSession(newSession);
       setMessages([]);
@@ -165,12 +159,11 @@ export const useChatSessions = () => {
   }, [user]);
 
   // Find or create a session linked to a specific task or topic
-  const openTaskSession = useCallback(async (taskOrTopicId: string, taskName: string, isTopicId: boolean = false) => {
+  const openTaskSession = useCallback(async (taskOrTopicId: string, taskName: string, isTopicId: boolean = false): Promise<ChatSession | null> => {
     if (!user) return null;
     
     // Determine which field to use based on whether this is a topic ID or task ID
     const fieldName = isTopicId ? 'linked_topic_id' : 'linked_task_id';
-    const localField = isTopicId ? 'linked_topic_id' : 'linked_task_id';
     
     // First check if we already have a session for this task/topic in local state
     const existingSession = sessions.find(s => 
@@ -192,17 +185,7 @@ export const useChatSessions = () => {
         .single();
 
       if (data && !error) {
-        const session: ChatSession = {
-          id: data.id,
-          title: (data as any).title || taskName,
-          persona: (data as any).persona || 'explain',
-          exam_board: (data as any).exam_board || 'Edexcel',
-          created_at: data.created_at,
-          updated_at: data.updated_at,
-          last_message_at: data.last_message_at,
-          linked_task_id: (data as any).linked_task_id,
-          linked_topic_id: (data as any).linked_topic_id,
-        };
+        const session = mapConversationRow(data);
         
         // Add to sessions if not already there
         setSessions(prev => {
@@ -241,7 +224,7 @@ export const useChatSessions = () => {
     try {
       const { error } = await supabase
         .from('coach_conversations')
-        .update({ title: newTitle } as any)
+        .update({ title: newTitle })
         .eq('id', sessionId)
         .eq('user_id', user.id);
 
@@ -308,7 +291,7 @@ export const useChatSessions = () => {
   }, [user, currentSession, sessions, loadMessages]);
 
   // Add a message to the current session
-  const addMessage = useCallback(async (role: 'user' | 'assistant', content: string) => {
+  const addMessage = useCallback(async (role: 'user' | 'assistant', content: string): Promise<ChatMessage | null> => {
     if (!user || !currentSession) return null;
     
     try {
@@ -325,13 +308,7 @@ export const useChatSessions = () => {
 
       if (error) throw error;
 
-      const newMessage: ChatMessage = {
-        id: data.id,
-        role: data.role as 'user' | 'assistant',
-        content: data.content,
-        created_at: data.created_at,
-      };
-
+      const newMessage = mapMessageRow(data);
       setMessages(prev => [...prev, newMessage]);
 
       // Update the session's last_message_at

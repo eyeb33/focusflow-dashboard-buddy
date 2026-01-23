@@ -112,7 +112,7 @@ export const useDashboardData = () => {
     monthlyProductivity,
     insights,
     streakData,
-    trends: productivityTrend
+    productivityTrend
   };
   
   const isLoading = statsLoading || productivityLoading || insightsLoading || streakLoading || trendsLoading;

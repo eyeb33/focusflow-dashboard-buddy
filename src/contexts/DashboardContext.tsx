@@ -1,14 +1,14 @@
-
 import React, { createContext, useContext } from 'react';
 import { TimePeriod } from '@/components/Dashboard/TimeToggle';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useAuth } from '@/contexts/AuthContext';
 import { mockDashboardData } from '@/data/mockDashboardData';
+import { DashboardData } from '@/hooks/dashboard/types';
 
 interface DashboardContextType {
   selectedPeriod: TimePeriod;
   setSelectedPeriod: (period: TimePeriod) => void;
-  dashboardData: any;
+  dashboardData: DashboardData;
   isLoading: boolean;
   refetch: () => void;
   isDemoMode: boolean;
@@ -41,7 +41,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useDashboard() {
+export function useDashboard(): DashboardContextType {
   const context = useContext(DashboardContext);
   if (context === undefined) {
     throw new Error('useDashboard must be used within a DashboardProvider');

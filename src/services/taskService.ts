@@ -1,10 +1,24 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Task } from '@/types/task';
-import { useAuth } from '@/contexts/AuthContext';
+import { TaskRow, TaskUpdatePayload } from '@/types/database';
 import { sanitizeInput } from '@/lib/utils';
 
-export const fetchTasks = async (userId: string | undefined) => {
+// Map database row to frontend Task type
+const mapTaskRow = (row: TaskRow): Task => ({
+  id: row.id,
+  name: row.name,
+  estimatedPomodoros: row.estimated_pomodoros,
+  completed: row.completed,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+  completedAt: row.completed_at ?? undefined,
+  completedPomodoros: row.completed_pomodoros ?? undefined,
+  isActive: row.is_active ?? undefined,
+  timeSpent: row.time_spent ?? undefined,
+  timeSpentSeconds: row.time_spent_seconds ?? undefined,
+});
+
+export const fetchTasks = async (userId: string | undefined): Promise<Task[]> => {
   if (!userId) return [];
   
   const { data, error } = await supabase
@@ -18,24 +32,10 @@ export const fetchTasks = async (userId: string | undefined) => {
     throw error;
   }
   
-  return data.map(task => {
-    const t: any = task as any;
-    return {
-      id: task.id,
-      name: task.name,
-      estimatedPomodoros: (task as any).estimated_pomodoros,
-      completed: task.completed,
-      createdAt: (task as any).created_at,
-      updatedAt: (task as any).updated_at,
-      completedAt: t.completed_at,
-      isActive: (task as any).is_active,
-      timeSpent: (task as any).time_spent,
-      timeSpentSeconds: t.time_spent_seconds,
-    } as Task;
-  });
+  return data.map(mapTaskRow);
 };
 
-export const addTask = async (userId: string | undefined, taskName: string, estimatedPomodoros: number) => {
+export const addTask = async (userId: string | undefined, taskName: string, estimatedPomodoros: number): Promise<Task | null> => {
   if (!userId) return null;
   
   // Sanitize user input
@@ -72,22 +72,13 @@ export const addTask = async (userId: string | undefined, taskName: string, esti
     throw error;
   }
   
-  return {
-    id: data.id,
-    name: data.name,
-    estimatedPomodoros: data.estimated_pomodoros,
-    completed: data.completed,
-    createdAt: data.created_at,
-    updatedAt: data.updated_at,
-    isActive: data.is_active,
-    timeSpent: data.time_spent
-  } as Task;
+  return mapTaskRow(data);
 };
 
-export const updateTaskCompletion = async (userId: string | undefined, taskId: string, completed: boolean) => {
+export const updateTaskCompletion = async (userId: string | undefined, taskId: string, completed: boolean): Promise<boolean> => {
   if (!userId) return false;
   
-  const updateData: any = { 
+  const updateData: TaskUpdatePayload = { 
     completed, 
     updated_at: new Date().toISOString() 
   };
@@ -113,10 +104,10 @@ export const updateTaskCompletion = async (userId: string | undefined, taskId: s
   return true;
 };
 
-export const updateTask = async (userId: string | undefined, taskId: string, updates: { name?: string, estimatedPomodoros?: number }) => {
+export const updateTask = async (userId: string | undefined, taskId: string, updates: { name?: string, estimatedPomodoros?: number }): Promise<boolean> => {
   if (!userId) return false;
   
-  const updateData: any = {};
+  const updateData: TaskUpdatePayload = {};
   if (updates.name !== undefined) updateData.name = sanitizeInput(updates.name);
   if (updates.estimatedPomodoros !== undefined) updateData.estimated_pomodoros = updates.estimatedPomodoros;
   
@@ -134,7 +125,7 @@ export const updateTask = async (userId: string | undefined, taskId: string, upd
   return true;
 };
 
-export const deleteTask = async (userId: string | undefined, taskId: string) => {
+export const deleteTask = async (userId: string | undefined, taskId: string): Promise<boolean> => {
   if (!userId) return false;
   
   const { error } = await supabase
@@ -151,7 +142,7 @@ export const deleteTask = async (userId: string | undefined, taskId: string) => 
   return true;
 };
 
-export const setActiveTask = async (userId: string | undefined, taskId: string | null) => {
+export const setActiveTask = async (userId: string | undefined, taskId: string | null): Promise<boolean> => {
   if (!userId) return false;
   
   // First, unset all active tasks
@@ -177,7 +168,7 @@ export const setActiveTask = async (userId: string | undefined, taskId: string |
   return true;
 };
 
-export const updateTaskTimeSpent = async (userId: string | undefined, taskId: string, additionalMinutes: number, additionalSeconds: number = 0) => {
+export const updateTaskTimeSpent = async (userId: string | undefined, taskId: string, additionalMinutes: number, additionalSeconds: number = 0): Promise<boolean> => {
   if (!userId) return false;
   
   // Fetch current time spent
@@ -193,8 +184,8 @@ export const updateTaskTimeSpent = async (userId: string | undefined, taskId: st
     throw fetchError;
   }
   
-  const newTimeSpent = (task?.time_spent || 0) + additionalMinutes;
-  const newTimeSpentSeconds = ((task as any)?.time_spent_seconds || 0) + additionalSeconds;
+  const newTimeSpent = (task?.time_spent ?? 0) + additionalMinutes;
+  const newTimeSpentSeconds = (task?.time_spent_seconds ?? 0) + additionalSeconds;
   
   const { error } = await supabase
     .from('tasks')
@@ -214,7 +205,7 @@ export const updateTaskTimeSpent = async (userId: string | undefined, taskId: st
   return true;
 };
 
-export const reorderTasks = async (userId: string | undefined, taskIds: string[]) => {
+export const reorderTasks = async (userId: string | undefined, taskIds: string[]): Promise<boolean> => {
   if (!userId) return false;
   
   try {

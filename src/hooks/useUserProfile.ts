@@ -1,8 +1,8 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { getErrorMessage } from '@/types/database';
 
 export interface UserProfile {
   id: string;
@@ -33,7 +33,7 @@ export const useUserProfile = () => {
       if (error) {
         // If no profile found, create one with display_name from metadata
         if (error.code === 'PGRST116') {
-          const displayName = user.user_metadata?.name || null;
+          const displayName = user.user_metadata?.name as string | null ?? null;
           const { data: newProfile, error: createError } = await supabase
             .from('profiles')
             .insert({
@@ -51,11 +51,11 @@ export const useUserProfile = () => {
       }
 
       return data as UserProfile;
-    } catch (error: any) {
-      console.error('Error fetching profile:', error.message);
+    } catch (error: unknown) {
+      console.error('Error fetching profile:', getErrorMessage(error));
       toast({
         title: "Error fetching profile",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
       return null;
@@ -72,7 +72,7 @@ export const useUserProfile = () => {
 
   // Mutation for updating profile
   const updateProfileMutation = useMutation({
-    mutationFn: async (updates: Partial<UserProfile>) => {
+    mutationFn: async (updates: Partial<UserProfile>): Promise<boolean> => {
       if (!user) {
         throw new Error('No user authenticated');
       }
@@ -95,10 +95,10 @@ export const useUserProfile = () => {
       });
       queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Error updating profile",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     }
@@ -106,7 +106,7 @@ export const useUserProfile = () => {
 
   // Mutation for uploading avatar
   const uploadAvatarMutation = useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: async (file: File): Promise<string> => {
       if (!user) {
         throw new Error('No user authenticated');
       }
@@ -148,10 +148,10 @@ export const useUserProfile = () => {
       });
       queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Error uploading avatar",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     }
