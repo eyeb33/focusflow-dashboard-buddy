@@ -74,24 +74,31 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Proactive coaching triggers - to be used by CoachContext
   useEffect(() => {
+    let workTimeInterval: ReturnType<typeof setInterval> | null = null;
+    
     // Track work time for extended work detection
     if (isRunning && timerMode === 'work') {
-      const interval = setInterval(() => {
+      workTimeInterval = setInterval(() => {
         workTimeRef.current += 1;
         
         // Trigger after 2 hours of continuous work (7200 seconds)
-        if (workTimeRef.current === 7200 || workTimeRef.current % 3600 === 0 && workTimeRef.current > 7200) {
+        if (workTimeRef.current === 7200 || (workTimeRef.current % 3600 === 0 && workTimeRef.current > 7200)) {
           // This will be picked up by CoachContext
           window.dispatchEvent(new CustomEvent('coach:extended-work', {
             detail: { minutes: workTimeRef.current / 60 }
           }));
         }
       }, 1000);
-      
-      return () => clearInterval(interval);
     } else if (!isRunning) {
       workTimeRef.current = 0;
     }
+    
+    // Cleanup interval on unmount or when dependencies change
+    return () => {
+      if (workTimeInterval) {
+        clearInterval(workTimeInterval);
+      }
+    };
   }, [isRunning, timerMode]);
 
   // Trigger on Pomodoro cycle completion (4 sessions)

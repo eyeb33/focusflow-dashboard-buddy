@@ -37,11 +37,13 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
   
   // Refs for timer management
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoStartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionStartTimeRef = useRef<string | null>(null);
   const lastRecordedFullMinutesRef = useRef<number>(0);
   const pausedTimeRef = useRef<number | null>(null);
   const targetEndTimeRef = useRef<number | null>(null);
   const freeStudyStartTimeRef = useRef<number | null>(null);
+  const isMountedRef = useRef(true);
   
   const isFreeStudy = settings.timerType === 'freeStudy';
   
@@ -66,6 +68,32 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
       timerRef.current = null;
       targetEndTimeRef.current = null;
     }
+  }, []);
+  
+  // Clear auto-start timeout helper
+  const clearAutoStartTimeout = useCallback(() => {
+    if (autoStartTimeoutRef.current) {
+      clearTimeout(autoStartTimeoutRef.current);
+      autoStartTimeoutRef.current = null;
+    }
+  }, []);
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    
+    return () => {
+      isMountedRef.current = false;
+      // Clean up all timers on unmount
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      if (autoStartTimeoutRef.current) {
+        clearTimeout(autoStartTimeoutRef.current);
+        autoStartTimeoutRef.current = null;
+      }
+    };
   }, []);
   
   // Handle timer completion
@@ -170,10 +198,13 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
         : settings.breakDuration * 60;
       setTimeRemaining(nextTime);
       
-      // Auto-start break
-      setTimeout(() => {
-        setIsRunning(true);
-        sessionStartTimeRef.current = new Date().toISOString();
+      // Auto-start break with cleanup
+      clearAutoStartTimeout();
+      autoStartTimeoutRef.current = setTimeout(() => {
+        if (isMountedRef.current) {
+          setIsRunning(true);
+          sessionStartTimeRef.current = new Date().toISOString();
+        }
       }, 500);
       
     } else {
@@ -183,9 +214,12 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
       
       // Auto-start work after short break, manual start after long break
       if (timerMode === 'break') {
-        setTimeout(() => {
-          setIsRunning(true);
-          sessionStartTimeRef.current = new Date().toISOString();
+        clearAutoStartTimeout();
+        autoStartTimeoutRef.current = setTimeout(() => {
+          if (isMountedRef.current) {
+            setIsRunning(true);
+            sessionStartTimeRef.current = new Date().toISOString();
+          }
         }, 500);
       } else {
         sessionStartTimeRef.current = null;
@@ -194,7 +228,7 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
     
     lastRecordedFullMinutesRef.current = 0;
     pausedTimeRef.current = null;
-  }, [timerMode, settings, completedSessions, currentSessionIndex, clearTimer, user, getTotalTimeForMode]);
+  }, [timerMode, settings, completedSessions, currentSessionIndex, clearTimer, clearAutoStartTimeout, user, getTotalTimeForMode]);
   
   // Start timer with optional goal
   const handleStart = useCallback((goal?: string) => {
@@ -287,6 +321,7 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
   // Reset timer
   const handleReset = useCallback(() => {
     clearTimer();
+    clearAutoStartTimeout();
     setIsRunning(false);
     pausedTimeRef.current = null;
     
@@ -305,11 +340,12 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
     if (timerMode === 'work') {
       setCurrentSessionIndex(0);
     }
-  }, [clearTimer, getTotalTimeForMode, timerMode, isFreeStudy]);
+  }, [clearTimer, clearAutoStartTimeout, getTotalTimeForMode, timerMode, isFreeStudy]);
   
   // Change timer mode
   const handleModeChange = useCallback((newMode: TimerMode) => {
     clearTimer();
+    clearAutoStartTimeout();
     setIsRunning(false);
     pausedTimeRef.current = null;
     
@@ -323,7 +359,7 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
     if (newMode === 'work') {
       setCurrentSessionIndex(0);
     }
-  }, [clearTimer, settings]);
+  }, [clearTimer, clearAutoStartTimeout, settings]);
   
   // Timer tick effect - CRITICAL: Don't include timeRemaining in deps!
   useEffect(() => {
@@ -414,6 +450,7 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
   // Reset when timer type changes
   useEffect(() => {
     clearTimer();
+    clearAutoStartTimeout();
     setIsRunning(false);
     pausedTimeRef.current = null;
     
@@ -428,7 +465,7 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
     
     sessionStartTimeRef.current = null;
     lastRecordedFullMinutesRef.current = 0;
-  }, [settings.timerType]);
+  }, [settings.timerType, clearTimer, clearAutoStartTimeout, getTotalTimeForMode, isFreeStudy]);
   
   return {
     timerMode,
