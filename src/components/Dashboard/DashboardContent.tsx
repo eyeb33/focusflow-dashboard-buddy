@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import TimeToggle from "@/components/Dashboard/TimeToggle";
+import TimeToggle, { TimePeriod } from "@/components/Dashboard/TimeToggle";
 import StatCardsGrid from "@/components/Dashboard/StatCardsGrid";
 import ChartsGrid from "@/components/Dashboard/ChartsGrid";
 import TaskTimeCard from "@/components/Dashboard/TaskTimeCard";
@@ -9,12 +9,58 @@ import { useDashboard } from '@/contexts/DashboardContext';
 import { useTasks } from '@/hooks/useTasks';
 import { ExperimentalRadialChart } from '@/components/Dashboard/ExperimentalRadialChart';
 import { Button } from '@/components/ui/button';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useSwipeGesture } from '@/hooks/useSwipeGesture';
+import { useToast } from '@/hooks/use-toast';
+
+const PERIODS: TimePeriod[] = ['yesterday', 'today', 'week', 'month'];
+const PERIOD_LABELS: Record<TimePeriod, string> = {
+  yesterday: 'Yesterday',
+  today: 'Today',
+  week: 'This Week',
+  month: 'This Month',
+};
 
 const DashboardContent = () => {
   const { selectedPeriod, setSelectedPeriod, dashboardData, isDemoMode } = useDashboard();
   const { tasks, deleteTask } = useTasks();
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Navigate to previous/next period
+  const goToPreviousPeriod = useCallback(() => {
+    const currentIndex = PERIODS.indexOf(selectedPeriod);
+    if (currentIndex > 0) {
+      const newPeriod = PERIODS[currentIndex - 1];
+      setSelectedPeriod(newPeriod);
+      toast({
+        title: PERIOD_LABELS[newPeriod],
+        description: "Swipe right for earlier, left for later",
+        duration: 1500,
+      });
+    }
+  }, [selectedPeriod, setSelectedPeriod, toast]);
+
+  const goToNextPeriod = useCallback(() => {
+    const currentIndex = PERIODS.indexOf(selectedPeriod);
+    if (currentIndex < PERIODS.length - 1) {
+      const newPeriod = PERIODS[currentIndex + 1];
+      setSelectedPeriod(newPeriod);
+      toast({
+        title: PERIOD_LABELS[newPeriod],
+        description: "Swipe right for earlier, left for later",
+        duration: 1500,
+      });
+    }
+  }, [selectedPeriod, setSelectedPeriod, toast]);
+
+  // Swipe handlers - swipe right goes to previous (earlier), swipe left goes to next (later)
+  const swipeHandlers = useSwipeGesture({
+    onSwipeRight: goToPreviousPeriod,
+    onSwipeLeft: goToNextPeriod,
+    minSwipeDistance: 50,
+    maxSwipeTime: 400,
+  });
 
   const getPeriodStats = () => {
     const stats = dashboardData.stats;
@@ -137,8 +183,16 @@ const DashboardContent = () => {
     }
   };
 
+  // Check if we're at the edges
+  const currentIndex = PERIODS.indexOf(selectedPeriod);
+  const canGoPrevious = currentIndex > 0;
+  const canGoNext = currentIndex < PERIODS.length - 1;
+
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div 
+      className="space-y-4 md:space-y-6"
+      {...swipeHandlers}
+    >
       {isDemoMode && (
         <div className="bg-muted p-3 sm:p-4 rounded-lg border border-muted-foreground/20 mb-4 md:mb-6">
           <div className="flex items-center gap-3 mb-2">
@@ -168,12 +222,41 @@ const DashboardContent = () => {
         </div>
       )}
       
-      {/* TimeToggle - centered on all screens, scrollable on mobile */}
-      <div className="flex justify-center overflow-x-auto pb-2">
-        <TimeToggle
-          selectedPeriod={selectedPeriod}
-          onChange={setSelectedPeriod}
-        />
+      {/* TimeToggle with swipe navigation hint on mobile */}
+      <div className="flex flex-col items-center gap-2">
+        <div className="flex items-center gap-2 w-full justify-center">
+          {/* Previous arrow - visible on mobile */}
+          <button
+            onClick={goToPreviousPeriod}
+            disabled={!canGoPrevious}
+            className="md:hidden p-2 rounded-full bg-muted/50 disabled:opacity-30 disabled:cursor-not-allowed touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors active:bg-muted"
+            aria-label="Previous time period"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          
+          <div className="overflow-x-auto pb-2 scrollbar-hide">
+            <TimeToggle
+              selectedPeriod={selectedPeriod}
+              onChange={setSelectedPeriod}
+            />
+          </div>
+          
+          {/* Next arrow - visible on mobile */}
+          <button
+            onClick={goToNextPeriod}
+            disabled={!canGoNext}
+            className="md:hidden p-2 rounded-full bg-muted/50 disabled:opacity-30 disabled:cursor-not-allowed touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors active:bg-muted"
+            aria-label="Next time period"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+        
+        {/* Swipe hint - only on mobile */}
+        <p className="text-xs text-muted-foreground md:hidden">
+          Swipe to change time period
+        </p>
       </div>
       
       <StatCardsGrid stats={getPeriodStats()} />
