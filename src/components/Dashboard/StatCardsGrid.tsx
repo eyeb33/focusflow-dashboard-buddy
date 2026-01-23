@@ -38,7 +38,7 @@ const StatCardsGrid: React.FC<StatCardsGridProps> = ({ stats }) => {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 w-full">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8 w-full">
       {stats.map((stat, index) => (
         <div key={index} className="w-full">
           <StatCard
@@ -48,7 +48,8 @@ const StatCardsGrid: React.FC<StatCardsGridProps> = ({ stats }) => {
             description={stat.description}
             trend={stat.trend}
             iconColor={stat.iconColor}
-            className="min-h-[120px] w-full"
+            className="min-h-[100px] md:min-h-[120px] w-full"
+            compact={true}
           />
         </div>
       ))}

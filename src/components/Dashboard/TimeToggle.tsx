@@ -12,11 +12,15 @@ interface TimeToggleProps {
 
 const TimeToggle: React.FC<TimeToggleProps> = ({ selectedPeriod, onChange, className }) => {
   return (
-    <div className={cn("flex p-1 gap-1 bg-muted rounded-lg w-fit", className)}>
+    <div className={cn(
+      "flex p-1 gap-1 bg-muted rounded-lg w-fit max-w-full overflow-x-auto scrollbar-hide",
+      className
+    )}>
       <button
         onClick={() => onChange('yesterday')}
         className={cn(
-          "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
+          "min-h-[44px] px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0",
+          "touch-manipulation active:scale-95",
           selectedPeriod === 'yesterday' ? "bg-background shadow-sm" : "hover:bg-background/50"
         )}
       >
@@ -25,7 +29,8 @@ const TimeToggle: React.FC<TimeToggleProps> = ({ selectedPeriod, onChange, class
       <button
         onClick={() => onChange('today')}
         className={cn(
-          "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
+          "min-h-[44px] px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0",
+          "touch-manipulation active:scale-95",
           selectedPeriod === 'today' ? "bg-background shadow-sm" : "hover:bg-background/50"
         )}
       >
@@ -34,7 +39,8 @@ const TimeToggle: React.FC<TimeToggleProps> = ({ selectedPeriod, onChange, class
       <button
         onClick={() => onChange('week')}
         className={cn(
-          "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
+          "min-h-[44px] px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0",
+          "touch-manipulation active:scale-95",
           selectedPeriod === 'week' ? "bg-background shadow-sm" : "hover:bg-background/50"
         )}
       >
@@ -43,7 +49,8 @@ const TimeToggle: React.FC<TimeToggleProps> = ({ selectedPeriod, onChange, class
       <button
         onClick={() => onChange('month')}
         className={cn(
-          "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
+          "min-h-[44px] px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0",
+          "touch-manipulation active:scale-95",
           selectedPeriod === 'month' ? "bg-background shadow-sm" : "hover:bg-background/50"
         )}
       >

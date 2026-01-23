@@ -32,7 +32,7 @@ const ChartsGrid: React.FC<ChartsGridProps> = ({
   };
 
   return (
-    <div className="grid gap-6 mb-8">
+    <div className="grid gap-4 md:gap-6 mb-4 md:mb-8">
       <div className="w-full">
         <ProductivityChart 
           data={getActiveData()}

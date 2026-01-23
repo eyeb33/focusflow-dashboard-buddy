@@ -384,6 +384,15 @@ a:focus-visible {
   background-color: transparent;
 }
 
+/* Hide scrollbar utility - for horizontal scroll containers */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
 /* Cache busting */
 @media (max-width: 0px) {
   body::after {
