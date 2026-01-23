@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { SubTask } from "@/types/subtask";
+import { sanitizeInput } from "@/lib/utils";
 
 export const fetchSubTasks = async (userId: string | undefined, parentTaskId: string): Promise<SubTask[]> => {
   if (!userId) return [];
@@ -23,6 +24,10 @@ export const fetchSubTasks = async (userId: string | undefined, parentTaskId: st
 export const addSubTask = async (userId: string | undefined, parentTaskId: string, name: string): Promise<SubTask | null> => {
   if (!userId) return null;
   
+  // Sanitize user input
+  const sanitizedName = sanitizeInput(name);
+  if (!sanitizedName) return null;
+  
   // Get current max sort_order
   const { data: existingSubTasks } = await supabase
     .from('sub_tasks')
@@ -39,7 +44,7 @@ export const addSubTask = async (userId: string | undefined, parentTaskId: strin
     .insert({
       parent_task_id: parentTaskId,
       user_id: userId,
-      name,
+      name: sanitizedName,
       sort_order: maxSortOrder + 1,
       completed: false
     })

@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Task } from '@/types/task';
 import { useAuth } from '@/contexts/AuthContext';
+import { sanitizeInput } from '@/lib/utils';
 
 export const fetchTasks = async (userId: string | undefined) => {
   if (!userId) return [];
@@ -37,6 +38,10 @@ export const fetchTasks = async (userId: string | undefined) => {
 export const addTask = async (userId: string | undefined, taskName: string, estimatedPomodoros: number) => {
   if (!userId) return null;
   
+  // Sanitize user input
+  const sanitizedName = sanitizeInput(taskName);
+  if (!sanitizedName) return null;
+  
   // Get the max sort_order to place new task at the top
   const { data: maxData } = await supabase
     .from('tasks')
@@ -53,7 +58,7 @@ export const addTask = async (userId: string | undefined, taskName: string, esti
     .insert([
       {
         user_id: userId,
-        name: taskName,
+        name: sanitizedName,
         estimated_pomodoros: estimatedPomodoros,
         completed: false,
         sort_order: nextSortOrder
@@ -112,7 +117,7 @@ export const updateTask = async (userId: string | undefined, taskId: string, upd
   if (!userId) return false;
   
   const updateData: any = {};
-  if (updates.name !== undefined) updateData.name = updates.name;
+  if (updates.name !== undefined) updateData.name = sanitizeInput(updates.name);
   if (updates.estimatedPomodoros !== undefined) updateData.estimated_pomodoros = updates.estimatedPomodoros;
   
   const { error } = await supabase
