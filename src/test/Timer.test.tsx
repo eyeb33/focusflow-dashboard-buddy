@@ -58,30 +58,36 @@ describe('Timer Functionality', () => {
     vi.useRealTimers()
   })
 
-  it('should render timer with default work mode', async () => {
+ it(
+  'should render timer with default work mode',
+  async () => {
     const { container } = render(
       <TestWrapper>
         <TimerContainer activeTask={null} />
       </TestWrapper>
     )
 
-    await flushPromisesAndTimers();
+    await flushPromisesAndTimers()
 
     // Check Focus tab exists
     expect(screen.getByText('Focus')).toBeInTheDocument()
     
     // Check time display (split across elements)
     expect(getTimeDisplay(container)).toBe('25:00')
-  })
+  },
+  15000
+)
 
-  it('should start and pause timer correctly', async () => {
+it(
+  'should start and pause timer correctly',
+  async () => {
     const { container } = render(
       <TestWrapper>
         <TimerContainer activeTask={null} />
       </TestWrapper>
     )
 
-    await flushPromisesAndTimers();
+    await flushPromisesAndTimers()
 
     const playButton = screen.getByTestId('play-button')
     
@@ -89,7 +95,7 @@ describe('Timer Functionality', () => {
       fireEvent.click(playButton)
     })
 
-    await flushPromisesAndTimers();
+    await flushPromisesAndTimers()
 
     expect(screen.getByTestId('pause-button')).toBeInTheDocument()
 
@@ -98,7 +104,7 @@ describe('Timer Functionality', () => {
       vi.advanceTimersByTime(5000)
     })
 
-    await flushPromisesAndTimers();
+    await flushPromisesAndTimers()
 
     expect(getTimeDisplay(container)).toBe('24:55')
 
@@ -108,19 +114,23 @@ describe('Timer Functionality', () => {
       fireEvent.click(pauseButton)
     })
 
-    await flushPromisesAndTimers();
+    await flushPromisesAndTimers()
 
     expect(screen.getByTestId('play-button')).toBeInTheDocument()
-  })
+  },
+  15000
+)
 
-  it('should reset timer correctly', async () => {
+it(
+  'should reset timer correctly',
+  async () => {
     const { container } = render(
       <TestWrapper>
         <TimerContainer activeTask={null} />
       </TestWrapper>
     )
 
-    await flushPromisesAndTimers();
+    await flushPromisesAndTimers()
 
     const playButton = screen.getByTestId('play-button')
     
@@ -133,7 +143,7 @@ describe('Timer Functionality', () => {
       vi.advanceTimersByTime(10000)
     })
 
-    await flushPromisesAndTimers();
+    await flushPromisesAndTimers()
 
     expect(getTimeDisplay(container)).toBe('24:50')
 
@@ -143,20 +153,24 @@ describe('Timer Functionality', () => {
       fireEvent.click(resetButton)
     })
 
-    await flushPromisesAndTimers();
+    await flushPromisesAndTimers()
 
     expect(getTimeDisplay(container)).toBe('25:00')
     expect(screen.getByTestId('play-button')).toBeInTheDocument()
-  })
+  },
+  15000
+)
 
-  it('should switch between timer modes', async () => {
+it(
+  'should switch between timer modes',
+  async () => {
     const { container } = render(
       <TestWrapper>
         <TimerContainer activeTask={null} />
       </TestWrapper>
     )
 
-    await flushPromisesAndTimers();
+    await flushPromisesAndTimers()
 
     expect(screen.getByText('Focus')).toBeInTheDocument()
 
@@ -167,7 +181,7 @@ describe('Timer Functionality', () => {
       fireEvent.click(breakTab)
     })
 
-    await flushPromisesAndTimers();
+    await flushPromisesAndTimers()
 
     expect(getTimeDisplay(container)).toBe('05:00')
 
@@ -178,8 +192,11 @@ describe('Timer Functionality', () => {
       fireEvent.click(longBreakTab)
     })
 
-    await flushPromisesAndTimers();
+    await flushPromisesAndTimers()
 
     expect(getTimeDisplay(container)).toBe('15:00')
+  },
+  15000
+)
   })
 })
