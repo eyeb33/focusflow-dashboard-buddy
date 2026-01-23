@@ -1,8 +1,7 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import TimerCircle from './TimerCircle';
-import { cn } from "@/lib/utils";
-import { TimerMode } from '@/utils/timerContextUtils';
+import { toDisplayMode, type TimerMode } from '@/hooks/useTimerCalculations';
 
 interface TimerDisplayProps {
   timerMode: TimerMode;
@@ -11,12 +10,10 @@ interface TimerDisplayProps {
   theme: string;
   isRunning?: boolean;
   isFreeStudy?: boolean;
-  // Control handlers for compact controls inside circle
   onStart?: () => void;
   onPause?: () => void;
   onReset?: () => void;
   showControls?: boolean;
-  // Session dots props
   totalSessions?: number;
   currentSessionIndex?: number;
 }
@@ -35,15 +32,8 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
   totalSessions = 4,
   currentSessionIndex = 0,
 }) => {
-  // Map timerMode to the format expected by TimerCircle
-  const getTimerCircleMode = () => {
-    switch(timerMode) {
-      case 'work': return 'focus';
-      case 'break': return 'break';
-      case 'longBreak': return 'longBreak';
-      default: return 'focus';
-    }
-  };
+  // Use shared mode conversion
+  const displayMode = toDisplayMode(timerMode);
 
   // Check for valid values
   const validTotalSeconds = isFreeStudy ? 1 : (totalSeconds > 0 ? totalSeconds : 1);
@@ -54,7 +44,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
       <TimerCircle
         secondsLeft={validTimeRemaining}
         totalSeconds={validTotalSeconds}
-        mode={getTimerCircleMode()}
+        mode={displayMode}
         isRunning={isRunning}
         isFreeStudy={isFreeStudy}
         onStart={onStart}
