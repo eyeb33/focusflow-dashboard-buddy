@@ -33,6 +33,12 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => {
   )
 }
 
+// Helper to find time display (time is split across spans: "25" and ":00")
+const getTimeDisplay = (container: HTMLElement): string => {
+  const timeContainer = container.querySelector('.flex.items-baseline');
+  return timeContainer?.textContent || '';
+}
+
 describe('Timer Functionality', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -43,52 +49,67 @@ describe('Timer Functionality', () => {
     vi.useRealTimers()
   })
 
-  it('should render timer with default work mode', () => {
-    render(
+  it('should render timer with default work mode', async () => {
+    const { container } = render(
       <TestWrapper>
         <TimerContainer activeTask={null} />
       </TestWrapper>
     )
 
-    expect(screen.getByText('Focus')).toBeInTheDocument()
-    expect(screen.getByText('25:00')).toBeInTheDocument()
+    // Wait for initial render
+    await waitFor(() => {
+      expect(screen.getByText('Focus')).toBeInTheDocument()
+    }, { timeout: 1000 })
+
+    // Check time display (split across elements)
+    expect(getTimeDisplay(container)).toBe('25:00')
   })
 
   it('should start and pause timer correctly', async () => {
-    render(
+    const { container } = render(
       <TestWrapper>
         <TimerContainer activeTask={null} />
       </TestWrapper>
     )
+
+    // Wait for render
+    await waitFor(() => {
+      expect(screen.getByTestId('play-button')).toBeInTheDocument()
+    }, { timeout: 1000 })
 
     const playButton = screen.getByTestId('play-button')
     fireEvent.click(playButton)
 
     await waitFor(() => {
       expect(screen.getByTestId('pause-button')).toBeInTheDocument()
-    })
+    }, { timeout: 1000 })
 
     // Advance timer by 5 seconds
     vi.advanceTimersByTime(5000)
 
     await waitFor(() => {
-      expect(screen.getByText('24:55')).toBeInTheDocument()
-    })
+      expect(getTimeDisplay(container)).toBe('24:55')
+    }, { timeout: 1000 })
 
     const pauseButton = screen.getByTestId('pause-button')
     fireEvent.click(pauseButton)
 
     await waitFor(() => {
       expect(screen.getByTestId('play-button')).toBeInTheDocument()
-    })
+    }, { timeout: 1000 })
   })
 
   it('should reset timer correctly', async () => {
-    render(
+    const { container } = render(
       <TestWrapper>
         <TimerContainer activeTask={null} />
       </TestWrapper>
     )
+
+    // Wait for render
+    await waitFor(() => {
+      expect(screen.getByTestId('play-button')).toBeInTheDocument()
+    }, { timeout: 1000 })
 
     const playButton = screen.getByTestId('play-button')
     fireEvent.click(playButton)
@@ -97,39 +118,44 @@ describe('Timer Functionality', () => {
     vi.advanceTimersByTime(10000)
 
     await waitFor(() => {
-      expect(screen.getByText('24:50')).toBeInTheDocument()
-    })
+      expect(getTimeDisplay(container)).toBe('24:50')
+    }, { timeout: 1000 })
 
     const resetButton = screen.getByTestId('reset-button')
     fireEvent.click(resetButton)
 
     await waitFor(() => {
-      expect(screen.getByText('25:00')).toBeInTheDocument()
+      expect(getTimeDisplay(container)).toBe('25:00')
       expect(screen.getByTestId('play-button')).toBeInTheDocument()
-    })
+    }, { timeout: 1000 })
   })
 
   it('should switch between timer modes', async () => {
-    render(
+    const { container } = render(
       <TestWrapper>
         <TimerContainer activeTask={null} />
       </TestWrapper>
     )
+
+    // Wait for render
+    await waitFor(() => {
+      expect(screen.getByText('Focus')).toBeInTheDocument()
+    }, { timeout: 1000 })
 
     // Switch to break mode
     const breakTab = screen.getByText('Break')
     fireEvent.click(breakTab)
 
     await waitFor(() => {
-      expect(screen.getByText('05:00')).toBeInTheDocument()
-    })
+      expect(getTimeDisplay(container)).toBe('05:00')
+    }, { timeout: 1000 })
 
     // Switch to long break mode
     const longBreakTab = screen.getByText('Long Break')
     fireEvent.click(longBreakTab)
 
     await waitFor(() => {
-      expect(screen.getByText('15:00')).toBeInTheDocument()
-    })
+      expect(getTimeDisplay(container)).toBe('15:00')
+    }, { timeout: 1000 })
   })
 })
