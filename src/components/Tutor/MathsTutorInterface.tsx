@@ -584,27 +584,193 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     }
   };
 
+  // Send a hidden prompt to the AI (not shown as user message in chat)
+  const sendHiddenPrompt = async (prompt: string, targetMode: TutorMode) => {
+    if (isLoading || !user) return;
+    if (inFlightSendRef.current) return;
+
+    const requestId = (globalThis.crypto?.randomUUID?.() ?? `req_${Date.now()}_${Math.random().toString(16).slice(2)}`);
+    
+    inFlightSendRef.current = true;
+    setShowQuickActions(false);
+    setIsLoading(true);
+
+    try {
+      // Ensure we have a session
+      let sessionId = currentSession?.id;
+      if (!sessionId) {
+        const newSession = await createNewSession(targetMode);
+        if (!newSession) throw new Error('Failed to create session');
+        sessionId = newSession.id;
+      }
+
+      // Get user's session token for edge function auth
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No session found');
+
+      // Prepare messages - include existing messages plus the hidden prompt
+      const conversationMessages: AIMessage[] = [
+        ...messages.map((m) => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+        })),
+        { role: 'user' as const, content: prompt }
+      ];
+
+      // Fetch current tasks for context
+      const tasks = await taskService.fetchTasks(user.id);
+      const taskState = {
+        tasks: tasks.map((t) => ({ id: t.id, name: t.name, is_active: t.isActive, completed: t.completed })),
+      };
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-coach`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          request_id: requestId,
+          messages: conversationMessages,
+          mode: targetMode,
+          taskState,
+          isHiddenPrompt: true, // Signal to backend this is a mode-triggered prompt
+        }),
+      });
+
+      if (response.status === 429) {
+        setCooldownUntil(Date.now() + 60_000);
+        toast({
+          title: 'Rate limit exceeded',
+          description: 'Please wait a moment before switching modes.',
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+        inFlightSendRef.current = false;
+        return;
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        if (errorData.code === 'NO_API_KEY' || errorData.code === 'INVALID_API_KEY') {
+          setShowSettings(true);
+          setIsLoading(false);
+          inFlightSendRef.current = false;
+          return;
+        }
+        throw new Error(errorData.error || 'Failed to get response');
+      }
+
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      const accumulated = { content: '', toolCalls: new Map<number, ToolCall>(), ragSources: [] as RAGSource[] };
+      const assistantMessageId = `temp-assistant-${Date.now()}`;
+
+      // Add assistant message placeholder
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: assistantMessageId,
+          role: 'assistant',
+          content: '',
+          created_at: new Date().toISOString(),
+          sources: [],
+        },
+      ]);
+
+      if (reader) {
+        let buffer = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (!line.trim() || line.startsWith(':')) continue;
+            if (!line.startsWith('data: ')) continue;
+
+            const jsonStr = line.slice(6).trim();
+            if (jsonStr === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(jsonStr);
+              
+              if (parsed.type === 'rag_sources' && parsed.sources) {
+                accumulated.ragSources = parsed.sources;
+                queueMicrotask(() => {
+                  setMessages((prev) =>
+                    prev.map((m) => (m.id === assistantMessageId ? { ...m, sources: parsed.sources } : m))
+                  );
+                });
+                continue;
+              }
+              
+              parseStreamChunk(parsed, accumulated);
+
+              if (accumulated.content) {
+                const contentSnapshot = accumulated.content;
+                queueMicrotask(() => {
+                  setMessages((prev) =>
+                    prev.map((m) => (m.id === assistantMessageId ? { ...m, content: contentSnapshot } : m))
+                  );
+                });
+              }
+            } catch {
+              // Partial JSON, continue
+            }
+          }
+        }
+      }
+
+      // Save assistant message to DB
+      if (accumulated.content) {
+        await supabase.from('coach_messages').insert({
+          conversation_id: sessionId,
+          user_id: user.id,
+          role: 'assistant',
+          content: accumulated.content,
+        });
+
+        await supabase
+          .from('coach_conversations')
+          .update({ last_message_at: new Date().toISOString() })
+          .eq('id', sessionId);
+      }
+
+    } catch (error) {
+      console.error('Error in sendHiddenPrompt:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to send message',
+        variant: 'destructive',
+      });
+    } finally {
+      inFlightSendRef.current = false;
+      setIsLoading(false);
+    }
+  };
+
   // Handle mode change - trigger AI action for practice/check modes
   const handleModeChange = async (newMode: TutorMode) => {
     if (newMode === mode || isLoading) return;
     
     setMode(newMode);
     
-    // Only trigger AI action for practice and check modes
+    // Only trigger AI action for practice mode
     if (newMode === 'practice') {
-      // Get active topic name from session title or default
+      // Get active topic name from session title
       const topicContext = currentSession?.title && currentSession.title !== 'A-Level Maths Tutor' 
         ? `on the topic "${currentSession.title}"` 
         : '';
       
-      const practicePrompt = `Give me a practice question ${topicContext}. Use a past paper style question from the Edexcel A-Level Maths specification. Present the question clearly with all necessary information, and wait for my answer before providing any hints or solutions.`;
+      const practicePrompt = `[PRACTICE MODE] Give me a practice question ${topicContext}. Use a past paper style question from the Edexcel A-Level Maths specification. Present the question clearly with all necessary information, and wait for my answer before providing any hints or solutions.`;
       
-      setInputValue(practicePrompt);
-      setTimeout(() => {
-        handleSend();
-      }, 0);
+      await sendHiddenPrompt(practicePrompt, newMode);
     } else if (newMode === 'check') {
-      // For check mode, show a hint about what to do
       toast({
         title: 'Check Mode Active',
         description: 'Share your working or answer, and I\'ll check if it\'s correct.',
