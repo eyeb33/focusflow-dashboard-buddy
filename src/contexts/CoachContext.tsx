@@ -165,86 +165,126 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       switch (name) {
         case 'add_task': {
-          setCurrentAction({ type: 'add_task', status: 'executing', message: `Adding task: ${parsedArgs.name}...` });
-          
-          const { data: newTask, error } = await supabase
-            .from('tasks')
-            .insert({
-              user_id: user.id,
-              name: parsedArgs.name,
-              estimated_pomodoros: parsedArgs.estimated_pomodoros || 1,
-              completed: false,
-              is_active: false,
-              time_spent: 0
-            })
-            .select()
-            .single();
-
-          if (error) throw error;
-          
-          const mappedTask: Task = {
-            id: newTask.id,
-            name: newTask.name,
-            estimatedPomodoros: newTask.estimated_pomodoros,
-            completed: newTask.completed,
-            createdAt: newTask.created_at,
-            updatedAt: newTask.updated_at,
-            completedAt: newTask.completed_at || undefined,
-            completedPomodoros: newTask.completed_pomodoros || undefined,
-            isActive: newTask.is_active || false,
-            timeSpent: newTask.time_spent,
-            timeSpentSeconds: newTask.time_spent_seconds
+          // Generate optimistic ID
+          const optimisticId = `temp-${Date.now()}`;
+          const optimisticTask: Task = {
+            id: optimisticId,
+            name: parsedArgs.name,
+            estimatedPomodoros: parsedArgs.estimated_pomodoros || 1,
+            completed: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            isActive: false,
+            timeSpent: 0,
+            timeSpentSeconds: 0
           };
           
-          setTasks(prev => [...prev, mappedTask]);
+          // Optimistic update - instant UI
+          setTasks(prev => [...prev, optimisticTask]);
+          setCurrentAction({ type: 'add_task', status: 'executing', message: `Adding task: ${parsedArgs.name}...` });
           
-          await supabase.from('coach_actions').insert({
-            conversation_id: conversationId,
-            user_id: user.id,
-            action_type: 'add_task',
-            action_params: { task_id: newTask.id, name: parsedArgs.name },
-            success: true
-          });
+          try {
+            const { data: newTask, error } = await supabase
+              .from('tasks')
+              .insert({
+                user_id: user.id,
+                name: parsedArgs.name,
+                estimated_pomodoros: parsedArgs.estimated_pomodoros || 1,
+                completed: false,
+                is_active: false,
+                time_spent: 0
+              })
+              .select()
+              .single();
 
-          setCurrentAction({ type: 'add_task', status: 'success', message: `Added: ${parsedArgs.name}` });
-          setTimeout(() => setCurrentAction(null), 3000);
-          
-          result = { success: true, task_id: newTask.id, message: `Task "${parsedArgs.name}" added successfully` };
+            if (error) throw error;
+            
+            // Replace optimistic task with real one
+            const mappedTask: Task = {
+              id: newTask.id,
+              name: newTask.name,
+              estimatedPomodoros: newTask.estimated_pomodoros,
+              completed: newTask.completed,
+              createdAt: newTask.created_at,
+              updatedAt: newTask.updated_at,
+              completedAt: newTask.completed_at || undefined,
+              completedPomodoros: newTask.completed_pomodoros || undefined,
+              isActive: newTask.is_active || false,
+              timeSpent: newTask.time_spent,
+              timeSpentSeconds: newTask.time_spent_seconds
+            };
+            
+            setTasks(prev => prev.map(t => t.id === optimisticId ? mappedTask : t));
+            
+            await supabase.from('coach_actions').insert({
+              conversation_id: conversationId,
+              user_id: user.id,
+              action_type: 'add_task',
+              action_params: { task_id: newTask.id, name: parsedArgs.name },
+              success: true
+            });
+
+            setCurrentAction({ type: 'add_task', status: 'success', message: `Added: ${parsedArgs.name}` });
+            setTimeout(() => setCurrentAction(null), 3000);
+            
+            result = { success: true, task_id: newTask.id, message: `Task "${parsedArgs.name}" added successfully` };
+          } catch (error) {
+            // Rollback optimistic update
+            setTasks(prev => prev.filter(t => t.id !== optimisticId));
+            throw error;
+          }
           break;
         }
 
         case 'complete_task': {
+          const taskToComplete = tasks.find(t => t.id === parsedArgs.task_id);
+          if (!taskToComplete) {
+            result = { success: false, error: 'Task not found' };
+            break;
+          }
+          
+          // Capture previous state for rollback
+          const previousTasks = [...tasks];
+          
+          // Optimistic update - remove from list immediately
+          setTasks(prev => prev.filter(t => t.id !== parsedArgs.task_id));
           setCurrentAction({ type: 'complete_task', status: 'executing', message: 'Completing task...' });
           
-          const { data: task, error } = await supabase
-            .from('tasks')
-            .update({ completed: true, completed_at: new Date().toISOString() })
-            .eq('id', parsedArgs.task_id)
-            .eq('user_id', user.id)
-            .select()
-            .single();
-
-          if (error) throw error;
-          
-          // If the completed task was the active one, clear the active task in the timer (purple box)
+          // Clear active task if needed
           if (timer.activeTaskId === parsedArgs.task_id) {
             timer.setActiveTaskId(null);
           }
           
-          setTasks(prev => prev.filter(t => t.id !== parsedArgs.task_id));
-          
-          await supabase.from('coach_actions').insert({
-            conversation_id: conversationId,
-            user_id: user.id,
-            action_type: 'complete_task',
-            action_params: { task_id: parsedArgs.task_id },
-            success: true
-          });
+          try {
+            const { error } = await supabase
+              .from('tasks')
+              .update({ completed: true, completed_at: new Date().toISOString() })
+              .eq('id', parsedArgs.task_id)
+              .eq('user_id', user.id);
 
-          setCurrentAction({ type: 'complete_task', status: 'success', message: `Task completed!` });
-          setTimeout(() => setCurrentAction(null), 3000);
-          
-          result = { success: true, message: `Task completed` };
+            if (error) throw error;
+            
+            await supabase.from('coach_actions').insert({
+              conversation_id: conversationId,
+              user_id: user.id,
+              action_type: 'complete_task',
+              action_params: { task_id: parsedArgs.task_id },
+              success: true
+            });
+
+            setCurrentAction({ type: 'complete_task', status: 'success', message: `Task completed!` });
+            setTimeout(() => setCurrentAction(null), 3000);
+            
+            result = { success: true, message: `Task completed` };
+          } catch (error) {
+            // Rollback optimistic update
+            setTasks(previousTasks);
+            // Restore active task if it was cleared
+            if (timer.activeTaskId === null && taskToComplete.isActive) {
+              timer.setActiveTaskId(parsedArgs.task_id);
+            }
+            throw error;
+          }
           break;
         }
 
@@ -337,38 +377,55 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         case 'delete_task': {
           const taskToDelete = tasks.find(t => t.id === parsedArgs.task_id);
+          if (!taskToDelete) {
+            result = { success: false, error: 'Task not found' };
+            break;
+          }
+          
+          // Capture previous state for rollback
+          const previousTasks = [...tasks];
+          const previousSubTasks = [...subTasks];
+          
+          // Optimistic update - remove from list immediately
+          setTasks(prev => prev.filter(t => t.id !== parsedArgs.task_id));
+          setSubTasks(prev => prev.filter(st => st.parent_task_id !== parsedArgs.task_id));
           setCurrentAction({ 
             type: 'delete_task', 
             status: 'executing', 
             message: `Deleting task...` 
           });
           
-          const { error } = await supabase
-            .from('tasks')
-            .delete()
-            .eq('id', parsedArgs.task_id)
-            .eq('user_id', user.id);
+          try {
+            const { error } = await supabase
+              .from('tasks')
+              .delete()
+              .eq('id', parsedArgs.task_id)
+              .eq('user_id', user.id);
 
-          if (error) throw error;
+            if (error) throw error;
+            
+            await supabase.from('coach_actions').insert({
+              conversation_id: conversationId,
+              user_id: user.id,
+              action_type: 'delete_task',
+              action_params: { task_id: parsedArgs.task_id },
+              success: true
+            });
 
-          setTasks(prev => prev.filter(t => t.id !== parsedArgs.task_id));
-          
-          await supabase.from('coach_actions').insert({
-            conversation_id: conversationId,
-            user_id: user.id,
-            action_type: 'delete_task',
-            action_params: { task_id: parsedArgs.task_id },
-            success: true
-          });
-
-          setCurrentAction({ 
-            type: 'delete_task', 
-            status: 'success', 
-            message: taskToDelete ? `Deleted: ${taskToDelete.name}` : 'Task deleted' 
-          });
-          setTimeout(() => setCurrentAction(null), 3000);
-          
-          result = { success: true, message: 'Task deleted' };
+            setCurrentAction({ 
+              type: 'delete_task', 
+              status: 'success', 
+              message: `Deleted: ${taskToDelete.name}` 
+            });
+            setTimeout(() => setCurrentAction(null), 3000);
+            
+            result = { success: true, message: 'Task deleted' };
+          } catch (error) {
+            // Rollback optimistic update
+            setTasks(previousTasks);
+            setSubTasks(previousSubTasks);
+            throw error;
+          }
           break;
         }
 
@@ -509,45 +566,60 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         case 'toggle_subtask': {
           const subTaskToToggle = subTasks.find(st => st.id === parsedArgs.subtask_id);
-          if (!subTaskToToggle) throw new Error('Sub-task not found');
+          if (!subTaskToToggle) {
+            result = { success: false, error: 'Sub-task not found' };
+            break;
+          }
 
+          // Capture previous state for rollback
+          const previousSubTasks = [...subTasks];
+          const newCompletedState = !subTaskToToggle.completed;
+          
+          // Optimistic update - toggle immediately
+          setSubTasks(prev => prev.map(st => 
+            st.id === parsedArgs.subtask_id 
+              ? { ...st, completed: newCompletedState, updated_at: new Date().toISOString() }
+              : st
+          ));
           setCurrentAction({ 
             type: 'toggle_subtask', 
             status: 'executing', 
             message: 'Updating sub-task...' 
           });
           
-          const { data: updatedSubTask, error } = await supabase
-            .from('sub_tasks')
-            .update({ 
-              completed: !subTaskToToggle.completed,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', parsedArgs.subtask_id)
-            .eq('user_id', user.id)
-            .select()
-            .single();
+          try {
+            const { error } = await supabase
+              .from('sub_tasks')
+              .update({ 
+                completed: newCompletedState,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', parsedArgs.subtask_id)
+              .eq('user_id', user.id);
 
-          if (error) throw error;
+            if (error) throw error;
+            
+            await supabase.from('coach_actions').insert({
+              conversation_id: conversationId,
+              user_id: user.id,
+              action_type: 'toggle_subtask',
+              action_params: { subtask_id: parsedArgs.subtask_id, completed: newCompletedState },
+              success: true
+            });
 
-          setSubTasks(prev => prev.map(st => st.id === parsedArgs.subtask_id ? updatedSubTask : st));
-          
-          await supabase.from('coach_actions').insert({
-            conversation_id: conversationId,
-            user_id: user.id,
-            action_type: 'toggle_subtask',
-            action_params: { subtask_id: parsedArgs.subtask_id, completed: updatedSubTask.completed },
-            success: true
-          });
-
-          setCurrentAction({ 
-            type: 'toggle_subtask', 
-            status: 'success', 
-            message: updatedSubTask.completed ? `Completed: ${subTaskToToggle.name}` : `Uncompleted: ${subTaskToToggle.name}`
-          });
-          setTimeout(() => setCurrentAction(null), 3000);
-          
-          result = { success: true, message: `Sub-task ${updatedSubTask.completed ? 'completed' : 'uncompleted'}` };
+            setCurrentAction({ 
+              type: 'toggle_subtask', 
+              status: 'success', 
+              message: newCompletedState ? `Completed: ${subTaskToToggle.name}` : `Uncompleted: ${subTaskToToggle.name}`
+            });
+            setTimeout(() => setCurrentAction(null), 3000);
+            
+            result = { success: true, message: `Sub-task ${newCompletedState ? 'completed' : 'uncompleted'}` };
+          } catch (error) {
+            // Rollback optimistic update
+            setSubTasks(previousSubTasks);
+            throw error;
+          }
           break;
         }
 
