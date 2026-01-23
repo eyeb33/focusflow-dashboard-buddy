@@ -4,8 +4,7 @@ export {
   StatCardsGridSkeleton,
   ChartSkeleton,
   CalendarSkeleton,
-  InsightsSkeleton,
-  UserProfileSkeleton,
+  RadialChartSkeleton,
   StudyStreakSkeleton,
   DashboardSkeleton,
 } from './DashboardSkeleton';
