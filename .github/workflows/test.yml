@@ -1,4 +1,4 @@
-name: Run Tests
+name: Unit Tests - Timer & Utilities
 
 on:
   push:
@@ -7,14 +7,15 @@ on:
     branches: [main, master]
 
 jobs:
-  test:
+  unit-tests:
+    name: Vitest Unit Tests
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -23,5 +24,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
-        run: npm test -- --reporter=verbose
+      - name: Run Vitest tests
+        run: npm test -- --reporter=verbose --passWithNoTests

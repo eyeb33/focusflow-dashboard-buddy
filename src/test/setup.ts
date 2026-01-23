@@ -1,4 +1,3 @@
-
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 
@@ -12,6 +11,28 @@ const localStorageMock = {
 Object.defineProperty(window, 'localStorage', {
   value: localStorageMock
 })
+
+// Mock matchMedia
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+})
+
+// Mock ResizeObserver
+global.ResizeObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+}))
 
 // Mock Supabase
 vi.mock('@/integrations/supabase/client', () => ({
@@ -28,13 +49,26 @@ vi.mock('@/integrations/supabase/client', () => ({
     from: vi.fn(() => ({
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
-          order: vi.fn(() => Promise.resolve({ data: [], error: null }))
+          order: vi.fn(() => Promise.resolve({ data: [], error: null })),
+          single: vi.fn(() => Promise.resolve({ data: null, error: null })),
+          maybeSingle: vi.fn(() => Promise.resolve({ data: null, error: null })),
+        })),
+        order: vi.fn(() => Promise.resolve({ data: [], error: null })),
+        single: vi.fn(() => Promise.resolve({ data: null, error: null })),
+      })),
+      insert: vi.fn(() => ({
+        select: vi.fn(() => ({
+          single: vi.fn(() => Promise.resolve({ data: { id: 'test-id' }, error: null }))
         }))
       })),
-      insert: vi.fn(() => Promise.resolve({ data: null, error: null })),
-      update: vi.fn(() => Promise.resolve({ data: null, error: null })),
-      delete: vi.fn(() => Promise.resolve({ data: null, error: null })),
-    }))
+      update: vi.fn(() => ({
+        eq: vi.fn(() => Promise.resolve({ data: null, error: null }))
+      })),
+      delete: vi.fn(() => ({
+        eq: vi.fn(() => Promise.resolve({ data: null, error: null }))
+      })),
+    })),
+    rpc: vi.fn(() => Promise.resolve({ data: null, error: null })),
   }
 }))
 
@@ -42,7 +76,7 @@ vi.mock('@/integrations/supabase/client', () => ({
 Object.defineProperty(window, 'Audio', {
   writable: true,
   value: vi.fn().mockImplementation(() => ({
-    play: vi.fn(),
+    play: vi.fn().mockResolvedValue(undefined),
     pause: vi.fn(),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
@@ -55,3 +89,6 @@ global.IntersectionObserver = vi.fn().mockImplementation(() => ({
   unobserve: vi.fn(),
   disconnect: vi.fn(),
 }))
+
+// Mock window.dispatchEvent for timer events
+window.dispatchEvent = vi.fn()
