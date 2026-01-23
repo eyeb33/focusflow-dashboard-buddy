@@ -9,8 +9,8 @@ import MathsTutorInterface, { MathsTutorInterfaceRef } from '@/components/Tutor/
 import CurriculumTopicList from '@/components/Curriculum/CurriculumTopicList';
 import { useCurriculumTopics } from '@/hooks/useCurriculumTopics';
 import { Task } from '@/types/task';
-import { Button } from '@/components/ui/button';
 import { List, GraduationCap } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 type ContentView = 'topics' | 'tutor';
 
@@ -162,25 +162,31 @@ const Index = () => {
             
             {/* View Toggle Header */}
             <div className="flex-shrink-0 border-b border-border bg-muted/30 px-4 py-2">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant={contentView === 'topics' ? 'default' : 'ghost'}
-                  size="sm"
+              <div className="inline-flex items-center rounded-lg bg-muted p-1">
+                <button
                   onClick={() => setContentView('topics')}
-                  className="gap-2"
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all",
+                    contentView === 'topics'
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
                 >
                   <List className="w-4 h-4" />
                   <span className="hidden sm:inline">Topics</span>
-                </Button>
-                <Button
-                  variant={contentView === 'tutor' ? 'default' : 'ghost'}
-                  size="sm"
+                </button>
+                <button
                   onClick={() => setContentView('tutor')}
-                  className="gap-2"
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all",
+                    contentView === 'tutor'
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
                 >
                   <GraduationCap className="w-4 h-4" />
                   <span className="hidden sm:inline">Tutor</span>
-                </Button>
+                </button>
               </div>
             </div>
 
