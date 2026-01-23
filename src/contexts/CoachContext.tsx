@@ -5,6 +5,7 @@ import { toast } from '@/hooks/use-toast';
 import { useTimerContext } from './TimerContext';
 import { Task } from '@/types/task';
 import { SubTask } from '@/types/subtask';
+import { sanitizeInput } from '@/lib/utils';
 
 export type CoachMode = 'explain' | 'practice' | 'check';
 
@@ -165,11 +166,18 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       switch (name) {
         case 'add_task': {
+          // Sanitize user input
+          const sanitizedName = sanitizeInput(parsedArgs.name);
+          if (!sanitizedName) {
+            result = { success: false, error: 'Task name cannot be empty' };
+            break;
+          }
+          
           // Generate optimistic ID
           const optimisticId = `temp-${Date.now()}`;
           const optimisticTask: Task = {
             id: optimisticId,
-            name: parsedArgs.name,
+            name: sanitizedName,
             estimatedPomodoros: parsedArgs.estimated_pomodoros || 1,
             completed: false,
             createdAt: new Date().toISOString(),
@@ -181,14 +189,14 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           
           // Optimistic update - instant UI
           setTasks(prev => [...prev, optimisticTask]);
-          setCurrentAction({ type: 'add_task', status: 'executing', message: `Adding task: ${parsedArgs.name}...` });
+          setCurrentAction({ type: 'add_task', status: 'executing', message: `Adding task: ${sanitizedName}...` });
           
           try {
             const { data: newTask, error } = await supabase
               .from('tasks')
               .insert({
                 user_id: user.id,
-                name: parsedArgs.name,
+                name: sanitizedName,
                 estimated_pomodoros: parsedArgs.estimated_pomodoros || 1,
                 completed: false,
                 is_active: false,
@@ -483,6 +491,13 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
 
         case 'add_subtask': {
+          // Sanitize user input
+          const sanitizedSubtaskName = sanitizeInput(parsedArgs.name);
+          if (!sanitizedSubtaskName) {
+            result = { success: false, error: 'Sub-task name cannot be empty' };
+            break;
+          }
+          
           setCurrentAction({ type: 'add_subtask', status: 'executing', message: `Adding sub-task...` });
           
           // Get current max sort_order
@@ -501,7 +516,7 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             .insert({
               user_id: user.id,
               parent_task_id: parsedArgs.parent_task_id,
-              name: parsedArgs.name,
+              name: sanitizedSubtaskName,
               sort_order: maxSortOrder + 1,
               completed: false
             })
@@ -824,12 +839,13 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       };
       setMessages((prev) => [...prev, userMessage]);
 
-      // Save user message to DB
+      // Sanitize and save user message to DB
+      const sanitizedContent = sanitizeInput(content);
       await supabase.from('coach_messages').insert({
         conversation_id: convId,
         user_id: user.id,
         role: 'user',
-        content,
+        content: sanitizedContent,
       });
 
       // Get user's session token for edge function auth
@@ -1040,6 +1056,9 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!user) return;
 
     try {
+      // Sanitize notes if provided
+      const sanitizedNotes = notes ? sanitizeInput(notes) : null;
+      
       await supabase
         .from('coach_check_ins')
         .insert({
@@ -1047,7 +1066,7 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           mood_rating: mood,
           energy_level: energy,
           stress_level: stress,
-          notes: notes || null
+          notes: sanitizedNotes
         });
 
       setCheckInModalOpen(false);
