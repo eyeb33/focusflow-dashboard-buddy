@@ -2,7 +2,7 @@ import React from 'react';
 import { ChevronDown, ChevronRight, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Skeleton } from '@/components/ui/skeleton';
+import { CurriculumTopicListSkeleton } from '@/components/ui/skeletons';
 import CurriculumTopicCard from './CurriculumTopicCard';
 import { CurriculumCategory, TopicWithSession } from '@/types/curriculum';
 import { cn } from '@/lib/utils';
@@ -29,17 +29,7 @@ const CurriculumTopicList: React.FC<CurriculumTopicListProps> = ({
   onCategoryToggle
 }) => {
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[1, 2, 3].map(i => (
-          <div key={i} className="space-y-2">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
-          </div>
-        ))}
-      </div>
-    );
+    return <CurriculumTopicListSkeleton />;
   }
 
   if (categories.length === 0) {

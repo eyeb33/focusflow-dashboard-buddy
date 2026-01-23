@@ -5,6 +5,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Camera, Loader2 } from "lucide-react";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuth } from '@/contexts/AuthContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const UserProfileCard: React.FC = () => {
   const { user } = useAuth();
@@ -139,8 +140,8 @@ const ProfileWelcome: React.FC<ProfileWelcomeProps> = ({ loading, username }) =>
     <div className="text-center">
       <h3 className="text-xl font-medium">
         {loading ? (
-          <div className="flex items-center justify-center">
-            <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading...
+          <div className="flex flex-col items-center gap-2">
+            <Skeleton className="h-5 w-32" />
           </div>
         ) : (
           <>Hi {username || 'User'}</>
