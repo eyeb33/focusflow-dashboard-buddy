@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Send, GraduationCap, BookOpen, PenTool, CheckCircle, Plus, Pencil, Check, X, Settings, BarChart3, Lightbulb } from 'lucide-react';
+import { Send, GraduationCap, BookOpen, PenTool, CheckCircle, Plus, Settings, BarChart3, Lightbulb, List, Clock, Check, X, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -47,8 +47,17 @@ export interface MathsTutorInterfaceRef {
   linkedTopicIds: Set<string>;
 }
 
+interface ActiveTopicInfo {
+  id: string;
+  name: string;
+  totalTimeSeconds: number;
+  completedSubtopics: string[];
+}
+
 interface MathsTutorInterfaceProps {
   inputPortalTarget?: HTMLElement | null;
+  activeTopic?: ActiveTopicInfo | null;
+  onSwitchToTopics?: () => void;
 }
 
 const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfaceProps>((props, ref) => {
@@ -778,59 +787,44 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     }
   };
 
+  // Format time for display
+  const formatStudyTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
+  };
+
   return (
-    <div className="flex flex-col h-full bg-card rounded-2xl border border-border overflow-hidden">
-      {/* Header - Fixed */}
-      <div className="flex-shrink-0 border-b border-border bg-primary/5 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-md flex-shrink-0">
-              <GraduationCap className="w-5 h-5 text-primary-foreground" />
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Compact Header with Controls */}
+      <div className="flex-shrink-0 border-b border-border bg-primary/5 px-4 py-3">
+        <div className="flex items-center justify-between">
+          {/* Left: Scholar icon + Controls */}
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-sm flex-shrink-0">
+              <GraduationCap className="w-4 h-4 text-primary-foreground" />
             </div>
-            <div className="flex-1 min-w-0">
-              {isEditingTitle ? (
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={editTitleValue}
-                    onChange={(e) => setEditTitleValue(e.target.value)}
-                    className="h-7 text-sm font-bold"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSaveTitle();
-                      if (e.key === 'Escape') handleCancelEditTitle();
-                    }}
-                    autoFocus
-                  />
-                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={handleSaveTitle}>
-                    <Check className="h-4 w-4" />
-                  </Button>
-                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={handleCancelEditTitle}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex flex-col min-w-0">
-                  <div className="flex items-center gap-1 min-w-0">
-                    <h3 className="font-bold text-sm truncate max-w-[120px] lg:max-w-[180px]" title={currentSession?.title || 'A-Level Maths Tutor'}>
-                      {currentSession?.title || 'A-Level Maths Tutor'}
-                    </h3>
-                    {currentSession && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-5 w-5 flex-shrink-0"
-                        onClick={() => setIsEditingTitle(true)}
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground truncate">Edexcel Specification</p>
-                </div>
-              )}
-            </div>
+            
+            {/* Switch to Topics button */}
+            {props.onSwitchToTopics && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={props.onSwitchToTopics}
+                className="gap-1.5 text-muted-foreground hover:text-foreground"
+                title="Switch to topic list"
+              >
+                <List className="w-4 h-4" />
+                <span className="hidden sm:inline text-xs">Topics</span>
+              </Button>
+            )}
           </div>
           
-          <div className="flex items-center gap-1 flex-shrink-0">
+          {/* Right: Action buttons */}
+          <div className="flex items-center gap-1">
             <div className="relative group">
               <Button
                 variant="ghost"
@@ -842,7 +836,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
               </Button>
               <div className="absolute right-0 top-full mt-1 z-50 hidden group-hover:block">
                 <div className="bg-popover text-popover-foreground border border-border rounded-md shadow-md px-3 py-2 text-xs whitespace-nowrap">
-                  Tip: Use <code className="bg-muted px-1 rounded">$</code> for inline maths like <code className="bg-muted px-1 rounded">$x^2$</code> and <code className="bg-muted px-1 rounded">$$</code> for display equations
+                  Tip: Use <code className="bg-muted px-1 rounded">$</code> for inline maths like <code className="bg-muted px-1 rounded">$x^2$</code>
                 </div>
               </div>
             </div>
@@ -883,9 +877,35 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
             />
           </div>
         </div>
-        
-        
-        {/* Mode Selection - responsive icons/text */}
+      </div>
+
+      {/* Active Topic Card - Shows when a topic is selected */}
+      {props.activeTopic && (
+        <div className="flex-shrink-0 mx-4 mt-3">
+          <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm truncate">{props.activeTopic.name}</h3>
+                <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {formatStudyTime(props.activeTopic.totalTimeSeconds)}
+                  </span>
+                  {props.activeTopic.completedSubtopics.length > 0 && (
+                    <span className="flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3 text-green-500" />
+                      {props.activeTopic.completedSubtopics.length} complete
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mode Selection */}
+      <div className="flex-shrink-0 px-4 py-3">
         <div className="flex gap-1.5">
           <Button
             onClick={() => handleModeChange('explain')}
@@ -895,7 +915,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
             disabled={isLoading}
           >
             <BookOpen className="w-4 h-4 flex-shrink-0" />
-            <span className="ml-1.5 truncate hidden lg:inline">Explain</span>
+            <span className="ml-1.5 truncate hidden sm:inline">Explain</span>
           </Button>
           <Button
             onClick={() => handleModeChange('practice')}
@@ -905,7 +925,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
             disabled={isLoading}
           >
             <PenTool className="w-4 h-4 flex-shrink-0" />
-            <span className="ml-1.5 truncate hidden lg:inline">Practice</span>
+            <span className="ml-1.5 truncate hidden sm:inline">Practice</span>
           </Button>
           <Button
             onClick={() => handleModeChange('check')}
@@ -915,7 +935,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
             disabled={isLoading}
           >
             <CheckCircle className="w-4 h-4 flex-shrink-0" />
-            <span className="ml-1.5 truncate hidden lg:inline">Check</span>
+            <span className="ml-1.5 truncate hidden sm:inline">Check</span>
           </Button>
         </div>
       </div>
