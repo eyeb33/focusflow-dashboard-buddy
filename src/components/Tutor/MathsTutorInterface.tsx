@@ -584,6 +584,34 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     }
   };
 
+  // Handle mode change - trigger AI action for practice/check modes
+  const handleModeChange = async (newMode: TutorMode) => {
+    if (newMode === mode || isLoading) return;
+    
+    setMode(newMode);
+    
+    // Only trigger AI action for practice and check modes
+    if (newMode === 'practice') {
+      // Get active topic name from session title or default
+      const topicContext = currentSession?.title && currentSession.title !== 'A-Level Maths Tutor' 
+        ? `on the topic "${currentSession.title}"` 
+        : '';
+      
+      const practicePrompt = `Give me a practice question ${topicContext}. Use a past paper style question from the Edexcel A-Level Maths specification. Present the question clearly with all necessary information, and wait for my answer before providing any hints or solutions.`;
+      
+      setInputValue(practicePrompt);
+      setTimeout(() => {
+        handleSend();
+      }, 0);
+    } else if (newMode === 'check') {
+      // For check mode, show a hint about what to do
+      toast({
+        title: 'Check Mode Active',
+        description: 'Share your working or answer, and I\'ll check if it\'s correct.',
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-card rounded-2xl border border-border overflow-hidden">
       {/* Header - Fixed */}
@@ -694,28 +722,31 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         {/* Mode Selection - responsive icons/text */}
         <div className="flex gap-1.5">
           <Button
-            onClick={() => setMode('explain')}
+            onClick={() => handleModeChange('explain')}
             variant={mode === 'explain' ? 'default' : 'outline'}
             size="sm"
             className="flex-1 px-2 min-w-0"
+            disabled={isLoading}
           >
             <BookOpen className="w-4 h-4 flex-shrink-0" />
             <span className="ml-1.5 truncate hidden lg:inline">Explain</span>
           </Button>
           <Button
-            onClick={() => setMode('practice')}
+            onClick={() => handleModeChange('practice')}
             variant={mode === 'practice' ? 'default' : 'outline'}
             size="sm"
             className="flex-1 px-2 min-w-0"
+            disabled={isLoading}
           >
             <PenTool className="w-4 h-4 flex-shrink-0" />
             <span className="ml-1.5 truncate hidden lg:inline">Practice</span>
           </Button>
           <Button
-            onClick={() => setMode('check')}
+            onClick={() => handleModeChange('check')}
             variant={mode === 'check' ? 'default' : 'outline'}
             size="sm"
             className="flex-1 px-2 min-w-0"
+            disabled={isLoading}
           >
             <CheckCircle className="w-4 h-4 flex-shrink-0" />
             <span className="ml-1.5 truncate hidden lg:inline">Check</span>
