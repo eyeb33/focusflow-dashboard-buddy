@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,13 +7,14 @@ import { ThemeProvider } from "@/components/Theme/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TimerProvider } from "@/contexts/TimerContext";
 import { CoachProvider } from "@/contexts/CoachContext";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import Curriculum from "./pages/Curriculum";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
-import React, { useEffect } from 'react'; // Import React explicitly
+import React, { useEffect } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 
 // Create a new QueryClient instance outside of the component
@@ -26,7 +26,7 @@ const ScrollManager = () => {
 
   useEffect(() => {
     // Lock *document* scrolling globally; pages should implement scrolling within their own layout.
-    // This prevents “blank white” overscroll caused by mixing page scroll + internal scroll.
+    // This prevents "blank white" overscroll caused by mixing page scroll + internal scroll.
     const shouldLock = true;
 
     const html = document.documentElement;
@@ -59,10 +59,31 @@ const App = () => (
                   <Toaster />
                   <Sonner />
                   <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route 
+                      path="/" 
+                      element={
+                        <ErrorBoundary fallbackTitle="Timer failed to load">
+                          <Index />
+                        </ErrorBoundary>
+                      } 
+                    />
+                    <Route 
+                      path="/dashboard" 
+                      element={
+                        <ErrorBoundary fallbackTitle="Dashboard failed to load">
+                          <Dashboard />
+                        </ErrorBoundary>
+                      } 
+                    />
                     <Route path="/auth" element={<Auth />} />
-                    <Route path="/curriculum" element={<Curriculum />} />
+                    <Route 
+                      path="/curriculum" 
+                      element={
+                        <ErrorBoundary fallbackTitle="Curriculum failed to load">
+                          <Curriculum />
+                        </ErrorBoundary>
+                      } 
+                    />
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
