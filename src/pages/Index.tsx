@@ -9,8 +9,14 @@ import MathsTutorInterface, { MathsTutorInterfaceRef } from '@/components/Tutor/
 import CurriculumTopicList from '@/components/Curriculum/CurriculumTopicList';
 import { useCurriculumTopics } from '@/hooks/useCurriculumTopics';
 import { Task } from '@/types/task';
-import { List, GraduationCap } from 'lucide-react';
+import { List, GraduationCap, Lightbulb, Plus, History, BarChart3, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
+import ChatSessionDrawer from '@/components/Tutor/ChatSessionDrawer';
+import SettingsDrawer from '@/components/Settings/SettingsDrawer';
+import ApiStatsDrawer from '@/components/Tutor/ApiStatsDrawer';
+import { useChatSessions } from '@/hooks/useChatSessions';
 
 type ContentView = 'topics' | 'tutor';
 
@@ -22,6 +28,24 @@ const Index = () => {
 
   const [linkedTaskIds, setLinkedTaskIds] = useState<Set<string>>(new Set());
   const [contentView, setContentView] = useState<ContentView>('topics');
+  const [showSettings, setShowSettings] = useState(false);
+  const [showApiStats, setShowApiStats] = useState(false);
+
+  // Chat sessions hook for header controls
+  const {
+    sessions,
+    currentSession,
+    isLoadingSessions,
+    createNewSession,
+    switchSession,
+    updateSessionTitle,
+    deleteSession,
+  } = useChatSessions();
+
+  const handleNewChat = async () => {
+    await createNewSession('explain');
+    setContentView('tutor');
+  };
 
   // Curriculum topics hook
   const {
@@ -160,35 +184,115 @@ const Index = () => {
           {/* Column 2: Toggleable Content (Topics List OR Tutor) */}
           <div className="flex flex-col min-h-0 overflow-hidden bg-card rounded-xl border border-border/50 shadow-sm transition-all duration-200 hover:shadow-md hover:border-border/80 dark:border-border/30 dark:hover:border-border/50">
             
-            {/* View Toggle Header */}
+            {/* View Toggle Header with Action Icons */}
             <div className="flex-shrink-0 border-b border-border bg-muted/30 px-4 py-2">
-              <div className="inline-flex items-center rounded-lg bg-muted p-1">
-                <button
-                  onClick={() => setContentView('topics')}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all",
-                    contentView === 'topics'
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <List className="w-4 h-4" />
-                  <span className="hidden sm:inline">Topics</span>
-                </button>
-                <button
-                  onClick={() => setContentView('tutor')}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all",
-                    contentView === 'tutor'
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <GraduationCap className="w-4 h-4" />
-                  <span className="hidden sm:inline">Tutor</span>
-                </button>
+              <div className="flex items-center justify-between">
+                {/* Left: Topics/Tutor Toggle */}
+                <div className="inline-flex items-center rounded-lg bg-muted p-1">
+                  <button
+                    onClick={() => setContentView('topics')}
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all",
+                      contentView === 'topics'
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <List className="w-4 h-4" />
+                    <span className="hidden sm:inline">Topics</span>
+                  </button>
+                  <button
+                    onClick={() => setContentView('tutor')}
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all",
+                      contentView === 'tutor'
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <GraduationCap className="w-4 h-4" />
+                    <span className="hidden sm:inline">Tutor</span>
+                  </button>
+                </div>
+
+                {/* Right: Action Icons */}
+                <TooltipProvider delayDuration={300}>
+                  <div className="flex items-center gap-1">
+                    {/* Lightbulb - Maths formatting tip */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Lightbulb className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="bg-foreground text-background">
+                        <p>Use <code className="bg-muted-foreground/20 px-1 rounded">$</code> for inline maths like <code className="bg-muted-foreground/20 px-1 rounded">$x^2$</code></p>
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {/* Plus - New Chat */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNewChat}>
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="bg-foreground text-background">
+                        New Chat
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {/* History - Chat Sessions */}
+                    <ChatSessionDrawer
+                      sessions={sessions}
+                      currentSessionId={currentSession?.id || null}
+                      onSelectSession={(id) => {
+                        switchSession(id);
+                        setContentView('tutor');
+                      }}
+                      onDeleteSession={deleteSession}
+                      onUpdateTitle={updateSessionTitle}
+                      isLoading={isLoadingSessions}
+                    />
+
+                    {/* API Stats */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowApiStats(true)}>
+                          <BarChart3 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="bg-foreground text-background">
+                        API Stats
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {/* Settings */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowSettings(true)}>
+                          <Settings className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="bg-foreground text-background">
+                        Settings
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </TooltipProvider>
               </div>
             </div>
+
+            {/* Settings & API Stats Drawers */}
+            <SettingsDrawer 
+              open={showSettings} 
+              onOpenChange={setShowSettings}
+              onOpenApiStats={() => {
+                setShowSettings(false);
+                setShowApiStats(true);
+              }}
+            />
+            <ApiStatsDrawer open={showApiStats} onOpenChange={setShowApiStats} />
 
             {/* Content Area */}
             <div className="flex-1 min-h-0 overflow-hidden">
@@ -224,7 +328,7 @@ const Index = () => {
                     ref={tutorRef} 
                     inputPortalTarget={chatInputSlot}
                     activeTopic={activeTopicInfo}
-                    onSwitchToTopics={() => setContentView('topics')}
+                    onOpenSettings={() => setShowSettings(true)}
                   />
                   <div ref={setChatInputSlot} className="flex-shrink-0" />
                 </div>

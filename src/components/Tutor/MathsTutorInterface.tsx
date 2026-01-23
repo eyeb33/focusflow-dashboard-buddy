@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Send, GraduationCap, BookOpen, PenTool, CheckCircle, Plus, Settings, BarChart3, Lightbulb, List, Clock, Check, X, Pencil } from 'lucide-react';
+import { Send, BookOpen, PenTool, CheckCircle, Clock, Check, X, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -8,9 +8,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import MathsMessage, { RAGSource, TutorMode } from './MathsMessage';
-import ChatSessionDrawer from './ChatSessionDrawer';
-import SettingsDrawer from '@/components/Settings/SettingsDrawer';
-import ApiStatsDrawer from './ApiStatsDrawer';
 import { useChatSessions, ChatMessage } from '@/hooks/useChatSessions';
 import * as taskService from '@/services/taskService';
 import { fetchSubTasks, addSubTask, updateSubTaskCompletion, deleteSubTask } from '@/services/subTaskService';
@@ -57,7 +54,7 @@ interface ActiveTopicInfo {
 interface MathsTutorInterfaceProps {
   inputPortalTarget?: HTMLElement | null;
   activeTopic?: ActiveTopicInfo | null;
-  onSwitchToTopics?: () => void;
+  onOpenSettings?: () => void;
 }
 
 const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfaceProps>((props, ref) => {
@@ -84,8 +81,6 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
   const [editTitleValue, setEditTitleValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showQuickActions, setShowQuickActions] = useState(true);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showApiStats, setShowApiStats] = useState(false);
 
   // Hard lock to prevent double-submits (Enter + click, double-click, etc.)
   const inFlightSendRef = useRef(false);
@@ -433,7 +428,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
 
         // Handle specific error codes - directly open settings for API key issues
         if (errorData.code === 'NO_API_KEY' || errorData.code === 'INVALID_API_KEY') {
-          setShowSettings(true); // Directly open settings drawer
+          props.onOpenSettings?.(); // Directly open settings drawer
           setIsLoading(false);
           return;
         }
@@ -662,7 +657,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         if (errorData.code === 'NO_API_KEY' || errorData.code === 'INVALID_API_KEY') {
-          setShowSettings(true);
+          props.onOpenSettings?.();
           setIsLoading(false);
           inFlightSendRef.current = false;
           return;
@@ -799,85 +794,6 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Compact Header with Controls */}
-      <div className="flex-shrink-0 border-b border-border bg-primary/5 px-4 py-3">
-        <div className="flex items-center justify-between">
-          {/* Left: Scholar icon + Controls */}
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-sm flex-shrink-0">
-              <GraduationCap className="w-4 h-4 text-primary-foreground" />
-            </div>
-            
-            {/* Switch to Topics button */}
-            {props.onSwitchToTopics && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={props.onSwitchToTopics}
-                className="gap-1.5 text-muted-foreground hover:text-foreground"
-                title="Switch to topic list"
-              >
-                <List className="w-4 h-4" />
-                <span className="hidden sm:inline text-xs">Topics</span>
-              </Button>
-            )}
-          </div>
-          
-          {/* Right: Action buttons */}
-          <div className="flex items-center gap-1">
-            <div className="relative group">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                title="Maths formatting tip"
-              >
-                <Lightbulb className="h-4 w-4" />
-              </Button>
-              <div className="absolute right-0 top-full mt-1 z-50 hidden group-hover:block">
-                <div className="bg-popover text-popover-foreground border border-border rounded-md shadow-md px-3 py-2 text-xs whitespace-nowrap">
-                  Tip: Use <code className="bg-muted px-1 rounded">$</code> for inline maths like <code className="bg-muted px-1 rounded">$x^2$</code>
-                </div>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setShowSettings(true)}
-              title="Settings"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={handleNewChat}
-              title="New chat"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setShowApiStats(true)}
-              title="API Stats"
-            >
-              <BarChart3 className="h-4 w-4" />
-            </Button>
-            <ChatSessionDrawer
-              sessions={sessions}
-              currentSessionId={currentSession?.id || null}
-              onSelectSession={switchSession}
-              onDeleteSession={deleteSession}
-              onUpdateTitle={updateSessionTitle}
-              isLoading={isLoadingSessions}
-            />
-          </div>
-        </div>
-      </div>
 
       {/* Active Topic Card - Shows when a topic is selected */}
       {props.activeTopic && (
@@ -1105,20 +1021,6 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         }
         return inputEl;
       })()}
-      
-      {/* Settings Drawer */}
-      <SettingsDrawer 
-        open={showSettings} 
-        onOpenChange={setShowSettings} 
-        onOpenApiStats={() => setShowApiStats(true)}
-      />
-      
-      {/* API Stats Drawer */}
-      <ApiStatsDrawer 
-        open={showApiStats} 
-        onOpenChange={setShowApiStats}
-        onOpenSettings={() => setShowSettings(true)}
-      />
     </div>
   );
 });
