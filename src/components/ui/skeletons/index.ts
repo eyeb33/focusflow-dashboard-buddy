@@ -6,6 +6,7 @@ export {
   CalendarSkeleton,
   InsightsSkeleton,
   UserProfileSkeleton,
+  StudyStreakSkeleton,
   DashboardSkeleton,
 } from './DashboardSkeleton';
 

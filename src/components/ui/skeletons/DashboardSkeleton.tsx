@@ -103,6 +103,57 @@ export const UserProfileSkeleton: React.FC = () => (
   </div>
 );
 
+// Skeleton for study streak with badges
+export const StudyStreakSkeleton: React.FC = () => (
+  <Card>
+    <CardHeader className="pb-2">
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-5 w-5 rounded" />
+        <Skeleton className="h-5 w-28" />
+      </div>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      {/* Current streak display */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-16 w-16 rounded-full" />
+          <div className="space-y-1">
+            <Skeleton className="h-10 w-16" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+        </div>
+        <div className="text-right space-y-1">
+          <Skeleton className="h-4 w-12 ml-auto" />
+          <Skeleton className="h-6 w-16" />
+        </div>
+      </div>
+      
+      {/* Progress bar */}
+      <div className="space-y-2">
+        <div className="flex justify-between">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-4 w-8" />
+        </div>
+        <Skeleton className="h-2 w-full rounded-full" />
+      </div>
+      
+      {/* Milestone badges */}
+      <div className="pt-2 space-y-2">
+        <Skeleton className="h-4 w-28" />
+        <div className="grid grid-cols-3 gap-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-muted/30">
+              <Skeleton className="h-8 w-8 rounded-full" />
+              <Skeleton className="h-4 w-12" />
+              <Skeleton className="h-3 w-10" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
 // Complete dashboard skeleton
 export const DashboardSkeleton: React.FC = () => (
   <div className="space-y-8 animate-fade-in">
@@ -117,6 +168,9 @@ export const DashboardSkeleton: React.FC = () => (
 
     {/* Stats cards */}
     <StatCardsGridSkeleton />
+
+    {/* Study Streak */}
+    <StudyStreakSkeleton />
 
     {/* Charts */}
     <ChartSkeleton />

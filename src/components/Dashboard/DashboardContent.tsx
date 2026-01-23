@@ -5,6 +5,7 @@ import StatCardsGrid from "@/components/Dashboard/StatCardsGrid";
 import ChartsGrid from "@/components/Dashboard/ChartsGrid";
 import TaskTimeCard from "@/components/Dashboard/TaskTimeCard";
 import StreakCalendar from "@/components/Dashboard/StreakCalendar";
+import StudyStreak from "@/components/Dashboard/StudyStreak";
 import { useDashboard } from '@/contexts/DashboardContext';
 import { useTasks } from '@/hooks/useTasks';
 import { ExperimentalRadialChart } from '@/components/Dashboard/ExperimentalRadialChart';
@@ -260,6 +261,12 @@ const DashboardContent = () => {
       </div>
       
       <StatCardsGrid stats={getPeriodStats()} />
+      
+      {/* Study Streak with Badges - prominent position */}
+      <StudyStreak 
+        currentStreak={dashboardData.stats.currentStreak}
+        bestStreak={dashboardData.stats.bestStreak}
+      />
       
       {/* Charts and Calendar - stack on mobile, side-by-side on desktop */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
