@@ -23,12 +23,17 @@ const CoachInterface: React.FC = () => {
     markAsRead,
     showCheckIn,
     checkInModalOpen,
-    setCheckInModalOpen
+    setCheckInModalOpen,
+    isCooldown,
+    cooldownSecondsRemaining
   } = useCoach();
 
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showQuickActions, setShowQuickActions] = useState(true);
+
+  // Disable sending when loading or in cooldown
+  const isSendDisabled = isLoading || isCooldown;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -42,7 +47,7 @@ const CoachInterface: React.FC = () => {
   }, [messages, isMinimized, markAsRead]);
 
   const handleSend = async () => {
-    if (!inputValue.trim() || isLoading) return;
+    if (!inputValue.trim() || isSendDisabled) return;
     
     const message = inputValue.trim();
     setInputValue('');
@@ -51,6 +56,7 @@ const CoachInterface: React.FC = () => {
   };
 
   const handleQuickAction = async (message: string) => {
+    if (isSendDisabled) return;
     setShowQuickActions(false);
     await sendMessage(message);
   };
@@ -181,7 +187,7 @@ const CoachInterface: React.FC = () => {
                   variant="outline"
                   size="sm"
                   className="text-xs"
-                  disabled={isLoading}
+                  disabled={isSendDisabled}
                 >
                   <TrendingUp className="w-3 h-3 mr-1" />
                   Progress
@@ -191,7 +197,7 @@ const CoachInterface: React.FC = () => {
                   variant="outline"
                   size="sm"
                   className="text-xs"
-                  disabled={isLoading}
+                  disabled={isSendDisabled}
                 >
                   <Heart className="w-3 h-3 mr-1" />
                   Motivation
@@ -201,7 +207,7 @@ const CoachInterface: React.FC = () => {
                   variant="outline"
                   size="sm"
                   className="text-xs"
-                  disabled={isLoading}
+                  disabled={isSendDisabled}
                 >
                   <AlertCircle className="w-3 h-3 mr-1" />
                   Check-in
@@ -211,18 +217,24 @@ const CoachInterface: React.FC = () => {
 
             {/* Input */}
             <div className="p-4 border-t border-border">
+              {/* Cooldown indicator */}
+              {isCooldown && cooldownSecondsRemaining > 0 && (
+                <div className="mb-2 text-xs text-muted-foreground text-center">
+                  Please wait {cooldownSecondsRemaining}s before sending another message
+                </div>
+              )}
               <div className="flex gap-2">
                 <Input
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Type a message..."
-                  disabled={isLoading}
+                  placeholder={isCooldown ? `Wait ${cooldownSecondsRemaining}s...` : "Type a message..."}
+                  disabled={isSendDisabled}
                   className="flex-1"
                 />
                 <Button
                   onClick={handleSend}
-                  disabled={!inputValue.trim() || isLoading}
+                  disabled={!inputValue.trim() || isSendDisabled}
                   size="icon"
                 >
                   <Send className="w-4 h-4" />

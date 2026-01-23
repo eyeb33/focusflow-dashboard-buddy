@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -43,7 +43,15 @@ interface CoachContextType {
   setTasks: (tasks: Task[]) => void;
   subTasks: SubTask[];
   setSubTasks: (subTasks: SubTask[]) => void;
+  // Rate limiting state
+  isCooldown: boolean;
+  cooldownSecondsRemaining: number;
 }
+
+// Rate limiting constants
+const COOLDOWN_SECONDS = 3; // Disable send for 3 seconds after each message
+const RATE_LIMIT_WINDOW_MS = 60000; // 60 second window
+const RATE_LIMIT_MAX_MESSAGES = 5; // Max 5 messages per window
 
 const CoachContext = createContext<CoachContextType | undefined>(undefined);
 
@@ -61,6 +69,35 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [tasks, setTasks] = useState<Task[]>([]);
   const [subTasks, setSubTasks] = useState<SubTask[]>([]);
   const [mode, setMode] = useState<CoachMode>('explain');
+
+  // Rate limiting state
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [cooldownSecondsRemaining, setCooldownSecondsRemaining] = useState(0);
+  const messageTimestampsRef = useRef<number[]>([]);
+
+  // Calculate cooldown state
+  const isCooldown = cooldownUntil !== null && Date.now() < cooldownUntil;
+
+  // Countdown timer for cooldown
+  useEffect(() => {
+    if (!cooldownUntil) {
+      setCooldownSecondsRemaining(0);
+      return;
+    }
+
+    const updateCountdown = () => {
+      const remaining = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
+      setCooldownSecondsRemaining(remaining);
+      
+      if (remaining === 0) {
+        setCooldownUntil(null);
+      }
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 250);
+    return () => clearInterval(interval);
+  }, [cooldownUntil]);
 
   // Load tasks and sub-tasks
   useEffect(() => {
@@ -659,12 +696,45 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const sendMessage = useCallback(async (content: string) => {
     if (!user || isLoading) return;
 
+    // Rate limiting check: block if in cooldown
+    if (cooldownUntil && Date.now() < cooldownUntil) {
+      toast({
+        title: 'Please wait',
+        description: `You can send another message in ${Math.ceil((cooldownUntil - Date.now()) / 1000)} seconds`,
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Clean up old timestamps outside the rate limit window
+    const now = Date.now();
+    messageTimestampsRef.current = messageTimestampsRef.current.filter(
+      ts => now - ts < RATE_LIMIT_WINDOW_MS
+    );
+
+    // Check rate limit: warn if too many messages in window
+    if (messageTimestampsRef.current.length >= RATE_LIMIT_MAX_MESSAGES) {
+      toast({
+        title: 'Slow down',
+        description: `You've sent ${RATE_LIMIT_MAX_MESSAGES} messages in the last minute. Please wait before sending more to avoid API rate limits.`,
+        variant: 'destructive'
+      });
+      // Still allow the message but warn the user
+    }
+
+    // Record this message timestamp
+    messageTimestampsRef.current.push(now);
+
+    // Set cooldown for next message
+    setCooldownUntil(now + COOLDOWN_SECONDS * 1000);
+
     const requestId = (globalThis.crypto?.randomUUID?.() ?? `req_${Date.now()}_${Math.random().toString(16).slice(2)}`);
     console.log('[coach] sendMessage called', {
       requestId,
       userId: user.id,
       mode,
       contentChars: content.length,
+      messagesInWindow: messageTimestampsRef.current.length,
       ts: new Date().toISOString(),
     });
 
@@ -880,7 +950,7 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } finally {
       setIsLoading(false);
     }
-  }, [user, messages, isLoading, conversationId, isMinimized]);
+  }, [user, messages, isLoading, conversationId, isMinimized, cooldownUntil, mode]);
 
   const triggerProactiveCoaching = useCallback(async (_trigger: string, _context?: any) => {
     // IMPORTANT: Do not make ANY background/proactive AI calls.
@@ -959,7 +1029,9 @@ export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     tasks,
     setTasks,
     subTasks,
-    setSubTasks
+    setSubTasks,
+    isCooldown,
+    cooldownSecondsRemaining
   };
 
   return (
