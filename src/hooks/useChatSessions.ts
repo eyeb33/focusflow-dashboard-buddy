@@ -168,31 +168,26 @@ export const useChatSessions = () => {
     // Determine which field to use based on whether this is a topic ID or task ID
     const fieldName = isTopicId ? 'linked_topic_id' : 'linked_task_id';
     
-    // First check if we already have a session for this task/topic in local state
-    const existingSession = sessions.find(s => 
-      isTopicId ? s.linked_topic_id === taskOrTopicId : s.linked_task_id === taskOrTopicId
-    );
-    if (existingSession) {
-      setCurrentSession(existingSession);
-      await loadMessages(existingSession.id);
-      return existingSession;
-    }
-    
-    // Check the database for an existing session
+    // ALWAYS check the database first for the authoritative session
+    // This prevents stale local state from returning wrong sessions
     try {
       const { data, error } = await supabase
         .from('coach_conversations')
         .select('*')
         .eq('user_id', user.id)
         .eq(fieldName, taskOrTopicId)
-        .single();
+        .maybeSingle();
 
       if (data && !error) {
         const session = mapConversationRow(data);
         
-        // Add to sessions if not already there
+        // Update local sessions cache
         setSessions(prev => {
-          if (prev.some(s => s.id === session.id)) return prev;
+          const existing = prev.find(s => s.id === session.id);
+          if (existing) {
+            // Update existing entry
+            return prev.map(s => s.id === session.id ? session : s);
+          }
           return [session, ...prev];
         });
         setCurrentSession(session);
@@ -200,16 +195,16 @@ export const useChatSessions = () => {
         return session;
       }
     } catch (e) {
-      // No existing session found, will create new one
+      console.error('Error looking up session:', e);
     }
     
-    // Create a new session linked to this task/topic
+    // No existing session found, create a new one
     if (isTopicId) {
       return createNewSession('explain', undefined, taskName, taskOrTopicId);
     } else {
       return createNewSession('explain', taskOrTopicId, taskName);
     }
-  }, [user, sessions, loadMessages, createNewSession]);
+  }, [user, loadMessages, createNewSession]);
 
   // Switch to a different session
   const switchSession = useCallback(async (sessionId: string) => {
