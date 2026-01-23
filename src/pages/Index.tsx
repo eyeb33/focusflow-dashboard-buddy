@@ -10,7 +10,7 @@ import CurriculumTopicList from '@/components/Curriculum/CurriculumTopicList';
 import { useCurriculumTopics } from '@/hooks/useCurriculumTopics';
 import { Task } from '@/types/task';
 import { Button } from '@/components/ui/button';
-import { List, MessageSquare } from 'lucide-react';
+import { List, GraduationCap } from 'lucide-react';
 
 type ContentView = 'topics' | 'tutor';
 
@@ -152,11 +152,9 @@ const Index = () => {
       <main className="flex-1 min-h-0 w-full py-4 px-3 md:px-4 lg:px-[3vw]">
         <div className="h-full grid grid-cols-1 md:grid-cols-[auto_1fr] gap-3 md:gap-4 lg:gap-[2vw] xl:gap-[3vw]">
           
-          {/* Column 1: Timer (centered, fixed size) */}
-          <div className="flex flex-col items-center lg:items-stretch bg-card rounded-xl border border-border/50 p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-border/80 dark:border-border/30 dark:hover:border-border/50 md:w-[280px] lg:w-[320px]">
-            <div className="flex-shrink-0">
-              <TimerContainer activeTask={activeTask} />
-            </div>
+          {/* Column 1: Timer (centered, fixed size with proper overflow handling) */}
+          <div className="flex flex-col items-center justify-center bg-card rounded-xl border border-border/50 p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-border/80 dark:border-border/30 dark:hover:border-border/50 w-full md:w-[320px] lg:w-[360px] min-w-0 overflow-hidden">
+            <TimerContainer activeTask={activeTask} />
           </div>
 
           {/* Column 2: Toggleable Content (Topics List OR Tutor) */}
@@ -180,7 +178,7 @@ const Index = () => {
                   onClick={() => setContentView('tutor')}
                   className="gap-2"
                 >
-                  <MessageSquare className="w-4 h-4" />
+                  <GraduationCap className="w-4 h-4" />
                   <span className="hidden sm:inline">Tutor</span>
                 </Button>
               </div>
