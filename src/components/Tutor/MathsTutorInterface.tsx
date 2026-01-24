@@ -8,7 +8,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import MathsMessage, { RAGSource, TutorMode } from './MathsMessage';
-import { useChatSessions, ChatMessage } from '@/hooks/useChatSessions';
+import { ChatMessage } from '@/hooks/useChatSessions';
+import { useChatSessionsContext } from '@/contexts/ChatSessionsContext';
 import * as taskService from '@/services/taskService';
 import { fetchSubTasks, addSubTask, updateSubTaskCompletion, deleteSubTask } from '@/services/subTaskService';
 
@@ -72,7 +73,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     deleteSession,
     openTaskSession,
     linkedTaskIds,
-  } = useChatSessions();
+  } = useChatSessionsContext();
 
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
