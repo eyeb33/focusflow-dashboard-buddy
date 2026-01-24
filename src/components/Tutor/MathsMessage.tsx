@@ -7,8 +7,10 @@ import DOMPurify from 'dompurify';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { TutorMode } from '@/hooks/useChatSessions';
 
-export type TutorMode = 'explain' | 'practice' | 'check';
+// Re-export for backward compatibility
+export type { TutorMode } from '@/hooks/useChatSessions';
 
 export interface RAGSource {
   id: string;
@@ -25,6 +27,7 @@ interface MathsMessageProps {
     role: 'user' | 'assistant';
     content: string;
     created_at: string;
+    mode?: TutorMode;
     sources?: RAGSource[];
   };
   mode?: TutorMode;
