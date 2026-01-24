@@ -16,11 +16,11 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/comp
 import ChatSessionDrawer from '@/components/Tutor/ChatSessionDrawer';
 import SettingsDrawer from '@/components/Settings/SettingsDrawer';
 import ApiStatsDrawer from '@/components/Tutor/ApiStatsDrawer';
-import { useChatSessions } from '@/hooks/useChatSessions';
+import { ChatSessionsProvider, useChatSessionsContext } from '@/contexts/ChatSessionsContext';
 
 type ContentView = 'topics' | 'tutor';
 
-const Index = () => {
+const IndexInner = () => {
   const { user } = useAuth();
   const { setActiveTaskId, getElapsedMinutes, getElapsedSeconds, isRunning, handleStart, activeTaskId } = useTimerContext();
 
@@ -31,7 +31,7 @@ const Index = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showApiStats, setShowApiStats] = useState(false);
 
-  // Chat sessions hook for header controls
+  // Shared chat sessions (also used by tutor)
   const {
     sessions,
     currentSession,
@@ -40,7 +40,10 @@ const Index = () => {
     switchSession,
     updateSessionTitle,
     deleteSession,
-  } = useChatSessions();
+  } = useChatSessionsContext();
+
+  // NOTE: useChatSessions() is now provided via context
+  // so header, tutor, and any other components stay in sync.
 
   const handleNewChat = async () => {
     await createNewSession('explain');
@@ -65,32 +68,53 @@ const Index = () => {
   // Slot for portaling the tutor input into the shared grid bottom row
   const [chatInputSlot, setChatInputSlot] = useState<HTMLDivElement | null>(null);
 
+  // When a user clicks Study from the topics list while the tutor view is not mounted yet,
+  // we queue the request and execute it once the tutor ref is available.
+  const [pendingTopicToOpen, setPendingTopicToOpen] = useState<null | { id: string; name: string }>(null);
+
   // Handle clicking on a curriculum topic - opens chat, sets as active, and starts timer
   const handleTopicClick = useCallback(async (topicId: string, topicName: string) => {
     // 1. Ensure session exists for this topic
     const session = await getOrCreateSession(topicId, topicName);
     if (!session) return;
 
-    // 2. Open the chat session with the topic (pass isTopicId=true for curriculum topics)
-    tutorRef.current?.openTaskSession(topicId, topicName, true);
+    // 2. Switch to tutor view (ensures the tutor component mounts and the ref exists)
+    setContentView('tutor');
+
+    // 3. Open the chat session with the topic (pass isTopicId=true for curriculum topics)
+    // If tutor isn't mounted yet, queue it and run once ref is ready.
+    if (tutorRef.current) {
+      await tutorRef.current.openTaskSession(topicId, topicName, true);
+    } else {
+      setPendingTopicToOpen({ id: topicId, name: topicName });
+    }
     
-    // 3. Set this topic as active in both curriculum and timer contexts
+    // 4. Set this topic as active in both curriculum and timer contexts
     await setTopicActive(topicId);
     setActiveTaskId(topicId);
     
-    // 4. Auto-start the timer if not already running
+    // 5. Auto-start the timer if not already running
     if (!isRunning) {
       setTimeout(() => {
         handleStart();
       }, 100);
     }
     
-    // 5. Switch to tutor view
-    setContentView('tutor');
-    
     // Optimistically update linked task IDs
     setLinkedTaskIds(prev => new Set([...prev, topicId]));
   }, [getOrCreateSession, setTopicActive, setActiveTaskId, isRunning, handleStart]);
+
+  // Fulfill any queued topic-open request once the tutor is mounted.
+  useEffect(() => {
+    if (contentView !== 'tutor') return;
+    if (!pendingTopicToOpen) return;
+    if (!tutorRef.current) return;
+
+    // Fire-and-forget to avoid blocking render; the tutor hook will clear stale messages immediately.
+    tutorRef.current
+      .openTaskSession(pendingTopicToOpen.id, pendingTopicToOpen.name, true)
+      .finally(() => setPendingTopicToOpen(null));
+  }, [contentView, pendingTopicToOpen]);
 
   // Handle subtopic completion toggle
   const handleSubtopicToggle = useCallback(async (topicId: string, subtopic: string) => {
@@ -342,5 +366,12 @@ const Index = () => {
     </div>
   );
 };
+
+// Provider wrapper so header + tutor share one chat-session store.
+const Index = () => (
+  <ChatSessionsProvider>
+    <IndexInner />
+  </ChatSessionsProvider>
+);
 
 export default Index;
