@@ -17,11 +17,14 @@ export interface ChatSession {
   linked_topic_id: string | null;
 }
 
+export type TutorMode = 'explain' | 'practice' | 'check';
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   created_at: string;
+  mode?: TutorMode;
   sources?: Array<{
     id: string;
     topic?: string;
@@ -46,11 +49,12 @@ const mapConversationRow = (row: CoachConversationRow): ChatSession => ({
 });
 
 // Map database row to ChatMessage
-const mapMessageRow = (row: CoachMessageRow): ChatMessage => ({
+const mapMessageRow = (row: CoachMessageRow & { mode?: string }): ChatMessage => ({
   id: row.id,
   role: row.role as 'user' | 'assistant',
   content: row.content,
   created_at: row.created_at,
+  mode: (row.mode as TutorMode) || 'explain',
 });
 
 export const useChatSessions = () => {

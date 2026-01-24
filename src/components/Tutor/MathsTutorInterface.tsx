@@ -334,21 +334,26 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         sessionId = newSession.id;
       }
 
+      // Capture the mode at send time so the message icon persists
+      const messageMode = mode;
+
       // Add user message to UI immediately
       const tempUserMessage: ChatMessage = {
         id: `temp-${Date.now()}`,
         role: 'user',
         content: messageContent,
         created_at: new Date().toISOString(),
+        mode: messageMode,
       };
       setMessages((prev) => [...prev, tempUserMessage]);
 
-      // Save user message to DB
+      // Save user message to DB with mode
       await supabase.from('coach_messages').insert({
         conversation_id: sessionId,
         user_id: user.id,
         role: 'user',
         content: messageContent,
+        mode: messageMode,
       });
 
       // Get user's session token for edge function auth
@@ -455,7 +460,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       const accumulated = { content: '', toolCalls: new Map<number, ToolCall>(), ragSources: [] as RAGSource[] };
       const assistantMessageId = `temp-assistant-${Date.now()}`;
 
-      // Add initial assistant message placeholder
+      // Add initial assistant message placeholder with current mode
       setMessages((prev) => [
         ...prev,
         {
@@ -464,6 +469,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
           content: '',
           created_at: new Date().toISOString(),
           sources: [],
+          mode: messageMode,
         },
       ]);
 
@@ -530,7 +536,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         }
       }
 
-      // Save final assistant message to DB
+      // Save final assistant message to DB with mode
       if (finalContent) {
         await supabase
           .from('coach_messages')
@@ -539,6 +545,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
             user_id: user.id,
             role: 'assistant',
             content: finalContent,
+            mode: messageMode,
           });
 
         // Update session's last_message_at
@@ -672,7 +679,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       const accumulated = { content: '', toolCalls: new Map<number, ToolCall>(), ragSources: [] as RAGSource[] };
       const assistantMessageId = `temp-assistant-${Date.now()}`;
 
-      // Add assistant message placeholder
+      // Add assistant message placeholder with the target mode
       setMessages((prev) => [
         ...prev,
         {
@@ -681,6 +688,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
           content: '',
           created_at: new Date().toISOString(),
           sources: [],
+          mode: targetMode,
         },
       ]);
 
@@ -731,13 +739,14 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         }
       }
 
-      // Save assistant message to DB
+      // Save assistant message to DB with mode
       if (accumulated.content) {
         await supabase.from('coach_messages').insert({
           conversation_id: sessionId,
           user_id: user.id,
           role: 'assistant',
           content: accumulated.content,
+          mode: targetMode,
         });
 
         await supabase
@@ -917,7 +926,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
           </div>
         ) : (
           messages.map((message) => (
-            <MathsMessage key={message.id} message={message} mode={mode} />
+            <MathsMessage key={message.id} message={message} mode={message.mode || 'explain'} />
           ))
         )}
 

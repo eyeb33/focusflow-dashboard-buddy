@@ -175,6 +175,7 @@ export type Database = {
           conversation_id: string
           created_at: string
           id: string
+          mode: string | null
           role: Database["public"]["Enums"]["coach_role"]
           user_id: string
         }
@@ -184,6 +185,7 @@ export type Database = {
           conversation_id: string
           created_at?: string
           id?: string
+          mode?: string | null
           role: Database["public"]["Enums"]["coach_role"]
           user_id: string
         }
@@ -193,6 +195,7 @@ export type Database = {
           conversation_id?: string
           created_at?: string
           id?: string
+          mode?: string | null
           role?: Database["public"]["Enums"]["coach_role"]
           user_id?: string
         }
