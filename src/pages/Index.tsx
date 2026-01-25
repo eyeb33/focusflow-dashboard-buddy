@@ -201,7 +201,11 @@ const IndexInner = () => {
         <div className="h-full grid grid-cols-1 md:grid-cols-[auto_1fr] gap-3 md:gap-4 lg:gap-[2vw] xl:gap-[3vw]">
           
           {/* Column 1: Timer (centered, fixed size with proper overflow handling) */}
-          <div className="flex flex-col items-center justify-center bg-card rounded-xl border border-border/50 p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-border/80 dark:border-border/30 dark:hover:border-border/50 w-full md:w-[320px] lg:w-[360px] min-w-0 overflow-hidden">
+          {/* Dims to 75% opacity when tutor is active to reduce distraction, restores on hover */}
+          <div className={cn(
+            "flex flex-col items-center justify-center bg-card rounded-xl border border-border/50 p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:border-border/80 dark:border-border/30 dark:hover:border-border/50 w-full md:w-[320px] lg:w-[360px] min-w-0 overflow-hidden",
+            contentView === 'tutor' && "md:opacity-75 md:hover:opacity-100"
+          )}>
             <TimerContainer activeTask={activeTask} />
           </div>
 
