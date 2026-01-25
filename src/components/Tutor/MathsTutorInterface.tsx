@@ -147,8 +147,12 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
   useEffect(() => {
     if (currentSession) {
       setEditTitleValue(currentSession.title);
+      // Restore the mode from the session's persona field
+      if (currentSession.persona && ['explain', 'practice', 'check'].includes(currentSession.persona)) {
+        setMode(currentSession.persona as TutorMode);
+      }
     }
-  }, [currentSession]);
+  }, [currentSession?.id]); // Only re-run when session ID changes
 
   const handleNewChat = async () => {
     await createNewSession(mode);
@@ -773,6 +777,18 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     if (newMode === mode || isLoading) return;
     
     setMode(newMode);
+    
+    // Persist the mode to the database by updating the conversation's persona field
+    if (currentSession) {
+      try {
+        await supabase
+          .from('coach_conversations')
+          .update({ persona: newMode })
+          .eq('id', currentSession.id);
+      } catch (error) {
+        console.error('Failed to persist mode:', error);
+      }
+    }
     
     // Only trigger AI action for practice mode
     if (newMode === 'practice') {
