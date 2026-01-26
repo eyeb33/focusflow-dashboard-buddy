@@ -226,22 +226,18 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
       }, 500);
       
     } else {
-      // After break
+      // After break (short or long)
       setTimerMode('work');
       setTimeRemaining(settings.workDuration * 60);
       
-      // Auto-start work after short break, manual start after long break
-      if (timerMode === 'break') {
-        clearAutoStartTimeout();
-        autoStartTimeoutRef.current = setTimeout(() => {
-          if (isMountedRef.current) {
-            setIsRunning(true);
-            sessionStartTimeRef.current = new Date().toISOString();
-          }
-        }, 500);
-      } else {
-        sessionStartTimeRef.current = null;
-      }
+      // Auto-start work after any break to complete the full pomodoro cycle
+      clearAutoStartTimeout();
+      autoStartTimeoutRef.current = setTimeout(() => {
+        if (isMountedRef.current) {
+          setIsRunning(true);
+          sessionStartTimeRef.current = new Date().toISOString();
+        }
+      }, 500);
     }
     
     lastRecordedFullMinutesRef.current = 0;
