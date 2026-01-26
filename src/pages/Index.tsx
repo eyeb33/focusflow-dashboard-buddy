@@ -24,7 +24,7 @@ type ContentView = 'topics' | 'tutor';
 const IndexInner = () => {
   const { user } = useAuth();
   const { setActiveTaskId, isRunning, handleStart, activeTaskId } = useTimerContext();
-  const { setActiveTopicForTimer, getTopicTotalTime, topicTotalTimes } = useTopicTime();
+  const { setActiveTopicForTimer, getTopicTotalTime, topicTotalTimes, liveElapsedSeconds } = useTopicTime();
   const tutorRef = useRef<MathsTutorInterfaceRef>(null);
 
   const [linkedTaskIds, setLinkedTaskIds] = useState<Set<string>>(new Set());

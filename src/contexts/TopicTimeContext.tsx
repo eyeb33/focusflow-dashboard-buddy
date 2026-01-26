@@ -8,6 +8,7 @@ interface TopicTimeContextType {
   currentTopicId: string | null;
   isTimerRunning: boolean;
   topicTotalTimes: Record<string, number>;
+  liveElapsedSeconds: number; // Updates every second for reactive UI
   
   // Actions
   setActiveTopicForTimer: (topicId: string | null) => Promise<void>;
@@ -25,7 +26,8 @@ export const TopicTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   
   // Track previous timer running state to detect start/stop transitions
   const prevIsRunningRef = useRef(timer.isRunning);
-  const prevTopicIdRef = useRef<string | null>(null);
+  // Track the pending topic ID that should be used when timer starts
+  const pendingTopicIdRef = useRef<string | null>(null);
   
   // Handle timer start/stop transitions
   useEffect(() => {
@@ -34,11 +36,15 @@ export const TopicTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     
     const handleTimerTransition = async () => {
       // Timer just started
-      if (!wasRunning && isNowRunning && tracking.currentTopicId) {
-        await tracking.startTimer(
-          tracking.currentTopicId, 
-          timer.timerType === 'freeStudy' ? 'free' : 'pomodoro'
-        );
+      if (!wasRunning && isNowRunning) {
+        // Use pending topic if available, otherwise use current tracking topic
+        const topicToStart = pendingTopicIdRef.current || tracking.currentTopicId;
+        if (topicToStart && !tracking.currentTimerSessionId) {
+          await tracking.startTimer(
+            topicToStart, 
+            timer.timerType === 'freeStudy' ? 'free' : 'pomodoro'
+          );
+        }
       }
       
       // Timer just paused (not stopped)
@@ -55,8 +61,10 @@ export const TopicTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const setActiveTopicForTimer = useCallback(async (topicId: string | null) => {
     if (!topicId) return;
     
-    const prevTopicId = prevTopicIdRef.current;
-    prevTopicIdRef.current = topicId;
+    const prevTopicId = pendingTopicIdRef.current;
+    
+    // Always update the pending topic ref so timer start can use it
+    pendingTopicIdRef.current = topicId;
     
     // If no previous topic, this is initial set
     if (!prevTopicId) {
@@ -102,6 +110,7 @@ export const TopicTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     currentTopicId: tracking.currentTopicId,
     isTimerRunning: tracking.isTimerRunning,
     topicTotalTimes: tracking.topicTotalTimes,
+    liveElapsedSeconds: tracking.liveElapsedSeconds,
     setActiveTopicForTimer,
     getTopicTotalTime: tracking.getTopicTotalTime,
     refetchTotals: tracking.refetchTotals,
