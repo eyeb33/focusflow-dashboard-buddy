@@ -1,16 +1,16 @@
 import React, { useMemo } from 'react';
 import { 
   Check, 
-  Square, 
   ChevronDown, 
   ChevronRight, 
   GraduationCap, 
   Clock,
-  MessageSquare
+  MessageSquare,
+  Circle,
+  CheckCircle2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Checkbox } from '@/components/ui/checkbox';
 import { TopicWithSession } from '@/types/curriculum';
 import { cn } from '@/lib/utils';
 import { useTopicTime } from '@/contexts/TopicTimeContext';
@@ -19,12 +19,14 @@ interface CurriculumTopicCardProps {
   topicData: TopicWithSession;
   onTopicClick: (topicId: string, topicName: string) => void;
   onSubtopicToggle: (topicId: string, subtopic: string) => void;
+  onSubtopicSelect?: (topicId: string, topicName: string, subtopic: string) => void;
 }
 
 const CurriculumTopicCard: React.FC<CurriculumTopicCardProps> = ({
   topicData,
   onTopicClick,
-  onSubtopicToggle
+  onSubtopicToggle,
+  onSubtopicSelect
 }) => {
   const { topic, session, progressPercent, isActive } = topicData;
   const [isExpanded, setIsExpanded] = React.useState(isActive);
@@ -197,30 +199,76 @@ const CurriculumTopicCard: React.FC<CurriculumTopicCardProps> = ({
         </Button>
       </div>
 
-      {/* Expanded subtopics */}
+      {/* Expanded subtopics with selection + completion */}
       {isExpanded && topic.subtopics.length > 0 && (
         <div className="px-4 pb-4 animate-accordion-down">
-          <div className="pt-2 border-t space-y-2">
+          <div className="pt-2 border-t space-y-1">
             <h4 className="text-sm font-semibold text-muted-foreground mb-2">
               Subtopics ({session?.completedSubtopics.length || 0}/{topic.subtopics.length})
             </h4>
             {topic.subtopics.map((subtopic, idx) => {
               const isSubtopicCompleted = session?.completedSubtopics.includes(subtopic);
+              const isActiveSubtopic = session?.activeSubtopic === subtopic;
+              
               return (
                 <div 
                   key={idx}
-                  className="flex items-center gap-2 py-1"
+                  className={cn(
+                    "flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer transition-colors group/subtopic",
+                    isActiveSubtopic 
+                      ? "bg-primary/10 border border-primary/30" 
+                      : "hover:bg-accent/50"
+                  )}
+                  onClick={() => {
+                    // Select this subtopic and open the tutor
+                    onSubtopicSelect?.(topic.topicId, topic.name, subtopic);
+                  }}
                 >
-                  <Checkbox
-                    checked={isSubtopicCompleted}
-                    onCheckedChange={() => onSubtopicToggle(topic.topicId, subtopic)}
-                  />
+                  {/* Left: Selection indicator (radio-style) */}
+                  <button
+                    className={cn(
+                      "flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors",
+                      isActiveSubtopic 
+                        ? "border-primary bg-primary" 
+                        : "border-muted-foreground/40 group-hover/subtopic:border-muted-foreground/60"
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSubtopicSelect?.(topic.topicId, topic.name, subtopic);
+                    }}
+                  >
+                    {isActiveSubtopic && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />
+                    )}
+                  </button>
+                  
+                  {/* Subtopic name */}
                   <span className={cn(
-                    'text-sm',
-                    isSubtopicCompleted && 'line-through text-muted-foreground'
+                    'flex-1 text-sm',
+                    isSubtopicCompleted && 'text-muted-foreground'
                   )}>
                     {subtopic}
                   </span>
+                  
+                  {/* Right: Completion checkbox */}
+                  <button
+                    className={cn(
+                      "flex-shrink-0 w-5 h-5 rounded flex items-center justify-center transition-colors",
+                      isSubtopicCompleted 
+                        ? "text-green-500" 
+                        : "text-muted-foreground/40 hover:text-muted-foreground/60"
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSubtopicToggle(topic.topicId, subtopic);
+                    }}
+                  >
+                    {isSubtopicCompleted ? (
+                      <CheckCircle2 className="w-4 h-4" />
+                    ) : (
+                      <Circle className="w-4 h-4" />
+                    )}
+                  </button>
                 </div>
               );
             })}

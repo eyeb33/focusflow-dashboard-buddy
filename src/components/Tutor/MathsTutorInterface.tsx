@@ -54,6 +54,7 @@ interface ActiveTopicInfo {
   totalTimeSeconds: number;
   completedSubtopics: string[];
   subtopics: string[]; // Full list of subtopics from curriculum
+  activeSubtopic: string | null; // Currently selected subtopic
 }
 
 interface MathsTutorInterfaceProps {
@@ -165,6 +166,44 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       }
     }
   }, [currentSession?.id]); // Only re-run when session ID changes
+
+  // Track if we've auto-sent an intro for the current subtopic
+  const lastAutoIntroSubtopic = useRef<string | null>(null);
+
+  // Auto-send intro when a new subtopic is selected and chat is empty
+  useEffect(() => {
+    const activeSubtopic = props.activeTopic?.activeSubtopic;
+    
+    // Only trigger if:
+    // 1. There's an active subtopic
+    // 2. Messages are loaded (not loading)
+    // 3. Chat is empty for this mode
+    // 4. We haven't already sent intro for this subtopic in this session
+    // 5. Not currently loading/sending a message
+    if (
+      activeSubtopic &&
+      !isLoadingMessages &&
+      messages.length === 0 &&
+      lastAutoIntroSubtopic.current !== activeSubtopic &&
+      !isLoading &&
+      !inFlightSendRef.current
+    ) {
+      lastAutoIntroSubtopic.current = activeSubtopic;
+      
+      // Delay slightly to ensure state is settled
+      const timer = setTimeout(() => {
+        // Generate a teaching-focused intro prompt
+        const topicName = props.activeTopic?.name || 'this topic';
+        const introPrompt = mode === 'practice' 
+          ? `I want to practice ${activeSubtopic}. Give me an exam-style question on this subtopic.`
+          : `Let's learn about ${activeSubtopic} (part of ${topicName}). Give me a clear overview and definition, then we can work through examples together.`;
+        
+        handleQuickAction(introPrompt);
+      }, 150);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [props.activeTopic?.activeSubtopic, isLoadingMessages, messages.length, isLoading, mode, props.activeTopic?.name]);
 
   const handleNewChat = async () => {
     await createNewSession(mode);
@@ -1071,7 +1110,18 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
           <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-sm truncate">{props.activeTopic.name}</h3>
+                {/* Topic name with optional subtopic */}
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-sm truncate">{props.activeTopic.name}</h3>
+                  {props.activeTopic.activeSubtopic && (
+                    <>
+                      <span className="text-muted-foreground">›</span>
+                      <span className="text-sm text-primary font-medium truncate">
+                        {props.activeTopic.activeSubtopic}
+                      </span>
+                    </>
+                  )}
+                </div>
                 <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Clock className="w-3 h-3" />
@@ -1081,7 +1131,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
                   {props.activeTopic.completedSubtopics.length > 0 && (
                     <span className="flex items-center gap-1">
                       <CheckCircle className="w-3 h-3 text-green-500" />
-                      {props.activeTopic.completedSubtopics.length} complete
+                      {props.activeTopic.completedSubtopics.length}/{props.activeTopic.subtopics.length} complete
                     </span>
                   )}
                 </div>
@@ -1252,6 +1302,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
             // Show subtopics for the current topic
             props.activeTopic.subtopics.slice(0, 6).map((subtopic) => {
               const isCompleted = props.activeTopic?.completedSubtopics.includes(subtopic);
+              const isActiveSubtopic = props.activeTopic?.activeSubtopic === subtopic;
               return (
                 <Button
                   key={subtopic}
@@ -1261,11 +1312,11 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
                     // Send as conversation starter
                     handleQuickAction(`Help me understand ${subtopic}`);
                   }}
-                  variant="outline"
+                  variant={isActiveSubtopic ? "default" : "outline"}
                   size="sm"
                   className={cn(
                     "text-xs gap-1.5",
-                    isCompleted && "bg-green-50 dark:bg-green-950/30 border-green-500/50 text-green-700 dark:text-green-400"
+                    isCompleted && !isActiveSubtopic && "bg-green-50 dark:bg-green-950/30 border-green-500/50 text-green-700 dark:text-green-400"
                   )}
                   disabled={isLoading}
                 >

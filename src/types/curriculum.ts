@@ -19,6 +19,7 @@ export interface TopicSession {
   messageCount: number;
   createdAt: string;
   updatedAt: string;
+  activeSubtopic: string | null; // Currently selected subtopic for study
 }
 
 export interface CurriculumCategory {
