@@ -559,64 +559,9 @@ ${currentMode.style}
     }
 
     // Call Google Gemini API directly with user's API key.
-    // IMPORTANT: Model availability depends on the user's Google project/key.
-    // If a requested model isn't enabled for their key, Gemini returns 404.
-    const resolveGeminiModel = async (apiKey: string) => {
-      const preferred = [
-        // "Gemini 3" names are not consistently available to all keys/projects.
-        // We'll try them first and fall back to known widely-available models.
-        'gemini-3-flash',
-        'gemini-3.0-flash',
-        'gemini-3-flash-latest',
-        'gemini-3.0-flash-latest',
-        'gemini-2.5-flash',
-        'gemini-2.5-pro',
-      ];
-
-      try {
-        const listResp = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
-          { headers: { 'Content-Type': 'application/json' } }
-        );
-
-        if (!listResp.ok) {
-          // If listing models fails (e.g. restricted key), just use a safe default.
-          return 'gemini-2.5-flash';
-        }
-
-        const listJson = await listResp.json();
-        const available = new Set<string>(
-          (listJson?.models ?? [])
-            .map((m: any) => String(m?.name || ''))
-            .filter(Boolean)
-            // API returns names like "models/gemini-2.5-flash".
-            .map((name: string) => name.replace(/^models\//, ''))
-        );
-
-        for (const m of preferred) {
-          if (available.has(m)) return m;
-        }
-
-        // As a last resort, pick the first model that supports generateContent if present.
-        const firstWithGenerate = (listJson?.models ?? []).find((m: any) =>
-          Array.isArray(m?.supportedGenerationMethods)
-            ? m.supportedGenerationMethods.includes('generateContent') ||
-              m.supportedGenerationMethods.includes('streamGenerateContent')
-            : false
-        );
-        if (firstWithGenerate?.name) {
-          return String(firstWithGenerate.name).replace(/^models\//, '');
-        }
-      } catch {
-        // ignore
-      }
-
-      return 'gemini-2.5-flash';
-    };
-
-    const model = await resolveGeminiModel(userGeminiApiKey);
-    const geminiUrl =
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${userGeminiApiKey}`;
+    // Use the official v1beta model name for Gemini 3 Flash
+    const model = 'gemini-3-flash-preview';
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${userGeminiApiKey}`;
 
     console.log('[ai-coach] gemini_call_start', {
       requestId: requestId ?? null,
