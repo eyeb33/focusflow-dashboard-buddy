@@ -11,6 +11,7 @@ import MathsMessage, { RAGSource, TutorMode } from './MathsMessage';
 import ImageUploadModal, { ImageIntent } from './ImageUploadModal';
 import { ChatMessage } from '@/hooks/useChatSessions';
 import { useChatSessionsContext } from '@/contexts/ChatSessionsContext';
+import { useTopicTime } from '@/contexts/TopicTimeContext';
 import * as taskService from '@/services/taskService';
 import { fetchSubTasks, addSubTask, updateSubTaskCompletion, deleteSubTask } from '@/services/subTaskService';
 import { getTopicOverview } from '@/data/topicOverviews';
@@ -79,6 +80,9 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     switchTopicModeSession,
     linkedTaskIds,
   } = useChatSessionsContext();
+
+  // Get reactive time tracking from context
+  const { getTopicTotalTime } = useTopicTime();
 
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -1071,7 +1075,8 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
                 <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    {formatStudyTime(props.activeTopic.totalTimeSeconds)}
+                    {/* Use getTopicTotalTime for reactive updates when timer is running */}
+                    {formatStudyTime(getTopicTotalTime(props.activeTopic.id))}
                   </span>
                   {props.activeTopic.completedSubtopics.length > 0 && (
                     <span className="flex items-center gap-1">
