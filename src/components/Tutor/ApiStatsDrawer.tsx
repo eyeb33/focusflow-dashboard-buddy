@@ -67,7 +67,7 @@ const ApiStatsDrawer: React.FC<ApiStatsDrawerProps> = ({ open, onOpenChange, onO
               Connected Model
             </label>
             <div className="flex items-center gap-2">
-              <span className="font-mono text-sm">gemini-2.5-flash</span>
+              <span className="font-mono text-sm">gemini-2.0-flash</span>
               <Badge variant="secondary" className="text-xs">
                 Free Tier
               </Badge>
