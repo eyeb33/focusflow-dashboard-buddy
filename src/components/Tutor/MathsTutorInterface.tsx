@@ -801,12 +801,13 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       }
     }
     
-    // Only trigger AI action for practice mode
+    // Trigger AI action for practice mode - use activeTopic from props for better context
     if (newMode === 'practice') {
-      // Get active topic name from session title
-      const topicContext = currentSession?.title && currentSession.title !== 'A-Level Maths Tutor' 
-        ? `on the topic "${currentSession.title}"` 
-        : '';
+      // Prefer activeTopic from props, fallback to session title
+      const topicName = props.activeTopic?.name || 
+        (currentSession?.title && currentSession.title !== 'A-Level Maths Tutor' ? currentSession.title : '');
+      
+      const topicContext = topicName ? `on the topic "${topicName}"` : '';
       
       const practicePrompt = `[PRACTICE MODE] Give me a practice question ${topicContext}. Use a past paper style question from the Edexcel A-Level Maths specification. Present the question clearly with all necessary information, and wait for my answer before providing any hints or solutions.`;
       
