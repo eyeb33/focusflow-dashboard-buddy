@@ -48,7 +48,7 @@ const TimerHeader: React.FC<TimerHeaderProps> = ({
   const isFreeStudy = timerType === 'freeStudy';
 
   return (
-    <div className="w-full flex items-center gap-2 mb-4">
+    <div className="w-full flex items-center gap-2 mb-6">
       <div className={cn("flex-1", isFreeStudy && "opacity-40 pointer-events-none")}>
         <TimerModeTabs
           currentMode={timerMode}
