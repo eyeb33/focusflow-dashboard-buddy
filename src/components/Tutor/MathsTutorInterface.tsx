@@ -76,6 +76,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     updateSessionTitle,
     deleteSession,
     openTaskSession,
+    switchTopicModeSession,
     linkedTaskIds,
   } = useChatSessionsContext();
 
@@ -111,11 +112,12 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
   // Expose openTaskSession and linkedTaskIds via ref for parent components
   useImperativeHandle(ref, () => ({
     openTaskSession: async (taskId: string, taskName: string, isTopicId: boolean = false) => {
-      await openTaskSession(taskId, taskName, isTopicId);
+      // When opening a topic, use the current mode (or default to explain)
+      await openTaskSession(taskId, taskName, isTopicId, mode);
     },
     linkedTaskIds,
     linkedTopicIds
-  }), [openTaskSession, linkedTaskIds, linkedTopicIds]);
+  }), [openTaskSession, linkedTaskIds, linkedTopicIds, mode]);
 
   const scrollToBottom = () => {
     // Use container scroll instead of scrollIntoView to prevent page scroll
@@ -778,7 +780,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     }
   };
 
-  // Handle mode change - trigger AI action for practice mode, open modal for upload mode
+  // Handle mode change - switch to mode-specific session for the current topic
   const handleModeChange = async (newMode: TutorMode) => {
     if (newMode === mode || isLoading) return;
     
@@ -788,31 +790,54 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       return;
     }
     
-    setMode(newMode);
-    
-    // Persist the mode to the database by updating the conversation's persona field
-    if (currentSession) {
+    // If we have an active topic, switch to the mode-specific session for that topic
+    if (props.activeTopic) {
+      setIsLoading(true);
       try {
-        await supabase
-          .from('coach_conversations')
-          .update({ persona: newMode })
-          .eq('id', currentSession.id);
+        const session = await switchTopicModeSession(
+          props.activeTopic.id,
+          props.activeTopic.name,
+          newMode
+        );
+        
+        if (session) {
+          setMode(newMode);
+          
+          // If switching to practice mode and no messages yet, trigger practice question
+          if (newMode === 'practice' && messages.length === 0) {
+            const topicContext = props.activeTopic.name ? `on the topic "${props.activeTopic.name}"` : '';
+            const practicePrompt = `[PRACTICE MODE] Give me a practice question ${topicContext}. Use a past paper style question from the Edexcel A-Level Maths specification. Present the question clearly with all necessary information, and wait for my answer before providing any hints or solutions.`;
+            await sendHiddenPrompt(practicePrompt, newMode);
+          }
+        }
       } catch (error) {
-        console.error('Failed to persist mode:', error);
+        console.error('Failed to switch mode session:', error);
+      } finally {
+        setIsLoading(false);
       }
-    }
-    
-    // Trigger AI action for practice mode - use activeTopic from props for better context
-    if (newMode === 'practice') {
-      // Prefer activeTopic from props, fallback to session title
-      const topicName = props.activeTopic?.name || 
-        (currentSession?.title && currentSession.title !== 'A-Level Maths Tutor' ? currentSession.title : '');
+    } else {
+      // No active topic - just update mode locally (for general chat)
+      setMode(newMode);
       
-      const topicContext = topicName ? `on the topic "${topicName}"` : '';
+      // Persist the mode to the database by updating the conversation's persona field
+      if (currentSession) {
+        try {
+          await supabase
+            .from('coach_conversations')
+            .update({ persona: newMode })
+            .eq('id', currentSession.id);
+        } catch (error) {
+          console.error('Failed to persist mode:', error);
+        }
+      }
       
-      const practicePrompt = `[PRACTICE MODE] Give me a practice question ${topicContext}. Use a past paper style question from the Edexcel A-Level Maths specification. Present the question clearly with all necessary information, and wait for my answer before providing any hints or solutions.`;
-      
-      await sendHiddenPrompt(practicePrompt, newMode);
+      // Trigger AI action for practice mode - use activeTopic from props for better context
+      if (newMode === 'practice') {
+        const topicName = currentSession?.title && currentSession.title !== 'A-Level Maths Tutor' ? currentSession.title : '';
+        const topicContext = topicName ? `on the topic "${topicName}"` : '';
+        const practicePrompt = `[PRACTICE MODE] Give me a practice question ${topicContext}. Use a past paper style question from the Edexcel A-Level Maths specification. Present the question clearly with all necessary information, and wait for my answer before providing any hints or solutions.`;
+        await sendHiddenPrompt(practicePrompt, newMode);
+      }
     }
   };
 
