@@ -596,8 +596,8 @@ ${currentMode.style}
     }
 
     // Call Google Gemini API directly with user's API key.
-    // Use the official v1beta model name for Gemini 3 Flash
-    const model = 'gemini-3-flash-preview';
+    // Use the official v1beta model name for Gemini 3 Pro
+    const model = 'gemini-3-pro-preview';
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${userGeminiApiKey}`;
 
     console.log('[ai-coach] gemini_call_start', {
