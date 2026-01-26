@@ -35,10 +35,10 @@ const Header: React.FC<HeaderProps> = ({ isFocusMode = false }) => {
       "border-b border-border/50 backdrop-blur-md bg-background/80 sticky top-0 z-50 pb-2.5 transition-opacity duration-300",
       isFocusMode && "md:opacity-50 md:hover:opacity-100"
     )}>
-      <div className="w-full px-4">
+      <div className="w-full px-3 md:px-4 lg:px-[3vw]">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <Link to="/" className="flex items-center -ml-2">
+            <Link to="/" className="flex items-center">
               <img 
                 src={theme === 'dark' ? syllabuddyLogoDark : syllabuddyLogoLight} 
                 alt="Syllabuddy" 
