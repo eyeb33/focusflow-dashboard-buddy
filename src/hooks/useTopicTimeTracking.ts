@@ -42,6 +42,9 @@ export const useTopicTimeTracking = () => {
   // Track aggregate time per topic (for display)
   const [topicTotalTimes, setTopicTotalTimes] = useState<Record<string, number>>({});
   
+  // Live elapsed time that updates every second for reactive UI
+  const [liveElapsedSeconds, setLiveElapsedSeconds] = useState(0);
+  
   // Refs for tracking elapsed time in current segment
   const segmentStartTimeRef = useRef<number | null>(null);
   const tickIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -54,6 +57,26 @@ export const useTopicTimeTracking = () => {
       }
     };
   }, []);
+  
+  // Update live elapsed time every second when timer is running
+  useEffect(() => {
+    if (state.isTimerRunning && segmentStartTimeRef.current) {
+      const updateElapsed = () => {
+        const elapsed = Math.floor((Date.now() - (segmentStartTimeRef.current || 0)) / 1000);
+        setLiveElapsedSeconds(elapsed);
+      };
+      
+      // Initial update
+      updateElapsed();
+      
+      // Update every second
+      const interval = setInterval(updateElapsed, 1000);
+      
+      return () => clearInterval(interval);
+    } else {
+      setLiveElapsedSeconds(0);
+    }
+  }, [state.isTimerRunning]);
 
   // Fetch aggregate times for all topics
   const fetchTopicTotalTimes = useCallback(async () => {
@@ -370,16 +393,17 @@ export const useTopicTimeTracking = () => {
   }, [state.isTimerRunning]);
 
   // Get total time for a specific topic (including current segment if active)
+  // Uses liveElapsedSeconds for reactive updates
   const getTopicTotalTime = useCallback((topicId: string): number => {
     let total = topicTotalTimes[topicId] || 0;
     
     // Add current segment time if it's for this topic
     if (state.isTimerRunning && state.currentTopicId === topicId) {
-      total += getCurrentSegmentElapsed();
+      total += liveElapsedSeconds;
     }
     
     return total;
-  }, [topicTotalTimes, state.isTimerRunning, state.currentTopicId, getCurrentSegmentElapsed]);
+  }, [topicTotalTimes, state.isTimerRunning, state.currentTopicId, liveElapsedSeconds]);
 
   // Sync current segment to DB periodically (every 30 seconds while running)
   useEffect(() => {
@@ -405,6 +429,7 @@ export const useTopicTimeTracking = () => {
     currentSegmentId: state.currentSegmentId,
     isTimerRunning: state.isTimerRunning,
     topicTotalTimes,
+    liveElapsedSeconds,
     
     // Actions
     startTimer,
