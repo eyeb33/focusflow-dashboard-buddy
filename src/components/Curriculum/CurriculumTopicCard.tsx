@@ -13,6 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { TopicWithSession } from '@/types/curriculum';
 import { cn } from '@/lib/utils';
+import { useTopicTime } from '@/contexts/TopicTimeContext';
 
 interface CurriculumTopicCardProps {
   topicData: TopicWithSession;
@@ -27,6 +28,9 @@ const CurriculumTopicCard: React.FC<CurriculumTopicCardProps> = ({
 }) => {
   const { topic, session, progressPercent, isActive } = topicData;
   const [isExpanded, setIsExpanded] = React.useState(isActive);
+  
+  // Get segment-based total time from TopicTimeContext
+  const { getTopicTotalTime } = useTopicTime();
 
   // Auto-expand when topic becomes active
   React.useEffect(() => {
@@ -37,19 +41,20 @@ const CurriculumTopicCard: React.FC<CurriculumTopicCardProps> = ({
 
   const isCompleted = progressPercent === 100 && topic.subtopics.length > 0;
 
-  // Format time spent
+  // Format time spent - use segment-based time from TopicTimeContext
   const formatTimeSpent = useMemo(() => {
-    if (!session || session.totalTimeSeconds === 0) return null;
+    const totalSeconds = getTopicTotalTime(topic.topicId);
+    if (totalSeconds === 0) return null;
     
-    const totalSeconds = session.totalTimeSeconds;
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     
     if (hours > 0) {
       return `${hours}h ${minutes}m`;
     }
+    if (minutes === 0) return '<1m';
     return `${minutes}m`;
-  }, [session]);
+  }, [topic.topicId, getTopicTotalTime]);
 
   // Format last accessed
   const lastAccessedText = useMemo(() => {

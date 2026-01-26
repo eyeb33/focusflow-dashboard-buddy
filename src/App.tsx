@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@/components/Theme/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TimerProvider } from "@/contexts/TimerContext";
+import { TopicTimeProvider } from "@/contexts/TopicTimeContext";
 import { CoachProvider } from "@/contexts/CoachContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
@@ -54,40 +55,42 @@ const App = () => (
           <BrowserRouter>
             <AuthProvider>
               <TimerProvider>
-                <CoachProvider>
-                  <ScrollManager />
-                  <Toaster />
-                  <Sonner />
-                  <Routes>
-                    <Route 
-                      path="/" 
-                      element={
-                        <ErrorBoundary fallbackTitle="Timer failed to load">
-                          <Index />
-                        </ErrorBoundary>
-                      } 
-                    />
-                    <Route 
-                      path="/dashboard" 
-                      element={
-                        <ErrorBoundary fallbackTitle="Dashboard failed to load">
-                          <Dashboard />
-                        </ErrorBoundary>
-                      } 
-                    />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route 
-                      path="/curriculum" 
-                      element={
-                        <ErrorBoundary fallbackTitle="Curriculum failed to load">
-                          <Curriculum />
-                        </ErrorBoundary>
-                      } 
-                    />
-                    <Route path="/reset-password" element={<ResetPassword />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </CoachProvider>
+                <TopicTimeProvider>
+                  <CoachProvider>
+                    <ScrollManager />
+                    <Toaster />
+                    <Sonner />
+                    <Routes>
+                      <Route 
+                        path="/" 
+                        element={
+                          <ErrorBoundary fallbackTitle="Timer failed to load">
+                            <Index />
+                          </ErrorBoundary>
+                        } 
+                      />
+                      <Route 
+                        path="/dashboard" 
+                        element={
+                          <ErrorBoundary fallbackTitle="Dashboard failed to load">
+                            <Dashboard />
+                          </ErrorBoundary>
+                        } 
+                      />
+                      <Route path="/auth" element={<Auth />} />
+                      <Route 
+                        path="/curriculum" 
+                        element={
+                          <ErrorBoundary fallbackTitle="Curriculum failed to load">
+                            <Curriculum />
+                          </ErrorBoundary>
+                        } 
+                      />
+                      <Route path="/reset-password" element={<ResetPassword />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </CoachProvider>
+                </TopicTimeProvider>
               </TimerProvider>
             </AuthProvider>
           </BrowserRouter>

@@ -579,6 +579,39 @@ export type Database = {
         }
         Relationships: []
       }
+      timer_sessions: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          id: string
+          mode: string
+          started_at: string
+          total_seconds: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          mode?: string
+          started_at?: string
+          total_seconds?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          mode?: string
+          started_at?: string
+          total_seconds?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       topic_sessions: {
         Row: {
           completed_subtopics: string[] | null
@@ -621,6 +654,47 @@ export type Database = {
         }
         Relationships: []
       }
+      topic_time_segments: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          started_at: string
+          timer_session_id: string
+          topic_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          started_at?: string
+          timer_session_id: string
+          topic_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          started_at?: string
+          timer_session_id?: string
+          topic_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_time_segments_timer_session_id_fkey"
+            columns: ["timer_session_id"]
+            isOneToOne: false
+            referencedRelation: "timer_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_secrets: {
         Row: {
           created_at: string
@@ -650,9 +724,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      close_open_segments: { Args: { p_user_id: string }; Returns: number }
       generate_user_insight: {
         Args: { p_content: string; p_title: string; p_user_id: string }
         Returns: string
+      }
+      get_topic_time_in_range: {
+        Args: {
+          p_end_date: string
+          p_start_date: string
+          p_topic_id: string
+          p_user_id: string
+        }
+        Returns: number
+      }
+      get_topic_total_time: {
+        Args: { p_topic_id: string; p_user_id: string }
+        Returns: number
       }
       increment_api_usage: {
         Args: { p_tokens?: number; p_user_id: string }
