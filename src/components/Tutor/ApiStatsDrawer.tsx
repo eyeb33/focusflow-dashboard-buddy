@@ -14,7 +14,7 @@ interface ApiStatsDrawerProps {
 }
 
 const ApiStatsDrawer: React.FC<ApiStatsDrawerProps> = ({ open, onOpenChange, onOpenSettings }) => {
-  const { requestsToday, tokensToday, requestsThisMonth, tokensThisMonth, lastRequestAt, isLoading } = useApiUsage();
+  const { requestsToday, tokensToday, requestsThisMonth, tokensThisMonth, lastRequestAt, lastModelUsed, isLoading } = useApiUsage();
   const status = getUsageStatus();
 
   const formatTime = (isoString: string | null) => {
@@ -54,9 +54,11 @@ const ApiStatsDrawer: React.FC<ApiStatsDrawerProps> = ({ open, onOpenChange, onO
               Connected Model
             </label>
             <div className="flex items-center gap-2">
-              <span className="font-mono text-sm">gemini-3-flash</span>
+              <span className="font-mono text-sm">
+                {isLoading ? '...' : (lastModelUsed || 'Not yet used')}
+              </span>
               <Badge variant="secondary" className="text-xs">
-                Free Tier
+                Auto-detected
               </Badge>
             </div>
           </div>

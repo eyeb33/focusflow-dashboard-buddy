@@ -19,6 +19,7 @@ export type Database = {
           created_at: string
           date: string
           id: string
+          last_model_used: string | null
           last_request_at: string | null
           request_count: number
           token_count: number
@@ -29,6 +30,7 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          last_model_used?: string | null
           last_request_at?: string | null
           request_count?: number
           token_count?: number
@@ -39,6 +41,7 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          last_model_used?: string | null
           last_request_at?: string | null
           request_count?: number
           token_count?: number
