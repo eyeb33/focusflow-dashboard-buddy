@@ -1015,7 +1015,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       {/* Input - Fixed at bottom (optionally portaled to parent grid) */}
       {(() => {
         const inputEl = (
-          <div className="flex-shrink-0 py-4 bg-background/80">
+          <div className="flex-shrink-0 px-4 py-4 bg-background/80">
             {isRateLimited && (
               <div className="mb-3 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
                 Rate limit exceeded. Try again in <span className="font-medium text-foreground">{cooldownSecondsRemaining}s</span>.
