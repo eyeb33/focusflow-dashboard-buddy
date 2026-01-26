@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Send, BookOpen, PenTool, ImagePlus, Clock, CheckCircle, Check, X, Pencil } from 'lucide-react';
+import { Send, BookOpen, PenTool, ImagePlus, Clock, CheckCircle, Check, X, Pencil, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -13,6 +13,7 @@ import { ChatMessage } from '@/hooks/useChatSessions';
 import { useChatSessionsContext } from '@/contexts/ChatSessionsContext';
 import * as taskService from '@/services/taskService';
 import { fetchSubTasks, addSubTask, updateSubTaskCompletion, deleteSubTask } from '@/services/subTaskService';
+import { getTopicOverview } from '@/data/topicOverviews';
 
 // TutorMode is now imported from MathsMessage
 
@@ -1136,6 +1137,36 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
                   <p className="mt-3 text-xs italic">Click the Upload button above to get started!</p>
                 </div>
               </>
+            ) : props.activeTopic ? (
+              // Topic-specific overview when a topic is selected
+              (() => {
+                const overview = getTopicOverview(props.activeTopic.id);
+                return (
+                  <>
+                    <BookOpen className="w-16 h-16 mx-auto mb-4 text-primary/50" />
+                    <h4 className="text-lg font-semibold mb-2">{overview?.title || props.activeTopic.name}</h4>
+                    <p className="mb-4 text-foreground/80">{overview?.description || `Let's explore ${props.activeTopic.name} together.`}</p>
+                    {overview && (
+                      <div className="text-sm text-left bg-muted/50 rounded-lg p-4 max-w-md mx-auto">
+                        <p className="font-medium mb-2">Key concepts you'll learn:</p>
+                        <ul className="list-disc list-inside space-y-1">
+                          {overview.keyPoints.map((point, i) => (
+                            <li key={i}>{point}</li>
+                          ))}
+                        </ul>
+                        {overview.examTip && (
+                          <div className="mt-3 pt-3 border-t border-border/50">
+                            <p className="text-xs flex items-start gap-1.5">
+                              <Lightbulb className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
+                              <span><span className="font-medium">Exam tip:</span> {overview.examTip}</span>
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                );
+              })()
             ) : (
               <>
                 <BookOpen className="w-16 h-16 mx-auto mb-4 text-primary/50" />
