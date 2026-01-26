@@ -50,12 +50,14 @@ interface ActiveTopicInfo {
   name: string;
   totalTimeSeconds: number;
   completedSubtopics: string[];
+  subtopics: string[]; // Full list of subtopics from curriculum
 }
 
 interface MathsTutorInterfaceProps {
   inputPortalTarget?: HTMLElement | null;
   activeTopic?: ActiveTopicInfo | null;
   onOpenSettings?: () => void;
+  onSubtopicClick?: (subtopic: string) => void;
 }
 
 const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfaceProps>((props, ref) => {
@@ -970,45 +972,76 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions - Show subtopics when topic is active, otherwise generic starters */}
       {showQuickActions && messages.length === 0 && (
         <div className="flex-shrink-0 px-4 pb-3 flex flex-wrap gap-2">
-          <Button
-            onClick={() => handleQuickAction("I need help solving a quadratic equation")}
-            variant="outline"
-            size="sm"
-            className="text-xs"
-            disabled={isLoading}
-          >
-            Quadratics
-          </Button>
-          <Button
-            onClick={() => handleQuickAction("Can you explain differentiation step by step?")}
-            variant="outline"
-            size="sm"
-            className="text-xs"
-            disabled={isLoading}
-          >
-            Differentiation
-          </Button>
-          <Button
-            onClick={() => handleQuickAction("I'm struggling with integration by parts")}
-            variant="outline"
-            size="sm"
-            className="text-xs"
-            disabled={isLoading}
-          >
-            Integration
-          </Button>
-          <Button
-            onClick={() => handleQuickAction("Give me a practice problem on trigonometry")}
-            variant="outline"
-            size="sm"
-            className="text-xs"
-            disabled={isLoading}
-          >
-            Trigonometry
-          </Button>
+          {props.activeTopic && props.activeTopic.subtopics.length > 0 ? (
+            // Show subtopics for the current topic
+            props.activeTopic.subtopics.slice(0, 6).map((subtopic) => {
+              const isCompleted = props.activeTopic?.completedSubtopics.includes(subtopic);
+              return (
+                <Button
+                  key={subtopic}
+                  onClick={() => {
+                    // Mark subtopic as in-progress/tracked
+                    props.onSubtopicClick?.(subtopic);
+                    // Send as conversation starter
+                    handleQuickAction(`Help me understand ${subtopic}`);
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "text-xs gap-1.5",
+                    isCompleted && "bg-green-50 dark:bg-green-950/30 border-green-500/50 text-green-700 dark:text-green-400"
+                  )}
+                  disabled={isLoading}
+                >
+                  {isCompleted && <Check className="h-3 w-3" />}
+                  {subtopic}
+                </Button>
+              );
+            })
+          ) : (
+            // Fallback: generic quick actions when no topic is active
+            <>
+              <Button
+                onClick={() => handleQuickAction("I need help solving a quadratic equation")}
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                disabled={isLoading}
+              >
+                Quadratics
+              </Button>
+              <Button
+                onClick={() => handleQuickAction("Can you explain differentiation step by step?")}
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                disabled={isLoading}
+              >
+                Differentiation
+              </Button>
+              <Button
+                onClick={() => handleQuickAction("I'm struggling with integration by parts")}
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                disabled={isLoading}
+              >
+                Integration
+              </Button>
+              <Button
+                onClick={() => handleQuickAction("Give me a practice problem on trigonometry")}
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                disabled={isLoading}
+              >
+                Trigonometry
+              </Button>
+            </>
+          )}
         </div>
       )}
 
