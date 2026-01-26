@@ -94,16 +94,24 @@ export const useChatSessions = () => {
   }, [user, currentSession]);
 
   // Load messages for a specific session
-  const loadMessages = useCallback(async (sessionId: string) => {
+  // For topic-linked sessions, filter by mode to support separate chats per mode
+  const loadMessages = useCallback(async (sessionId: string, filterByMode?: TutorMode) => {
     if (!user) return;
     
     setIsLoadingMessages(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('coach_messages')
         .select('*')
         .eq('conversation_id', sessionId)
         .order('created_at', { ascending: true });
+      
+      // Filter messages by mode if specified (for topic-linked sessions with mixed historical content)
+      if (filterByMode) {
+        query = query.eq('mode', filterByMode);
+      }
+      
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -207,7 +215,8 @@ export const useChatSessions = () => {
           return [session, ...prev];
         });
         setCurrentSession(session);
-        await loadMessages(session.id);
+        // For topic-linked sessions, filter messages by mode to handle historical mixed content
+        await loadMessages(session.id, isTopicId ? initialMode : undefined);
         return session;
       }
     } catch (e) {
@@ -356,9 +365,13 @@ export const useChatSessions = () => {
   }, [user, loadSessions]);
 
   // Load messages when current session changes
+  // For topic-linked sessions, filter by mode to ensure mode separation
   useEffect(() => {
     if (currentSession) {
-      loadMessages(currentSession.id);
+      const modeFilter = currentSession.linked_topic_id 
+        ? (currentSession.persona as TutorMode) 
+        : undefined;
+      loadMessages(currentSession.id, modeFilter);
     }
   }, [currentSession?.id, loadMessages]);
 
