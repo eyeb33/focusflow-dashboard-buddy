@@ -63,6 +63,8 @@ serve(async (req) => {
       taskState,
       mode = 'explain',
       request_id: requestId,
+      imageData,
+      imageIntent,
     } = rawBody ?? {};
 
     const authHeader = req.headers.get('Authorization');
@@ -259,17 +261,17 @@ ${source.content}
 7. Celebrate correct answers and explain any errors kindly
 8. Mix problem types to build comprehensive understanding`
       },
-      check: {
-        intro: `You are an expert A-Level Mathematics tutor specializing in the Edexcel specification. Your role is to CHECK the student's working and help them identify and correct any errors.`,
-        style: `Your teaching style in CHECK mode:
-1. Carefully review all working shown by the student
-2. Identify specific errors and explain WHY they're wrong
-3. Point out correct steps before addressing errors
-4. Don't just give the right answer - explain the correct method
-5. Check for common mistakes (sign errors, forgotten constants, etc.)
-6. Verify the final answer makes sense in context
-7. Suggest better methods if there's a more elegant solution
-8. Be supportive - mistakes are learning opportunities`
+      upload: {
+        intro: `You are an expert A-Level Mathematics tutor specializing in the Edexcel specification. Your role is to analyze images of mathematical questions and student working.`,
+        style: `Your teaching style in UPLOAD mode:
+1. First, describe what you see in the image clearly (the question, any diagrams, and any working shown)
+2. Identify the topic area and relevant Edexcel specification content
+3. Based on the student's intent:
+   - If they want HELP: Guide them through the solution using the Socratic method, never giving the answer directly
+   - If they want CHECKING: Carefully review their working, identify errors, and explain what went wrong
+4. Point out any unclear or hard-to-read parts and ask for clarification if needed
+5. Use proper mathematical notation with LaTeX when explaining
+6. Be encouraging and supportive throughout`
       }
     };
     
@@ -520,11 +522,46 @@ ${currentMode.style}
       return msg;
     });
 
-    for (const msg of sanitizedMessages) {
+    for (let i = 0; i < sanitizedMessages.length; i++) {
+      const msg = sanitizedMessages[i];
+      const isLastMessage = i === sanitizedMessages.length - 1;
+      
       if (msg.role === 'user') {
+        const parts: any[] = [{ text: msg.content || '' }];
+        
+        // If this is the last user message and we have image data, add it
+        if (isLastMessage && imageData && mode === 'upload') {
+          // Parse the base64 data URL
+          const matches = imageData.match(/^data:([^;]+);base64,(.+)$/);
+          if (matches) {
+            const mimeType = matches[1];
+            const base64Data = matches[2];
+            
+            // Add intent-specific instruction
+            const intentInstruction = imageIntent === 'check'
+              ? '\n\n[CHECKING MODE] The student has submitted their working for this question. Please carefully review their solution and identify any errors or areas for improvement. Start by describing what you see in the image.'
+              : '\n\n[GUIDANCE MODE] The student needs help solving this question. Please start by describing what you see in the image, then guide them through the solution step-by-step using the Socratic method. Do NOT give the answer directly.';
+            
+            parts[0] = { text: (msg.content || '') + intentInstruction };
+            parts.push({
+              inlineData: {
+                mimeType: mimeType,
+                data: base64Data
+              }
+            });
+            
+            console.log('[ai-coach] Image attached to request', {
+              requestId: requestId ?? null,
+              mimeType,
+              imageIntent,
+              dataLength: base64Data.length,
+            });
+          }
+        }
+        
         geminiContents.push({
           role: 'user',
-          parts: [{ text: msg.content || '' }]
+          parts
         });
       } else if (msg.role === 'assistant') {
         const parts: any[] = [];

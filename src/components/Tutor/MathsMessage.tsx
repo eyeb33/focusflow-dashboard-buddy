@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { User, BookOpen, PenTool, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { User, BookOpen, PenTool, ImagePlus, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import 'katex/dist/katex.min.css';
 import katex from 'katex';
@@ -164,8 +164,8 @@ const getModeIcon = (mode: TutorMode) => {
   switch (mode) {
     case 'practice':
       return <PenTool className="w-5 h-5 text-primary-foreground" />;
-    case 'check':
-      return <CheckCircle className="w-5 h-5 text-primary-foreground" />;
+    case 'upload':
+      return <ImagePlus className="w-5 h-5 text-primary-foreground" />;
     case 'explain':
     default:
       return <BookOpen className="w-5 h-5 text-primary-foreground" />;

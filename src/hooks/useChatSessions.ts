@@ -17,7 +17,7 @@ export interface ChatSession {
   linked_topic_id: string | null;
 }
 
-export type TutorMode = 'explain' | 'practice' | 'check';
+export type TutorMode = 'explain' | 'practice' | 'upload';
 
 export interface ChatMessage {
   id: string;
