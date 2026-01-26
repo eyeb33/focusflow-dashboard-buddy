@@ -159,8 +159,8 @@ const CurriculumTopicCard: React.FC<CurriculumTopicCardProps> = ({
               </div>
             )}
 
-            {/* Stats row */}
-            {session && (formatTimeSpent || session.messageCount > 0) && (
+            {/* Stats row - show time even without a session (segments track time) */}
+            {(formatTimeSpent || (session && session.messageCount > 0)) && (
               <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                 {formatTimeSpent && (
                   <span className="flex items-center gap-1">
@@ -168,13 +168,13 @@ const CurriculumTopicCard: React.FC<CurriculumTopicCardProps> = ({
                     {formatTimeSpent}
                   </span>
                 )}
-                {session.messageCount > 0 && (
+                {session && session.messageCount > 0 && (
                   <span className="flex items-center gap-1">
                     <MessageSquare className="h-3 w-3" />
                     {session.messageCount}
                   </span>
                 )}
-                {lastAccessedText && (
+                {session && lastAccessedText && (
                   <span>Last: {lastAccessedText}</span>
                 )}
               </div>
