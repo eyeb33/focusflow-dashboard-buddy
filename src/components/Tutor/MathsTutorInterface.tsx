@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Send, BookOpen, PenTool, CheckCircle, Clock, Check, X, Pencil } from 'lucide-react';
+import { Send, BookOpen, PenTool, ImagePlus, Clock, CheckCircle, Check, X, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import MathsMessage, { RAGSource, TutorMode } from './MathsMessage';
+import ImageUploadModal, { ImageIntent } from './ImageUploadModal';
 import { ChatMessage } from '@/hooks/useChatSessions';
 import { useChatSessionsContext } from '@/contexts/ChatSessionsContext';
 import * as taskService from '@/services/taskService';
@@ -84,6 +85,8 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
   const [editTitleValue, setEditTitleValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showQuickActions, setShowQuickActions] = useState(true);
+  const [showImageUploadModal, setShowImageUploadModal] = useState(false);
+  const [isImageProcessing, setIsImageProcessing] = useState(false);
 
   // Hard lock to prevent double-submits (Enter + click, double-click, etc.)
   const inFlightSendRef = useRef(false);
@@ -150,7 +153,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     if (currentSession) {
       setEditTitleValue(currentSession.title);
       // Restore the mode from the session's persona field
-      if (currentSession.persona && ['explain', 'practice', 'check'].includes(currentSession.persona)) {
+      if (currentSession.persona && ['explain', 'practice', 'upload'].includes(currentSession.persona)) {
         setMode(currentSession.persona as TutorMode);
       }
     }
@@ -774,9 +777,15 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     }
   };
 
-  // Handle mode change - trigger AI action for practice/check modes
+  // Handle mode change - trigger AI action for practice mode, open modal for upload mode
   const handleModeChange = async (newMode: TutorMode) => {
     if (newMode === mode || isLoading) return;
+    
+    // For upload mode, just open the modal instead of changing mode
+    if (newMode === 'upload') {
+      setShowImageUploadModal(true);
+      return;
+    }
     
     setMode(newMode);
     
@@ -802,11 +811,213 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       const practicePrompt = `[PRACTICE MODE] Give me a practice question ${topicContext}. Use a past paper style question from the Edexcel A-Level Maths specification. Present the question clearly with all necessary information, and wait for my answer before providing any hints or solutions.`;
       
       await sendHiddenPrompt(practicePrompt, newMode);
-    } else if (newMode === 'check') {
-      toast({
-        title: 'Check Mode Active',
-        description: 'Share your working or answer, and I\'ll check if it\'s correct.',
+    }
+  };
+
+  // Handle image upload submission
+  const handleImageUpload = async (imageBase64: string, intent: ImageIntent) => {
+    if (isLoading || !user) return;
+    if (inFlightSendRef.current) return;
+
+    const requestId = (globalThis.crypto?.randomUUID?.() ?? `req_${Date.now()}_${Math.random().toString(16).slice(2)}`);
+
+    console.log('[tutor] handleImageUpload called', {
+      requestId,
+      userId: user.id,
+      intent,
+      ts: new Date().toISOString(),
+    });
+
+    setIsImageProcessing(true);
+    inFlightSendRef.current = true;
+    setShowQuickActions(false);
+
+    try {
+      // Ensure we have a session
+      let sessionId = currentSession?.id;
+      if (!sessionId) {
+        const newSession = await createNewSession('upload');
+        if (!newSession) throw new Error('Failed to create session');
+        sessionId = newSession.id;
+      }
+
+      // Set mode to upload for this interaction
+      setMode('upload');
+
+      // Create user-facing message based on intent
+      const userMessageContent = intent === 'help' 
+        ? '[Uploaded an image] Help me solve this question'
+        : '[Uploaded an image] Check my working on this question';
+
+      // Add user message to UI
+      const tempUserMessage: ChatMessage = {
+        id: `temp-${Date.now()}`,
+        role: 'user',
+        content: userMessageContent,
+        created_at: new Date().toISOString(),
+        mode: 'upload',
+      };
+      setMessages((prev) => [...prev, tempUserMessage]);
+
+      // Save user message to DB
+      await supabase.from('coach_messages').insert({
+        conversation_id: sessionId,
+        user_id: user.id,
+        role: 'user',
+        content: userMessageContent,
+        mode: 'upload',
       });
+
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No session found');
+
+      // Fetch current tasks for context
+      const tasks = await taskService.fetchTasks(user.id);
+      const taskState = {
+        tasks: tasks.map((t) => ({ id: t.id, name: t.name, is_active: t.isActive, completed: t.completed })),
+      };
+
+      // Call AI with image
+      setIsLoading(true);
+      setShowImageUploadModal(false);
+      setIsImageProcessing(false);
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-coach`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          request_id: requestId,
+          messages: [...messages, tempUserMessage].map((m) => ({
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+          })),
+          mode: 'upload',
+          taskState,
+          imageData: imageBase64,
+          imageIntent: intent,
+        }),
+      });
+
+      if (response.status === 429) {
+        setCooldownUntil(Date.now() + 60_000);
+        toast({
+          title: 'Rate limit exceeded',
+          description: 'Please wait a moment before trying again.',
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+        inFlightSendRef.current = false;
+        return;
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        if (errorData.code === 'NO_API_KEY' || errorData.code === 'INVALID_API_KEY') {
+          props.onOpenSettings?.();
+          setIsLoading(false);
+          inFlightSendRef.current = false;
+          return;
+        }
+        throw new Error(errorData.error || 'Failed to get response');
+      }
+
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      const accumulated = { content: '', toolCalls: new Map<number, ToolCall>(), ragSources: [] as RAGSource[] };
+      const assistantMessageId = `temp-assistant-${Date.now()}`;
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: assistantMessageId,
+          role: 'assistant',
+          content: '',
+          created_at: new Date().toISOString(),
+          sources: [],
+          mode: 'upload',
+        },
+      ]);
+
+      if (reader) {
+        let buffer = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (!line.trim() || line.startsWith(':')) continue;
+            if (!line.startsWith('data: ')) continue;
+
+            const jsonStr = line.slice(6).trim();
+            if (jsonStr === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(jsonStr);
+              
+              if (parsed.type === 'rag_sources' && parsed.sources) {
+                accumulated.ragSources = parsed.sources;
+                queueMicrotask(() => {
+                  setMessages((prev) =>
+                    prev.map((m) => (m.id === assistantMessageId ? { ...m, sources: parsed.sources } : m))
+                  );
+                });
+                continue;
+              }
+              
+              parseStreamChunk(parsed, accumulated);
+
+              if (accumulated.content) {
+                const contentSnapshot = accumulated.content;
+                queueMicrotask(() => {
+                  setMessages((prev) =>
+                    prev.map((m) => (m.id === assistantMessageId ? { ...m, content: contentSnapshot } : m))
+                  );
+                });
+              }
+            } catch {
+              // Partial JSON, continue
+            }
+          }
+        }
+      }
+
+      // Save assistant message to DB
+      if (accumulated.content) {
+        await supabase.from('coach_messages').insert({
+          conversation_id: sessionId,
+          user_id: user.id,
+          role: 'assistant',
+          content: accumulated.content,
+          mode: 'upload',
+        });
+
+        await supabase
+          .from('coach_conversations')
+          .update({ last_message_at: new Date().toISOString() })
+          .eq('id', sessionId);
+      }
+
+    } catch (error) {
+      console.error('Error processing image:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to process image',
+        variant: 'destructive',
+      });
+      setShowImageUploadModal(false);
+      setIsImageProcessing(false);
+    } finally {
+      inFlightSendRef.current = false;
+      setIsLoading(false);
     }
   };
 
@@ -872,14 +1083,14 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
             <span className="ml-1.5 truncate hidden sm:inline">Practice</span>
           </Button>
           <Button
-            onClick={() => handleModeChange('check')}
-            variant={mode === 'check' ? 'default' : 'outline'}
+            onClick={() => handleModeChange('upload')}
+            variant="outline"
             size="sm"
             className="flex-1 px-2 min-w-0"
             disabled={isLoading}
           >
-            <CheckCircle className="w-4 h-4 flex-shrink-0" />
-            <span className="ml-1.5 truncate hidden sm:inline">Check</span>
+            <ImagePlus className="w-4 h-4 flex-shrink-0" />
+            <span className="ml-1.5 truncate hidden sm:inline">Upload</span>
           </Button>
         </div>
       </div>
@@ -903,25 +1114,25 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
                     <li>Select a topic from the curriculum</li>
                     <li>I'll provide exam-style questions</li>
                     <li>Work through them at your own pace</li>
-                    <li>Switch to Check mode to verify your answers</li>
+                    <li>Use Upload mode to check your handwritten answers</li>
                   </ul>
                   <p className="mt-3 text-xs italic">Try asking: "Give me a quadratics question" or "Practice integration by parts"</p>
                 </div>
               </>
-            ) : mode === 'check' ? (
+            ) : mode === 'upload' ? (
               <>
-                <CheckCircle className="w-16 h-16 mx-auto mb-4 text-primary/50" />
-                <h4 className="text-lg font-semibold mb-2">Check Mode</h4>
-                <p className="mb-4">I'll review your work and help you understand any mistakes.</p>
+                <ImagePlus className="w-16 h-16 mx-auto mb-4 text-primary/50" />
+                <h4 className="text-lg font-semibold mb-2">Upload Mode</h4>
+                <p className="mb-4">Upload a photo of a maths question for guidance or verification.</p>
                 <div className="text-sm text-left bg-muted/50 rounded-lg p-4 max-w-md mx-auto">
-                  <p className="font-medium mb-2">How to use:</p>
+                  <p className="font-medium mb-2">You can:</p>
                   <ul className="list-disc list-inside space-y-1">
-                    <li>Share your working or solution</li>
-                    <li>I'll check if it's correct</li>
-                    <li>If there are mistakes, I'll explain what went wrong</li>
-                    <li>I'll show you how to correct any errors</li>
+                    <li>Upload a question from a past paper or textbook</li>
+                    <li>Get step-by-step guidance on how to solve it</li>
+                    <li>Submit your handwritten working for review</li>
+                    <li>Get feedback on where you went wrong</li>
                   </ul>
-                  <p className="mt-3 text-xs italic">Try: "Check my answer: $x = 5$" or paste your full working</p>
+                  <p className="mt-3 text-xs italic">Click the Upload button above to get started!</p>
                 </div>
               </>
             ) : (
@@ -953,8 +1164,8 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-sm">
               {mode === 'practice' ? (
                 <PenTool className="w-5 h-5 text-primary-foreground" />
-              ) : mode === 'check' ? (
-                <CheckCircle className="w-5 h-5 text-primary-foreground" />
+              ) : mode === 'upload' ? (
+                <ImagePlus className="w-5 h-5 text-primary-foreground" />
               ) : (
                 <BookOpen className="w-5 h-5 text-primary-foreground" />
               )}
@@ -1080,6 +1291,14 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         }
         return inputEl;
       })()}
+
+      {/* Image Upload Modal */}
+      <ImageUploadModal
+        open={showImageUploadModal}
+        onOpenChange={setShowImageUploadModal}
+        onSubmit={handleImageUpload}
+        isLoading={isImageProcessing}
+      />
     </div>
   );
 });
