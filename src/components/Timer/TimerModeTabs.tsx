@@ -24,7 +24,7 @@ const TimerModeTabs: React.FC<TimerModeTabsProps> = ({
   };
 
   return (
-    <div className="flex bg-muted rounded-lg p-1 mb-6 w-full shadow-soft">
+    <div className="flex bg-muted rounded-lg p-1 w-full shadow-soft">
       {(['work', 'break', 'longBreak'] as TimerMode[]).map((tabMode) => {
         const bgVar = tabMode === 'work' ? '--timer-focus-bg' : tabMode === 'break' ? '--timer-break-bg' : '--timer-longbreak-bg';
         return (
