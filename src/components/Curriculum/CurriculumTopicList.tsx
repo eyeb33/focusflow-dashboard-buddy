@@ -15,6 +15,7 @@ interface CurriculumTopicListProps {
   activeTopicId: string | null;
   onTopicClick: (topicId: string, topicName: string) => void;
   onSubtopicToggle: (topicId: string, subtopic: string) => void;
+  onSubtopicSelect: (topicId: string, topicName: string, subtopic: string) => void;
   onCategoryToggle: (category: string) => void;
 }
 
@@ -26,6 +27,7 @@ const CurriculumTopicList: React.FC<CurriculumTopicListProps> = ({
   activeTopicId,
   onTopicClick,
   onSubtopicToggle,
+  onSubtopicSelect,
   onCategoryToggle
 }) => {
   if (isLoading) {
@@ -133,6 +135,7 @@ const CurriculumTopicList: React.FC<CurriculumTopicListProps> = ({
                     topicData={topicData}
                     onTopicClick={onTopicClick}
                     onSubtopicToggle={onSubtopicToggle}
+                    onSubtopicSelect={onSubtopicSelect}
                   />
                 );
               })}

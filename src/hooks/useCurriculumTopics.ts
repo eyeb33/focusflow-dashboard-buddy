@@ -32,7 +32,8 @@ const mapTopicSession = (row: TopicSessionRow): TopicSession => ({
   isActive: row.is_active ?? false,
   messageCount: row.message_count ?? 0,
   createdAt: row.created_at,
-  updatedAt: row.updated_at
+  updatedAt: row.updated_at,
+  activeSubtopic: (row as any).active_subtopic ?? null
 });
 
 export const useCurriculumTopics = () => {
@@ -382,6 +383,32 @@ export const useCurriculumTopics = () => {
     return topicSessions.find(s => s.isActive) ?? null;
   }, [topicSessions]);
 
+  // Set the active subtopic for a topic session
+  const setActiveSubtopic = useCallback(async (topicId: string, subtopic: string | null) => {
+    if (!user) return;
+
+    const session = topicSessions.find(s => s.topicId === topicId);
+    if (!session) return;
+
+    try {
+      const { error } = await supabase
+        .from('topic_sessions')
+        .update({ active_subtopic: subtopic })
+        .eq('id', session.id);
+
+      if (error) throw error;
+
+      // Optimistic update
+      setTopicSessions(prev => prev.map(s => 
+        s.id === session.id 
+          ? { ...s, activeSubtopic: subtopic }
+          : s
+      ));
+    } catch (error) {
+      console.error('Error setting active subtopic:', error);
+    }
+  }, [user, topicSessions]);
+
   return {
     curriculumTopics,
     topicSessions,
@@ -395,6 +422,7 @@ export const useCurriculumTopics = () => {
     toggleCategory,
     getOrCreateSession,
     setTopicActive,
+    setActiveSubtopic,
     updateSessionTime,
     toggleSubtopicComplete,
     incrementMessageCount,

@@ -62,6 +62,7 @@ const IndexInner = () => {
     toggleCategory,
     getOrCreateSession,
     setTopicActive,
+    setActiveSubtopic,
     toggleSubtopicComplete
   } = useCurriculumTopics();
 
@@ -122,6 +123,38 @@ const IndexInner = () => {
     await toggleSubtopicComplete(topicId, subtopic);
   }, [toggleSubtopicComplete]);
 
+  // Handle subtopic selection - sets the subtopic as active and opens tutor with intro
+  const handleSubtopicSelect = useCallback(async (topicId: string, topicName: string, subtopic: string) => {
+    // 1. First ensure we have a session for this topic
+    const session = await getOrCreateSession(topicId, topicName);
+    if (!session) return;
+
+    // 2. Set the active subtopic
+    await setActiveSubtopic(topicId, subtopic);
+
+    // 3. Set this topic as active
+    await setTopicActive(topicId);
+    setActiveTaskId(topicId);
+    await setActiveTopicForTimer(topicId);
+
+    // 4. Switch to tutor view
+    setContentView('tutor');
+
+    // 5. Open chat session for this topic and auto-start with subtopic intro
+    if (tutorRef.current) {
+      await tutorRef.current.openTaskSession(topicId, topicName, true);
+    } else {
+      setPendingTopicToOpen({ id: topicId, name: topicName });
+    }
+
+    // 6. Auto-start timer if not running
+    if (!isRunning) {
+      setTimeout(() => {
+        handleStart();
+      }, 100);
+    }
+  }, [getOrCreateSession, setActiveSubtopic, setTopicActive, setActiveTaskId, setActiveTopicForTimer, isRunning, handleStart]);
+
   // Sync linkedTaskIds from the tutor component when it updates
   useEffect(() => {
     const syncLinkedIds = () => {
@@ -167,7 +200,8 @@ const IndexInner = () => {
     name: activeSession.topicName,
     totalTimeSeconds: getTopicTotalTime(activeSession.topicId),
     completedSubtopics: activeSession.completedSubtopics || [],
-    subtopics: activeCurriculumTopic?.topic.subtopics || []
+    subtopics: activeCurriculumTopic?.topic.subtopics || [],
+    activeSubtopic: activeSession.activeSubtopic || null
   } : null;
 
   // Different layout containers for authenticated vs unauthenticated
@@ -336,6 +370,7 @@ const IndexInner = () => {
                         activeTopicId={activeTopicId}
                         onTopicClick={handleTopicClick}
                         onSubtopicToggle={handleSubtopicToggle}
+                        onSubtopicSelect={handleSubtopicSelect}
                         onCategoryToggle={toggleCategory}
                       />
                     </div>

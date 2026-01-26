@@ -617,6 +617,7 @@ export type Database = {
       }
       topic_sessions: {
         Row: {
+          active_subtopic: string | null
           completed_subtopics: string[] | null
           created_at: string
           id: string
@@ -630,6 +631,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          active_subtopic?: string | null
           completed_subtopics?: string[] | null
           created_at?: string
           id?: string
@@ -643,6 +645,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          active_subtopic?: string | null
           completed_subtopics?: string[] | null
           created_at?: string
           id?: string
