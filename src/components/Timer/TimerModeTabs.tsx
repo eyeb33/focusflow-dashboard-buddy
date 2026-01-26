@@ -24,7 +24,7 @@ const TimerModeTabs: React.FC<TimerModeTabsProps> = ({
   };
 
   return (
-    <div className="flex bg-muted rounded-lg p-1 w-full shadow-soft">
+    <div className="inline-flex items-center rounded-lg bg-muted p-1">
       {(['work', 'break', 'longBreak'] as TimerMode[]).map((tabMode) => {
         const bgVar = tabMode === 'work' ? '--timer-focus-bg' : tabMode === 'break' ? '--timer-break-bg' : '--timer-longbreak-bg';
         return (
@@ -32,10 +32,10 @@ const TimerModeTabs: React.FC<TimerModeTabsProps> = ({
             key={tabMode}
             onClick={() => onModeChange(tabMode)}
             className={cn(
-              "flex-1 py-2.5 px-4 text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap",
+              "inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all whitespace-nowrap",
               currentMode === tabMode 
-                ? "text-white shadow-soft" 
-                : "text-muted-foreground hover:text-foreground hover:bg-accent font-medium"
+                ? "text-white shadow-sm" 
+                : "text-muted-foreground hover:text-foreground"
             )}
             style={currentMode === tabMode ? { backgroundColor: `hsl(var(${bgVar}))` } : undefined}
           >
