@@ -561,12 +561,12 @@ ${currentMode.style}
     // Call Google Gemini API directly with user's API key
     // NOTE: Keep this on a model you have enabled in your Gemini project.
     const geminiUrl =
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:streamGenerateContent?alt=sse&key=${userGeminiApiKey}`;
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:streamGenerateContent?alt=sse&key=${userGeminiApiKey}`;
 
     console.log('[ai-coach] gemini_call_start', {
       requestId: requestId ?? null,
       userId: user.id,
-      model: 'gemini-3.0-flash',
+      model: 'gemini-3-flash',
       timestamp: new Date().toISOString(),
     });
 
