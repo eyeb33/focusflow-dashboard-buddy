@@ -188,7 +188,7 @@ const IndexInner = () => {
   // Authenticated: fixed viewport layout with internal scrolling
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
-      <Header />
+      <Header isFocusMode={contentView === 'tutor'} />
       
       <main className="flex-1 min-h-0 w-full py-4 px-3 md:px-4 lg:px-[3vw]">
         <div className="h-full grid grid-cols-1 md:grid-cols-[auto_1fr] gap-3 md:gap-4 lg:gap-[2vw] xl:gap-[3vw]">
@@ -205,12 +205,8 @@ const IndexInner = () => {
           {/* Column 2: Toggleable Content (Topics List OR Tutor) */}
           <div className="flex flex-col min-h-0 overflow-hidden bg-card rounded-xl border border-border/50 shadow-sm transition-all duration-200 hover:shadow-md hover:border-border/80 dark:border-border/30 dark:hover:border-border/50">
             
-            {/* View Toggle Header with Action Icons */}
-            {/* Dims to 50% opacity when in tutor view to reduce distraction, restores on hover */}
-            <div className={cn(
-              "flex-shrink-0 border-b border-border bg-muted/30 px-4 py-2 transition-opacity duration-300",
-              contentView === 'tutor' && "md:opacity-50 md:hover:opacity-100"
-            )}>
+            {/* View Toggle Header with Action Icons - stays visible in focus mode */}
+            <div className="flex-shrink-0 border-b border-border bg-muted/30 px-4 py-2">
               <div className="flex items-center justify-between">
                 {/* Left: Topics/Tutor Toggle */}
                 <div className="inline-flex items-center rounded-lg bg-muted p-1">

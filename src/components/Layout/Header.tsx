@@ -11,7 +11,11 @@ import { cn } from '@/lib/utils';
 import syllabuddyLogoLight from '@/assets/syllabuddy-logo-light.png';
 import syllabuddyLogoDark from '@/assets/syllabuddy-logo-dark.png';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  isFocusMode?: boolean;
+}
+
+const Header: React.FC<HeaderProps> = ({ isFocusMode = false }) => {
   const isMobile = useIsMobile();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -27,7 +31,10 @@ const Header: React.FC = () => {
   const isOnCurriculum = location.pathname === '/curriculum';
 
   return (
-    <header className="border-b border-border/50 backdrop-blur-md bg-background/80 sticky top-0 z-50 pb-2.5">
+    <header className={cn(
+      "border-b border-border/50 backdrop-blur-md bg-background/80 sticky top-0 z-50 pb-2.5 transition-opacity duration-300",
+      isFocusMode && "md:opacity-50 md:hover:opacity-100"
+    )}>
       <div className="w-full px-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
