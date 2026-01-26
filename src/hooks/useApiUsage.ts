@@ -8,6 +8,7 @@ export interface ApiUsageData {
   requestsThisMonth: number;
   tokensThisMonth: number;
   lastRequestAt: string | null;
+  lastModelUsed: string | null;
   isLoading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -20,6 +21,7 @@ export const useApiUsage = (): ApiUsageData => {
   const [requestsThisMonth, setRequestsThisMonth] = useState(0);
   const [tokensThisMonth, setTokensThisMonth] = useState(0);
   const [lastRequestAt, setLastRequestAt] = useState<string | null>(null);
+  const [lastModelUsed, setLastModelUsed] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,7 +45,7 @@ export const useApiUsage = (): ApiUsageData => {
       // Fetch today's usage
       const { data: todayData, error: todayError } = await supabase
         .from('api_usage')
-        .select('request_count, token_count, last_request_at')
+        .select('request_count, token_count, last_request_at, last_model_used')
         .eq('user_id', user.id)
         .eq('date', today)
         .maybeSingle();
@@ -69,10 +71,12 @@ export const useApiUsage = (): ApiUsageData => {
         setRequestsToday(todayData.request_count || 0);
         setTokensToday(todayData.token_count || 0);
         setLastRequestAt(todayData.last_request_at);
+        setLastModelUsed(todayData.last_model_used);
       } else {
         setRequestsToday(0);
         setTokensToday(0);
         setLastRequestAt(null);
+        setLastModelUsed(null);
       }
 
       // Aggregate monthly totals
@@ -107,6 +111,7 @@ export const useApiUsage = (): ApiUsageData => {
     requestsThisMonth,
     tokensThisMonth,
     lastRequestAt,
+    lastModelUsed,
     isLoading,
     error,
     refetch: fetchUsage,

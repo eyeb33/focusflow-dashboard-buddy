@@ -654,6 +654,14 @@ ${currentMode.style}
         p_user_id: user.id,
         p_tokens: 0 // We don't have token count from streaming, estimate later
       });
+      
+      // Update the last model used for today's record
+      const today = new Date().toISOString().split('T')[0];
+      await supabaseClient
+        .from('api_usage')
+        .update({ last_model_used: model })
+        .eq('user_id', user.id)
+        .eq('date', today);
     } catch (usageErr) {
       console.warn('[ai-coach] Failed to track API usage:', usageErr);
     }
