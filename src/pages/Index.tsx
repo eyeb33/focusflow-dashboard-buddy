@@ -160,11 +160,14 @@ const IndexInner = () => {
   } : null;
 
   // Get active topic info for the tutor (use segment-based time)
+  // Find the curriculum topic to get the full subtopics list
+  const activeCurriculumTopic = topicsWithSessions.find(t => t.topic.topicId === activeSession?.topicId);
   const activeTopicInfo = activeSession ? {
     id: activeSession.topicId,
     name: activeSession.topicName,
     totalTimeSeconds: getTopicTotalTime(activeSession.topicId),
-    completedSubtopics: activeSession.completedSubtopics || []
+    completedSubtopics: activeSession.completedSubtopics || [],
+    subtopics: activeCurriculumTopic?.topic.subtopics || []
   } : null;
 
   // Different layout containers for authenticated vs unauthenticated
@@ -351,6 +354,11 @@ const IndexInner = () => {
                     inputPortalTarget={chatInputSlot}
                     activeTopic={activeTopicInfo}
                     onOpenSettings={() => setShowSettings(true)}
+                    onSubtopicClick={(subtopic) => {
+                      if (activeTopicInfo) {
+                        toggleSubtopicComplete(activeTopicInfo.id, subtopic);
+                      }
+                    }}
                   />
                   <div ref={setChatInputSlot} className="flex-shrink-0" />
                 </div>
