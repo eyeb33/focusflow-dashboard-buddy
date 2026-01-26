@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { ImagePlus, X, HelpCircle, CheckCircle, Upload, Loader2 } from 'lucide-react';
+import { ImagePlus, X, HelpCircle, CheckCircle, Upload, Loader2, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,6 +11,7 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export type ImageIntent = 'help' | 'check';
 
@@ -36,6 +37,8 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsMobile();
 
   const resetState = useCallback(() => {
     setImagePreview(null);
@@ -136,33 +139,57 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
         <div className="space-y-4 py-2">
           {/* Image Upload Area */}
           {!imagePreview ? (
-            <div
-              className={cn(
-                "relative border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer",
-                dragActive
-                  ? "border-primary bg-primary/5"
-                  : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50"
+            <div className="space-y-3">
+              {/* Camera capture for mobile */}
+              {isMobile && (
+                <Button
+                  variant="outline"
+                  className="w-full h-14 gap-3"
+                  onClick={() => cameraInputRef.current?.click()}
+                >
+                  <Camera className="w-5 h-5" />
+                  <span>Take Photo</span>
+                  <input
+                    ref={cameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </Button>
               )}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={ALLOWED_TYPES.join(',')}
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
-              <p className="text-sm font-medium">
-                Drop your image here or click to browse
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                JPEG, PNG, WebP or GIF (max 10MB)
-              </p>
+              
+              {/* File upload / drag-drop area */}
+              <div
+                className={cn(
+                  "relative border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer",
+                  dragActive
+                    ? "border-primary bg-primary/5"
+                    : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50",
+                  isMobile && "p-4"
+                )}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept={ALLOWED_TYPES.join(',')}
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <Upload className={cn("mx-auto mb-2 text-muted-foreground", isMobile ? "w-8 h-8" : "w-10 h-10")} />
+                <p className="text-sm font-medium">
+                  {isMobile ? "Choose from gallery" : "Drop your image here or click to browse"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  JPEG, PNG, WebP or GIF (max 10MB)
+                </p>
+              </div>
             </div>
           ) : (
             <div className="relative">
