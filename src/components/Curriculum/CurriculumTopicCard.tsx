@@ -104,17 +104,7 @@ const CurriculumTopicCard: React.FC<CurriculumTopicCardProps> = ({
         className="flex items-center justify-between p-3 cursor-pointer"
         onClick={handleCardClick}
       >
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          {/* Completion indicator */}
-          <div className={cn(
-            'h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0',
-            isCompleted 
-              ? 'bg-green-500 text-white' 
-              : 'border-2 border-muted-foreground/30'
-          )}>
-            {isCompleted && <Check className="h-3 w-3" />}
-          </div>
-
+        <div className="flex items-center gap-2 flex-1 min-w-0">
           {/* Expand/collapse arrow */}
           <Button
             variant="ghost"
@@ -131,6 +121,13 @@ const CurriculumTopicCard: React.FC<CurriculumTopicCardProps> = ({
               <ChevronRight className="h-4 w-4" />
             )}
           </Button>
+
+          {/* Completion checkmark - only show when all subtopics done */}
+          {isCompleted && (
+            <div className="h-5 w-5 rounded-full bg-green-500 text-white flex items-center justify-center flex-shrink-0">
+              <Check className="h-3 w-3" />
+            </div>
+          )}
 
           {/* Topic info */}
           <div className="flex-1 min-w-0 overflow-hidden">
