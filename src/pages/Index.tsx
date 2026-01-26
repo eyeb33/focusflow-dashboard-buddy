@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import TimerContainer from "@/components/Timer/TimerContainer";
 import HeroAuthCard from "@/components/Auth/HeroAuthCard";
 import { useTimerContext } from '@/contexts/TimerContext';
+import { useTopicTime } from '@/contexts/TopicTimeContext';
 import MathsTutorInterface, { MathsTutorInterfaceRef } from '@/components/Tutor/MathsTutorInterface';
 import CurriculumTopicList from '@/components/Curriculum/CurriculumTopicList';
 import { useCurriculumTopics } from '@/hooks/useCurriculumTopics';
@@ -22,8 +23,8 @@ type ContentView = 'topics' | 'tutor';
 
 const IndexInner = () => {
   const { user } = useAuth();
-  const { setActiveTaskId, getElapsedMinutes, getElapsedSeconds, isRunning, handleStart, activeTaskId } = useTimerContext();
-
+  const { setActiveTaskId, isRunning, handleStart, activeTaskId } = useTimerContext();
+  const { setActiveTopicForTimer, getTopicTotalTime, topicTotalTimes } = useTopicTime();
   const tutorRef = useRef<MathsTutorInterfaceRef>(null);
 
   const [linkedTaskIds, setLinkedTaskIds] = useState<Set<string>>(new Set());
@@ -61,7 +62,6 @@ const IndexInner = () => {
     toggleCategory,
     getOrCreateSession,
     setTopicActive,
-    updateSessionTime,
     toggleSubtopicComplete
   } = useCurriculumTopics();
 
@@ -89,9 +89,10 @@ const IndexInner = () => {
       setPendingTopicToOpen({ id: topicId, name: topicName });
     }
     
-    // 4. Set this topic as active in both curriculum and timer contexts
+    // 4. Set this topic as active in curriculum, timer, and topic time tracking contexts
     await setTopicActive(topicId);
     setActiveTaskId(topicId);
+    await setActiveTopicForTimer(topicId);
     
     // 5. Auto-start the timer if not already running
     if (!isRunning) {
@@ -102,7 +103,7 @@ const IndexInner = () => {
     
     // Optimistically update linked task IDs
     setLinkedTaskIds(prev => new Set([...prev, topicId]));
-  }, [getOrCreateSession, setTopicActive, setActiveTaskId, isRunning, handleStart]);
+  }, [getOrCreateSession, setTopicActive, setActiveTaskId, setActiveTopicForTimer, isRunning, handleStart]);
 
   // Fulfill any queued topic-open request once the tutor is mounted.
   useEffect(() => {
@@ -140,22 +141,11 @@ const IndexInner = () => {
     }
   }, [isCurriculumLoading, activeSession, activeTaskId, setActiveTaskId]);
 
-  // Save timer time to topic session when timer stops or topic changes
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (isRunning && activeTopicId) {
-        const elapsedSeconds = getElapsedMinutes() * 60 + getElapsedSeconds();
-        if (elapsedSeconds > 0) {
-          updateSessionTime(activeTopicId, elapsedSeconds);
-        }
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isRunning, activeTopicId, getElapsedMinutes, getElapsedSeconds, updateSessionTime]);
+  // Note: Time tracking is now handled by TopicTimeContext automatically
+  // via the segment-based system. No need for beforeunload handler anymore.
 
   // Create a mock active task for the timer to display
+  // Use the segment-based total time from TopicTimeContext
   const activeTask: Task | null = activeSession ? {
     id: activeSession.topicId,
     name: activeSession.topicName,
@@ -163,17 +153,17 @@ const IndexInner = () => {
     completed: false,
     completedPomodoros: 0,
     isActive: true,
-    timeSpent: Math.floor(activeSession.totalTimeSeconds / 60),
-    timeSpentSeconds: activeSession.totalTimeSeconds,
+    timeSpent: Math.floor(getTopicTotalTime(activeSession.topicId) / 60),
+    timeSpentSeconds: getTopicTotalTime(activeSession.topicId),
     createdAt: activeSession.createdAt,
     updatedAt: activeSession.updatedAt
   } : null;
 
-  // Get active topic info for the tutor
+  // Get active topic info for the tutor (use segment-based time)
   const activeTopicInfo = activeSession ? {
     id: activeSession.topicId,
     name: activeSession.topicName,
-    totalTimeSeconds: activeSession.totalTimeSeconds,
+    totalTimeSeconds: getTopicTotalTime(activeSession.topicId),
     completedSubtopics: activeSession.completedSubtopics || []
   } : null;
 

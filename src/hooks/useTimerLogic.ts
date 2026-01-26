@@ -365,6 +365,9 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
     if (timerMode === 'work') {
       setCurrentSessionIndex(0);
     }
+    
+    // Dispatch event for topic time tracking to stop session
+    window.dispatchEvent(new CustomEvent('timer:reset'));
   }, [clearTimer, clearAutoStartTimeout, getTotalTimeForMode, timerMode, isFreeStudy]);
   
   // Change timer mode
