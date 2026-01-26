@@ -163,7 +163,13 @@ export const useChatSessions = () => {
   }, [user]);
 
   // Find or create a session linked to a specific task or topic
-  const openTaskSession = useCallback(async (taskOrTopicId: string, taskName: string, isTopicId: boolean = false): Promise<ChatSession | null> => {
+  // For topics, we now separate sessions by mode (persona) - each mode gets its own chat
+  const openTaskSession = useCallback(async (
+    taskOrTopicId: string, 
+    taskName: string, 
+    isTopicId: boolean = false,
+    initialMode: TutorMode = 'explain'
+  ): Promise<ChatSession | null> => {
     if (!user) return null;
     
     // Immediately clear messages to prevent showing stale content while loading
@@ -175,12 +181,18 @@ export const useChatSessions = () => {
     // ALWAYS check the database first for the authoritative session
     // This prevents stale local state from returning wrong sessions
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('coach_conversations')
         .select('*')
         .eq('user_id', user.id)
-        .eq(fieldName, taskOrTopicId)
-        .maybeSingle();
+        .eq(fieldName, taskOrTopicId);
+      
+      // For topics, also filter by persona (mode) to get mode-specific session
+      if (isTopicId) {
+        query = query.eq('persona', initialMode);
+      }
+      
+      const { data, error } = await query.maybeSingle();
 
       if (data && !error) {
         const session = mapConversationRow(data);
@@ -204,11 +216,21 @@ export const useChatSessions = () => {
     
     // No existing session found, create a new one
     if (isTopicId) {
-      return createNewSession('explain', undefined, taskName, taskOrTopicId);
+      return createNewSession(initialMode, undefined, taskName, taskOrTopicId);
     } else {
       return createNewSession('explain', taskOrTopicId, taskName);
     }
   }, [user, loadMessages, createNewSession]);
+
+  // Switch to a different mode session for the current topic
+  // This finds or creates a session for the specified mode while keeping the same topic context
+  const switchTopicModeSession = useCallback(async (
+    topicId: string,
+    topicName: string,
+    newMode: TutorMode
+  ): Promise<ChatSession | null> => {
+    return openTaskSession(topicId, topicName, true, newMode);
+  }, [openTaskSession]);
 
   // Switch to a different session
   const switchSession = useCallback(async (sessionId: string) => {
@@ -366,6 +388,7 @@ export const useChatSessions = () => {
     deleteSession,
     addMessage,
     openTaskSession,
+    switchTopicModeSession,
     linkedTaskIds,
   };
 };
