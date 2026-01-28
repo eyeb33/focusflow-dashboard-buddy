@@ -7,29 +7,33 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Create embedding using OpenAI
-async function createEmbedding(text: string, openaiKey: string): Promise<number[] | null> {
+// Create embedding using Gemini (uses user's API key - no extra cost!)
+async function createEmbedding(text: string, geminiApiKey: string): Promise<number[] | null> {
   try {
-    const response = await fetch('https://api.openai.com/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'text-embedding-3-small',
-        input: text,
-      }),
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'models/text-embedding-004',
+          content: {
+            parts: [{ text }]
+          },
+        }),
+      }
+    );
     
     if (!response.ok) {
       const error = await response.text();
-      console.error('OpenAI embedding error:', error);
+      console.error('Gemini embedding error:', error);
       return null;
     }
     
     const data = await response.json();
-    return data.data[0].embedding;
+    return data.embedding?.values || null;
   } catch (error) {
     console.error('Error creating embedding:', error);
     return null;
@@ -73,19 +77,34 @@ serve(async (req) => {
       });
     }
 
-    // Get OpenAI API key for embeddings
-    const openaiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiKey) {
-      return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
-        status: 500,
+    // Fetch user's Gemini API key from secure user_secrets table
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { data: secretsData, error: secretsError } = await supabaseAdmin
+      .from('user_secrets')
+      .select('gemini_api_key')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (secretsError || !secretsData?.gemini_api_key) {
+      return new Response(JSON.stringify({ 
+        error: 'Gemini API key not configured. Please add your API key in Settings.',
+        sources: [] 
+      }), {
+        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    const geminiApiKey = secretsData.gemini_api_key;
+
     console.log(`[rag-search] Searching for: "${query.substring(0, 100)}..."`);
 
-    // Create embedding for the query
-    const queryEmbedding = await createEmbedding(query, openaiKey);
+    // Create embedding for the query using Gemini
+    const queryEmbedding = await createEmbedding(query, geminiApiKey);
     
     if (!queryEmbedding) {
       return new Response(JSON.stringify({ 
