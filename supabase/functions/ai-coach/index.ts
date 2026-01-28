@@ -7,28 +7,32 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// RAG: Create embedding using OpenAI
-async function createEmbedding(text: string, openaiKey: string): Promise<number[] | null> {
+// RAG: Create embedding using Gemini (uses user's API key - no extra cost!)
+async function createEmbedding(text: string, geminiApiKey: string): Promise<number[] | null> {
   try {
-    const response = await fetch('https://api.openai.com/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'text-embedding-3-small',
-        input: text,
-      }),
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'models/text-embedding-004',
+          content: {
+            parts: [{ text }]
+          },
+        }),
+      }
+    );
     
     if (!response.ok) {
-      console.warn('[ai-coach] OpenAI embedding error:', await response.text());
+      console.warn('[ai-coach] Gemini embedding error:', await response.text());
       return null;
     }
     
     const data = await response.json();
-    return data.data[0].embedding;
+    return data.embedding?.values || null;
   } catch (error) {
     console.warn('[ai-coach] Error creating embedding:', error);
     return null;
@@ -135,18 +139,16 @@ serve(async (req) => {
     const last7Days = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const today = new Date().toISOString().split('T')[0];
 
-    // Get OpenAI API key for RAG embeddings
-    const openaiKey = Deno.env.get('OPENAI_API_KEY');
-    
     // RAG: Search for relevant curriculum content if we have a user message
+    // Uses user's Gemini API key for embeddings (no extra cost!)
     let ragSources: RAGSource[] = [];
     let ragContext = '';
     
-    if (lastUserMessage && openaiKey) {
+    if (lastUserMessage && userGeminiApiKey) {
       console.log('[ai-coach] Performing RAG search for query:', lastUserMessage.slice(0, 100));
       
       try {
-        const queryEmbedding = await createEmbedding(lastUserMessage, openaiKey);
+        const queryEmbedding = await createEmbedding(lastUserMessage, userGeminiApiKey);
         
         if (queryEmbedding) {
           // Use admin client for RAG search to bypass RLS for document access
