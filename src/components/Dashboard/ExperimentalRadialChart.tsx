@@ -77,11 +77,13 @@ export const ExperimentalRadialChart: React.FC<ExperimentalRadialChartProps> = (
                   <span className="font-semibold text-foreground">{period.minutes} min</span>
                 </div>
               </div>
-              <div className="relative h-8 bg-muted/40 rounded-lg overflow-hidden">
-                <div 
-                  className={`h-full bg-gradient-to-r ${period.color} transition-all duration-500 ease-out rounded-lg`}
-                  style={{ width: `${percentage}%` }}
-                />
+              <div className="relative h-8 rounded-lg overflow-hidden border-2 border-muted bg-transparent">
+                {percentage > 0 && (
+                  <div 
+                    className={`h-full bg-gradient-to-r ${period.color} transition-all duration-500 ease-out rounded-[4px]`}
+                    style={{ width: `${percentage}%` }}
+                  />
+                )}
               </div>
             </div>
           );
