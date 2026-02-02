@@ -15,6 +15,7 @@ import { useTopicTime } from '@/contexts/TopicTimeContext';
 import * as taskService from '@/services/taskService';
 import { fetchSubTasks, addSubTask, updateSubTaskCompletion, deleteSubTask } from '@/services/subTaskService';
 import { getTopicOverview } from '@/data/topicOverviews';
+import { getSubtopicOverview } from '@/data/subtopicOverviews';
 
 // TutorMode is now imported from MathsMessage
 
@@ -1218,17 +1219,32 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
                 </div>
               </>
             ) : props.activeTopic ? (
-              // Topic-specific overview when a topic is selected
+              // Topic or subtopic-specific overview when a topic is selected
               (() => {
-                const overview = getTopicOverview(props.activeTopic.id);
+                const activeSubtopic = props.activeTopic.activeSubtopic;
+                const subtopicOverview = activeSubtopic 
+                  ? getSubtopicOverview(props.activeTopic.id, activeSubtopic) 
+                  : null;
+                const topicOverview = getTopicOverview(props.activeTopic.id);
+                
+                // Use subtopic overview if available, otherwise fall back to topic overview
+                const overview = subtopicOverview || topicOverview;
+                const displayTitle = activeSubtopic 
+                  ? (subtopicOverview?.title || activeSubtopic)
+                  : (topicOverview?.title || props.activeTopic.name);
+                
                 return (
                   <>
                     <BookOpen className="w-16 h-16 mx-auto mb-4 text-primary/50" />
-                    <h4 className="text-lg font-semibold mb-2">{overview?.title || props.activeTopic.name}</h4>
-                    <p className="mb-4 text-foreground/80">{overview?.description || `Let's explore ${props.activeTopic.name} together.`}</p>
+                    <h4 className="text-lg font-semibold mb-2">{displayTitle}</h4>
+                    <p className="mb-4 text-foreground/80">
+                      {overview?.description || `Let's explore ${activeSubtopic || props.activeTopic.name} together.`}
+                    </p>
                     {overview && (
                       <div className="text-sm text-left bg-muted/50 rounded-lg p-4 max-w-md mx-auto">
-                        <p className="font-medium mb-2">Key concepts you'll learn:</p>
+                        <p className="font-medium mb-2">
+                          {activeSubtopic ? 'What you\'ll learn:' : 'Key concepts you\'ll learn:'}
+                        </p>
                         <ul className="list-disc list-inside space-y-1">
                           {overview.keyPoints.map((point, i) => (
                             <li key={i}>{point}</li>
@@ -1295,77 +1311,45 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick Actions - Show subtopics when topic is active, otherwise generic starters */}
-      {showQuickActions && messages.length === 0 && (
+      {/* Quick Actions - Only show generic starters when no topic is active */}
+      {showQuickActions && messages.length === 0 && !props.activeTopic && (
         <div className="flex-shrink-0 px-4 pb-3 flex flex-wrap gap-2">
-          {props.activeTopic && props.activeTopic.subtopics.length > 0 ? (
-            // Show subtopics for the current topic
-            props.activeTopic.subtopics.slice(0, 6).map((subtopic) => {
-              const isCompleted = props.activeTopic?.completedSubtopics.includes(subtopic);
-              const isActiveSubtopic = props.activeTopic?.activeSubtopic === subtopic;
-              return (
-                <Button
-                  key={subtopic}
-                  onClick={() => {
-                    // Mark subtopic as in-progress/tracked
-                    props.onSubtopicClick?.(subtopic);
-                    // Send as conversation starter
-                    handleQuickAction(`Help me understand ${subtopic}`);
-                  }}
-                  variant={isActiveSubtopic ? "default" : "outline"}
-                  size="sm"
-                  className={cn(
-                    "text-xs gap-1.5",
-                    isCompleted && !isActiveSubtopic && "bg-green-50 dark:bg-green-950/30 border-green-500/50 text-green-700 dark:text-green-400"
-                  )}
-                  disabled={isLoading}
-                >
-                  {isCompleted && <Check className="h-3 w-3" />}
-                  {subtopic}
-                </Button>
-              );
-            })
-          ) : (
-            // Fallback: generic quick actions when no topic is active
-            <>
-              <Button
-                onClick={() => handleQuickAction("I need help solving a quadratic equation")}
-                variant="outline"
-                size="sm"
-                className="text-xs"
-                disabled={isLoading}
-              >
-                Quadratics
-              </Button>
-              <Button
-                onClick={() => handleQuickAction("Can you explain differentiation step by step?")}
-                variant="outline"
-                size="sm"
-                className="text-xs"
-                disabled={isLoading}
-              >
-                Differentiation
-              </Button>
-              <Button
-                onClick={() => handleQuickAction("I'm struggling with integration by parts")}
-                variant="outline"
-                size="sm"
-                className="text-xs"
-                disabled={isLoading}
-              >
-                Integration
-              </Button>
-              <Button
-                onClick={() => handleQuickAction("Give me a practice problem on trigonometry")}
-                variant="outline"
-                size="sm"
-                className="text-xs"
-                disabled={isLoading}
-              >
-                Trigonometry
-              </Button>
-            </>
-          )}
+          <Button
+            onClick={() => handleQuickAction("I need help solving a quadratic equation")}
+            variant="outline"
+            size="sm"
+            className="text-xs"
+            disabled={isLoading}
+          >
+            Quadratics
+          </Button>
+          <Button
+            onClick={() => handleQuickAction("Can you explain differentiation step by step?")}
+            variant="outline"
+            size="sm"
+            className="text-xs"
+            disabled={isLoading}
+          >
+            Differentiation
+          </Button>
+          <Button
+            onClick={() => handleQuickAction("I'm struggling with integration by parts")}
+            variant="outline"
+            size="sm"
+            className="text-xs"
+            disabled={isLoading}
+          >
+            Integration
+          </Button>
+          <Button
+            onClick={() => handleQuickAction("Give me a practice problem on trigonometry")}
+            variant="outline"
+            size="sm"
+            className="text-xs"
+            disabled={isLoading}
+          >
+            Trigonometry
+          </Button>
         </div>
       )}
 
