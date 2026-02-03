@@ -315,7 +315,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
   };
 
   // Parse streaming response for content and tool calls
-  const parseStreamChunk = (parsed: any, accumulated: { content: string; toolCalls: Map<number, ToolCall> }) => {
+  const parseStreamChunk = (parsed: any, accumulated: { content: string; toolCalls: Map<string, ToolCall> }) => {
     const delta = parsed.choices?.[0]?.delta;
     
     if (delta?.content) {
@@ -324,18 +324,38 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     
     if (delta?.tool_calls) {
       for (const tc of delta.tool_calls) {
-        const index = tc.index ?? 0;
-        if (!accumulated.toolCalls.has(index)) {
-          accumulated.toolCalls.set(index, {
-            id: tc.id || '',
+        // Use tool call id as key, or generate a unique key if id is missing
+        // Some streaming backends send multiple tool calls with different names but same index
+        const toolCallId = tc.id || `tool_${accumulated.toolCalls.size}`;
+        
+        // Check if this is a new tool call (has a new function name for the same id)
+        const existingByName = Array.from(accumulated.toolCalls.values()).find(
+          existing => existing.id === toolCallId && existing.function.name && tc.function?.name && existing.function.name !== tc.function.name
+        );
+        
+        // If we found an existing tool call with a different name, this is a new tool call
+        if (existingByName) {
+          const newKey = `${toolCallId}_${accumulated.toolCalls.size}`;
+          accumulated.toolCalls.set(newKey, {
+            id: newKey,
+            type: 'function',
+            function: { name: tc.function?.name || '', arguments: tc.function?.arguments || '' }
+          });
+        } else if (!accumulated.toolCalls.has(toolCallId)) {
+          accumulated.toolCalls.set(toolCallId, {
+            id: toolCallId,
             type: 'function',
             function: { name: '', arguments: '' }
           });
+          const existing = accumulated.toolCalls.get(toolCallId)!;
+          if (tc.function?.name) existing.function.name = tc.function.name;
+          if (tc.function?.arguments) existing.function.arguments += tc.function.arguments;
+        } else {
+          const existing = accumulated.toolCalls.get(toolCallId)!;
+          if (tc.id) existing.id = tc.id;
+          if (tc.function?.name) existing.function.name = tc.function.name;
+          if (tc.function?.arguments) existing.function.arguments += tc.function.arguments;
         }
-        const existing = accumulated.toolCalls.get(index)!;
-        if (tc.id) existing.id = tc.id;
-        if (tc.function?.name) existing.function.name = tc.function.name;
-        if (tc.function?.arguments) existing.function.arguments += tc.function.arguments;
       }
     }
     
@@ -513,7 +533,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       // Handle streaming response (single request)
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
-      const accumulated = { content: '', toolCalls: new Map<number, ToolCall>(), ragSources: [] as RAGSource[] };
+      const accumulated = { content: '', toolCalls: new Map<string, ToolCall>(), ragSources: [] as RAGSource[] };
       const assistantMessageId = `temp-assistant-${Date.now()}`;
 
       // Add initial assistant message placeholder with current mode
@@ -732,7 +752,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       // Handle streaming response
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
-      const accumulated = { content: '', toolCalls: new Map<number, ToolCall>(), ragSources: [] as RAGSource[] };
+      const accumulated = { content: '', toolCalls: new Map<string, ToolCall>(), ragSources: [] as RAGSource[] };
       const assistantMessageId = `temp-assistant-${Date.now()}`;
 
       // Add assistant message placeholder with the target mode
@@ -999,7 +1019,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       // Handle streaming response
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
-      const accumulated = { content: '', toolCalls: new Map<number, ToolCall>(), ragSources: [] as RAGSource[] };
+      const accumulated = { content: '', toolCalls: new Map<string, ToolCall>(), ragSources: [] as RAGSource[] };
       const assistantMessageId = `temp-assistant-${Date.now()}`;
 
       setMessages((prev) => [
