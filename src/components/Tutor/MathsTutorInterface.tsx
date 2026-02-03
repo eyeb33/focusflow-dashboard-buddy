@@ -601,15 +601,41 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
 
       // Execute tool calls (if any) but DO NOT call the AI again.
       // This ensures one backend/Gemini call per user message.
+      // IMPORTANT: The model may respond with tool calls ONLY (no text). In that case,
+      // we still need to show the user a visible assistant message.
+      const toolFeedbackLines: string[] = [];
       if (accumulated.toolCalls.size > 0) {
         console.log('Executing tool calls (no follow-up AI call):', Array.from(accumulated.toolCalls.values()));
         for (const toolCall of accumulated.toolCalls.values()) {
           try {
-            await executeToolCall(toolCall);
+            const toolMsg = await executeToolCall(toolCall);
+            // toolMsg.content is JSON.stringify(result)
+            try {
+              const parsed = JSON.parse(toolMsg.content || '{}');
+              const msg = typeof parsed?.message === 'string'
+                ? parsed.message
+                : typeof parsed?.error === 'string'
+                  ? parsed.error
+                  : null;
+              if (msg) toolFeedbackLines.push(msg);
+            } catch {
+              // ignore
+            }
           } catch (e) {
             console.warn('Tool execution failed:', e);
+            toolFeedbackLines.push('I tried to update your study setup, but something went wrong. Please try again.');
           }
         }
+      }
+
+      // If the assistant produced no text, synthesize a short message from tool results.
+      if (!finalContent && toolFeedbackLines.length > 0) {
+        finalContent = toolFeedbackLines.join('\n');
+        queueMicrotask(() => {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === assistantMessageId ? { ...m, content: finalContent } : m))
+          );
+        });
       }
 
       // Save final assistant message to DB with mode
