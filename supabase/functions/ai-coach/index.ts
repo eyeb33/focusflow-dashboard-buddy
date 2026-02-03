@@ -682,7 +682,11 @@ ${currentMode.style}
     }
 
     // Transform Gemini SSE stream to OpenAI-compatible format with RAG sources
+    // NOTE: We must emit stable, unique tool_call ids + indices. If two tool calls share the
+    // same id/index, some clients will concatenate their JSON argument chunks and fail to parse.
     let sourcesSent = false;
+    let toolCallSeq = 0;
+
     const transformStream = new TransformStream({
       transform(chunk, controller) {
         const text = new TextDecoder().decode(chunk);
@@ -712,25 +716,31 @@ ${currentMode.style}
                 controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(openaiChunk)}\n\n`));
               }
               
-              if (part.functionCall) {
-                // Convert function call to OpenAI format
-                const openaiChunk = {
-                  choices: [{
-                    delta: {
-                      tool_calls: [{
-                        id: `call_${Date.now()}`,
-                        type: 'function',
-                        function: {
-                          name: part.functionCall.name,
-                          arguments: JSON.stringify(part.functionCall.args || {})
-                        }
-                      }]
-                    },
-                    index: 0
-                  }]
-                };
-                controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(openaiChunk)}\n\n`));
-              }
+               if (part.functionCall) {
+                 // Convert function call to OpenAI format
+                 const callIndex = toolCallSeq++;
+                 const callIdBase = requestId ? String(requestId) : 'req';
+                 const unique = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+                 const callId = `call_${callIdBase}_${callIndex}_${unique}`;
+
+                 const openaiChunk = {
+                   choices: [{
+                     delta: {
+                       tool_calls: [{
+                         id: callId,
+                         index: callIndex,
+                         type: 'function',
+                         function: {
+                           name: part.functionCall.name,
+                           arguments: JSON.stringify(part.functionCall.args || {})
+                         }
+                       }]
+                     },
+                     index: 0
+                   }]
+                 };
+                 controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(openaiChunk)}\n\n`));
+               }
             }
             
             // Check for finish reason - send sources before [DONE]
