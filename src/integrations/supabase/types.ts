@@ -127,6 +127,7 @@ export type Database = {
           exam_board: string | null
           id: string
           last_message_at: string
+          linked_subtopic: string | null
           linked_task_id: string | null
           linked_topic_id: string | null
           persona: string | null
@@ -140,6 +141,7 @@ export type Database = {
           exam_board?: string | null
           id?: string
           last_message_at?: string
+          linked_subtopic?: string | null
           linked_task_id?: string | null
           linked_topic_id?: string | null
           persona?: string | null
@@ -153,6 +155,7 @@ export type Database = {
           exam_board?: string | null
           id?: string
           last_message_at?: string
+          linked_subtopic?: string | null
           linked_task_id?: string | null
           linked_topic_id?: string | null
           persona?: string | null

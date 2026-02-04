@@ -71,7 +71,7 @@ const IndexInner = () => {
 
   // When a user clicks Study from the topics list while the tutor view is not mounted yet,
   // we queue the request and execute it once the tutor ref is available.
-  const [pendingTopicToOpen, setPendingTopicToOpen] = useState<null | { id: string; name: string }>(null);
+  const [pendingTopicToOpen, setPendingTopicToOpen] = useState<null | { id: string; name: string; subtopic?: string }>(null);
 
   // Handle clicking on a curriculum topic - opens chat, sets as active, and starts timer
   const handleTopicClick = useCallback(async (topicId: string, topicName: string) => {
@@ -84,10 +84,11 @@ const IndexInner = () => {
 
     // 3. Open the chat session with the topic (pass isTopicId=true for curriculum topics)
     // If tutor isn't mounted yet, queue it and run once ref is ready.
+    // Note: no subtopic here - this is a topic-level click (null subtopic)
     if (tutorRef.current) {
-      await tutorRef.current.openTaskSession(topicId, topicName, true);
+      await tutorRef.current.openTaskSession(topicId, topicName, true, undefined);
     } else {
-      setPendingTopicToOpen({ id: topicId, name: topicName });
+      setPendingTopicToOpen({ id: topicId, name: topicName, subtopic: undefined });
     }
     
     // 4. Set this topic as active in curriculum, timer, and topic time tracking contexts
@@ -114,7 +115,7 @@ const IndexInner = () => {
 
     // Fire-and-forget to avoid blocking render; the tutor hook will clear stale messages immediately.
     tutorRef.current
-      .openTaskSession(pendingTopicToOpen.id, pendingTopicToOpen.name, true)
+      .openTaskSession(pendingTopicToOpen.id, pendingTopicToOpen.name, true, pendingTopicToOpen.subtopic)
       .finally(() => setPendingTopicToOpen(null));
   }, [contentView, pendingTopicToOpen]);
 
@@ -140,11 +141,11 @@ const IndexInner = () => {
     // 4. Switch to tutor view
     setContentView('tutor');
 
-    // 5. Open chat session for this topic and auto-start with subtopic intro
+    // 5. Open chat session for this topic+subtopic (pass subtopic for per-subtopic chat)
     if (tutorRef.current) {
-      await tutorRef.current.openTaskSession(topicId, topicName, true);
+      await tutorRef.current.openTaskSession(topicId, topicName, true, subtopic);
     } else {
-      setPendingTopicToOpen({ id: topicId, name: topicName });
+      setPendingTopicToOpen({ id: topicId, name: topicName, subtopic });
     }
 
     // 6. Auto-start timer if not running

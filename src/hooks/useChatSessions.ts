@@ -15,6 +15,7 @@ export interface ChatSession {
   last_message_at: string;
   linked_task_id: string | null;
   linked_topic_id: string | null;
+  linked_subtopic: string | null;
 }
 
 export type TutorMode = 'explain' | 'practice' | 'upload';
@@ -36,7 +37,7 @@ export interface ChatMessage {
 }
 
 // Map database row to ChatSession
-const mapConversationRow = (row: CoachConversationRow): ChatSession => ({
+const mapConversationRow = (row: CoachConversationRow & { linked_subtopic?: string | null }): ChatSession => ({
   id: row.id,
   title: row.title ?? 'Untitled session',
   persona: row.persona ?? 'explain',
@@ -46,6 +47,7 @@ const mapConversationRow = (row: CoachConversationRow): ChatSession => ({
   last_message_at: row.last_message_at,
   linked_task_id: row.linked_task_id ?? null,
   linked_topic_id: row.linked_topic_id ?? null,
+  linked_subtopic: row.linked_subtopic ?? null,
 });
 
 // Map database row to ChatMessage
@@ -129,7 +131,8 @@ export const useChatSessions = () => {
     persona: string = 'explain', 
     linkedTaskId?: string, 
     taskName?: string,
-    linkedTopicId?: string
+    linkedTopicId?: string,
+    linkedSubtopic?: string
   ): Promise<ChatSession | null> => {
     if (!user) return null;
     
@@ -147,6 +150,7 @@ export const useChatSessions = () => {
           last_message_at: new Date().toISOString(),
           linked_task_id: linkedTaskId ?? null,
           linked_topic_id: linkedTopicId ?? null,
+          linked_subtopic: linkedSubtopic ?? null,
         })
         .select()
         .single();
@@ -170,13 +174,14 @@ export const useChatSessions = () => {
     }
   }, [user]);
 
-  // Find or create a session linked to a specific task or topic
-  // For topics, we now separate sessions by mode (persona) - each mode gets its own chat
+  // Find or create a session linked to a specific task, topic, or subtopic
+  // Sessions are now keyed by: topic + subtopic + mode (persona)
   const openTaskSession = useCallback(async (
     taskOrTopicId: string, 
     taskName: string, 
     isTopicId: boolean = false,
-    initialMode: TutorMode = 'explain'
+    initialMode: TutorMode = 'explain',
+    subtopic?: string
   ): Promise<ChatSession | null> => {
     if (!user) return null;
     
@@ -195,9 +200,14 @@ export const useChatSessions = () => {
         .eq('user_id', user.id)
         .eq(fieldName, taskOrTopicId);
       
-      // For topics, also filter by persona (mode) to get mode-specific session
+      // For topics, also filter by persona (mode) and subtopic
       if (isTopicId) {
         query = query.eq('persona', initialMode);
+        if (subtopic) {
+          query = query.eq('linked_subtopic', subtopic);
+        } else {
+          query = query.is('linked_subtopic', null);
+        }
       }
       
       const { data, error } = await query.maybeSingle();
@@ -225,20 +235,21 @@ export const useChatSessions = () => {
     
     // No existing session found, create a new one
     if (isTopicId) {
-      return createNewSession(initialMode, undefined, taskName, taskOrTopicId);
+      return createNewSession(initialMode, undefined, taskName, taskOrTopicId, subtopic);
     } else {
       return createNewSession('explain', taskOrTopicId, taskName);
     }
   }, [user, loadMessages, createNewSession]);
 
-  // Switch to a different mode session for the current topic
-  // This finds or creates a session for the specified mode while keeping the same topic context
+  // Switch to a different mode session for the current topic/subtopic
+  // This finds or creates a session for the specified mode while keeping the same topic+subtopic context
   const switchTopicModeSession = useCallback(async (
     topicId: string,
     topicName: string,
-    newMode: TutorMode
+    newMode: TutorMode,
+    subtopic?: string
   ): Promise<ChatSession | null> => {
-    return openTaskSession(topicId, topicName, true, newMode);
+    return openTaskSession(topicId, topicName, true, newMode, subtopic);
   }, [openTaskSession]);
 
   // Switch to a different session

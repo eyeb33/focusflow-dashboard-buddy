@@ -44,7 +44,7 @@ interface ToolResult {
 }
 
 export interface MathsTutorInterfaceRef {
-  openTaskSession: (taskId: string, taskName: string, isTopicId?: boolean) => Promise<void>;
+  openTaskSession: (taskId: string, taskName: string, isTopicId?: boolean, subtopic?: string) => Promise<void>;
   linkedTaskIds: Set<string>;
   linkedTopicIds: Set<string>;
 }
@@ -117,9 +117,9 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
 
   // Expose openTaskSession and linkedTaskIds via ref for parent components
   useImperativeHandle(ref, () => ({
-    openTaskSession: async (taskId: string, taskName: string, isTopicId: boolean = false) => {
-      // When opening a topic, use the current mode (or default to explain)
-      await openTaskSession(taskId, taskName, isTopicId, mode);
+    openTaskSession: async (taskId: string, taskName: string, isTopicId: boolean = false, subtopic?: string) => {
+      // When opening a topic/subtopic, use the current mode (or default to explain)
+      await openTaskSession(taskId, taskName, isTopicId, mode, subtopic);
     },
     linkedTaskIds,
     linkedTopicIds
@@ -168,43 +168,48 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     }
   }, [currentSession?.id]); // Only re-run when session ID changes
 
-  // Track if we've auto-sent an intro for the current subtopic
-  const lastAutoIntroSubtopic = useRef<string | null>(null);
+  // Track if we've auto-sent an intro for the current subtopic+mode combination
+  const lastAutoIntroKey = useRef<string | null>(null);
 
   // Auto-send intro when a new subtopic is selected and chat is empty
   useEffect(() => {
     const activeSubtopic = props.activeTopic?.activeSubtopic;
+    const topicId = props.activeTopic?.id;
+    
+    // Create a unique key for this subtopic+mode combination
+    const introKey = activeSubtopic && topicId ? `${topicId}:${activeSubtopic}:${mode}` : null;
     
     // Only trigger if:
     // 1. There's an active subtopic
     // 2. Messages are loaded (not loading)
-    // 3. Chat is empty for this mode
-    // 4. We haven't already sent intro for this subtopic in this session
+    // 3. Chat is empty for this subtopic+mode
+    // 4. We haven't already sent intro for this combination
     // 5. Not currently loading/sending a message
     if (
-      activeSubtopic &&
+      introKey &&
       !isLoadingMessages &&
       messages.length === 0 &&
-      lastAutoIntroSubtopic.current !== activeSubtopic &&
+      lastAutoIntroKey.current !== introKey &&
       !isLoading &&
       !inFlightSendRef.current
     ) {
-      lastAutoIntroSubtopic.current = activeSubtopic;
+      lastAutoIntroKey.current = introKey;
       
       // Delay slightly to ensure state is settled
       const timer = setTimeout(() => {
-        // Generate a teaching-focused intro prompt
+        // Generate a teaching-focused intro prompt (no tool-triggering language)
         const topicName = props.activeTopic?.name || 'this topic';
         const introPrompt = mode === 'practice' 
-          ? `I want to practice ${activeSubtopic}. Give me an exam-style question on this subtopic.`
-          : `Let's learn about ${activeSubtopic} (part of ${topicName}). Give me a clear overview and definition, then we can work through examples together.`;
+          ? `Generate an exam-style practice question about "${activeSubtopic}" from the ${topicName} topic. Present the question clearly, then wait for my answer.`
+          : `Teach me about "${activeSubtopic}" (part of ${topicName}). Start with a clear definition and key concepts, then we'll work through examples together.`;
         
-        handleQuickAction(introPrompt);
-      }, 150);
+        // Use sendHiddenPrompt to avoid showing the prompt as a user message
+        sendHiddenPrompt(introPrompt, mode);
+      }, 200);
       
       return () => clearTimeout(timer);
     }
-  }, [props.activeTopic?.activeSubtopic, isLoadingMessages, messages.length, isLoading, mode, props.activeTopic?.name]);
+  }, [props.activeTopic?.activeSubtopic, props.activeTopic?.id, isLoadingMessages, messages.length, isLoading, mode, props.activeTopic?.name]);
 
   const handleNewChat = async () => {
     await createNewSession(mode);
@@ -601,41 +606,40 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
 
       // Execute tool calls (if any) but DO NOT call the AI again.
       // This ensures one backend/Gemini call per user message.
-      // IMPORTANT: The model may respond with tool calls ONLY (no text). In that case,
-      // we still need to show the user a visible assistant message.
-      const toolFeedbackLines: string[] = [];
+      // Tool actions are shown as toasts, NOT added to chat history.
       if (accumulated.toolCalls.size > 0) {
         console.log('Executing tool calls (no follow-up AI call):', Array.from(accumulated.toolCalls.values()));
         for (const toolCall of accumulated.toolCalls.values()) {
           try {
             const toolMsg = await executeToolCall(toolCall);
-            // toolMsg.content is JSON.stringify(result)
+            // Show tool result as toast notification
             try {
               const parsed = JSON.parse(toolMsg.content || '{}');
-              const msg = typeof parsed?.message === 'string'
-                ? parsed.message
-                : typeof parsed?.error === 'string'
-                  ? parsed.error
-                  : null;
-              if (msg) toolFeedbackLines.push(msg);
+              const msg = typeof parsed?.message === 'string' ? parsed.message : null;
+              if (msg) {
+                toast({
+                  title: 'Action completed',
+                  description: msg,
+                  duration: 3000,
+                });
+              }
             } catch {
-              // ignore
+              // ignore parse errors
             }
           } catch (e) {
             console.warn('Tool execution failed:', e);
-            toolFeedbackLines.push('I tried to update your study setup, but something went wrong. Please try again.');
+            toast({
+              title: 'Action failed',
+              description: 'Something went wrong. Please try again.',
+              variant: 'destructive',
+            });
           }
         }
       }
 
-      // If the assistant produced no text, synthesize a short message from tool results.
-      if (!finalContent && toolFeedbackLines.length > 0) {
-        finalContent = toolFeedbackLines.join('\n');
-        queueMicrotask(() => {
-          setMessages((prev) =>
-            prev.map((m) => (m.id === assistantMessageId ? { ...m, content: finalContent } : m))
-          );
-        });
+      // If no text content was produced by the AI, remove the empty placeholder message
+      if (!finalContent) {
+        setMessages((prev) => prev.filter((m) => m.id !== assistantMessageId));
       }
 
       // Save final assistant message to DB with mode
@@ -880,23 +884,25 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       return;
     }
     
-    // If we have an active topic, switch to the mode-specific session for that topic
+    // If we have an active topic, switch to the mode-specific session for that topic+subtopic
     if (props.activeTopic) {
       setIsLoading(true);
       try {
         const session = await switchTopicModeSession(
           props.activeTopic.id,
           props.activeTopic.name,
-          newMode
+          newMode,
+          props.activeTopic.activeSubtopic || undefined
         );
         
         if (session) {
           setMode(newMode);
           
-          // If switching to practice mode and no messages yet, trigger practice question
-          if (newMode === 'practice' && messages.length === 0) {
+          // The auto-intro effect will handle sending practice questions for subtopics
+          // Only manually trigger if no subtopic is active
+          if (newMode === 'practice' && messages.length === 0 && !props.activeTopic.activeSubtopic) {
             const topicContext = props.activeTopic.name ? `on the topic "${props.activeTopic.name}"` : '';
-            const practicePrompt = `[PRACTICE MODE] Give me a practice question ${topicContext}. Use a past paper style question from the Edexcel A-Level Maths specification. Present the question clearly with all necessary information, and wait for my answer before providing any hints or solutions.`;
+            const practicePrompt = `Generate an exam-style practice question ${topicContext}. Present the question clearly, then wait for my answer.`;
             await sendHiddenPrompt(practicePrompt, newMode);
           }
         }
@@ -921,11 +927,11 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         }
       }
       
-      // Trigger AI action for practice mode - use activeTopic from props for better context
+      // Trigger AI action for practice mode
       if (newMode === 'practice') {
         const topicName = currentSession?.title && currentSession.title !== 'A-Level Maths Tutor' ? currentSession.title : '';
         const topicContext = topicName ? `on the topic "${topicName}"` : '';
-        const practicePrompt = `[PRACTICE MODE] Give me a practice question ${topicContext}. Use a past paper style question from the Edexcel A-Level Maths specification. Present the question clearly with all necessary information, and wait for my answer before providing any hints or solutions.`;
+        const practicePrompt = `Generate an exam-style practice question ${topicContext}. Present the question clearly, then wait for my answer.`;
         await sendHiddenPrompt(practicePrompt, newMode);
       }
     }
