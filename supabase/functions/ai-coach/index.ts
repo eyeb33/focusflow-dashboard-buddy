@@ -146,11 +146,20 @@ serve(async (req) => {
     let ragSources: RAGSource[] = [];
     let ragContext = '';
     
-    if (lastUserMessage && userGeminiApiKey) {
-      console.log('[ai-coach] Performing RAG search for query:', lastUserMessage.slice(0, 100));
+    // Check if this is a practice mode auto-question request
+    const isPracticeAutoQuestion = lastUserMessage?.includes('[PRACTICE_MODE_AUTO_QUESTION]');
+    const subtopicForPractice = activeTopic?.activeSubtopic || activeTopic?.name || null;
+    
+    // For practice mode auto-questions, search specifically for the subtopic
+    const ragQuery = isPracticeAutoQuestion && subtopicForPractice
+      ? `Edexcel A-Level Maths past paper question ${subtopicForPractice} exam question practice problem`
+      : lastUserMessage;
+    
+    if (ragQuery && userGeminiApiKey) {
+      console.log('[ai-coach] Performing RAG search for query:', ragQuery.slice(0, 100));
       
       try {
-        const queryEmbedding = await createEmbedding(lastUserMessage, userGeminiApiKey);
+        const queryEmbedding = await createEmbedding(ragQuery, userGeminiApiKey);
         
         if (queryEmbedding) {
           // Use admin client for RAG search to bypass RLS for document access
@@ -162,8 +171,8 @@ serve(async (req) => {
           const { data: matches, error: searchError } = await supabaseAdmin
             .rpc('match_documents', {
               query_embedding: queryEmbedding,
-              match_threshold: 0.5,
-              match_count: 5,
+              match_threshold: isPracticeAutoQuestion ? 0.4 : 0.5, // Lower threshold for practice questions
+              match_count: isPracticeAutoQuestion ? 8 : 5, // More results for practice to find good questions
             });
           
           if (!searchError && matches && matches.length > 0) {
@@ -176,8 +185,23 @@ serve(async (req) => {
             
             console.log(`[ai-coach] Found ${ragSources.length} relevant curriculum sections`);
             
-            // Build context from sources
-            ragContext = `\n\n## 📚 CURRICULUM REFERENCE (from official Edexcel specification)
+            // Build context from sources - different formatting for practice mode
+            if (isPracticeAutoQuestion) {
+              ragContext = `\n\n## 📚 PAST PAPER & CURRICULUM REFERENCE
+
+The following content from Edexcel materials is relevant to "${subtopicForPractice}". Use these as inspiration to generate an appropriate practice question:
+
+${ragSources.map((source, i) => {
+  const meta = source.metadata;
+  const citation = meta.topic ? `[${meta.topic}${meta.page_number ? `, p.${meta.page_number}` : ''}]` : `[Source ${i + 1}]`;
+  return `### ${citation}
+${source.content}
+`;
+}).join('\n')}
+
+**INSTRUCTION**: Using the curriculum content above, generate a realistic Edexcel-style exam question specifically about "${subtopicForPractice}". If you find an actual past paper question in the sources, you may adapt it. Include mark allocation [X marks] for each part.`;
+            } else {
+              ragContext = `\n\n## 📚 CURRICULUM REFERENCE (from official Edexcel specification)
 
 The following sections from the curriculum specification are relevant to this question. Use them to ground your response and cite them when appropriate:
 
@@ -190,6 +214,7 @@ ${source.content}
 }).join('\n')}
 
 **IMPORTANT**: When your answer uses information from these curriculum sections, include a citation like "According to the specification..." or "The Edexcel curriculum states..." to help students connect to official materials.`;
+            }
           }
         }
       } catch (ragError) {
@@ -259,16 +284,16 @@ ${source.content}
 8. Be encouraging but maintain academic rigor`
       },
       practice: {
-        intro: `You are an expert A-Level Mathematics tutor specializing in the Edexcel specification. Your role is to generate PRACTICE problems and guide students through solving them independently.`,
+        intro: `You are an expert A-Level Mathematics tutor specializing in the Edexcel specification. Your role is to generate targeted PRACTICE problems specifically related to the current subtopic and guide students through solving them independently.`,
         style: `Your teaching style in PRACTICE mode:
-1. Generate appropriate practice problems matching Edexcel exam style
-2. Start with the problem, then wait for the student's attempt
-3. Provide hints rather than solutions when students are stuck
-4. Grade difficulty appropriately (state if it's Pure 1/2, Stats 1, Mechanics 1 level)
-5. After they solve it, offer a similar problem for reinforcement
-6. Use proper mathematical notation with LaTeX
-7. Celebrate correct answers and explain any errors kindly
-8. Mix problem types to build comprehensive understanding`
+1. Generate questions STRICTLY about the current subtopic - do not drift to other topics
+2. When curriculum/past-paper content is provided, use it to create authentic Edexcel-style questions
+3. Present the question clearly with proper LaTeX formatting and mark allocation [X marks]
+4. Wait for the student's attempt before providing any guidance
+5. Provide hints rather than solutions when students are stuck
+6. Grade difficulty appropriately (state difficulty level or paper reference)
+7. After they solve it, offer feedback and a follow-up question on the SAME subtopic
+8. Use proper mathematical notation with LaTeX throughout`
       },
       upload: {
         intro: `You are an expert A-Level Mathematics tutor specializing in the Edexcel specification. Your role is to analyze images of mathematical questions and student working.`,
