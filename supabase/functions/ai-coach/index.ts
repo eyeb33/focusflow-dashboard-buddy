@@ -65,10 +65,12 @@ serve(async (req) => {
       triggerContext,
       timerState,
       taskState,
+      activeTopic, // NEW: Curriculum topic context from frontend
       mode = 'explain',
       request_id: requestId,
       imageData,
       imageIntent,
+      isHiddenPrompt,
     } = rawBody ?? {};
 
     const authHeader = req.headers.get('Authorization');
@@ -227,11 +229,16 @@ ${source.content}
     // Calculate context
     const completedToday = todayStats.total_completed_sessions || 0;
     const focusTimeToday = todayStats.total_focus_time || 0;
-    const activeStudyTopic =
-      (taskState?.tasks?.find((t: any) => t.is_active)?.name) ||
-      ((activeTasks as any[]).find((t: any) => t.is_active)?.name) ||
-      triggerContext?.taskName ||
-      'No active topic';
+    
+    // PRIORITY: Use activeTopic from curriculum if provided, otherwise fall back to taskState
+    const currentTopicName = activeTopic?.activeSubtopic 
+      ? `${activeTopic.name} → ${activeTopic.activeSubtopic}`
+      : activeTopic?.name 
+        || (taskState?.tasks?.find((t: any) => t.is_active)?.name) 
+        || ((activeTasks as any[]).find((t: any) => t.is_active)?.name) 
+        || triggerContext?.taskName 
+        || null;
+    
     const pendingTopicsCount = taskState?.tasks?.length ?? activeTasks.length;
 
     // Build system prompt with mode-specific behavior
@@ -310,16 +317,21 @@ You are an expert in ALL areas of the Edexcel A-Level Mathematics specification:
 - Forces and Newton's laws
 - Moments
 
-${activeTask ? `📚 CURRENT STUDY TOPIC: "${activeTask.name}"
-${activeTask.sub_tasks?.length > 0 ? `   Sub-topics: ${activeTask.sub_tasks.map((st: any) => `"${st.name}"${st.completed ? ' ✓' : ''}`).join(', ')}` : ''}
+${activeTopic ? `📚 CURRENT STUDY FOCUS: "${activeTopic.name}"${activeTopic.activeSubtopic ? ` → Subtopic: "${activeTopic.activeSubtopic}"` : ''}
+${activeTopic.subtopics?.length > 0 ? `Available subtopics: ${activeTopic.subtopics.map((st: string) => '"' + st + '"' + (activeTopic.completedSubtopics?.includes(st) ? ' ✓' : '')).join(', ')}` : ''}
+
+**IMPORTANT**: Focus ALL your teaching strictly on "${activeTopic.activeSubtopic || activeTopic.name}". Do NOT teach other topics unless the student explicitly asks.
+
+` : activeTask ? `📚 CURRENT STUDY TOPIC: "${activeTask.name}"
+${activeTask.sub_tasks?.length > 0 ? '   Sub-topics: ' + activeTask.sub_tasks.map((st: any) => '"' + st.name + '"' + (st.completed ? ' ✓' : '')).join(', ') : ''}
 
 Focus your tutoring on this topic when relevant.
 
-` : ''}${taskState && taskState.tasks?.length > 0 ? `Study Topics (can be managed via tools):
+` : ''}${!activeTopic && taskState && taskState.tasks?.length > 0 ? `Study Topics (can be managed via tools):
 ${taskState.tasks.map((t: any, i: number) => {
-  let topicInfo = `${i + 1}. "${t.name}" → ID: ${t.id}${t.is_active ? ' (CURRENT)' : ''}`;
+  let topicInfo = (i + 1) + '. "' + t.name + '" → ID: ' + t.id + (t.is_active ? ' (CURRENT)' : '');
   if (t.sub_tasks && t.sub_tasks.length > 0) {
-    topicInfo += ` [${t.sub_tasks.filter((st: any) => st.completed).length}/${t.sub_tasks.length} complete]`;
+    topicInfo += ' [' + t.sub_tasks.filter((st: any) => st.completed).length + '/' + t.sub_tasks.length + ' complete]';
   }
   return topicInfo;
 }).join('\n')}
