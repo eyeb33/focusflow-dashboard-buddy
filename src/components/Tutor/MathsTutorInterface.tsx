@@ -200,7 +200,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         // Generate a teaching-focused intro prompt (no tool-triggering language)
         const topicName = props.activeTopic?.name || 'this topic';
         const introPrompt = mode === 'practice' 
-          ? `Generate an exam-style practice question about "${activeSubtopic}" from the ${topicName} topic. Present the question clearly, then wait for my answer.`
+          ? `[PRACTICE_MODE_AUTO_QUESTION] Generate a past-paper style Edexcel A-Level Maths question specifically about "${activeSubtopic}" from the ${topicName} topic. Search the curriculum documents for relevant past-paper questions on this exact subtopic. Present only the question clearly (with proper LaTeX formatting), state the marks available, then wait for my attempt.`
           : `Teach me about "${activeSubtopic}" (part of ${topicName}). Start with a clear definition and key concepts, then we'll work through examples together.`;
         
         // Use sendHiddenPrompt to avoid showing the prompt as a user message
