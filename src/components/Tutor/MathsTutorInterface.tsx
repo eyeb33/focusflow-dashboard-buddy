@@ -455,6 +455,15 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         tasks: tasks.map((t) => ({ id: t.id, name: t.name, is_active: t.isActive, completed: t.completed })),
       };
 
+      // Build activeTopic context for the AI
+      const activeTopicContext = props.activeTopic ? {
+        id: props.activeTopic.id,
+        name: props.activeTopic.name,
+        activeSubtopic: props.activeTopic.activeSubtopic,
+        subtopics: props.activeTopic.subtopics,
+        completedSubtopics: props.activeTopic.completedSubtopics,
+      } : null;
+
       let finalContent = '';
 
       const callAi = async () => {
@@ -476,6 +485,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
             messages: conversationMessages,
             mode,
             taskState,
+            activeTopic: activeTopicContext,
           }),
         });
       };
@@ -741,6 +751,15 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         tasks: tasks.map((t) => ({ id: t.id, name: t.name, is_active: t.isActive, completed: t.completed })),
       };
 
+      // Build activeTopic context for the AI
+      const activeTopicContext = props.activeTopic ? {
+        id: props.activeTopic.id,
+        name: props.activeTopic.name,
+        activeSubtopic: props.activeTopic.activeSubtopic,
+        subtopics: props.activeTopic.subtopics,
+        completedSubtopics: props.activeTopic.completedSubtopics,
+      } : null;
+
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-coach`, {
         method: 'POST',
         headers: {
@@ -752,6 +771,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
           messages: conversationMessages,
           mode: targetMode,
           taskState,
+          activeTopic: activeTopicContext,
           isHiddenPrompt: true, // Signal to backend this is a mode-triggered prompt
         }),
       });
@@ -845,7 +865,36 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         }
       }
 
-      // Save assistant message to DB with mode
+      // Handle tool calls via toast notifications (same as handleSend)
+      if (accumulated.toolCalls.size > 0) {
+        for (const toolCall of accumulated.toolCalls.values()) {
+          try {
+            const toolMsg = await executeToolCall(toolCall);
+            try {
+              const parsed = JSON.parse(toolMsg.content || '{}');
+              const msg = typeof parsed?.message === 'string' ? parsed.message : null;
+              if (msg) {
+                toast({
+                  title: 'Action completed',
+                  description: msg,
+                  duration: 3000,
+                });
+              }
+            } catch {
+              // ignore parse errors
+            }
+          } catch (e) {
+            console.warn('Tool execution failed:', e);
+          }
+        }
+      }
+
+      // If no text content was produced, remove the empty placeholder message
+      if (!accumulated.content) {
+        setMessages((prev) => prev.filter((m) => m.id !== assistantMessageId));
+      }
+
+      // Save assistant message to DB with mode (only if there's content)
       if (accumulated.content) {
         await supabase.from('coach_messages').insert({
           conversation_id: sessionId,
