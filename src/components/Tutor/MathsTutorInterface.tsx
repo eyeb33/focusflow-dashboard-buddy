@@ -171,13 +171,19 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
   // Track if we've auto-sent an intro for the current subtopic+mode combination
   const lastAutoIntroKey = useRef<string | null>(null);
 
-  // Auto-send intro when a new subtopic is selected and chat is empty
+  // Auto-send intro ONLY for Practice mode when a new subtopic is selected and chat is empty
+  // For Explain mode, the static overview (from subtopicOverviews.ts) is sufficient - no AI auto-intro
   useEffect(() => {
+    // Only auto-trigger for Practice mode
+    if (mode !== 'practice') {
+      return;
+    }
+    
     const activeSubtopic = props.activeTopic?.activeSubtopic;
     const topicId = props.activeTopic?.id;
     
     // Create a unique key for this subtopic+mode combination
-    const introKey = activeSubtopic && topicId ? `${topicId}:${activeSubtopic}:${mode}` : null;
+    const introKey = activeSubtopic && topicId ? `${topicId}:${activeSubtopic}:practice` : null;
     
     // Only trigger if:
     // 1. There's an active subtopic
@@ -197,14 +203,11 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       
       // Delay slightly to ensure state is settled
       const timer = setTimeout(() => {
-        // Generate a teaching-focused intro prompt (no tool-triggering language)
         const topicName = props.activeTopic?.name || 'this topic';
-        const introPrompt = mode === 'practice' 
-          ? `[PRACTICE_MODE_AUTO_QUESTION] Generate a past-paper style Edexcel A-Level Maths question specifically about "${activeSubtopic}" from the ${topicName} topic. Search the curriculum documents for relevant past-paper questions on this exact subtopic. Present only the question clearly (with proper LaTeX formatting), state the marks available, then wait for my attempt.`
-          : `Teach me about "${activeSubtopic}" (part of ${topicName}). Start with a clear definition and key concepts, then we'll work through examples together.`;
+        const introPrompt = `[PRACTICE_MODE_AUTO_QUESTION] Generate a past-paper style Edexcel A-Level Maths question specifically about "${activeSubtopic}" from the ${topicName} topic. Search the curriculum documents for relevant past-paper questions on this exact subtopic. Present only the question clearly (with proper LaTeX formatting), state the marks available, then wait for my attempt.`;
         
         // Use sendHiddenPrompt to avoid showing the prompt as a user message
-        sendHiddenPrompt(introPrompt, mode);
+        sendHiddenPrompt(introPrompt, 'practice');
       }, 200);
       
       return () => clearTimeout(timer);
