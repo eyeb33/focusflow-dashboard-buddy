@@ -87,7 +87,8 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
   const { getTopicTotalTime } = useTopicTime();
 
   const [inputValue, setInputValue] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // AI request in-flight / streaming
+  const [isSwitchingMode, setIsSwitchingMode] = useState(false); // purely UI/session switching
   const [mode, setMode] = useState<TutorMode>('explain');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitleValue, setEditTitleValue] = useState('');
@@ -151,6 +152,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     : 0;
 
   const isRateLimited = cooldownUntil !== null && cooldownSecondsRemaining > 0;
+  const uiBusy = isLoading || isSwitchingMode || isImageProcessing;
 
   useEffect(() => {
     if (cooldownUntil && cooldownSecondsRemaining === 0) {
@@ -371,7 +373,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
   };
 
   const handleSend = async () => {
-    if (!inputValue.trim() || isLoading || !user) return;
+    if (!inputValue.trim() || uiBusy || !user) return;
     if (inFlightSendRef.current) return;
 
     // A per-send request id to correlate frontend -> backend -> Gemini logs.
@@ -928,17 +930,17 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
 
   // Handle mode change - switch to mode-specific session for the current topic
   const handleModeChange = async (newMode: TutorMode) => {
-    if (newMode === mode || isLoading) return;
-    
+    if (newMode === mode || uiBusy) return;
+
     // For upload mode, just open the modal instead of changing mode
     if (newMode === 'upload') {
       setShowImageUploadModal(true);
       return;
     }
-    
+
     // If we have an active topic, switch to the mode-specific session for that topic+subtopic
     if (props.activeTopic) {
-      setIsLoading(true);
+      setIsSwitchingMode(true);
       try {
         const session = await switchTopicModeSession(
           props.activeTopic.id,
@@ -946,11 +948,11 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
           newMode,
           props.activeTopic.activeSubtopic || undefined
         );
-        
+
         if (session) {
           setMode(newMode);
-          
-          // The auto-intro effect will handle sending practice questions for subtopics
+
+          // The Practice auto-question is handled by the effect keyed by (topicId + subtopic + mode)
           // Only manually trigger if no subtopic is active
           if (newMode === 'practice' && messages.length === 0 && !props.activeTopic.activeSubtopic) {
             const topicContext = props.activeTopic.name ? `on the topic "${props.activeTopic.name}"` : '';
@@ -961,12 +963,12 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       } catch (error) {
         console.error('Failed to switch mode session:', error);
       } finally {
-        setIsLoading(false);
+        setIsSwitchingMode(false);
       }
     } else {
       // No active topic - just update mode locally (for general chat)
       setMode(newMode);
-      
+
       // Persist the mode to the database by updating the conversation's persona field
       if (currentSession) {
         try {
@@ -978,7 +980,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
           console.error('Failed to persist mode:', error);
         }
       }
-      
+
       // Trigger AI action for practice mode
       if (newMode === 'practice') {
         const topicName = currentSession?.title && currentSession.title !== 'A-Level Maths Tutor' ? currentSession.title : '';
@@ -1254,7 +1256,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
             variant={mode === 'explain' ? 'default' : 'outline'}
             size="sm"
             className="flex-1 px-2 min-w-0"
-            disabled={isLoading}
+            disabled={uiBusy}
           >
             <BookOpen className="w-4 h-4 flex-shrink-0" />
             <span className="ml-1.5 truncate hidden sm:inline">Explain</span>
@@ -1264,7 +1266,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
             variant={mode === 'practice' ? 'default' : 'outline'}
             size="sm"
             className="flex-1 px-2 min-w-0"
-            disabled={isLoading}
+            disabled={uiBusy}
           >
             <PenTool className="w-4 h-4 flex-shrink-0" />
             <span className="ml-1.5 truncate hidden sm:inline">Practice</span>
@@ -1274,7 +1276,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
             variant="outline"
             size="sm"
             className="flex-1 px-2 min-w-0"
-            disabled={isLoading}
+            disabled={uiBusy}
           >
             <ImagePlus className="w-4 h-4 flex-shrink-0" />
             <span className="ml-1.5 truncate hidden sm:inline">Upload</span>
@@ -1291,21 +1293,24 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         ) : messages.length === 0 ? (
           <div className="text-center text-muted-foreground mt-8 px-4">
             {mode === 'practice' ? (
-              <>
-                <PenTool className="w-16 h-16 mx-auto mb-4 text-primary/50" />
-                <h4 className="text-lg font-semibold mb-2">Practice Mode</h4>
-                <p className="mb-4">I'll give you past paper questions to work through.</p>
-                <div className="text-sm text-left bg-muted/50 rounded-lg p-4 max-w-md mx-auto">
-                  <p className="font-medium mb-2">How it works:</p>
-                  <ul className="list-disc list-inside space-y-1">
-                    <li>Select a topic from the curriculum</li>
-                    <li>I'll provide exam-style questions</li>
-                    <li>Work through them at your own pace</li>
-                    <li>Use Upload mode to check your handwritten answers</li>
-                  </ul>
-                  <p className="mt-3 text-xs italic">Try asking: "Give me a quadratics question" or "Practice integration by parts"</p>
-                </div>
-              </>
+              props.activeTopic?.activeSubtopic ? (
+                <>
+                  <PenTool className="w-16 h-16 mx-auto mb-4 text-primary/50" />
+                  <h4 className="text-lg font-semibold mb-2">Generating a practice question…</h4>
+                  <p className="mb-4">
+                    {`Creating a past-paper style question for ${props.activeTopic.activeSubtopic}.`}
+                  </p>
+                  <div className="flex items-center justify-center py-2">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <PenTool className="w-16 h-16 mx-auto mb-4 text-primary/50" />
+                  <h4 className="text-lg font-semibold mb-2">Practice Mode</h4>
+                  <p className="mb-4">Select a subtopic to get a targeted past-paper question.</p>
+                </>
+              )
             ) : mode === 'upload' ? (
               <>
                 <ImagePlus className="w-16 h-16 mx-auto mb-4 text-primary/50" />
@@ -1472,12 +1477,12 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ask a question or paste a problem..."
-                disabled={isLoading || isRateLimited}
+                disabled={uiBusy || isRateLimited}
                 className="flex-1 h-12 text-base"
               />
               <Button
                 onClick={handleSend}
-                disabled={!inputValue.trim() || isLoading || isRateLimited}
+                disabled={!inputValue.trim() || uiBusy || isRateLimited}
                 size="icon"
                 className="h-12 w-12"
               >
