@@ -8,10 +8,11 @@ const corsHeaders = {
 };
 
 // RAG: Create embedding using Gemini (uses user's API key - no extra cost!)
+// NOTE: text-embedding-004 requires v1 API, not v1beta
 async function createEmbedding(text: string, geminiApiKey: string): Promise<number[] | null> {
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`,
+      `https://generativelanguage.googleapis.com/v1/models/text-embedding-004:embedContent?key=${geminiApiKey}`,
       {
         method: 'POST',
         headers: {

@@ -65,6 +65,71 @@ interface MathsTutorInterfaceProps {
   onSubtopicClick?: (subtopic: string) => void;
 }
 
+// Collapsible topic overview card that persists above chat messages
+interface TopicOverviewCardProps {
+  activeTopic: ActiveTopicInfo;
+  getSubtopicOverview: typeof getSubtopicOverview;
+  getTopicOverview: typeof getTopicOverview;
+}
+
+const TopicOverviewCard: React.FC<TopicOverviewCardProps> = ({ activeTopic, getSubtopicOverview: getSubtopicOverviewFn, getTopicOverview: getTopicOverviewFn }) => {
+  const [isExpanded, setIsExpanded] = useState(true);
+  
+  const activeSubtopic = activeTopic.activeSubtopic;
+  const subtopicOverview = activeSubtopic 
+    ? getSubtopicOverviewFn(activeTopic.id, activeSubtopic) 
+    : null;
+  const topicOverview = getTopicOverviewFn(activeTopic.id);
+  
+  const overview = subtopicOverview || topicOverview;
+  const displayTitle = activeSubtopic 
+    ? (subtopicOverview?.title || activeSubtopic)
+    : (topicOverview?.title || activeTopic.name);
+  
+  if (!overview) return null;
+  
+  return (
+    <div className="bg-muted/30 border border-border/50 rounded-lg overflow-hidden mb-4">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <BookOpen className="w-4 h-4 text-primary" />
+          <span className="font-medium text-sm">{displayTitle}</span>
+        </div>
+        <div className="text-xs text-muted-foreground">
+          {isExpanded ? '▲ Collapse' : '▼ Expand'}
+        </div>
+      </button>
+      
+      {isExpanded && (
+        <div className="px-3 pb-3 border-t border-border/30">
+          <p className="text-sm text-muted-foreground mt-2 mb-3">
+            {overview.description}
+          </p>
+          <div className="text-xs">
+            <p className="font-medium mb-1.5">Key points:</p>
+            <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
+              {overview.keyPoints.slice(0, 4).map((point, i) => (
+                <li key={i}>{point}</li>
+              ))}
+            </ul>
+            {overview.examTip && (
+              <div className="mt-2 pt-2 border-t border-border/30">
+                <p className="flex items-start gap-1.5">
+                  <Lightbulb className="w-3 h-3 text-warning flex-shrink-0 mt-0.5" />
+                  <span><span className="font-medium">Exam tip:</span> {overview.examTip}</span>
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfaceProps>((props, ref) => {
   const { user } = useAuth();
   const {
@@ -1237,7 +1302,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
                   </span>
                   {props.activeTopic.completedSubtopics.length > 0 && (
                     <span className="flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3 text-green-500" />
+                      <CheckCircle className="w-3 h-3 text-success" />
                       {props.activeTopic.completedSubtopics.length}/{props.activeTopic.subtopics.length} complete
                     </span>
                   )}
@@ -1286,6 +1351,15 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
 
       {/* Messages - Scrollable */}
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Always show topic overview as a collapsible card above messages */}
+        {mode === 'explain' && props.activeTopic && (
+          <TopicOverviewCard 
+            activeTopic={props.activeTopic}
+            getSubtopicOverview={getSubtopicOverview}
+            getTopicOverview={getTopicOverview}
+          />
+        )}
+        
         {isLoadingMessages ? (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -1327,52 +1401,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
                   <p className="mt-3 text-xs italic">Click the Upload button above to get started!</p>
                 </div>
               </>
-            ) : props.activeTopic ? (
-              // Topic or subtopic-specific overview when a topic is selected
-              (() => {
-                const activeSubtopic = props.activeTopic.activeSubtopic;
-                const subtopicOverview = activeSubtopic 
-                  ? getSubtopicOverview(props.activeTopic.id, activeSubtopic) 
-                  : null;
-                const topicOverview = getTopicOverview(props.activeTopic.id);
-                
-                // Use subtopic overview if available, otherwise fall back to topic overview
-                const overview = subtopicOverview || topicOverview;
-                const displayTitle = activeSubtopic 
-                  ? (subtopicOverview?.title || activeSubtopic)
-                  : (topicOverview?.title || props.activeTopic.name);
-                
-                return (
-                  <>
-                    <BookOpen className="w-16 h-16 mx-auto mb-4 text-primary/50" />
-                    <h4 className="text-lg font-semibold mb-2">{displayTitle}</h4>
-                    <p className="mb-4 text-foreground/80">
-                      {overview?.description || `Let's explore ${activeSubtopic || props.activeTopic.name} together.`}
-                    </p>
-                    {overview && (
-                      <div className="text-sm text-left bg-muted/50 rounded-lg p-4 max-w-md mx-auto">
-                        <p className="font-medium mb-2">
-                          {activeSubtopic ? 'What you\'ll learn:' : 'Key concepts you\'ll learn:'}
-                        </p>
-                        <ul className="list-disc list-inside space-y-1">
-                          {overview.keyPoints.map((point, i) => (
-                            <li key={i}>{point}</li>
-                          ))}
-                        </ul>
-                        {overview.examTip && (
-                          <div className="mt-3 pt-3 border-t border-border/50">
-                            <p className="text-xs flex items-start gap-1.5">
-                              <Lightbulb className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
-                              <span><span className="font-medium">Exam tip:</span> {overview.examTip}</span>
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </>
-                );
-              })()
-            ) : (
+            ) : !props.activeTopic ? (
               <>
                 <BookOpen className="w-16 h-16 mx-auto mb-4 text-primary/50" />
                 <h4 className="text-lg font-semibold mb-2">Welcome to your A-Level Maths Tutor!</h4>
@@ -1388,6 +1417,11 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
                   <p className="mt-3 text-xs italic">I'll guide you through problems step-by-step, helping you learn rather than just giving answers.</p>
                 </div>
               </>
+            ) : (
+              // For explain mode with active topic but no messages, show friendly prompt
+              <div className="flex flex-col items-center justify-center py-8">
+                <p className="text-sm text-muted-foreground">Ask me anything about this topic!</p>
+              </div>
             )}
           </div>
         ) : (

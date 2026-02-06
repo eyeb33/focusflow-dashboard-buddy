@@ -57,7 +57,7 @@ export const TopicTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     prevIsRunningRef.current = isNowRunning;
   }, [timer.isRunning, timer.timerType, tracking]);
 
-  // Handle topic changes while timer is running
+  // Handle topic changes while timer is running or preparing to start
   const setActiveTopicForTimer = useCallback(async (topicId: string | null) => {
     if (!topicId) return;
     
@@ -66,27 +66,34 @@ export const TopicTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Always update the pending topic ref so timer start can use it
     pendingTopicIdRef.current = topicId;
     
-    // If no previous topic, this is initial set
-    if (!prevTopicId) {
-      // If timer is already running, we need to start tracking for this topic
-      if (timer.isRunning && !tracking.currentTimerSessionId) {
+    // If timer isn't running and no active session, just store the topic for later
+    // The useEffect will pick this up when timer starts
+    if (!timer.isRunning && !tracking.currentTimerSessionId) {
+      return;
+    }
+    
+    // If no previous topic but timer is already running, start tracking now
+    if (!prevTopicId && timer.isRunning) {
+      if (!tracking.currentTimerSessionId) {
         await tracking.startTimer(
           topicId, 
           timer.timerType === 'freeStudy' ? 'free' : 'pomodoro'
         );
+      } else if (tracking.currentTopicId !== topicId) {
+        // Session exists but tracking different topic - switch to new topic
+        await tracking.switchTopic(topicId);
       }
       return;
     }
     
     // Topic is changing
-    if (prevTopicId !== topicId) {
+    if (prevTopicId && prevTopicId !== topicId) {
       // If timer is running, switch the segment to new topic
       if (timer.isRunning) {
         await tracking.switchTopic(topicId);
       }
-      // If timer is paused, just update the topic reference for next resume
+      // If timer is paused but we have a session, update for next resume
       else if (tracking.currentTimerSessionId) {
-        // Update internal state - next resume will use this topic
         await tracking.switchTopic(topicId);
       }
     }
