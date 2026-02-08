@@ -153,6 +153,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
 
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false); // AI request in-flight / streaming
+  const [loadingForSessionId, setLoadingForSessionId] = useState<string | null>(null);
   const [isSwitchingMode, setIsSwitchingMode] = useState(false); // purely UI/session switching
   const [mode, setMode] = useState<TutorMode>('explain');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -184,12 +185,16 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
   // Expose openTaskSession and linkedTaskIds via ref for parent components
   useImperativeHandle(ref, () => ({
     openTaskSession: async (taskId: string, taskName: string, isTopicId: boolean = false, subtopic?: string) => {
-      // When opening a topic/subtopic, use the current mode (or default to explain)
-      await openTaskSession(taskId, taskName, isTopicId, mode, subtopic);
+      // IMPORTANT UX RULE:
+      // Clicking a topic/subtopic from the curriculum MUST always open Explain mode.
+      // Practice is only entered via the explicit Practice button.
+      const forcedMode: TutorMode = 'explain';
+      setMode(forcedMode);
+      await openTaskSession(taskId, taskName, isTopicId, forcedMode, subtopic);
     },
     linkedTaskIds,
     linkedTopicIds
-  }), [openTaskSession, linkedTaskIds, linkedTopicIds, mode]);
+  }), [openTaskSession, linkedTaskIds, linkedTopicIds]);
 
   const scrollToBottom = () => {
     // Use container scroll instead of scrollIntoView to prevent page scroll
@@ -467,7 +472,10 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     const messageContent = inputValue.trim();
     setInputValue('');
     setShowQuickActions(false);
+
+    // Mark loading, but associate it with whichever session we end up sending to.
     setIsLoading(true);
+    setLoadingForSessionId(currentSession?.id ?? null);
 
     // Unlock background AI only after the user explicitly sends their first tutor message
     try {
@@ -484,6 +492,9 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         if (!newSession) throw new Error('Failed to create session');
         sessionId = newSession.id;
       }
+
+      // Ensure the typing indicator is ONLY shown for the session we're writing to.
+      setLoadingForSessionId(sessionId);
 
       // Capture the mode at send time so the message icon persists
       const messageMode = mode;
@@ -751,6 +762,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     } finally {
       inFlightSendRef.current = false;
       setIsLoading(false);
+      setLoadingForSessionId(null);
     }
   };
 
@@ -791,7 +803,10 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     
     inFlightSendRef.current = true;
     setShowQuickActions(false);
+
+    // Mark loading, but only show typing indicator for the session being written to.
     setIsLoading(true);
+    setLoadingForSessionId(currentSession?.id ?? null);
 
     try {
       // Ensure we have a session
@@ -801,6 +816,8 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         if (!newSession) throw new Error('Failed to create session');
         sessionId = newSession.id;
       }
+
+      setLoadingForSessionId(sessionId);
 
       // Get user's session token for edge function auth
       const { data: { session } } = await supabase.auth.getSession();
@@ -990,6 +1007,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     } finally {
       inFlightSendRef.current = false;
       setIsLoading(false);
+      setLoadingForSessionId(null);
     }
   };
 
@@ -1432,7 +1450,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
             ))
         )}
 
-        {isLoading && (
+        {isLoading && loadingForSessionId === currentSession?.id && (
           <div className="flex gap-3 items-start">
             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-sm">
               {mode === 'practice' ? (
