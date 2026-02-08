@@ -8,18 +8,17 @@ const corsHeaders = {
 };
 
 // RAG: Create embedding using Gemini (uses user's API key - no extra cost!)
-// NOTE: text-embedding-004 requires v1 API, not v1beta
+// NOTE: gemini-embedding-001 is the correct model for embeddings
 async function createEmbedding(text: string, geminiApiKey: string): Promise<number[] | null> {
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/text-embedding-004:embedContent?key=${geminiApiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${geminiApiKey}`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'models/text-embedding-004',
           content: {
             parts: [{ text }]
           },
@@ -294,7 +293,10 @@ ${source.content}
 5. Provide hints rather than solutions when students are stuck
 6. Grade difficulty appropriately (state difficulty level or paper reference)
 7. After they solve it, offer feedback and a follow-up question on the SAME subtopic
-8. Use proper mathematical notation with LaTeX throughout`
+8. Use proper mathematical notation with LaTeX throughout
+
+**CRITICAL FOR [PRACTICE_MODE_AUTO_QUESTION] REQUESTS:**
+When you receive a message starting with [PRACTICE_MODE_AUTO_QUESTION], you MUST immediately generate a practice question as your response. Do NOT call any tools like get_tasks - just generate the question directly with proper LaTeX formatting and mark allocation.`
       },
       upload: {
         intro: `You are an expert A-Level Mathematics tutor specializing in the Edexcel specification. Your role is to analyze images of mathematical questions and student working.`,
