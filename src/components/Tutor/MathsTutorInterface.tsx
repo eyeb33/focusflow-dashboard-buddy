@@ -1425,9 +1425,11 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
             )}
           </div>
         ) : (
-          messages.map((message) => (
-            <MathsMessage key={message.id} message={message} mode={message.mode || 'explain'} />
-          ))
+          messages
+            .filter((message) => message.role === 'user' || (message.role === 'assistant' && message.content.trim()))
+            .map((message) => (
+              <MathsMessage key={message.id} message={message} mode={message.mode || 'explain'} />
+            ))
         )}
 
         {isLoading && (
