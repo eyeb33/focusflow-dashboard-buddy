@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Send, BookOpen, PenTool, ImagePlus, Clock, CheckCircle, Check, X, Pencil, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,8 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import MathsMessage, { RAGSource, TutorMode } from './MathsMessage';
+import MathsMessage, { TutorMode } from './MathsMessage';
+import { RAGSource, readAIStream, saveAssistantMessage, parseStreamChunk, ToolCall } from '@/hooks/useAIStreaming';
 import ImageUploadModal, { ImageIntent } from './ImageUploadModal';
 import { ChatMessage } from '@/hooks/useChatSessions';
 import { useChatSessionsContext } from '@/contexts/ChatSessionsContext';
@@ -19,6 +20,7 @@ import { getSubtopicOverview } from '@/data/subtopicOverviews';
 
 // TutorMode is now imported from MathsMessage
 
+// AIMessage for conversation context sent to the edge function
 interface AIMessage {
   role: 'user' | 'assistant' | 'tool';
   content: string | null;
@@ -27,14 +29,7 @@ interface AIMessage {
   name?: string;
 }
 
-interface ToolCall {
-  id: string;
-  type: 'function';
-  function: {
-    name: string;
-    arguments: string;
-  };
-}
+// ToolCall and ToolResult types are imported from useAIStreaming
 
 interface ToolResult {
   tool_call_id: string;
@@ -394,53 +389,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     };
   };
 
-  // Parse streaming response for content and tool calls
-  const parseStreamChunk = (parsed: any, accumulated: { content: string; toolCalls: Map<string, ToolCall> }) => {
-    const delta = parsed.choices?.[0]?.delta;
-    
-    if (delta?.content) {
-      accumulated.content += delta.content;
-    }
-    
-    if (delta?.tool_calls) {
-      for (const tc of delta.tool_calls) {
-        // Use tool call id as key, or generate a unique key if id is missing
-        // Some streaming backends send multiple tool calls with different names but same index
-        const toolCallId = tc.id || `tool_${accumulated.toolCalls.size}`;
-        
-        // Check if this is a new tool call (has a new function name for the same id)
-        const existingByName = Array.from(accumulated.toolCalls.values()).find(
-          existing => existing.id === toolCallId && existing.function.name && tc.function?.name && existing.function.name !== tc.function.name
-        );
-        
-        // If we found an existing tool call with a different name, this is a new tool call
-        if (existingByName) {
-          const newKey = `${toolCallId}_${accumulated.toolCalls.size}`;
-          accumulated.toolCalls.set(newKey, {
-            id: newKey,
-            type: 'function',
-            function: { name: tc.function?.name || '', arguments: tc.function?.arguments || '' }
-          });
-        } else if (!accumulated.toolCalls.has(toolCallId)) {
-          accumulated.toolCalls.set(toolCallId, {
-            id: toolCallId,
-            type: 'function',
-            function: { name: '', arguments: '' }
-          });
-          const existing = accumulated.toolCalls.get(toolCallId)!;
-          if (tc.function?.name) existing.function.name = tc.function.name;
-          if (tc.function?.arguments) existing.function.arguments += tc.function.arguments;
-        } else {
-          const existing = accumulated.toolCalls.get(toolCallId)!;
-          if (tc.id) existing.id = tc.id;
-          if (tc.function?.name) existing.function.name = tc.function.name;
-          if (tc.function?.arguments) existing.function.arguments += tc.function.arguments;
-        }
-      }
-    }
-    
-    return accumulated;
-  };
+  // parseStreamChunk is now imported from useAIStreaming
 
   const handleSend = async () => {
     if (!inputValue.trim() || uiBusy || !user) return;
@@ -766,12 +715,15 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     }
   };
 
-  const handleQuickAction = async (message: string) => {
+  const handleQuickAction = useCallback(async (message: string) => {
+    // Set input and trigger send directly — avoid setTimeout race
     setInputValue(message);
-    setTimeout(() => {
-      handleSend();
-    }, 0);
-  };
+    // Wait one frame for React to flush, then trigger
+    requestAnimationFrame(() => {
+      const sendBtn = document.querySelector('[data-send-btn]') as HTMLButtonElement | null;
+      sendBtn?.click();
+    });
+  }, []);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {

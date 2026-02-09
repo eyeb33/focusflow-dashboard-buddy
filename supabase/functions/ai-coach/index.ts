@@ -239,33 +239,43 @@ ${source.content}
       }
     }
 
-    const [sessionsResult, tasksResult, streakResult] = await Promise.all([
-      supabaseClient
-        .from('focus_sessions')
-        .select('*')
-        .eq('user_id', user.id)
-        .gte('created_at', last7Days)
-        .order('created_at', { ascending: false })
-        .limit(20),
-      
-      supabaseClient
-        .from('tasks')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('completed', false)
-        .limit(10),
-      
-      supabaseClient
-        .from('sessions_summary')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('date', today)
-        .maybeSingle()
-    ]);
+    // For practice auto-questions, skip expensive context queries — they're not needed
+    // and add unnecessary latency to question generation
+    let recentSessions: any[] = [];
+    let activeTasks: any[] = [];
+    let todayStats: any = { total_completed_sessions: 0, total_focus_time: 0 };
 
-    const recentSessions = sessionsResult.data || [];
-    const activeTasks = tasksResult.data || [];
-    const todayStats = streakResult.data || { total_completed_sessions: 0, total_focus_time: 0 };
+    if (!isPracticeAutoQuestion) {
+      const [sessionsResult, tasksResult, streakResult] = await Promise.all([
+        supabaseClient
+          .from('focus_sessions')
+          .select('*')
+          .eq('user_id', user.id)
+          .gte('created_at', last7Days)
+          .order('created_at', { ascending: false })
+          .limit(20),
+        
+        supabaseClient
+          .from('tasks')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('completed', false)
+          .limit(10),
+        
+        supabaseClient
+          .from('sessions_summary')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('date', today)
+          .maybeSingle()
+      ]);
+
+      recentSessions = sessionsResult.data || [];
+      activeTasks = tasksResult.data || [];
+      todayStats = streakResult.data || { total_completed_sessions: 0, total_focus_time: 0 };
+    } else {
+      console.log('[ai-coach] Practice auto-question: skipping context DB queries for speed');
+    }
 
     // Calculate context
     const completedToday = todayStats.total_completed_sessions || 0;
@@ -666,18 +676,29 @@ ${currentMode.style}
       timestamp: new Date().toISOString(),
     });
 
+    // CRITICAL: For practice auto-questions, do NOT send tools to Gemini.
+    // Gemini often calls get_tasks instead of generating a question, producing
+    // zero text content which causes the frontend to remove the message entirely.
+    const geminiRequestBody: any = {
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: geminiContents,
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 4096,
+      },
+    };
+
+    // Only include tools for non-practice-auto-question requests
+    if (!isPracticeAutoQuestion) {
+      geminiRequestBody.tools = geminiTools;
+    } else {
+      console.log('[ai-coach] Practice auto-question: tools stripped from request to force direct generation');
+    }
+
     const geminiResponse = await fetch(geminiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        contents: geminiContents,
-        tools: geminiTools,
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 4096,
-        },
-      }),
+      body: JSON.stringify(geminiRequestBody),
     });
 
     console.log('[ai-coach] gemini_call_end', {
