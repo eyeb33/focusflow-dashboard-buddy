@@ -155,39 +155,57 @@ serve(async (req) => {
       ? `Edexcel A-Level Maths past paper question ${subtopicForPractice} exam question practice problem`
       : lastUserMessage;
     
+    // Helper: perform the actual RAG search
+    async function performRagSearch(): Promise<RAGSource[]> {
+      if (!ragQuery || !userGeminiApiKey) return [];
+      const queryEmbedding = await createEmbedding(ragQuery, userGeminiApiKey);
+      if (!queryEmbedding) return [];
+      
+      const supabaseAdmin = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+      
+      const { data: matches, error: searchError } = await supabaseAdmin
+        .rpc('match_documents', {
+          query_embedding: queryEmbedding,
+          match_threshold: isPracticeAutoQuestion ? 0.4 : 0.5,
+          match_count: isPracticeAutoQuestion ? 8 : 5,
+        });
+      
+      if (searchError || !matches || matches.length === 0) return [];
+      return matches.map((m: any) => ({
+        id: m.id,
+        content: m.content,
+        metadata: m.metadata || {},
+        similarity: m.similarity,
+      }));
+    }
+    
     if (ragQuery && userGeminiApiKey) {
       console.log('[ai-coach] Performing RAG search for query:', ragQuery.slice(0, 100));
       
       try {
-        const queryEmbedding = await createEmbedding(ragQuery, userGeminiApiKey);
+        if (isPracticeAutoQuestion) {
+          // For practice auto-questions: race RAG against a 2-second timeout.
+          // If RAG is slow, skip it — the tutor can generate questions from its own knowledge.
+          const ragPromise = performRagSearch();
+          const timeoutPromise = new Promise<RAGSource[]>((resolve) => setTimeout(() => resolve([]), 2000));
+          ragSources = await Promise.race([ragPromise, timeoutPromise]);
+          
+          if (ragSources.length === 0) {
+            console.log('[ai-coach] RAG timed out or found no matches for practice — tutor will generate from knowledge');
+          }
+        } else {
+          // For explain mode: RAG is valuable, wait for it fully
+          ragSources = await performRagSearch();
+        }
         
-        if (queryEmbedding) {
-          // Use admin client for RAG search to bypass RLS for document access
-          const supabaseAdmin = createClient(
-            Deno.env.get('SUPABASE_URL') ?? '',
-            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-          );
+        if (ragSources.length > 0) {
+          console.log(`[ai-coach] Found ${ragSources.length} relevant curriculum sections`);
           
-          const { data: matches, error: searchError } = await supabaseAdmin
-            .rpc('match_documents', {
-              query_embedding: queryEmbedding,
-              match_threshold: isPracticeAutoQuestion ? 0.4 : 0.5, // Lower threshold for practice questions
-              match_count: isPracticeAutoQuestion ? 8 : 5, // More results for practice to find good questions
-            });
-          
-          if (!searchError && matches && matches.length > 0) {
-            ragSources = matches.map((m: any) => ({
-              id: m.id,
-              content: m.content,
-              metadata: m.metadata || {},
-              similarity: m.similarity,
-            }));
-            
-            console.log(`[ai-coach] Found ${ragSources.length} relevant curriculum sections`);
-            
-            // Build context from sources - different formatting for practice mode
-            if (isPracticeAutoQuestion) {
-              ragContext = `\n\n## 📚 PAST PAPER & CURRICULUM REFERENCE
+          if (isPracticeAutoQuestion) {
+            ragContext = `\n\n## 📚 PAST PAPER & CURRICULUM REFERENCE
 
 The following content from Edexcel materials is relevant to "${subtopicForPractice}". Use these as inspiration to generate an appropriate practice question:
 
@@ -200,8 +218,8 @@ ${source.content}
 }).join('\n')}
 
 **INSTRUCTION**: Using the curriculum content above, generate a realistic Edexcel-style exam question specifically about "${subtopicForPractice}". If you find an actual past paper question in the sources, you may adapt it. Include mark allocation [X marks] for each part.`;
-            } else {
-              ragContext = `\n\n## 📚 CURRICULUM REFERENCE (from official Edexcel specification)
+          } else {
+            ragContext = `\n\n## 📚 CURRICULUM REFERENCE (from official Edexcel specification)
 
 The following sections from the curriculum specification are relevant to this question. Use them to ground your response and cite them when appropriate:
 
@@ -214,12 +232,10 @@ ${source.content}
 }).join('\n')}
 
 **IMPORTANT**: When your answer uses information from these curriculum sections, include a citation like "According to the specification..." or "The Edexcel curriculum states..." to help students connect to official materials.`;
-            }
           }
         }
       } catch (ragError) {
         console.warn('[ai-coach] RAG search failed (non-fatal):', ragError);
-        // Continue without RAG - it's an enhancement, not a requirement
       }
     }
 
@@ -287,16 +303,17 @@ ${source.content}
         intro: `You are an expert A-Level Mathematics tutor specializing in the Edexcel specification. Your role is to generate targeted PRACTICE problems specifically related to the current subtopic and guide students through solving them independently.`,
         style: `Your teaching style in PRACTICE mode:
 1. Generate questions STRICTLY about the current subtopic - do not drift to other topics
-2. When curriculum/past-paper content is provided, use it to create authentic Edexcel-style questions
-3. Present the question clearly with proper LaTeX formatting and mark allocation [X marks]
-4. Wait for the student's attempt before providing any guidance
-5. Provide hints rather than solutions when students are stuck
-6. Grade difficulty appropriately (state difficulty level or paper reference)
-7. After they solve it, offer feedback and a follow-up question on the SAME subtopic
-8. Use proper mathematical notation with LaTeX throughout
+2. When curriculum/past-paper content is provided below, use it as inspiration for authentic Edexcel-style questions
+3. When NO curriculum reference is provided, use your own expert knowledge to generate a realistic Edexcel A-Level style exam question for the subtopic. You know the specification well — create questions that match the style, difficulty, and mark allocation of real past papers.
+4. Present the question clearly with proper LaTeX formatting and mark allocation [X marks]
+5. Wait for the student's attempt before providing any guidance
+6. Provide hints rather than solutions when students are stuck
+7. Grade difficulty appropriately (state difficulty level or paper reference)
+8. After they solve it, offer feedback and a follow-up question on the SAME subtopic
+9. Use proper mathematical notation with LaTeX throughout
 
 **CRITICAL FOR [PRACTICE_MODE_AUTO_QUESTION] REQUESTS:**
-When you receive a message starting with [PRACTICE_MODE_AUTO_QUESTION], you MUST immediately generate a practice question as your response. Do NOT call any tools like get_tasks - just generate the question directly with proper LaTeX formatting and mark allocation.`
+When you receive a message starting with [PRACTICE_MODE_AUTO_QUESTION], you MUST immediately generate a practice question as your FIRST response. Do NOT call any tools like get_tasks. Do NOT ask what the student wants. Just generate the question directly with proper LaTeX formatting and mark allocation. If no curriculum reference material appears below, generate the question entirely from your own knowledge of the Edexcel specification.`
       },
       upload: {
         intro: `You are an expert A-Level Mathematics tutor specializing in the Edexcel specification. Your role is to analyze images of mathematical questions and student working.`,
