@@ -716,13 +716,14 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
   };
 
   const handleQuickAction = useCallback(async (message: string) => {
-    // Set input and trigger send directly — avoid setTimeout race
+    // Directly set input and call handleSend in the next frame
+    // Using a ref-based approach to avoid stale closure issues
     setInputValue(message);
-    // Wait one frame for React to flush, then trigger
-    requestAnimationFrame(() => {
+    // Wait one tick for React to flush the inputValue update, then send
+    setTimeout(() => {
       const sendBtn = document.querySelector('[data-send-btn]') as HTMLButtonElement | null;
       sendBtn?.click();
-    });
+    }, 0);
   }, []);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

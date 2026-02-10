@@ -676,9 +676,14 @@ ${currentMode.style}
       timestamp: new Date().toISOString(),
     });
 
-    // CRITICAL: For practice auto-questions, do NOT send tools to Gemini.
-    // Gemini often calls get_tasks instead of generating a question, producing
-    // zero text content which causes the frontend to remove the message entirely.
+    // CRITICAL: Strip tools when the student is focused on a specific topic.
+    // When activeTopic is set, the student is in topic-focused explain/practice mode
+    // and does NOT need task-management tools. Including them causes Gemini to
+    // call get_tasks instead of answering, producing zero text content which the
+    // frontend removes — making it look like the AI didn't respond at all.
+    const isTopicFocused = !!activeTopic;
+    const shouldIncludeTools = !isPracticeAutoQuestion && !isTopicFocused;
+
     const geminiRequestBody: any = {
       systemInstruction: { parts: [{ text: systemPrompt }] },
       contents: geminiContents,
@@ -688,11 +693,14 @@ ${currentMode.style}
       },
     };
 
-    // Only include tools for non-practice-auto-question requests
-    if (!isPracticeAutoQuestion) {
+    if (shouldIncludeTools) {
       geminiRequestBody.tools = geminiTools;
     } else {
-      console.log('[ai-coach] Practice auto-question: tools stripped from request to force direct generation');
+      console.log('[ai-coach] Tools stripped from request', {
+        reason: isPracticeAutoQuestion ? 'practice-auto-question' : 'topic-focused-mode',
+        mode,
+        topic: activeTopic?.name ?? null,
+      });
     }
 
     const geminiResponse = await fetch(geminiUrl, {
