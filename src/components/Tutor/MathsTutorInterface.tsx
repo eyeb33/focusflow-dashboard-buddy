@@ -232,6 +232,14 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       if (currentSession.persona && ['explain', 'practice', 'upload'].includes(currentSession.persona)) {
         setMode(currentSession.persona as TutorMode);
       }
+      // CRITICAL: Reset loading state when switching sessions.
+      // If a previous session's request was in-flight or failed without
+      // reaching its finally block, isLoading can get stuck true, which
+      // disables the input via uiBusy and shows the "not-allowed" cursor.
+      setIsLoading(false);
+      setLoadingForSessionId(null);
+      setIsSwitchingMode(false);
+      inFlightSendRef.current = false;
     }
   }, [currentSession?.id]); // Only re-run when session ID changes
 
