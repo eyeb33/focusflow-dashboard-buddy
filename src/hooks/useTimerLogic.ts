@@ -99,7 +99,7 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
   // Handle timer completion
   const handleTimerComplete = useCallback(async () => {
     clearTimer();
-    setIsRunning(false);
+    // setIsRunning(false);
     
     // Show completion toast
     const modeLabel = timerMode === 'work' ? 'Focus' : 
