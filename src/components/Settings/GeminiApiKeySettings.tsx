@@ -32,7 +32,17 @@ const GeminiApiKeySettings: React.FC<GeminiApiKeySettingsProps> = ({ onOpenApiSt
 
     try {
       // Use the secure edge function to check if key exists (never returns actual key)
+          // Get session for authentication
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+                  console.warn('No active session');
+                  return;
+                }
+      
       const { data, error } = await supabase.functions.invoke('manage-api-key', {
+              headers: {
+                        Authorization: `Bearer ${session.access_token}`,
+                      },
         body: { action: 'check' }
       });
 
@@ -70,7 +80,17 @@ const GeminiApiKeySettings: React.FC<GeminiApiKeySettingsProps> = ({ onOpenApiSt
     setIsLoading(true);
     try {
       // Use the secure edge function to save the key
+          // Get session for authentication
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+                  console.warn('No active session');
+                  return;
+                }
+      
       const { data, error } = await supabase.functions.invoke('manage-api-key', {
+              headers: {
+                        Authorization: `Bearer ${session.access_token}`,
+                      },
         body: { action: 'save', api_key: apiKey.trim() }
       });
 
@@ -102,7 +122,17 @@ const GeminiApiKeySettings: React.FC<GeminiApiKeySettingsProps> = ({ onOpenApiSt
     setIsLoading(true);
     try {
       // Use the secure edge function to remove the key
+          // Get session for authentication
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+                  console.warn('No active session');
+                  return;
+                }
+      
       const { data, error } = await supabase.functions.invoke('manage-api-key', {
+              headers: {
+                        Authorization: `Bearer ${session.access_token}`,
+                      },
         body: { action: 'remove' }
       });
 
