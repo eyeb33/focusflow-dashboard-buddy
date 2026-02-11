@@ -161,6 +161,11 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
   // Hard lock to prevent double-submits (Enter + click, double-click, etc.)
   const inFlightSendRef = useRef(false);
 
+  // AbortController to cancel in-flight AI requests when navigating away
+  const abortControllerRef = useRef<AbortController | null>(null);
+  // Track which session ID owns the current streaming generation
+  const activeGenerationSessionRef = useRef<string | null>(null);
+
   const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
   const [nowTs, setNowTs] = useState(() => Date.now());
 
@@ -185,6 +190,19 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       // Practice is only entered via the explicit Practice button.
       const forcedMode: TutorMode = 'explain';
       setMode(forcedMode);
+      
+      // CRITICAL: Abort any in-flight AI streaming before switching sessions.
+      // Without this, a practice mode's streaming response can continue calling
+      // setMessages() after we've navigated to a different session, causing
+      // practice content to bleed into the explain view.
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      activeGenerationSessionRef.current = null;
+      inFlightSendRef.current = false;
+      setIsLoading(false);
+      
       await openTaskSession(taskId, taskName, isTopicId, forcedMode, subtopic);
     },
     linkedTaskIds,
@@ -232,10 +250,16 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       if (currentSession.persona && ['explain', 'practice', 'upload'].includes(currentSession.persona)) {
         setMode(currentSession.persona as TutorMode);
       }
-      // CRITICAL: Reset loading state when switching sessions.
-      // If a previous session's request was in-flight or failed without
-      // reaching its finally block, isLoading can get stuck true, which
-      // disables the input via uiBusy and shows the "not-allowed" cursor.
+      // CRITICAL: Abort any in-flight AI streaming from a previous session.
+      // This prevents practice messages from bleeding into explain mode when
+      // the user navigates between subtopics while a response is still streaming.
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      activeGenerationSessionRef.current = null;
+      
+      // Reset loading state when switching sessions.
       setIsLoading(false);
       setLoadingForSessionId(null);
       setIsSwitchingMode(false);
@@ -441,6 +465,10 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       // ignore
     }
 
+    // Create an AbortController so we can cancel this request if the user navigates away
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
       // Ensure we have a session
       let sessionId = currentSession?.id;
@@ -449,6 +477,9 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         if (!newSession) throw new Error('Failed to create session');
         sessionId = newSession.id;
       }
+
+      // Track which session owns this generation
+      activeGenerationSessionRef.current = sessionId;
 
       // Ensure the typing indicator is ONLY shown for the session we're writing to.
       setLoadingForSessionId(sessionId);
@@ -525,6 +556,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
             taskState,
             activeTopic: activeTopicContext,
           }),
+          signal: controller.signal,
         });
       };
 
@@ -583,6 +615,9 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         throw new Error(errorData.error || 'Failed to get response');
       }
 
+      // Helper: check if this generation is still the active one
+      const isStale = () => controller.signal.aborted || activeGenerationSessionRef.current !== sessionId;
+
       // Handle streaming response (single request)
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
@@ -590,21 +625,24 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       const assistantMessageId = `temp-assistant-${Date.now()}`;
 
       // Add initial assistant message placeholder with current mode
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: assistantMessageId,
-          role: 'assistant',
-          content: '',
-          created_at: new Date().toISOString(),
-          sources: [],
-          mode: messageMode,
-        },
-      ]);
+      if (!isStale()) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: assistantMessageId,
+            role: 'assistant',
+            content: '',
+            created_at: new Date().toISOString(),
+            sources: [],
+            mode: messageMode,
+          },
+        ]);
+      }
 
       if (reader) {
         let buffer = '';
         while (true) {
+          if (isStale()) { reader.cancel(); break; }
           const { done, value } = await reader.read();
           if (done) break;
 
@@ -625,21 +663,24 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
               // Check for RAG sources event
               if (parsed.type === 'rag_sources' && parsed.sources) {
                 accumulated.ragSources = parsed.sources;
-                // Update message with sources
-                queueMicrotask(() => {
-                  setMessages((prev) =>
-                    prev.map((m) => (m.id === assistantMessageId ? { ...m, sources: parsed.sources } : m))
-                  );
-                });
+                if (!isStale()) {
+                  queueMicrotask(() => {
+                    if (isStale()) return;
+                    setMessages((prev) =>
+                      prev.map((m) => (m.id === assistantMessageId ? { ...m, sources: parsed.sources } : m))
+                    );
+                  });
+                }
                 continue;
               }
               
               parseStreamChunk(parsed, accumulated);
 
               // Update UI with content as it streams
-              if (accumulated.content) {
+              if (accumulated.content && !isStale()) {
                 finalContent = accumulated.content;
                 queueMicrotask(() => {
+                  if (isStale()) return;
                   setMessages((prev) =>
                     prev.map((m) => (m.id === assistantMessageId ? { ...m, content: finalContent } : m))
                   );
@@ -710,16 +751,23 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       }
 
     } catch (error) {
-      console.error('Error sending message:', error);
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to send message',
-        variant: 'destructive',
-      });
+      // Don't show error toast for intentional aborts (user navigated away)
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        console.log('[tutor] Request aborted (user navigated away)');
+      } else {
+        console.error('Error sending message:', error);
+        toast({
+          title: 'Error',
+          description: error instanceof Error ? error.message : 'Failed to send message',
+          variant: 'destructive',
+        });
+      }
     } finally {
       inFlightSendRef.current = false;
-      setIsLoading(false);
-      setLoadingForSessionId(null);
+      if (activeGenerationSessionRef.current === (currentSession?.id ?? null)) {
+        setIsLoading(false);
+        setLoadingForSessionId(null);
+      }
     }
   };
 
@@ -762,6 +810,10 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
 
     const requestId = (globalThis.crypto?.randomUUID?.() ?? `req_${Date.now()}_${Math.random().toString(16).slice(2)}`);
     
+    // Create an AbortController so we can cancel if the user navigates away
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     inFlightSendRef.current = true;
     setShowQuickActions(false);
 
@@ -778,7 +830,12 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         sessionId = newSession.id;
       }
 
+      // Track which session owns this generation
+      activeGenerationSessionRef.current = sessionId;
       setLoadingForSessionId(sessionId);
+
+      // Helper: check if this generation is still the active one
+      const isStale = () => controller.signal.aborted || activeGenerationSessionRef.current !== sessionId;
 
       // Get user's session token for edge function auth
       const { data: { session } } = await supabase.auth.getSession();
@@ -820,8 +877,9 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
           mode: targetMode,
           taskState,
           activeTopic: activeTopicContext,
-          isHiddenPrompt: true, // Signal to backend this is a mode-triggered prompt
+          isHiddenPrompt: true,
         }),
+        signal: controller.signal,
       });
 
       if (response.status === 429) {
@@ -853,22 +911,25 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       const accumulated = { content: '', toolCalls: new Map<string, ToolCall>(), ragSources: [] as RAGSource[] };
       const assistantMessageId = `temp-assistant-${Date.now()}`;
 
-      // Add assistant message placeholder with the target mode
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: assistantMessageId,
-          role: 'assistant',
-          content: '',
-          created_at: new Date().toISOString(),
-          sources: [],
-          mode: targetMode,
-        },
-      ]);
+      // Add assistant message placeholder with the target mode (only if still active)
+      if (!isStale()) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: assistantMessageId,
+            role: 'assistant',
+            content: '',
+            created_at: new Date().toISOString(),
+            sources: [],
+            mode: targetMode,
+          },
+        ]);
+      }
 
       if (reader) {
         let buffer = '';
         while (true) {
+          if (isStale()) { reader.cancel(); break; }
           const { done, value } = await reader.read();
           if (done) break;
 
@@ -888,19 +949,23 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
               
               if (parsed.type === 'rag_sources' && parsed.sources) {
                 accumulated.ragSources = parsed.sources;
-                queueMicrotask(() => {
-                  setMessages((prev) =>
-                    prev.map((m) => (m.id === assistantMessageId ? { ...m, sources: parsed.sources } : m))
-                  );
-                });
+                if (!isStale()) {
+                  queueMicrotask(() => {
+                    if (isStale()) return;
+                    setMessages((prev) =>
+                      prev.map((m) => (m.id === assistantMessageId ? { ...m, sources: parsed.sources } : m))
+                    );
+                  });
+                }
                 continue;
               }
               
               parseStreamChunk(parsed, accumulated);
 
-              if (accumulated.content) {
+              if (accumulated.content && !isStale()) {
                 const contentSnapshot = accumulated.content;
                 queueMicrotask(() => {
+                  if (isStale()) return;
                   setMessages((prev) =>
                     prev.map((m) => (m.id === assistantMessageId ? { ...m, content: contentSnapshot } : m))
                   );
@@ -914,7 +979,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       }
 
       // Handle tool calls via toast notifications (same as handleSend)
-      if (accumulated.toolCalls.size > 0) {
+      if (accumulated.toolCalls.size > 0 && !isStale()) {
         for (const toolCall of accumulated.toolCalls.values()) {
           try {
             const toolMsg = await executeToolCall(toolCall);
@@ -938,12 +1003,12 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       }
 
       // If no text content was produced, remove the empty placeholder message
-      if (!accumulated.content) {
+      if (!accumulated.content && !isStale()) {
         setMessages((prev) => prev.filter((m) => m.id !== assistantMessageId));
       }
 
-      // Save assistant message to DB with mode (only if there's content)
-      if (accumulated.content) {
+      // Save assistant message to DB with mode (only if there's content and not stale)
+      if (accumulated.content && !isStale()) {
         await supabase.from('coach_messages').insert({
           conversation_id: sessionId,
           user_id: user.id,
@@ -959,16 +1024,22 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       }
 
     } catch (error) {
-      console.error('Error in sendHiddenPrompt:', error);
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to send message',
-        variant: 'destructive',
-      });
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        console.log('[tutor] Hidden prompt aborted (user navigated away)');
+      } else {
+        console.error('Error in sendHiddenPrompt:', error);
+        toast({
+          title: 'Error',
+          description: error instanceof Error ? error.message : 'Failed to send message',
+          variant: 'destructive',
+        });
+      }
     } finally {
       inFlightSendRef.current = false;
-      setIsLoading(false);
-      setLoadingForSessionId(null);
+      if (!abortControllerRef.current?.signal.aborted) {
+        setIsLoading(false);
+        setLoadingForSessionId(null);
+      }
     }
   };
 
@@ -981,6 +1052,15 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       setShowImageUploadModal(true);
       return;
     }
+
+    // CRITICAL: Abort any in-flight AI streaming before switching modes
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    activeGenerationSessionRef.current = null;
+    inFlightSendRef.current = false;
+    setIsLoading(false);
 
     // If we have an active topic, switch to the mode-specific session for that topic+subtopic
     if (props.activeTopic) {
@@ -1407,7 +1487,9 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
           messages
             .filter((message) => message.role === 'user' || (message.role === 'assistant' && message.content.trim()))
             .map((message) => (
-              <MathsMessage key={message.id} message={message} mode={message.mode || 'explain'} />
+              <div key={message.id} className={message.id.startsWith('temp-assistant-') ? 'streaming-message' : ''}>
+                <MathsMessage message={message} mode={message.mode || 'explain'} />
+              </div>
             ))
         )}
 
