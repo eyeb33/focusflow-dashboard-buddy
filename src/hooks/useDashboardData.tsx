@@ -80,19 +80,8 @@ export const useDashboardData = () => {
     
     // Initial data fetch
     refetchData();
+        // Removed polling - relying on realtime subscriptions for updates
     
-    // Refresh data periodically when the dashboard is visible
-    const intervalId = setInterval(() => {
-      if (!document.hidden) {
-        const now = Date.now();
-        if (now - lastRefreshTime.current >= refreshInterval) {
-          console.log('Periodic dashboard refresh triggered');
-          refetchData();
-        }
-      }
-    }, 10000); // Check every 10 seconds, but only refresh after the interval
-    
-    return () => clearInterval(intervalId);
   }, [userId, refetchData]);
   
   // If there's no user, return mock data with no loading state
