@@ -257,7 +257,12 @@ export const useChatSessions = () => {
     const session = sessions.find(s => s.id === sessionId);
     if (session) {
       setCurrentSession(session);
-      await loadMessages(sessionId);
+      // For topic-linked sessions, filter messages by the session's persona (mode)
+      // to prevent crossover between explain/practice message histories
+      const modeFilter = session.linked_topic_id
+        ? (session.persona as TutorMode)
+        : undefined;
+      await loadMessages(sessionId, modeFilter);
     }
   }, [sessions, loadMessages]);
 
@@ -375,16 +380,11 @@ export const useChatSessions = () => {
     }
   }, [user, loadSessions]);
 
-  // Load messages when current session changes
-  // For topic-linked sessions, filter by mode to ensure mode separation
-  useEffect(() => {
-    if (currentSession) {
-      const modeFilter = currentSession.linked_topic_id 
-        ? (currentSession.persona as TutorMode) 
-        : undefined;
-      loadMessages(currentSession.id, modeFilter);
-    }
-  }, [currentSession?.id, loadMessages]);
+  // NOTE: Messages are loaded explicitly by openTaskSession(), switchSession(),
+  // and switchTopicModeSession(). A useEffect here caused a race condition where
+  // the effect would re-load messages with potentially stale mode filter AFTER
+  // the explicit load had already set the correct messages, causing practice
+  // messages to appear in explain mode and vice versa. Removed to fix crossover.
 
   // Compute set of task IDs that have linked sessions
   const linkedTaskIds = useMemo(() => {
