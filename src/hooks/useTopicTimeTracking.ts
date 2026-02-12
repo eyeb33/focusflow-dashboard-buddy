@@ -26,6 +26,7 @@ interface TopicTimeState {
   currentTopicId: string | null;
   currentSegmentId: string | null;
   isTimerRunning: boolean;
+  pausedDuration: number; // Track time spent paused to subtract from total
 }
 
 export const useTopicTimeTracking = () => {
@@ -37,6 +38,7 @@ export const useTopicTimeTracking = () => {
     currentTopicId: null,
     currentSegmentId: null,
     isTimerRunning: false,
+    pausedDuration: 0,
   });
   
   // Track aggregate time per topic (for display)
@@ -46,6 +48,7 @@ export const useTopicTimeTracking = () => {
   const [liveElapsedSeconds, setLiveElapsedSeconds] = useState(0);
   
   // Refs for tracking elapsed time in current segment
+  const pauseStartTimeRef = useRef<number | null>(null);
   const segmentStartTimeRef = useRef<number | null>(null);
   const tickIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   
@@ -132,6 +135,7 @@ export const useTopicTimeTracking = () => {
         setState({
           currentTimerSessionId: openSession.id,
           currentTopicId: openSegment?.topic_id || null,
+          pausedDuration: 0,
           currentSegmentId: openSegment?.id || null,
           isTimerRunning: !!openSegment, // Timer is running if there's an open segment
         });
@@ -208,6 +212,7 @@ export const useTopicTimeTracking = () => {
       setState({
         currentTimerSessionId: sessionId,
         currentTopicId: topicId,
+        pausedDuration: 0,
         currentSegmentId: newSegment.id,
         isTimerRunning: true,
       });
@@ -219,12 +224,14 @@ export const useTopicTimeTracking = () => {
     }
   }, [user, state.currentTimerSessionId]);
 
-  // Close current segment (internal helper)
+  // Close current segment (internal helper) - now accounts for paused time
   const closeCurrentSegment = useCallback(async (): Promise<number> => {
     if (!state.currentSegmentId || !segmentStartTimeRef.current) return 0;
     
     const now = Date.now();
-    const durationSeconds = Math.floor((now - segmentStartTimeRef.current) / 1000);
+    const totalElapsed = Math.floor((now - segmentStartTimeRef.current) / 1000);
+    // Subtract any time spent paused
+    const durationSeconds = Math.max(0, totalElapsed - state.pausedDuration);
     
     try {
       const { error } = await supabase
@@ -250,7 +257,7 @@ export const useTopicTimeTracking = () => {
       console.error('Error closing segment:', error);
       return 0;
     }
-  }, [state.currentSegmentId, state.currentTopicId]);
+  }, [state.currentSegmentId, state.currentTopicId, state.pausedDuration]);
 
   // Switch topic while timer is running
   const switchTopic = useCallback(async (newTopicId: string) => {
@@ -284,6 +291,7 @@ export const useTopicTimeTracking = () => {
         ...prev,
         currentTopicId: newTopicId,
         currentSegmentId: newSegment.id,
+        pausedDuration: 0, // Reset paused duration for new segment
       }));
     } else {
       // Timer is paused - just update the topic reference
@@ -295,27 +303,42 @@ export const useTopicTimeTracking = () => {
     }
   }, [user, state.currentTimerSessionId, state.isTimerRunning, state.currentSegmentId, closeCurrentSegment]);
 
-  // Pause timer
+  // Pause timer - keep segment open, just stop tracking
   const pauseTimer = useCallback(async () => {
     if (!state.isTimerRunning) return;
     
-    // Close current segment
-    await closeCurrentSegment();
-    
-    segmentStartTimeRef.current = null;
+    // Don't close the segment - just mark as paused
+    pauseStartTimeRef.current = Date.now();
     
     setState(prev => ({
       ...prev,
-      currentSegmentId: null,
       isTimerRunning: false,
     }));
-  }, [state.isTimerRunning, closeCurrentSegment]);
+  }, [state.isTimerRunning]);
 
-  // Resume timer (creates new segment for current topic)
+  // Resume timer - continue the same segment
   const resumeTimer = useCallback(async () => {
     if (!user || !state.currentTimerSessionId || !state.currentTopicId) return;
     if (state.isTimerRunning) return;
     
+    // If we have an existing segment, just resume it
+    if (state.currentSegmentId) {
+      // Calculate how long we were paused
+      const pauseDuration = pauseStartTimeRef.current 
+        ? Math.floor((Date.now() - pauseStartTimeRef.current) / 1000)
+        : 0;
+      
+      pauseStartTimeRef.current = null;
+      
+      setState(prev => ({
+        ...prev,
+        isTimerRunning: true,
+        pausedDuration: prev.pausedDuration + pauseDuration,
+      }));
+      return;
+    }
+    
+    // No existing segment - create a new one (shouldn't happen in normal flow)
     try {
       const now = new Date().toISOString();
       const { data: newSegment, error } = await supabase
@@ -337,34 +360,32 @@ export const useTopicTimeTracking = () => {
         ...prev,
         currentSegmentId: newSegment.id,
         isTimerRunning: true,
+        pausedDuration: 0,
       }));
     } catch (error) {
       console.error('Error resuming timer:', error);
     }
-  }, [user, state.currentTimerSessionId, state.currentTopicId, state.isTimerRunning]);
+  }, [user, state.currentTimerSessionId, state.currentTopicId, state.isTimerRunning, state.currentSegmentId]);
 
   // Stop timer completely (end session)
   const stopTimer = useCallback(async () => {
     if (!state.currentTimerSessionId) return;
     
-    // Close current segment if running
-    if (state.isTimerRunning && state.currentSegmentId) {
-      await closeCurrentSegment();
-    }
-    
-    // Calculate total session time
-    const { data: segments } = await supabase
-      .from('topic_time_segments')
-      .select('duration_seconds')
-      .eq('timer_session_id', state.currentTimerSessionId);
-    
-    const totalSeconds = (segments || []).reduce(
-      (sum, seg) => sum + (seg.duration_seconds || 0), 
-      0
-    );
-    
-    // Close the timer session
     try {
+      // Close current segment if running
+      if (state.isTimerRunning && state.currentSegmentId) {
+        await closeCurrentSegment();
+      }
+      
+      // Calculate total session time
+      const { data: segments } = await supabase
+        .from('topic_time_segments')
+        .select('duration_seconds')
+        .eq('timer_session_id', state.currentTimerSessionId);
+      
+      const totalSeconds = segments?.reduce((sum, seg) => sum + (seg.duration_seconds || 0), 0) || 0;
+      
+      // Close the timer session (excluding paused time)
       await supabase
         .from('timer_sessions')
         .update({
@@ -377,50 +398,50 @@ export const useTopicTimeTracking = () => {
     }
     
     segmentStartTimeRef.current = null;
+    pauseStartTimeRef.current = null;
     
     setState({
       currentTimerSessionId: null,
       currentTopicId: null,
       currentSegmentId: null,
       isTimerRunning: false,
+      pausedDuration: 0,
     });
-  }, [state.currentTimerSessionId, state.isTimerRunning, state.currentSegmentId, closeCurrentSegment]);
-
-  // Get current elapsed seconds in active segment
-  const getCurrentSegmentElapsed = useCallback((): number => {
-    if (!state.isTimerRunning || !segmentStartTimeRef.current) return 0;
-    return Math.floor((Date.now() - segmentStartTimeRef.current) / 1000);
-  }, [state.isTimerRunning]);
-
-  // Get total time for a specific topic (including current segment if active)
-  // Uses liveElapsedSeconds for reactive updates
-  const getTopicTotalTime = useCallback((topicId: string): number => {
-    let total = topicTotalTimes[topicId] || 0;
-    
-    // Add current segment time if it's for this topic
-    if (state.isTimerRunning && state.currentTopicId === topicId) {
-      total += liveElapsedSeconds;
-    }
-    
-    return total;
-  }, [topicTotalTimes, state.isTimerRunning, state.currentTopicId, liveElapsedSeconds]);
-
-  // Sync current segment to DB periodically (every 30 seconds while running)
+  }, [state.currentTimerSessionId, state.isTimerRunning, state.currentSegmentId]);
+  // Only updates duration when timer is actively running (not paused)
   useEffect(() => {
     if (state.isTimerRunning && state.currentSegmentId && segmentStartTimeRef.current) {
       const syncInterval = setInterval(async () => {
-        const elapsed = Math.floor((Date.now() - (segmentStartTimeRef.current || 0)) / 1000);
+        const totalElapsed = Math.floor((Date.now() - (segmentStartTimeRef.current || 0)) / 1000);
+        const actualDuration = Math.max(0, totalElapsed - state.pausedDuration);
         
         // Update segment duration in DB (partial save)
         await supabase
           .from('topic_time_segments')
-          .update({ duration_seconds: elapsed })
+          .update({ duration_seconds: actualDuration })
           .eq('id', state.currentSegmentId);
       }, 30000);
       
       return () => clearInterval(syncInterval);
     }
-  }, [state.isTimerRunning, state.currentSegmentId]);
+  }, [state.isTimerRunning, state.currentSegmentId, state.pausedDuration]);
+
+  // Get total time for a specific topic (including live elapsed if currently active)
+  const getTopicTotalTime = useCallback((topicId: string): number => {
+    let total = topicTotalTimes[topicId] || 0;
+    // Add current segment time if it's for this topic
+    if (state.isTimerRunning && state.currentTopicId === topicId) {
+      total += liveElapsedSeconds;
+    }
+    return total;
+  }, [topicTotalTimes, state.isTimerRunning, state.currentTopicId, liveElapsedSeconds]);
+
+  // Get elapsed time in current segment (accounting for pauses)
+  const getCurrentSegmentElapsed = useCallback((): number => {
+    if (!segmentStartTimeRef.current) return 0;
+    const totalElapsed = Math.floor((Date.now() - segmentStartTimeRef.current) / 1000);
+    return Math.max(0, totalElapsed - state.pausedDuration);
+  }, [state.pausedDuration]);
 
   return {
     // State

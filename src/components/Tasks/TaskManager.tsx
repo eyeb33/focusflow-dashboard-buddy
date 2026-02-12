@@ -31,25 +31,25 @@ const TaskManager: React.FC = () => {
       return;
     }
     
-    addTask(taskName, estimatedPomodoros).then(success => {
+    (async () => {
+      const success = await addTask(taskName, estimatedPomodoros);
       if (success) {
         toast({
           title: "Task added",
           description: `"${taskName}" has been added to your tasks`,
         });
       }
-    });
+    })();
   };
 
-  const handleDeleteTask = (id: string) => {
-    deleteTask(id).then(success => {
-      if (success) {
-        toast({
-          title: "Task deleted",
-          description: "The task has been removed",
-        });
-      }
-    });
+  const handleDeleteTask = async (id: string) => {
+    const success = await deleteTask(id);
+    if (success) {
+      toast({
+        title: "Task deleted",
+        description: "The task has been removed",
+      });
+    }
   };
 
   const handleToggleComplete = (id: string) => {
@@ -69,15 +69,15 @@ const TaskManager: React.FC = () => {
     }
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (editingTask && editName.trim()) {
-      editTask(editingTask.id, editName, editPomodoros).then(success => {
-        if (success) {
-          setEditingTask(null);
-          toast({
-            title: "Task updated",
-            description: "Your task has been updated",
-          });
+      const success = await editTask(editingTask.id, editName, editPomodoros);
+      if (success) {
+        setEditingTask(null);
+        toast({
+          title: "Task updated",
+          description: "Your task has been updated",
+        });
         }
       });
     }

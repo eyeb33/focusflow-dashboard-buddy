@@ -24,11 +24,9 @@ export const updateDailyStats = async (
     
     // Ensure durationMinutes is a reasonable value (cap at 60 minutes per session as a safety check)
     const normalizedDuration = Math.min(durationMinutes, 60);
-    console.log(`Updating daily stats with normalized duration: ${normalizedDuration} minutes`);
     
     // Use the provided date or today's date
     const today = sessionDate || new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    console.log(`Attribution date for session stats: ${today}`);
     
     const { data: existingData, error: queryError } = await supabase
       .from('sessions_summary')

@@ -41,3 +41,85 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Smooth message streaming and scrolling */
+.streaming-message {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Antenna pulse animation when thinking */
+@keyframes antenna-wobble {
+  0%, 100% {
+    transform: rotate(0deg) translateY(0);
+  }
+  25% {
+    transform: rotate(-3deg) translateY(-1px);
+  }
+  50% {
+    transform: rotate(0deg) translateY(-2px);
+  }
+  75% {
+    transform: rotate(3deg) translateY(-1px);
+  }
+}
+
+.antenna-pulse {
+  animation: antenna-wobble 0.6s ease-in-out infinite;
+  transform-origin: center top;
+}
+.messages-container {
+  scroll-behavior: smooth;
+  /* Enable hardware acceleration for smooth scrolling */
+  transform: translateZ(0);
+  will-change: scroll-position;
+}
+
+/* Optimize text rendering and prevent layout shift */
+.maths-content {
+  /* Prevent text reflow by allocating space */
+  overflow-wrap: break-word;
+  word-break: break-word;
+  /* Use GPU acceleration for smoother rendering */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  /* Ensure consistent line height to prevent jank */
+  line-height: 1.6;
+  /* Enable aggressive font smoothing for crisp text */
+  -webkit-font-smoothing: subpixel-antialiased;
+  -moz-osx-font-smoothing: auto;
+  /* Prevent font size flashing during rendering */
+  font-kerning: auto;
+  text-rendering: optimizeLegibility;
+  /* Stable word spacing */
+  word-spacing: 0;
+}
+
+/* Smooth transitions for message bubble */
+.message-bubble {
+  will-change: height, opacity;
+  transition: opacity 0.2s ease-out;
+  /* Ensure proper containment for layout efficiency */
+  contain: layout style paint;
+  /* Stable baseline for text to prevent shimmer */
+  display: flex;
+  flex-direction: column;
+  gap: inherit;
+}
+
+/* KaTeX expressions render smoothly */
+.maths-content .katex {
+  font-size: inherit;
+  /* Ensure formulas don't shift text baseline */
+  vertical-align: middle;
+}

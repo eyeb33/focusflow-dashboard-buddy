@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { StatsData, initialStatsData } from './stats/statsTypes';
 import { fetchWeeklyChangeData } from './stats/useWeeklyChangeData';
-import { fetchStreakData } from './stats/useStreakData';
+import { fetchStreakData } from './stats/fetchCurrentStreak';
 import { fetchDailyAverageData } from './stats/useDailyAverageData';
 import { fetchTotalMetrics } from './stats/useTotalMetrics';
 import { fetchWeeklyStats, fetchMonthlyStats } from './stats/usePeriodStats';

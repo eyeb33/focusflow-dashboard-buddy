@@ -43,15 +43,7 @@ const IndexInner = () => {
     deleteSession,
   } = useChatSessionsContext();
 
-  // NOTE: useChatSessions() is now provided via context
-  // so header, tutor, and any other components stay in sync.
-
-  const handleNewChat = async () => {
-    await createNewSession('explain');
-    setContentView('tutor');
-  };
-
-  // Curriculum topics hook
+  // Curriculum topics hook - must be before handleDeleteSession to avoid temporal dead zone
   const {
     categorizedTopics,
     topicsWithSessions,
@@ -63,8 +55,33 @@ const IndexInner = () => {
     getOrCreateSession,
     setTopicActive,
     setActiveSubtopic,
-    toggleSubtopicComplete
+    toggleSubtopicComplete,
+    refetch: refetchCurriculum
   } = useCurriculumTopics();
+
+  // NOTE: useChatSessions() is now provided via context
+  // so header, tutor, and any other components stay in sync.
+
+  const handleNewChat = async () => {
+    await createNewSession('explain');
+    setContentView('tutor');
+  };
+
+  // Wrapper for deleteSession that also refreshes curriculum when deleting topic-linked sessions
+  const handleDeleteSession = useCallback(async (sessionId: string) => {
+    // Check if this session is topic-linked before deletion
+    const sessionToDelete = sessions.find(s => s.id === sessionId);
+    const wasTopicLinked = !!sessionToDelete?.linked_topic_id;
+    
+    // Delete the session
+    await deleteSession(sessionId);
+    
+    // If it was topic-linked, refresh curriculum to update message counts and icons
+    if (wasTopicLinked) {
+      // Refresh curriculum immediately to sync UI with deleted session
+      await refetchCurriculum();
+    }
+  }, [sessions, deleteSession, refetchCurriculum]);
 
   // Slot for portaling the tutor input into the shared grid bottom row
   const [chatInputSlot, setChatInputSlot] = useState<HTMLDivElement | null>(null);
@@ -306,7 +323,7 @@ const IndexInner = () => {
                         switchSession(id);
                         setContentView('tutor');
                       }}
-                      onDeleteSession={deleteSession}
+                      onDeleteSession={handleDeleteSession}
                       onUpdateTitle={updateSessionTitle}
                       isLoading={isLoadingSessions}
                     />

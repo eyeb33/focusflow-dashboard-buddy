@@ -34,7 +34,6 @@ export const fetchStreakData = async (userId: string, today: string): Promise<St
     
     // Use the passed in today parameter or get today's date in YYYY-MM-DD format
     const actualToday = today || new Date().toISOString().split('T')[0];
-    console.log('Calculating streak with today as:', actualToday);
     
     currentStreak = calculateStreak(recentDays, actualToday);
   }

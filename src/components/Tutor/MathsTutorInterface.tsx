@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Send, BookOpen, PenTool, ImagePlus, Clock, CheckCircle, Check, X, Pencil, Lightbulb } from 'lucide-react';
+import { Send, BookOpen, PenTool, ImagePlus, Clock, CheckCircle, Check, X, Pencil, Lightbulb, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -13,10 +13,17 @@ import ImageUploadModal, { ImageIntent } from './ImageUploadModal';
 import { ChatMessage } from '@/hooks/useChatSessions';
 import { useChatSessionsContext } from '@/contexts/ChatSessionsContext';
 import { useTopicTime } from '@/contexts/TopicTimeContext';
+import { useLessonState } from '@/contexts/LessonStateContext';
+import { LessonProgressBar } from '@/components/Curriculum/LessonProgressBar';
 import * as taskService from '@/services/taskService';
 import { fetchSubTasks, addSubTask, updateSubTaskCompletion, deleteSubTask } from '@/services/subTaskService';
 import { getTopicOverview } from '@/data/topicOverviews';
 import { getSubtopicOverview } from '@/data/subtopicOverviews';
+import MascotCharacter from './MascotCharacter';
+import { useMascotStreak } from '@/hooks/useMascotStreak';
+import { MascotReaction } from '@/types/mascotSystem';
+import { AchievementToast } from './AchievementDisplay';
+import { Achievement, checkAchievements } from '@/types/achievement';
 
 // TutorMode is now imported from MathsMessage
 
@@ -145,6 +152,9 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
 
   // Get reactive time tracking from context
   const { getTopicTotalTime } = useTopicTime();
+  
+  // Get lesson state for structured learning
+  const lessonState = useLessonState();
 
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false); // AI request in-flight / streaming
@@ -157,6 +167,13 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
   const [showQuickActions, setShowQuickActions] = useState(true);
   const [showImageUploadModal, setShowImageUploadModal] = useState(false);
   const [isImageProcessing, setIsImageProcessing] = useState(false);
+  
+  // Mascot system state
+  const [mascotReaction, setMascotReaction] = useState<MascotReaction | null>(null);
+  const [newAchievement, setNewAchievement] = useState<Achievement | null>(null);
+  const [problemAttempts, setProblemAttempts] = useState<number>(0);
+  const [feedbackGivenForMessages, setFeedbackGivenForMessages] = useState<Set<string>>(new Set());
+  const mascotStreak = useMascotStreak();
 
   // Hard lock to prevent double-submits (Enter + click, double-click, etc.)
   const inFlightSendRef = useRef(false);
@@ -175,8 +192,8 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
   const linkedTopicIds = useMemo(() => {
     const ids = new Set<string>();
     sessions.forEach(s => {
-      if ((s as any).linked_topic_id) {
-        ids.add((s as any).linked_topic_id);
+      if (s.linked_topic_id) {
+        ids.add(s.linked_topic_id);
       }
     });
     return ids;
@@ -203,11 +220,33 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       inFlightSendRef.current = false;
       setIsLoading(false);
       
-      await openTaskSession(taskId, taskName, isTopicId, forcedMode, subtopic);
+      const session = await openTaskSession(taskId, taskName, isTopicId, forcedMode, subtopic);
+      
+      // Auto-start lesson if this is a new session in Explain mode
+      if (session && isTopicId && forcedMode === 'explain') {
+        // Check if this session already has messages (use the already-loaded messages state)
+        // instead of querying DB again to avoid race conditions
+        const hasExistingMessages = messages && messages.length > 0;
+        
+        if (!hasExistingMessages) {
+          // Start the lesson state regardless of subtopic
+          const lessonSubtopic = subtopic || '';
+          await lessonState.startLesson(taskId, lessonSubtopic);
+          
+          // Small delay to ensure UI is ready
+          setTimeout(() => {
+            setInputValue(`[START_LESSON]`);
+            setTimeout(() => {
+              const sendBtn = document.querySelector('[data-send-btn]') as HTMLButtonElement | null;
+              sendBtn?.click();
+            }, 100);
+          }, 300);
+        }
+      }
     },
     linkedTaskIds,
     linkedTopicIds
-  }), [openTaskSession, linkedTaskIds, linkedTopicIds]);
+  }), [openTaskSession, linkedTaskIds, linkedTopicIds, messages.length]);
 
   const scrollToBottom = () => {
     // Use container scroll instead of scrollIntoView to prevent page scroll
@@ -487,24 +526,31 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       // Capture the mode at send time so the message icon persists
       const messageMode = mode;
 
-      // Add user message to UI immediately
+      // Check if this is a lesson start trigger
+      const isLessonStart = messageContent.includes('[START_LESSON]');
+
+      // Create temp user message (always needed for AI conversation)
       const tempUserMessage: ChatMessage = {
         id: `temp-${Date.now()}`,
         role: 'user',
-        content: messageContent,
+        content: messageContent, // Use full content with trigger for AI
         created_at: new Date().toISOString(),
         mode: messageMode,
       };
-      setMessages((prev) => [...prev, tempUserMessage]);
 
-      // Save user message to DB with mode
-      await supabase.from('coach_messages').insert({
-        conversation_id: sessionId,
-        user_id: user.id,
-        role: 'user',
-        content: messageContent,
-        mode: messageMode,
-      });
+      // Add user message to UI and DB (skip if it's just a trigger)
+      if (!isLessonStart) {
+        setMessages((prev) => [...prev, tempUserMessage]);
+
+        // Save user message to DB with mode
+        await supabase.from('coach_messages').insert({
+          conversation_id: sessionId,
+          user_id: user.id,
+          role: 'user',
+          content: messageContent,
+          mode: messageMode,
+        });
+      }
 
       // Get user's session token for edge function auth
       const {
@@ -555,6 +601,12 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
             mode,
             taskState,
             activeTopic: activeTopicContext,
+            lessonContext: lessonState.currentLesson ? {
+              currentStage: lessonState.currentLesson.currentStage,
+              topicId: lessonState.currentLesson.topicId,
+              subtopic: lessonState.currentLesson.subtopic,
+              priorKnowledgeLevel: lessonState.currentLesson.priorKnowledgeLevel,
+            } : null,
           }),
           signal: controller.signal,
         });
@@ -733,13 +785,24 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
 
       // Save final assistant message to DB with mode
       if (finalContent) {
+        // Parse response for markers and trigger reactions (non-blocking)
+        const { cleanContent, reactionPromise } = parseAndReactToResponse(finalContent);
+        
+        // Update UI immediately with clean content
+        if (cleanContent !== finalContent) {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === assistantMessageId ? { ...m, content: cleanContent } : m))
+          );
+        }
+        
+        // Save message to DB (don't block on mascot reactions)
         await supabase
           .from('coach_messages')
           .insert({
             conversation_id: sessionId,
             user_id: user.id,
             role: 'assistant',
-            content: finalContent,
+            content: cleanContent, // Save clean content without markers
             mode: messageMode,
           });
 
@@ -748,6 +811,11 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
           .from('coach_conversations')
           .update({ last_message_at: new Date().toISOString() })
           .eq('id', sessionId);
+        
+        // Let mascot reactions complete in background
+        if (reactionPromise) {
+          reactionPromise.catch(err => console.error('Mascot reaction error:', err));
+        }
       }
 
     } catch (error) {
@@ -1076,6 +1144,11 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         if (session) {
           setMode(newMode);
 
+          // Start structured lesson for Explain mode
+          if (newMode === 'explain' && props.activeTopic.activeSubtopic) {
+            await lessonState.startLesson(props.activeTopic.id, props.activeTopic.activeSubtopic);
+          }
+
           // The Practice auto-question is handled by the effect keyed by (topicId + subtopic + mode)
           // Only manually trigger if no subtopic is active
           if (newMode === 'practice' && messages.length === 0 && !props.activeTopic.activeSubtopic) {
@@ -1331,9 +1404,176 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     }
     return `${minutes}m`;
   };
+  
+  // Mascot helper functions
+  const showMascotReaction = useCallback((reaction: MascotReaction | null) => {
+    if (!reaction) return;
+    
+    setMascotReaction(reaction);
+    setTimeout(() => setMascotReaction(null), reaction.duration || 3000);
+  }, []);
+
+  const checkNewAchievements = useCallback(async () => {
+    if (!user) return;
+    
+    // Load current achievements
+    const { data: existingAchievements } = await supabase
+      .from('achievements')
+      .select('achievement_id')
+      .eq('user_id', user.id);
+    
+    const unlockedIds = existingAchievements?.map(a => a.achievement_id) || [];
+    
+    // Check for new achievements
+    const newAchievements = checkAchievements({
+      currentStreak: mascotStreak.streakData.currentStreak,
+      consecutiveDays: mascotStreak.streakData.consecutiveDays,
+      topicsExplored: mascotStreak.streakData.topicsExplored,
+      totalSessions: mascotStreak.streakData.sessionsToday,
+      unlockedAchievements: unlockedIds,
+    });
+    
+    if (newAchievements.length > 0) {
+      // Save new achievements to database
+      for (const achievement of newAchievements) {
+        await supabase.from('achievements').insert({
+          user_id: user.id,
+          achievement_id: achievement.id,
+        });
+      }
+      
+      // Show first new achievement
+      setNewAchievement(newAchievements[0]);
+    }
+  }, [user, mascotStreak.streakData]);
+  
+  // Initialize daily streak on mount
+  useEffect(() => {
+    if (user) {
+      mascotStreak.updateDailyStreak();
+    }
+  }, [user, mascotStreak]);
+  
+  // Auto-detect answer correctness from AI response markers
+  // Returns clean content immediately and a promise for the reactions (non-blocking)
+  const parseAndReactToResponse = useCallback((content: string): { cleanContent: string; reactionPromise: Promise<void> | null } => {
+    if (mode !== 'practice') return { cleanContent: content, reactionPromise: null };
+    
+    // Check for evaluation markers at the end of the response
+    const correctMatch = content.match(/\[CORRECT\]\s*$/);
+    const incorrectMatch = content.match(/\[INCORRECT\]\s*$/);
+    const hintMatch = content.match(/\[HINT\]\s*$/);
+    
+    // Remove the marker from the displayed content (synchronous)
+    let cleanContent = content;
+    let reactionPromise: Promise<void> | null = null;
+    
+    if (correctMatch) {
+      cleanContent = content.replace(/\[CORRECT\]\s*$/, '').trim();
+      reactionPromise = (async () => {
+        try {
+          const reaction = await mascotStreak.recordCorrectAnswer();
+          showMascotReaction(reaction);
+          checkNewAchievements();
+          setProblemAttempts(0);
+        } catch (error) {
+          console.error('Error processing correct answer:', error);
+        }
+      })();
+    } else if (incorrectMatch) {
+      cleanContent = content.replace(/\[INCORRECT\]\s*$/, '').trim();
+      const newAttempts = problemAttempts + 1;
+      setProblemAttempts(newAttempts);
+      
+      reactionPromise = (async () => {
+        try {
+          if (newAttempts >= 2) {
+            const persistReaction = await mascotStreak.recordPersistence(newAttempts);
+            showMascotReaction(persistReaction);
+          } else {
+            const reaction = await mascotStreak.recordIncorrectAnswer();
+            showMascotReaction(reaction);
+          }
+        } catch (error) {
+          console.error('Error processing incorrect answer:', error);
+        }
+      })();
+    } else if (hintMatch) {
+      cleanContent = content.replace(/\[HINT\]\s*$/, '').trim();
+      reactionPromise = (async () => {
+        try {
+          const reaction = await mascotStreak.recordHintUsed();
+          showMascotReaction(reaction);
+        } catch (error) {
+          console.error('Error processing hint:', error);
+        }
+      })();
+    }
+    
+    return { cleanContent, reactionPromise };
+  }, [mode, mascotStreak, showMascotReaction, checkNewAchievements, problemAttempts]);
+  
+  // Request hint from AI
+  const handleRequestHint = useCallback(async () => {
+    // Set input value to hint request
+    setInputValue("Can you give me a hint?");
+    // Trigger send
+    setTimeout(() => {
+      const sendBtn = document.querySelector('[data-send-btn]') as HTMLButtonElement | null;
+      sendBtn?.click();
+    }, 0);
+  }, []);
+  
+  // Feedback handlers for practice mode (kept for backward compatibility)
+  const handleCorrectFeedback = useCallback(async (messageId: string) => {
+    const reaction = await mascotStreak.recordCorrectAnswer();
+    showMascotReaction(reaction);
+    checkNewAchievements();
+    setFeedbackGivenForMessages(prev => new Set(prev).add(messageId));
+    setProblemAttempts(0); // Reset attempts after success
+  }, [mascotStreak, showMascotReaction, checkNewAchievements]);
+
+  const handleIncorrectFeedback = useCallback(async (messageId: string) => {
+    const newAttempts = problemAttempts + 1;
+    setProblemAttempts(newAttempts);
+    
+    if (newAttempts >= 2) {
+      const persistReaction = await mascotStreak.recordPersistence(newAttempts);
+      showMascotReaction(persistReaction);
+    } else {
+      const reaction = await mascotStreak.recordIncorrectAnswer();
+      showMascotReaction(reaction);
+    }
+    
+    setFeedbackGivenForMessages(prev => new Set(prev).add(messageId));
+  }, [problemAttempts, mascotStreak, showMascotReaction]);
+
+  const handleHintFeedback = useCallback(async (messageId: string) => {
+    const reaction = await mascotStreak.recordHintUsed();
+    showMascotReaction(reaction);
+    setFeedbackGivenForMessages(prev => new Set(prev).add(messageId));
+  }, [mascotStreak, showMascotReaction]);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden relative">
+      
+      {/* Mascot Character - Floating bottom-right, above chat input */}
+      {mode === 'practice' && (
+        <div className="absolute bottom-24 right-6 z-10">
+          <MascotCharacter
+            state={mascotReaction?.state || 'idle'}
+            message={mascotReaction?.message}
+          />
+        </div>
+      )}
+      
+      {/* Achievement Toast */}
+      {newAchievement && (
+        <AchievementToast
+          achievement={newAchievement}
+          onClose={() => setNewAchievement(null)}
+        />
+      )}
 
       {/* Active Topic Card - Shows when a topic is selected */}
       {props.activeTopic && (
@@ -1406,10 +1646,17 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
             <span className="ml-1.5 truncate hidden sm:inline">Upload</span>
           </Button>
         </div>
+        
+        {/* Lesson Progress Bar for Explain Mode */}
+        {mode === 'explain' && lessonState.currentLesson && (
+          <div className="mt-3 pb-1">
+            <LessonProgressBar currentStage={lessonState.currentLesson.currentStage} />
+          </div>
+        )}
       </div>
 
       {/* Messages - Scrollable */}
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={messagesContainerRef} className="messages-container flex-1 overflow-y-auto p-4 space-y-4">
         {/* Always show topic overview as a collapsible card above messages */}
         {mode === 'explain' && props.activeTopic && (
           <TopicOverviewCard 
@@ -1486,11 +1733,20 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         ) : (
           messages
             .filter((message) => message.role === 'user' || (message.role === 'assistant' && message.content.trim()))
-            .map((message) => (
-              <div key={message.id} className={message.id.startsWith('temp-assistant-') ? 'streaming-message' : ''}>
-                <MathsMessage message={message} mode={message.mode || 'explain'} />
-              </div>
-            ))
+            .map((message, index, filteredMessages) => {
+              const isLastAssistantMessage = 
+                message.role === 'assistant' && 
+                index === filteredMessages.length - 1 &&
+                !isLoading;
+              
+              return (
+                <div key={message.id}>
+                  <div className={message.id.startsWith('temp-assistant-') ? 'streaming-message' : ''}>
+                    <MathsMessage message={message} mode={message.mode || 'explain'} />
+                  </div>
+                </div>
+              );
+            })
         )}
 
         {isLoading && loadingForSessionId === currentSession?.id && (
@@ -1569,6 +1825,18 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
               </div>
             )}
             <div className="flex gap-3">
+              {mode === 'practice' && (
+                <Button
+                  onClick={handleRequestHint}
+                  disabled={uiBusy || isRateLimited}
+                  variant="outline"
+                  size="icon"
+                  className="h-12 w-12 flex-shrink-0"
+                  title="Request a hint"
+                >
+                  💡
+                </Button>
+              )}
               <Input
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
@@ -1582,6 +1850,7 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
                 disabled={!inputValue.trim() || uiBusy || isRateLimited}
                 size="icon"
                 className="h-12 w-12"
+                data-send-btn
               >
                 <Send className="w-5 h-5" />
               </Button>

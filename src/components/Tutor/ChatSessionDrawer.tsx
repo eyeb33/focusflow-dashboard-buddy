@@ -125,6 +125,21 @@ const ChatSessionDrawer: React.FC<ChatSessionDrawerProps> = ({
     setEditValue('');
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent, sessionId: string) => {
+    if (e.key === 'Enter') {
+      e.stopPropagation();
+      if (editValue.trim()) {
+        onUpdateTitle(sessionId, editValue.trim());
+      }
+      setEditingId(null);
+      setEditValue('');
+    } else if (e.key === 'Escape') {
+      e.stopPropagation();
+      setEditingId(null);
+      setEditValue('');
+    }
+  };
+
   const getModeIcon = (persona: string) => {
     switch (persona) {
       case 'practice':
@@ -321,13 +336,7 @@ const SessionRow: React.FC<SessionRowProps> = ({
                 onChange={(e) => setEditValue(e.target.value)}
                 className="h-7 text-sm"
                 autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    onSaveEdit(e as any, session.id);
-                  } else if (e.key === 'Escape') {
-                    onCancelEdit(e as any);
-                  }
-                }}
+                onKeyDown={(e) => handleKeyDown(e, session.id)}
               />
               <Button
                 variant="ghost"

@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { TimerProvider } from "@/contexts/TimerContext";
 import { TopicTimeProvider } from "@/contexts/TopicTimeContext";
 import { CoachProvider } from "@/contexts/CoachContext";
+import { LessonStateProvider } from "@/contexts/LessonStateContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -18,8 +19,17 @@ import NotFound from "./pages/NotFound";
 import React, { useEffect } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 
-// Create a new QueryClient instance outside of the component
-const queryClient = new QueryClient();
+// Create a new QueryClient instance outside of the component with optimized defaults
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // Data stays fresh for 5 minutes
+      cacheTime: 10 * 60 * 1000, // Cache kept for 10 minutes
+      refetchOnWindowFocus: false, // Don't refetch when window regains focus
+      retry: 1, // Only retry failed queries once
+    },
+  },
+});
 
 const ScrollManager = () => {
   const location = useLocation();
@@ -56,40 +66,42 @@ const App = () => (
             <AuthProvider>
               <TimerProvider>
                 <TopicTimeProvider>
-                  <CoachProvider>
-                    <ScrollManager />
-                    <Toaster />
-                    <Sonner />
-                    <Routes>
-                      <Route 
-                        path="/" 
-                        element={
-                          <ErrorBoundary fallbackTitle="Timer failed to load">
-                            <Index />
-                          </ErrorBoundary>
-                        } 
-                      />
-                      <Route 
-                        path="/dashboard" 
-                        element={
-                          <ErrorBoundary fallbackTitle="Dashboard failed to load">
-                            <Dashboard />
-                          </ErrorBoundary>
-                        } 
-                      />
-                      <Route path="/auth" element={<Auth />} />
-                      <Route 
-                        path="/curriculum" 
-                        element={
-                          <ErrorBoundary fallbackTitle="Curriculum failed to load">
-                            <Curriculum />
-                          </ErrorBoundary>
-                        } 
-                      />
-                      <Route path="/reset-password" element={<ResetPassword />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </CoachProvider>
+                  <LessonStateProvider>
+                    <CoachProvider>
+                      <ScrollManager />
+                      <Toaster />
+                      <Sonner />
+                      <Routes>
+                        <Route 
+                          path="/" 
+                          element={
+                            <ErrorBoundary fallbackTitle="Timer failed to load">
+                              <Index />
+                            </ErrorBoundary>
+                          } 
+                        />
+                        <Route 
+                          path="/dashboard" 
+                          element={
+                            <ErrorBoundary fallbackTitle="Dashboard failed to load">
+                              <Dashboard />
+                            </ErrorBoundary>
+                          } 
+                        />
+                        <Route path="/auth" element={<Auth />} />
+                        <Route 
+                          path="/curriculum" 
+                          element={
+                            <ErrorBoundary fallbackTitle="Curriculum failed to load">
+                              <Curriculum />
+                            </ErrorBoundary>
+                          } 
+                        />
+                        <Route path="/reset-password" element={<ResetPassword />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </CoachProvider>
+                  </LessonStateProvider>
                 </TopicTimeProvider>
               </TimerProvider>
             </AuthProvider>

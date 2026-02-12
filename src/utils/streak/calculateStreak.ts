@@ -17,8 +17,6 @@ export const calculateStreak = (recentDays: StreakDay[] | null, today: string): 
     today = currentDate.toISOString().split('T')[0];
   }
   
-  console.log('Calculating streak with today as:', today);
-  
   // Filter only days with at least one session completed
   const activeDays = recentDays
     .filter(day => day.sessions > 0) 
@@ -43,11 +41,8 @@ export const calculateStreak = (recentDays: StreakDay[] | null, today: string): 
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
     
-    console.log('No sessions today, checking yesterday:', yesterdayStr);
-    
     // If yesterday is not in the list, streak is broken
     if (!sortedDates.includes(yesterdayStr)) {
-      console.log('Yesterday not found in dates, streak broken');
       return 0;
     }
   }
@@ -57,10 +52,6 @@ export const calculateStreak = (recentDays: StreakDay[] | null, today: string): 
   
   // Get the starting date for streak calculation
   let currentDate = hasSessionsToday ? today : sortedDates[0];
-  
-  // Log the dates we're working with
-  console.log('Sorted dates for streak calculation:', sortedDates);
-  console.log('Starting streak calculation from date:', currentDate);
   
   // Loop through previous days to count consecutive days
   for (let i = 0; i < 366; i++) { // Limit to a year
@@ -73,14 +64,11 @@ export const calculateStreak = (recentDays: StreakDay[] | null, today: string): 
     if (sortedDates.includes(prevDateStr)) {
       currentStreak++;
       currentDate = prevDateStr;
-      console.log(`Found consecutive day: ${prevDateStr}, streak now: ${currentStreak}`);
     } else {
       // Break when we find a gap
-      console.log(`Streak break: ${prevDateStr} not found in active days`);
       break;
     }
   }
   
-  console.log('Final calculated streak:', currentStreak);
   return currentStreak;
 };

@@ -36,7 +36,6 @@ export const loadTodayStats = async (userId: string): Promise<{
   try {
     // For now just returning a placeholder
     // In a production app, this would typically fetch from a database
-    console.log('Loading stats for user:', userId);
     return {
       completedSessions: 0,
       totalTimeToday: 0

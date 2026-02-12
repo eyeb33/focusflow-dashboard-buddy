@@ -16,14 +16,11 @@ export const initAudioContext = () => {
     
     if (AudioContextClass) {
       audioContext = new AudioContextClass();
-      console.log("[AudioContext] Successfully initialized");
       initialized = true;
       
       // Resume the context if it's in suspended state
       if (audioContext.state === 'suspended') {
-        audioContext.resume().then(() => {
-          console.log("[AudioContext] Resumed successfully");
-        }).catch(err => {
+        audioContext.resume().catch(err => {
           console.error("[AudioContext] Failed to resume:", err);
         });
       }
@@ -71,8 +68,6 @@ export const playSound = (frequency = 440, duration = 0.3, type = 'sine'): void 
     
     oscillator.start();
     oscillator.stop(now + duration);
-    
-    console.log(`[AudioContext] Playing ${type} tone at ${frequency}Hz for ${duration}s`);
   } catch (error) {
     console.error("[AudioContext] Failed to play sound:", error);
   }

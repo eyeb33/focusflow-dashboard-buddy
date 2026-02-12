@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7';
+import buildEnhancedSystemPrompt from './enhancedPrompts.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -292,139 +293,49 @@ ${source.content}
     
     const pendingTopicsCount = taskState?.tasks?.length ?? activeTasks.length;
 
-    // Build system prompt with mode-specific behavior
+    // Build enhanced system prompt with persona and pedagogical structure
+    let systemPrompt = buildEnhancedSystemPrompt({
+      mode: mode as 'explain' | 'practice' | 'upload',
+      activeTopic: activeTopic ? {
+        name: activeTopic.name,
+        activeSubtopic: activeTopic.activeSubtopic,
+        subtopics: activeTopic.subtopics,
+        completedSubtopics: activeTopic.completedSubtopics,
+      } : undefined,
+      sessionContext: {
+        completedToday,
+        focusTimeToday,
+      },
+      ragContext,
+      isPracticeAutoQuestion,
+      lessonContext: req.lessonContext || undefined,
+    });
+    
+    // Add legacy task management context if not using curriculum topics
     const activeTask = taskState?.tasks?.find((t: any) => t.is_active);
-    
-    // Mode-specific tutoring approaches
-    const modePrompts = {
-      explain: {
-        intro: `You are an expert A-Level Mathematics tutor specializing in the Edexcel specification. Your role is to EXPLAIN concepts clearly and help students understand mathematical principles deeply.`,
-        style: `Your teaching style in EXPLAIN mode:
-1. Break down complex concepts into simple, digestible steps
-2. Use the Socratic method - ask guiding questions to help students discover answers
-3. NEVER give direct answers immediately - guide the student to understanding
-4. Provide clear explanations with examples
-5. Connect new concepts to what the student already knows
-6. Use mathematical notation with LaTeX: inline $x^2$ and display $$\\frac{d}{dx}[x^n] = nx^{n-1}$$
-7. Reference relevant Edexcel specification topics when helpful
-8. Be encouraging but maintain academic rigor`
-      },
-      practice: {
-        intro: `You are an expert A-Level Mathematics tutor specializing in the Edexcel specification. Your role is to generate targeted PRACTICE problems specifically related to the current subtopic and guide students through solving them independently.`,
-        style: `Your teaching style in PRACTICE mode:
-1. Generate questions STRICTLY about the current subtopic - do not drift to other topics
-2. When curriculum/past-paper content is provided below, use it as inspiration for authentic Edexcel-style questions
-3. When NO curriculum reference is provided, use your own expert knowledge to generate a realistic Edexcel A-Level style exam question for the subtopic. You know the specification well — create questions that match the style, difficulty, and mark allocation of real past papers.
-4. Present the question clearly with proper LaTeX formatting and mark allocation [X marks]
-5. Wait for the student's attempt before providing any guidance
-6. Provide hints rather than solutions when students are stuck
-7. Grade difficulty appropriately (state difficulty level or paper reference)
-8. After they solve it, offer feedback and a follow-up question on the SAME subtopic
-9. Use proper mathematical notation with LaTeX throughout
-
-**CRITICAL FOR [PRACTICE_MODE_AUTO_QUESTION] REQUESTS:**
-When you receive a message starting with [PRACTICE_MODE_AUTO_QUESTION], you MUST immediately generate a practice question as your FIRST response. Do NOT call any tools like get_tasks. Do NOT ask what the student wants. Just generate the question directly with proper LaTeX formatting and mark allocation. If no curriculum reference material appears below, generate the question entirely from your own knowledge of the Edexcel specification.`
-      },
-      upload: {
-        intro: `You are an expert A-Level Mathematics tutor specializing in the Edexcel specification. Your role is to analyze images of mathematical questions and student working.`,
-        style: `Your teaching style in UPLOAD mode:
-1. First, describe what you see in the image clearly (the question, any diagrams, and any working shown)
-2. Identify the topic area and relevant Edexcel specification content
-3. Based on the student's intent:
-   - If they want HELP: Guide them through the solution using the Socratic method, never giving the answer directly
-   - If they want CHECKING: Carefully review their working, identify errors, and explain what went wrong
-4. Point out any unclear or hard-to-read parts and ask for clarification if needed
-5. Use proper mathematical notation with LaTeX when explaining
-6. Be encouraging and supportive throughout`
-      }
-    };
-    
-    const currentMode = modePrompts[mode as keyof typeof modePrompts] || modePrompts.explain;
-    
-    let systemPrompt = `${currentMode.intro}
-
-## Edexcel A-Level Maths Curriculum Coverage
-
-You are an expert in ALL areas of the Edexcel A-Level Mathematics specification:
-
-**Pure Mathematics:**
-- Proof (mathematical argument and notation)
-- Algebra and functions (quadratics, polynomials, partial fractions)
-- Coordinate geometry (straight lines, circles, parametric equations)
-- Sequences and series (arithmetic, geometric, sigma notation, binomial expansion)
-- Trigonometry (identities, equations, inverse functions, radians)
-- Exponentials and logarithms
-- Differentiation (chain rule, product rule, quotient rule, implicit, parametric)
-- Integration (by parts, substitution, partial fractions, volumes of revolution)
-- Numerical methods (Newton-Raphson, trapezium rule)
-- Vectors (2D and 3D)
-
-**Statistics:**
-- Statistical sampling
-- Data presentation and interpretation
-- Probability (conditional, independent events, tree diagrams)
-- Statistical distributions (binomial, normal)
-- Statistical hypothesis testing
-
-**Mechanics:**
-- Quantities and units in mechanics
-- Kinematics (constant acceleration, projectiles)
-- Forces and Newton's laws
-- Moments
-
-${activeTopic ? `📚 CURRENT STUDY FOCUS: "${activeTopic.name}"${activeTopic.activeSubtopic ? ` → Subtopic: "${activeTopic.activeSubtopic}"` : ''}
-${activeTopic.subtopics?.length > 0 ? `Available subtopics: ${activeTopic.subtopics.map((st: string) => '"' + st + '"' + (activeTopic.completedSubtopics?.includes(st) ? ' ✓' : '')).join(', ')}` : ''}
-
-**IMPORTANT**: Focus ALL your teaching strictly on "${activeTopic.activeSubtopic || activeTopic.name}". Do NOT teach other topics unless the student explicitly asks.
-
-` : activeTask ? `📚 CURRENT STUDY TOPIC: "${activeTask.name}"
-${activeTask.sub_tasks?.length > 0 ? '   Sub-topics: ' + activeTask.sub_tasks.map((st: any) => '"' + st.name + '"' + (st.completed ? ' ✓' : '')).join(', ') : ''}
-
-Focus your tutoring on this topic when relevant.
-
-` : ''}${!activeTopic && taskState && taskState.tasks?.length > 0 ? `Study Topics (can be managed via tools):
+    if (!activeTopic && taskState && taskState.tasks?.length > 0) {
+      systemPrompt += `\n\nStudy Topics (can be managed via tools):
 ${taskState.tasks.map((t: any, i: number) => {
   let topicInfo = (i + 1) + '. "' + t.name + '" → ID: ' + t.id + (t.is_active ? ' (CURRENT)' : '');
   if (t.sub_tasks && t.sub_tasks.length > 0) {
     topicInfo += ' [' + t.sub_tasks.filter((st: any) => st.completed).length + '/' + t.sub_tasks.length + ' complete]';
   }
   return topicInfo;
-}).join('\n')}
-` : ''}
-Current Study Session:
-- Study Sessions Today: ${completedToday}
-- Total Study Time Today: ${focusTimeToday} minutes
-- Pending Topics: ${pendingTopicsCount}
+}).join('\n')}`;
+    } else if (!activeTopic && activeTask) {
+      systemPrompt += `\n\n📚 CURRENT STUDY TOPIC: "${activeTask.name}"`;
+      if (activeTask.sub_tasks && activeTask.sub_tasks.length > 0) {
+        systemPrompt += `\n   Sub-topics: ${activeTask.sub_tasks.map((st: any) => '"' + st.name + '"' + (st.completed ? ' ✓' : '')).join(', ')}`;
+      }
+    }
 
-${timerState ? `Study Timer Status:
+    // Add timer state if available
+    if (timerState) {
+      systemPrompt += `\n\nStudy Timer Status:
 - Running: ${timerState.isRunning ? 'Yes' : 'No'}
 - Mode: ${timerState.mode === 'work' ? 'Study' : timerState.mode === 'break' ? 'Short Break' : 'Long Break'}
-- Time Remaining: ${Math.floor(timerState.timeRemaining / 60)}m ${timerState.timeRemaining % 60}s` : ''}
-
-## CRITICAL TUTORING RULES
-
-1. **Never give direct answers** - Guide students to discover solutions themselves
-2. **Use LaTeX for ALL mathematical expressions**:
-   - Inline: $x^2 + 5x + 6$
-   - Display: $$\\int_0^1 x^2 \\, dx = \\frac{1}{3}$$
-3. **Break problems into steps** - One concept at a time
-4. **Ask questions** - "What do you think the next step would be?" "Can you see a pattern here?"
-5. **Encourage attempts** - "Have a go at this part, and I'll help if you get stuck"
-6. **Be patient** - Students learn at different paces
-7. **Connect to exams** - Mention mark schemes and common exam approaches when relevant
-
-${currentMode.style}
-
-## Available Tools (for study management)
-- get_tasks(): Get current study topics
-- add_task(name): Add a new study topic
-- complete_task(task_id): Mark topic as mastered
-- delete_task(task_id): Remove a topic
-- add_subtask(parent_task_id, name): Add a sub-topic
-- toggle_subtask(subtask_id): Mark sub-topic complete
-- start_timer(): Start study timer
-- pause_timer(): Pause study timer
-- set_active_task(task_id): Set current study topic`;
+- Time Remaining: ${Math.floor(timerState.timeRemaining / 60)}m ${timerState.timeRemaining % 60}s`;
+    }
 
     // Add trigger-specific context
     if (trigger === 'pomodoro_cycle_complete') {
@@ -434,11 +345,24 @@ ${currentMode.style}
     } else if (trigger === 'first_interaction') {
       systemPrompt += `\n\nThis is the student's first interaction. Welcome them warmly, introduce yourself as their A-Level Maths tutor, and ask what topic they'd like help with today. Mention you cover the full Edexcel specification.`;
     }
-
-    // Add RAG context from curriculum documents
-    if (ragContext) {
-      systemPrompt += ragContext;
+    
+    // Check for lesson start trigger in the most recent user message
+    const lastUserMessage = messages && messages.length > 0 ? messages[messages.length - 1] : null;
+    if (lastUserMessage && lastUserMessage.role === 'user' && lastUserMessage.content.includes('[START_LESSON]')) {
+      systemPrompt += `\n\n**IMMEDIATE ACTION REQUIRED**: The student just opened this topic. DO NOT ask what they want help with. Instead, IMMEDIATELY begin teaching the first concept. Start with: "Let's dive into ${activeTopic?.activeSubtopic || activeTopic?.name || 'this topic'}. I'll break it down into clear, bite-sized concepts. Ready? Let's start with concept 1..."`;
     }
+    
+    // Add available tools reminder
+    systemPrompt += `\n\n## Available Tools (for study management)
+- get_tasks(): Get current study topics
+- add_task(name): Add a new study topic
+- complete_task(task_id): Mark topic as mastered
+- delete_task(task_id): Remove a topic
+- add_subtask(parent_task_id, name): Add a sub-topic
+- toggle_subtask(subtask_id): Mark sub-topic complete
+- start_timer(): Start study timer
+- pause_timer(): Pause study timer
+- set_active_task(task_id): Set current study topic`;
 
     // Define available tools for the AI (OpenAI format for Gemini compatibility)
     const tools = [

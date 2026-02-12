@@ -15,6 +15,7 @@ import { Progress } from '@/components/ui/progress';
 import { TopicWithSession } from '@/types/curriculum';
 import { cn } from '@/lib/utils';
 import { useTopicTime } from '@/contexts/TopicTimeContext';
+import { MasteryIcon } from './MasteryIcon';
 
 interface CurriculumTopicCardProps {
   topicData: TopicWithSession;
@@ -132,6 +133,14 @@ const CurriculumTopicCard: React.FC<CurriculumTopicCardProps> = ({
           {/* Topic info */}
           <div className="flex-1 min-w-0 overflow-hidden">
             <div className="flex items-center gap-1.5 min-w-0">
+              {/* Mastery indicator */}
+              {session && (
+                <MasteryIcon 
+                  masteryLevel={session.masteryLevel} 
+                  size={14}
+                  className="flex-shrink-0"
+                />
+              )}
               <span 
                 className={cn(
                   'font-medium text-sm truncate flex-1 min-w-0',

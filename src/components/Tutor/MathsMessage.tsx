@@ -195,11 +195,11 @@ const MathsMessage: React.FC<MathsMessageProps> = ({
       </div>
       
       <div className={cn(
-        "rounded-xl px-4 py-3 max-w-[85%] shadow-sm",
+        "rounded-xl px-4 py-3 max-w-[85%] shadow-sm message-bubble",
         isUser ? "bg-muted text-foreground" : "bg-primary/10 text-foreground"
       )}>
         <div 
-          className="text-sm whitespace-pre-wrap leading-relaxed maths-content text-foreground" 
+          className="text-sm leading-relaxed maths-content text-foreground" 
           dangerouslySetInnerHTML={{ __html: renderedContent }} 
         />
         

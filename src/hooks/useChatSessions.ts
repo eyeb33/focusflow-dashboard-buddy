@@ -296,13 +296,11 @@ export const useChatSessions = () => {
     if (!user) return;
     
     try {
-      // Delete messages first
-      await supabase
-        .from('coach_messages')
-        .delete()
-        .eq('conversation_id', sessionId);
-
-      // Then delete the session
+      // Get the session info before deleting to check if it's topic-linked
+      const sessionToDelete = sessions.find(s => s.id === sessionId);
+      const linkedTopicId = sessionToDelete?.linked_topic_id;
+      
+      // Delete the session (messages are automatically deleted via CASCADE)
       const { error } = await supabase
         .from('coach_conversations')
         .delete()
@@ -313,12 +311,55 @@ export const useChatSessions = () => {
 
       setSessions(prev => prev.filter(s => s.id !== sessionId));
       
+      // If this was a topic-linked session, update the topic_sessions message count
+      if (linkedTopicId) {
+        try {
+          // Count remaining messages for this topic across all sessions
+          const { data: remainingSessions } = await supabase
+            .from('coach_conversations')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('linked_topic_id', linkedTopicId);
+          
+          if (remainingSessions && remainingSessions.length > 0) {
+            // Count total messages across all remaining sessions for this topic
+            const sessionIds = remainingSessions.map(s => s.id);
+            const { count } = await supabase
+              .from('coach_messages')
+              .select('id', { count: 'exact', head: true })
+              .in('conversation_id', sessionIds);
+            
+            // Update topic_sessions with new message count
+            await supabase
+              .from('topic_sessions')
+              .update({ message_count: count || 0 })
+              .eq('user_id', user.id)
+              .eq('topic_id', linkedTopicId);
+          } else {
+            // No remaining sessions for this topic, set message count to 0
+            await supabase
+              .from('topic_sessions')
+              .update({ message_count: 0 })
+              .eq('user_id', user.id)
+              .eq('topic_id', linkedTopicId);
+          }
+        } catch (topicError) {
+          console.error('Error updating topic message count:', topicError);
+          // Don't fail the whole deletion if this update fails
+        }
+      }
+      
       // If we deleted the current session, switch to the next one
       if (currentSession?.id === sessionId) {
         const remaining = sessions.filter(s => s.id !== sessionId);
         if (remaining.length > 0) {
-          setCurrentSession(remaining[0]);
-          await loadMessages(remaining[0].id);
+          const nextSession = remaining[0];
+          setCurrentSession(nextSession);
+          // For topic-linked sessions, filter messages by persona (mode)
+          const modeFilter = nextSession.linked_topic_id
+            ? (nextSession.persona as TutorMode)
+            : undefined;
+          await loadMessages(nextSession.id, modeFilter);
         } else {
           setCurrentSession(null);
           setMessages([]);

@@ -33,7 +33,16 @@ const mapTopicSession = (row: TopicSessionRow): TopicSession => ({
   messageCount: row.message_count ?? 0,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
-  activeSubtopic: (row as any).active_subtopic ?? null
+  activeSubtopic: row.active_subtopic ?? null,
+  // Mastery tracking fields
+  attemptedProblems: row.attempted_problems ?? 0,
+  correctProblems: row.correct_problems ?? 0,
+  hintsUsed: row.hints_used ?? 0,
+  examStyleAttempts: row.exam_style_attempts ?? 0,
+  examStyleCorrect: row.exam_style_correct ?? 0,
+  masteryLevel: row.mastery_level ?? 'not-started',
+  commonMistakes: Array.isArray(row.common_mistakes) ? row.common_mistakes as string[] : [],
+  strengthAreas: Array.isArray(row.strength_areas) ? row.strength_areas as string[] : []
 });
 
 export const useCurriculumTopics = () => {
@@ -409,6 +418,144 @@ export const useCurriculumTopics = () => {
     }
   }, [user, topicSessions]);
 
+  // Record practice problem attempt
+  const recordProblemAttempt = useCallback(async (
+    topicId: string, 
+    isCorrect: boolean, 
+    usedHint: boolean,
+    isExamStyle?: boolean
+  ) => {
+    if (!user) return;
+
+    const session = topicSessions.find(s => s.topicId === topicId);
+    if (!session) return;
+
+    try {
+      const updates: any = {
+        attempted_problems: session.attemptedProblems + 1,
+        last_accessed: new Date().toISOString()
+      };
+
+      if (isCorrect) {
+        updates.correct_problems = session.correctProblems + 1;
+      }
+      if (usedHint) {
+        updates.hints_used = session.hintsUsed + 1;
+      }
+      if (isExamStyle) {
+        updates.exam_style_attempts = session.examStyleAttempts + 1;
+        if (isCorrect) {
+          updates.exam_style_correct = session.examStyleCorrect + 1;
+        }
+      }
+
+      // Calculate new mastery level
+      const newAttempted = session.attemptedProblems + 1;
+      const newCorrect = session.correctProblems + (isCorrect ? 1 : 0);
+      const newExamCorrect = session.examStyleCorrect + (isExamStyle && isCorrect ? 1 : 0);
+      const newExamAttempts = session.examStyleAttempts + (isExamStyle ? 1 : 0);
+      
+      const accuracy = newAttempted > 0 ? newCorrect / newAttempted : 0;
+      const examAccuracy = newExamAttempts > 0 ? newExamCorrect / newExamAttempts : 0;
+      
+      let masteryLevel: TopicSession['masteryLevel'] = 'not-started';
+      if (newAttempted >= 10 && accuracy >= 0.9 && newExamAttempts >= 3 && examAccuracy >= 0.85) {
+        masteryLevel = 'exam-ready';
+      } else if (newAttempted >= 8 && accuracy >= 0.8) {
+        masteryLevel = 'proficient';
+      } else if (newAttempted >= 5 && accuracy >= 0.7) {
+        masteryLevel = 'practiced';
+      } else if (newAttempted >= 2) {
+        masteryLevel = 'learning';
+      }
+      
+      updates.mastery_level = masteryLevel;
+
+      const { error } = await supabase
+        .from('topic_sessions')
+        .update(updates)
+        .eq('id', session.id);
+
+      if (error) throw error;
+
+      // Optimistic update
+      setTopicSessions(prev => prev.map(s => 
+        s.id === session.id 
+          ? { 
+              ...s, 
+              attemptedProblems: newAttempted,
+              correctProblems: newCorrect,
+              hintsUsed: updates.hints_used ?? s.hintsUsed,
+              examStyleAttempts: newExamAttempts,
+              examStyleCorrect: newExamCorrect,
+              masteryLevel
+            }
+          : s
+      ));
+    } catch (error) {
+      console.error('Error recording problem attempt:', error);
+    }
+  }, [user, topicSessions]);
+
+  // Record common mistake
+  const recordMistake = useCallback(async (topicId: string, mistake: string) => {
+    if (!user) return;
+
+    const session = topicSessions.find(s => s.topicId === topicId);
+    if (!session) return;
+
+    // Don't add duplicates
+    if (session.commonMistakes.includes(mistake)) return;
+
+    try {
+      const newMistakes = [...session.commonMistakes, mistake];
+      
+      const { error } = await supabase
+        .from('topic_sessions')
+        .update({ common_mistakes: newMistakes })
+        .eq('id', session.id);
+
+      if (error) throw error;
+
+      setTopicSessions(prev => prev.map(s => 
+        s.id === session.id 
+          ? { ...s, commonMistakes: newMistakes }
+          : s
+      ));
+    } catch (error) {
+      console.error('Error recording mistake:', error);
+    }
+  }, [user, topicSessions]);
+
+  // Record strength area
+  const recordStrength = useCallback(async (topicId: string, strength: string) => {
+    if (!user) return;
+
+    const session = topicSessions.find(s => s.topicId === topicId);
+    if (!session) return;
+
+    if (session.strengthAreas.includes(strength)) return;
+
+    try {
+      const newStrengths = [...session.strengthAreas, strength];
+      
+      const { error } = await supabase
+        .from('topic_sessions')
+        .update({ strength_areas: newStrengths })
+        .eq('id', session.id);
+
+      if (error) throw error;
+
+      setTopicSessions(prev => prev.map(s => 
+        s.id === session.id 
+          ? { ...s, strengthAreas: newStrengths }
+          : s
+      ));
+    } catch (error) {
+      console.error('Error recording strength:', error);
+    }
+  }, [user, topicSessions]);
+
   return {
     curriculumTopics,
     topicSessions,
@@ -426,6 +573,9 @@ export const useCurriculumTopics = () => {
     updateSessionTime,
     toggleSubtopicComplete,
     incrementMessageCount,
+    recordProblemAttempt,
+    recordMistake,
+    recordStrength,
     refetch: async () => {
       await Promise.all([fetchCurriculumTopics(), fetchTopicSessions()]);
     }

@@ -20,6 +20,15 @@ export interface TopicSession {
   createdAt: string;
   updatedAt: string;
   activeSubtopic: string | null; // Currently selected subtopic for study
+  // Mastery tracking fields
+  attemptedProblems: number;
+  correctProblems: number;
+  hintsUsed: number;
+  examStyleAttempts: number;
+  examStyleCorrect: number;
+  masteryLevel: 'not-started' | 'learning' | 'practiced' | 'proficient' | 'exam-ready';
+  commonMistakes: string[];
+  strengthAreas: string[];
 }
 
 export interface CurriculumCategory {

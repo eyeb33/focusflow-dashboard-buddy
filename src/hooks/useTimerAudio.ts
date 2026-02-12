@@ -31,7 +31,6 @@ export function useTimerAudio() {
         gainNode.connect(context.destination);
         oscillator.start(0);
         oscillator.stop(0.1);
-        console.log('Audio initialized successfully on user interaction');
       } catch (e) {
         console.warn('Could not initialize audio context:', e);
       }
@@ -52,7 +51,6 @@ export function useTimerAudio() {
         const audio = new Audio();
         audio.src = src;
         audio.preload = 'auto';
-        console.log(`Preloading audio file: ${src}`);
       });
     };
     

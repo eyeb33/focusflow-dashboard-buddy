@@ -46,7 +46,6 @@ export function useTimerSettings() {
             typeof parsed.breakDuration === 'number' &&
             typeof parsed.longBreakDuration === 'number' &&
             typeof parsed.sessionsUntilLongBreak === 'number') {
-          console.log("Loaded timer settings from localStorage:", parsed);
           setSettings(parsed);
         } else {
           console.warn("Invalid timer settings format in localStorage, using defaults");
@@ -66,7 +65,6 @@ export function useTimerSettings() {
   // Save settings to localStorage whenever they change
   useEffect(() => {
     try {
-      console.log("Saved updated timer settings to localStorage:", settings);
       localStorage.setItem("timerSettings", JSON.stringify(settings));
     } catch (error) {
       console.error("Error saving timer settings:", error);
@@ -81,7 +79,6 @@ export function useTimerSettings() {
   };
 
   const updateSettings = (newSettings: Partial<TimerSettings>) => {
-    console.log("Updating settings with:", newSettings);
     setSettings((prev) => ({
       ...prev,
       ...newSettings,

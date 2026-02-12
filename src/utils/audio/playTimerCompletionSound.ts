@@ -28,7 +28,6 @@ const preloadAudioFiles = () => {
       const audio = new Audio(src);
       audio.preload = 'auto';
       audioCache[mode as keyof typeof modeToMp3] = audio;
-      console.log(`[AudioUtils] Preloaded sound for ${mode} mode`);
     }
   });
 };
@@ -40,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     getAudioContext();
     preloadAudioFiles();
   } catch (e) {
-    console.log('[AudioUtils] Early audio context initialization failed, will try again on user interaction');
+    // Silently fail - will retry on user interaction
   }
 });
 
@@ -72,7 +71,6 @@ export const playTimerCompletionSound = async (
     const useOscillatorFallback = localStorage.getItem('useOscillatorFallback') === 'true';
     
     if (useOscillatorFallback) {
-      console.log(`[AudioUtils] Using oscillator fallback for ${mode} mode based on previous failures`);
       const frequency = modeToFrequency[mode];
       const duration = mode === 'longBreak' ? 1.0 : 0.7;
       playSound(frequency, duration);
@@ -91,8 +89,6 @@ export const playTimerCompletionSound = async (
       audio.currentTime = 0;
     }
     
-    console.log(`[AudioUtils] Attempting to play sound for ${mode} mode`);
-    
     // Try to play using HTMLAudioElement first
     try {
       // Set volume to make sure it's audible
@@ -102,7 +98,6 @@ export const playTimerCompletionSound = async (
       
       // Handle promise rejection (browser policies may block autoplay)
       await playPromise;
-      console.log(`[AudioUtils] Successfully played MP3 sound for ${mode} mode`);
     } catch (error) {
       console.warn(`[AudioUtils] Failed to play MP3 sound: ${error.message}. Falling back to oscillator.`);
       

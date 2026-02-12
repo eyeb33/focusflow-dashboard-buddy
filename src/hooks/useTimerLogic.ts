@@ -137,8 +137,8 @@ export function useTimerLogic({ settings, activeTaskId, onSessionComplete }: Use
           },
           {
             maxRetries: 3,
-            onRetry: (attempt, _err, delay) => {
-              console.log(`Retrying session save (attempt ${attempt}), waiting ${delay}ms`);
+            onRetry: (_attempt, _err, _delay) => {
+              // Silently retry
             }
           }
         );
