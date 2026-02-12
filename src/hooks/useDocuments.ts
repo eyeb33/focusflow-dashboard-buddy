@@ -1,0 +1,266 @@
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+
+export interface Document {
+  id: string;
+  user_id: string;
+  title: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  mime_type: string;
+  status: 'pending' | 'processing' | 'ready' | 'error';
+  error_message: string | null;
+  total_chunks: number;
+  metadata: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+  processed_at: string | null;
+}
+
+const sortByMostRecentFirst = (docs: Document[]) =>
+  [...docs].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+
+export const useDocuments = () => {
+  const { user } = useAuth();
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const fetchDocuments = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('documents')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setDocuments(((data as Document[]) || []).slice());
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+      toast.error('Failed to load documents');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
+
+  // Set up realtime subscription for document status updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('documents-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'documents',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setDocuments((prev) => sortByMostRecentFirst([payload.new as Document, ...prev]));
+          } else if (payload.eventType === 'UPDATE') {
+            setDocuments((prev) =>
+              sortByMostRecentFirst(
+                prev.map((doc) =>
+                  doc.id === (payload.new as any).id ? (payload.new as Document) : doc
+                )
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setDocuments((prev) =>
+              sortByMostRecentFirst(prev.filter((doc) => doc.id !== (payload.old as any).id))
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  const uploadDocument = async (file: File, title: string) => {
+    if (!user) {
+      toast.error('You must be logged in to upload documents');
+      return null;
+    }
+
+    setIsUploading(true);
+
+    try {
+      // Generate a unique file path
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/${Date.now()}_${file.name}`;
+
+      // Upload file to storage
+      const { error: uploadError } = await supabase.storage
+        .from('curriculum-documents')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw new Error(`Failed to upload file: ${uploadError.message}`);
+      }
+
+      // Create document record
+      const { data: document, error: insertError } = await supabase
+        .from('documents')
+        .insert({
+          user_id: user.id,
+          title,
+          file_name: file.name,
+          file_path: filePath,
+          file_size: file.size,
+          mime_type: file.type || 'application/pdf',
+          status: 'pending',
+          metadata: {},
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        // Clean up uploaded file
+        await supabase.storage.from('curriculum-documents').remove([filePath]);
+        throw new Error(`Failed to create document record: ${insertError.message}`);
+      }
+
+      toast.success('Document uploaded! Processing will begin shortly.');
+
+      // Trigger background processing
+      const { error: processError } = await supabase.functions.invoke('process-document', {
+        body: { document_id: document.id },
+      });
+
+      if (processError) {
+        console.error('Error triggering processing:', processError);
+        toast.error('Document uploaded but processing failed to start');
+      }
+
+      return document as Document;
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to upload document');
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const reprocessDocument = async (documentId: string) => {
+    try {
+      // Update status to pending
+      await supabase
+        .from('documents')
+        .update({ status: 'pending', error_message: null })
+        .eq('id', documentId);
+
+      // Trigger reprocessing
+      const { error } = await supabase.functions.invoke('process-document', {
+        body: { document_id: documentId },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success('Reprocessing started');
+    } catch (error) {
+      console.error('Error reprocessing document:', error);
+      toast.error('Failed to reprocess document');
+    }
+  };
+
+  const deleteDocument = async (documentId: string) => {
+    try {
+      const document = documents.find((d) => d.id === documentId);
+
+      if (document) {
+        // Delete file from storage
+        await supabase.storage
+          .from('curriculum-documents')
+          .remove([document.file_path]);
+      }
+
+      // Delete document record (chunks will cascade)
+      const { error } = await supabase.from('documents').delete().eq('id', documentId);
+
+      if (error) throw error;
+
+      toast.success('Document deleted');
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      toast.error('Failed to delete document');
+    }
+  };
+
+  const updateDocumentTitle = async (documentId: string, newTitle: string) => {
+    if (!user) {
+      toast.error('You must be logged in');
+      return false;
+    }
+
+    if (!newTitle.trim()) {
+      toast.error('Title cannot be empty');
+      return false;
+    }
+
+    const trimmedTitle = newTitle.trim();
+
+    // Optimistically update local state
+    setDocuments((prev) =>
+      prev.map((doc) => (doc.id === documentId ? { ...doc, title: trimmedTitle } : doc))
+    );
+
+    try {
+      const { data, error } = await supabase
+        .from('documents')
+        .update({ title: trimmedTitle })
+        // extra safety with RLS + ensures we only ever update our own row
+        .eq('id', documentId)
+        .eq('user_id', user.id)
+        .select('*')
+        .single();
+
+      if (error) throw error;
+
+      // Ensure local state matches the persisted row (and stays sorted)
+      setDocuments((prev) =>
+        sortByMostRecentFirst(prev.map((doc) => (doc.id === documentId ? (data as Document) : doc)))
+      );
+
+      toast.success('Title updated');
+      return true;
+    } catch (error) {
+      console.error('Error updating document title:', error);
+      toast.error('Failed to update title');
+      // Re-sync from server so navigating away/back never "loses" edits
+      await fetchDocuments();
+      return false;
+    }
+  };
+
+  return {
+    documents,
+    isLoading,
+    isUploading,
+    uploadDocument,
+    reprocessDocument,
+    deleteDocument,
+    updateDocumentTitle,
+    refetch: fetchDocuments,
+  };
+};

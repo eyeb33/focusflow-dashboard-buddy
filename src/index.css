@@ -1,0 +1,426 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+ 
+@layer base {
+  :root {
+    /* Base - Pure white background */
+    --background: 0 0% 100%;            /* Pure white */
+    --foreground: 240 10% 20%;          /* Soft charcoal, not pure black */
+    
+    /* Muted tones - subtle grays */
+    --muted: 210 20% 96%;
+    --muted-foreground: 240 6% 45%;
+    
+    /* Cards - elevated surfaces */
+    --card: 0 0% 100%;                  /* Pure white for cards */
+    --card-foreground: 240 10% 20%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 20%;
+    
+    /* Borders - barely visible */
+    --border: 210 20% 88%;
+    --input: 210 20% 90%;
+    
+    /* Primary - Syllabuddy blue #08579c for tabs/buttons */
+    --primary: 207 93% 32%;             /* Blue #08579c */
+    --primary-foreground: 0 0% 100%;
+    
+    /* Secondary - Interactive blue #049db1 for toggles/chat */
+    --secondary: 186 96% 36%;           /* Teal blue #049db1 */
+    --secondary-foreground: 0 0% 100%;
+    
+    /* Accent - light blue tint */
+    --accent: 186 70% 95%;
+    --accent-foreground: 207 93% 32%;
+    
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --ring: 207 93% 32%;
+    
+    --radius: 0.75rem;                  /* Slightly larger radius for premium feel */
+
+    /* Timer Mode Backgrounds - Cohesive color palette */
+    --timer-focus-bg: 0 82% 48%;        /* Red #df1515 */
+    --timer-focus-accent: 0 82% 42%;    /* Darker red */
+    
+    --timer-break-bg: 99 19% 48%;       /* Green #738f66 */
+    --timer-break-accent: 99 19% 42%;   /* Darker green */
+    
+    --timer-longbreak-bg: 163 24% 68%;  /* Blue #a4c2b6 */
+    --timer-longbreak-accent: 163 24% 58%; /* Darker blue */
+  }
+ 
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+ 
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+ 
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+ 
+    --card: 222.2 84% 8%;
+    --card-foreground: 210 40% 98%;
+ 
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+ 
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+ 
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+ 
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+ 
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 85.7% 97.3%;
+ 
+    --ring: 217.2 32.6% 17.5%;
+    
+    /* Timer Mode Backgrounds - Vibrant for dark mode */
+    --timer-focus-bg: 0 48% 59%;        /* Dusty rose */
+    --timer-focus-accent: 0 70% 60%;    /* Bright red */
+    
+    --timer-break-bg: 140 45% 50%;      /* Forest green */
+    --timer-break-accent: 140 60% 55%;  /* Bright green */
+    
+    --timer-longbreak-bg: 163 24% 68%;  /* Blue #a4c2b6 */
+    --timer-longbreak-accent: 163 24% 58%; /* Darker blue */
+  }
+
+  /* Breathing animation for calm effect */
+  @keyframes breathe {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.02);
+    }
+  }
+  
+  .animate-breathe {
+    animation: breathe 4s ease-in-out infinite;
+  }
+
+  /* Soft glow animation */
+  @keyframes glow-pulse {
+    0%, 100% {
+      opacity: 0.4;
+      filter: blur(20px);
+    }
+    50% {
+      opacity: 0.6;
+      filter: blur(25px);
+    }
+  }
+  
+  .animate-glow {
+    animation: glow-pulse 3s ease-in-out infinite;
+  }
+
+  /* Add custom animation for pulsing effect */
+  @keyframes pulse-light {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+  
+  .animate-pulse-light {
+    animation: pulse-light 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+ 
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Root height setup */
+  html, body, #root {
+    height: 100%;
+  }
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    border-color: hsl(var(--primary) / 0.5);
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4);
+  }
+  50% {
+    border-color: hsl(var(--primary) / 0.8);
+    box-shadow: 0 0 0 4px hsl(var(--primary) / 0.1);
+  }
+}
+
+.animate-pulse-border {
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+/* Additional custom styles */
+.timer-gradient {
+  background: linear-gradient(to bottom, hsl(var(--background)), hsl(var(--muted)));
+}
+
+.dark .timer-gradient {
+  background: linear-gradient(to bottom, hsl(var(--background)), hsl(var(--muted)));
+}
+
+/* Modified animation for slower pulsing effect during last 10 seconds */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2.5s ease-in-out infinite;
+}
+
+/* Timer container with glassmorphism */
+.timer-container {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.light .timer-container {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+}
+
+/* Ambient background for timer page */
+.timer-ambient-bg {
+  background: radial-gradient(ellipse at top, rgba(147, 197, 253, 0.15), transparent),
+              radial-gradient(ellipse at bottom, rgba(196, 181, 253, 0.15), transparent);
+}
+
+.dark .timer-ambient-bg {
+  background: radial-gradient(ellipse at top, rgba(59, 130, 246, 0.1), transparent),
+              radial-gradient(ellipse at bottom, rgba(139, 92, 246, 0.1), transparent);
+}
+
+/* Mode buttons */
+.mode-button-active {
+  background-color: #ff4545;
+  color: white;
+}
+
+.mode-button {
+  color: #888;
+  transition: all 0.3s ease;
+}
+
+.mode-button:hover {
+  color: white;
+}
+
+.light .mode-button:hover {
+  color: #333;
+}
+
+/* Session dot styling */
+.session-dot-active {
+  background-color: #ff4545 !important;
+  width: 12px !important;
+  height: 12px !important;
+}
+
+.session-dot-completed {
+  background-color: #ff4545 !important;
+  width: 8px !important;
+  height: 8px !important;
+}
+
+.session-dot {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+.light .session-dot {
+  background-color: #d1d5db !important;
+}
+
+.dark .session-dot {
+  background-color: #444 !important;
+}
+
+/* Premium shadows - soft and layered */
+.shadow-soft {
+  box-shadow: 
+    0 1px 2px 0 rgba(0, 0, 0, 0.03),
+    0 2px 6px 0 rgba(0, 0, 0, 0.02);
+}
+
+.shadow-soft-lg {
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 10px 15px -3px rgba(0, 0, 0, 0.03);
+}
+
+/* Cards with subtle backdrop blur */
+.card-glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.dark .card-glass {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Smooth scale on interactive elements */
+.interactive-scale {
+  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.interactive-scale:active {
+  transform: scale(0.97);
+}
+
+/* Gentle bounce for character */
+@keyframes bounce-gentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-bounce-gentle {
+  animation: bounce-gentle 2s ease-in-out infinite;
+}
+
+/* Subtle shine effect on hover */
+@keyframes shine {
+  to {
+    background-position: 200% center;
+  }
+}
+
+.shine-on-hover {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  transition: background-position 0.5s;
+}
+
+.shine-on-hover:hover {
+  animation: shine 1.5s infinite;
+}
+
+/* Premium focus rings */
+*:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: none;
+  box-shadow: 
+    0 0 0 3px hsl(var(--background)),
+    0 0 0 5px hsl(var(--ring));
+}
+
+/* Custom scrollbar styling for task list */
+.task-list-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.2) transparent;
+}
+
+.task-list-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.task-list-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px 0;
+}
+
+.task-list-scroll::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.2);
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+}
+
+.task-list-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground) / 0.4);
+}
+
+/* Show scrollbar only on hover for cleaner look */
+.task-list-scroll:not(:hover)::-webkit-scrollbar-thumb {
+  background-color: transparent;
+}
+
+/* Hide scrollbar utility - for horizontal scroll containers */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Cache busting */
+@media (max-width: 0px) {
+  body::after {
+    content: 'v1.0.9';
+    display: none;
+  }
+}
+
+/* Remove the hardcoded header styles to allow theme-based styling */
+/* Make sure tabslist has correct styling */
+.TabsList {
+  background-color: #1e293b !important;
+}
+
+.light .TabsList {
+  background-color: #e2e8f0 !important;
+}
+
+/* Smooth streaming text animation for AI messages */
+@keyframes fadeInContent {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.streaming-message .maths-content {
+  animation: fadeInContent 0.3s ease-out forwards;
+}

@@ -1,0 +1,280 @@
+import React, { useMemo } from 'react';
+import { 
+  Check, 
+  ChevronDown, 
+  ChevronRight, 
+  GraduationCap, 
+  Clock,
+  MessageSquare,
+  Circle,
+  Square,
+  CheckSquare
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { TopicWithSession } from '@/types/curriculum';
+import { cn } from '@/lib/utils';
+import { useTopicTime } from '@/contexts/TopicTimeContext';
+
+interface CurriculumTopicCardProps {
+  topicData: TopicWithSession;
+  onTopicClick: (topicId: string, topicName: string) => void;
+  onSubtopicToggle: (topicId: string, subtopic: string) => void;
+  onSubtopicSelect?: (topicId: string, topicName: string, subtopic: string) => void;
+}
+
+const CurriculumTopicCard: React.FC<CurriculumTopicCardProps> = ({
+  topicData,
+  onTopicClick,
+  onSubtopicToggle,
+  onSubtopicSelect
+}) => {
+  const { topic, session, progressPercent, isActive } = topicData;
+  const [isExpanded, setIsExpanded] = React.useState(isActive);
+  
+  // Get segment-based total time from TopicTimeContext
+  const { getTopicTotalTime } = useTopicTime();
+
+  // Auto-expand when topic becomes active
+  React.useEffect(() => {
+    if (isActive) {
+      setIsExpanded(true);
+    }
+  }, [isActive]);
+
+  const isCompleted = progressPercent === 100 && topic.subtopics.length > 0;
+
+  // Format time spent - use segment-based time from TopicTimeContext
+  const formatTimeSpent = useMemo(() => {
+    const totalSeconds = getTopicTotalTime(topic.topicId);
+    if (totalSeconds === 0) return null;
+    
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    if (minutes === 0) return '<1m';
+    return `${minutes}m`;
+  }, [topic.topicId, getTopicTotalTime]);
+
+  // Format last accessed
+  const lastAccessedText = useMemo(() => {
+    if (!session?.lastAccessed) return null;
+    
+    const lastDate = new Date(session.lastAccessed);
+    const now = new Date();
+    const diffMs = now.getTime() - lastDate.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return `${Math.floor(diffDays / 30)} months ago`;
+  }, [session]);
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('[role="checkbox"]')) {
+      return;
+    }
+    setIsExpanded(!isExpanded);
+  };
+
+  const handleStudyClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onTopicClick(topic.topicId, topic.name);
+  };
+
+  return (
+    <div 
+      className={cn(
+        'group rounded-lg border mb-2 transition-all duration-200',
+        isActive 
+          ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-500 ring-2 ring-emerald-500/30' 
+          : isCompleted
+            ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800'
+            : 'bg-card hover:bg-accent/50'
+      )}
+    >
+      {/* Main row */}
+      <div
+        className="flex items-center justify-between p-3 cursor-pointer"
+        onClick={handleCardClick}
+      >
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {/* Expand/collapse arrow */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 flex-shrink-0"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </Button>
+
+          {/* Completion checkmark - only show when all subtopics done */}
+          {isCompleted && (
+            <div className="h-5 w-5 rounded-full bg-green-500 text-white flex items-center justify-center flex-shrink-0">
+              <Check className="h-3 w-3" />
+            </div>
+          )}
+
+          {/* Topic info */}
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span 
+                className={cn(
+                  'font-medium text-sm truncate flex-1 min-w-0',
+                  isCompleted && 'text-green-700 dark:text-green-400'
+                )}
+                title={topic.name}
+              >
+                {topic.name}
+              </span>
+            </div>
+
+            {/* Progress bar - always visible when collapsed */}
+            {!isExpanded && topic.subtopics.length > 0 && (
+              <div className="flex items-center gap-2 mt-1.5">
+                <Progress 
+                  value={progressPercent} 
+                  className={cn(
+                    'h-1.5 w-28',
+                    isCompleted && '[&>div]:bg-green-500'
+                  )}
+                />
+                <span className="text-xs text-muted-foreground">
+                  {progressPercent}%
+                </span>
+              </div>
+            )}
+
+            {/* Stats row - show time even without a session (segments track time) */}
+            {(formatTimeSpent || (session && session.messageCount > 0)) && (
+              <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                {formatTimeSpent && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {formatTimeSpent}
+                  </span>
+                )}
+                {session && session.messageCount > 0 && (
+                  <span className="flex items-center gap-1">
+                    <MessageSquare className="h-3 w-3" />
+                    {session.messageCount}
+                  </span>
+                )}
+                {session && lastAccessedText && (
+                  <span>Last: {lastAccessedText}</span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Study button - icon only on small screens */}
+        <Button
+          variant={isActive ? 'default' : 'outline'}
+          size="sm"
+          className={cn(
+            'flex-shrink-0 gap-1 opacity-0 group-hover:opacity-100 transition-opacity px-2 lg:px-3',
+            isActive && 'opacity-100 bg-emerald-600 hover:bg-emerald-700 border-emerald-600'
+          )}
+          onClick={handleStudyClick}
+        >
+          <GraduationCap className="h-4 w-4 flex-shrink-0" />
+          <span className="hidden lg:inline">{isActive ? 'Studying' : 'Study'}</span>
+        </Button>
+      </div>
+
+      {/* Expanded subtopics with selection + completion */}
+      {isExpanded && topic.subtopics.length > 0 && (
+        <div className="px-4 pb-4 animate-accordion-down">
+          <div className="pt-2 border-t space-y-1">
+            <h4 className="text-sm font-semibold text-muted-foreground mb-2">
+              Subtopics ({session?.completedSubtopics.length || 0}/{topic.subtopics.length})
+            </h4>
+            {topic.subtopics.map((subtopic, idx) => {
+              const isSubtopicCompleted = session?.completedSubtopics.includes(subtopic);
+              const isActiveSubtopic = session?.activeSubtopic === subtopic;
+              
+              return (
+                <div 
+                  key={idx}
+                  className={cn(
+                    "flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer transition-colors group/subtopic",
+                    isActiveSubtopic 
+                      ? "bg-primary/10 border border-primary/30" 
+                      : "hover:bg-accent/50"
+                  )}
+                  onClick={() => {
+                    // Select this subtopic and open the tutor
+                    onSubtopicSelect?.(topic.topicId, topic.name, subtopic);
+                  }}
+                >
+                  {/* Left: Selection indicator - shows graduation cap when active */}
+                  <button
+                    className={cn(
+                      "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all",
+                      isActiveSubtopic 
+                        ? "bg-primary text-primary-foreground" 
+                        : "border-2 border-muted-foreground/40 group-hover/subtopic:border-muted-foreground/60"
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSubtopicSelect?.(topic.topicId, topic.name, subtopic);
+                    }}
+                  >
+                    {isActiveSubtopic && (
+                      <GraduationCap className="w-3 h-3" />
+                    )}
+                  </button>
+                  
+                  {/* Subtopic name */}
+                  <span className={cn(
+                    'flex-1 text-sm',
+                    isSubtopicCompleted && 'text-muted-foreground'
+                  )}>
+                    {subtopic}
+                  </span>
+                  
+                  {/* Right: Completion checkbox (actual box style) */}
+                  <button
+                    className={cn(
+                      "flex-shrink-0 w-5 h-5 rounded flex items-center justify-center transition-colors",
+                      isSubtopicCompleted 
+                        ? "text-green-500" 
+                        : "text-muted-foreground/40 hover:text-muted-foreground/60"
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSubtopicToggle(topic.topicId, subtopic);
+                    }}
+                  >
+                    {isSubtopicCompleted ? (
+                      <CheckSquare className="w-4 h-4" />
+                    ) : (
+                      <Square className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default CurriculumTopicCard;

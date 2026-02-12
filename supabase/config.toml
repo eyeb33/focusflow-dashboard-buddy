@@ -1,0 +1,19 @@
+project_id = "mphdigvrxgnckplongdu"
+
+[functions.ai-coach]
+verify_jwt = true
+
+[functions.transcribe-audio]
+verify_jwt = true
+
+[functions.synthesize-speech]
+verify_jwt = true
+
+[functions.process-document]
+verify_jwt = true
+
+[functions.rag-search]
+verify_jwt = true
+
+[functions.manage-api-key]
+verify_jwt = true

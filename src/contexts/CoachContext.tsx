@@ -1,0 +1,1141 @@
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './AuthContext';
+import { toast } from '@/hooks/use-toast';
+import { useTimerContext } from './TimerContext';
+import { Task } from '@/types/task';
+import { SubTask } from '@/types/subtask';
+import { sanitizeInput } from '@/lib/utils';
+
+export type CoachMode = 'explain' | 'practice' | 'check';
+
+interface CoachMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  created_at: string;
+}
+
+interface CoachAction {
+  type: string;
+  status: 'executing' | 'success' | 'error';
+  message: string;
+}
+
+interface CoachContextType {
+  messages: CoachMessage[];
+  isLoading: boolean;
+  isMinimized: boolean;
+  unreadCount: number;
+  conversationId: string | null;
+  currentAction: CoachAction | null;
+  mode: CoachMode;
+  setMode: (mode: CoachMode) => void;
+  sendMessage: (content: string) => Promise<void>;
+  triggerProactiveCoaching: (trigger: string, context?: any) => Promise<void>;
+  showCheckIn: () => void;
+  submitCheckIn: (mood: number, energy: number, stress: number, notes?: string) => Promise<void>;
+  toggleMinimize: () => void;
+  markAsRead: () => void;
+  checkInModalOpen: boolean;
+  setCheckInModalOpen: (open: boolean) => void;
+  onResponseReceived?: (text: string) => void;
+  tasks: Task[];
+  setTasks: (tasks: Task[]) => void;
+  subTasks: SubTask[];
+  setSubTasks: (subTasks: SubTask[]) => void;
+  // Rate limiting state
+  isCooldown: boolean;
+  cooldownSecondsRemaining: number;
+}
+
+// Rate limiting constants
+const COOLDOWN_SECONDS = 3; // Disable send for 3 seconds after each message
+const RATE_LIMIT_WINDOW_MS = 60000; // 60 second window
+const RATE_LIMIT_MAX_MESSAGES = 5; // Max 5 messages per window
+
+const CoachContext = createContext<CoachContextType | undefined>(undefined);
+
+export const CoachProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+  const timer = useTimerContext();
+  const [messages, setMessages] = useState<CoachMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [isMinimized, setIsMinimized] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [checkInModalOpen, setCheckInModalOpen] = useState(false);
+  
+  const [currentAction, setCurrentAction] = useState<CoachAction | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [subTasks, setSubTasks] = useState<SubTask[]>([]);
+  const [mode, setMode] = useState<CoachMode>('explain');
+
+  // Rate limiting state
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [cooldownSecondsRemaining, setCooldownSecondsRemaining] = useState(0);
+  const messageTimestampsRef = useRef<number[]>([]);
+
+  // Calculate cooldown state
+  const isCooldown = cooldownUntil !== null && Date.now() < cooldownUntil;
+
+  // Countdown timer for cooldown
+  useEffect(() => {
+    if (!cooldownUntil) {
+      setCooldownSecondsRemaining(0);
+      return;
+    }
+
+    const updateCountdown = () => {
+      const remaining = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
+      setCooldownSecondsRemaining(remaining);
+      
+      if (remaining === 0) {
+        setCooldownUntil(null);
+      }
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 250);
+    return () => clearInterval(interval);
+  }, [cooldownUntil]);
+
+  // Load tasks and sub-tasks
+  useEffect(() => {
+    if (!user) return;
+
+    const loadTasksAndSubTasks = async () => {
+      const { data } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('completed', false)
+        .order('sort_order', { ascending: true });
+      
+      if (data) {
+        const mappedTasks: Task[] = data.map(t => ({
+          id: t.id,
+          name: t.name,
+          estimatedPomodoros: t.estimated_pomodoros,
+          completed: t.completed,
+          createdAt: t.created_at,
+          updatedAt: t.updated_at,
+          completedAt: t.completed_at || undefined,
+          completedPomodoros: t.completed_pomodoros || undefined,
+          isActive: t.is_active || false,
+          timeSpent: t.time_spent,
+          timeSpentSeconds: t.time_spent_seconds
+        }));
+        setTasks(mappedTasks);
+
+        // Load all sub-tasks for these tasks
+        const { data: subTasksData } = await supabase
+          .from('sub_tasks')
+          .select('*')
+          .eq('user_id', user.id)
+          .in('parent_task_id', mappedTasks.map(t => t.id))
+          .order('sort_order', { ascending: true });
+
+        if (subTasksData) {
+          setSubTasks(subTasksData);
+        }
+      }
+    };
+
+    loadTasksAndSubTasks();
+  }, [user]);
+
+  // Execute tool actions
+  const executeToolAction = useCallback(async (toolCall: any) => {
+    if (!user || !conversationId) return null;
+
+    const { name, arguments: args } = toolCall.function;
+    let parsedArgs: any = {};
+    
+    try {
+      parsedArgs = typeof args === 'string' ? JSON.parse(args) : args;
+    } catch (e) {
+      console.error('Failed to parse tool arguments:', e);
+      return { error: 'Invalid arguments' };
+    }
+
+    console.log('Executing tool:', name, parsedArgs);
+
+    try {
+      let result: any = {};
+      
+      switch (name) {
+        case 'add_task': {
+          // Sanitize user input
+          const sanitizedName = sanitizeInput(parsedArgs.name);
+          if (!sanitizedName) {
+            result = { success: false, error: 'Task name cannot be empty' };
+            break;
+          }
+          
+          // Generate optimistic ID
+          const optimisticId = `temp-${Date.now()}`;
+          const optimisticTask: Task = {
+            id: optimisticId,
+            name: sanitizedName,
+            estimatedPomodoros: parsedArgs.estimated_pomodoros || 1,
+            completed: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            isActive: false,
+            timeSpent: 0,
+            timeSpentSeconds: 0
+          };
+          
+          // Optimistic update - instant UI
+          setTasks(prev => [...prev, optimisticTask]);
+          setCurrentAction({ type: 'add_task', status: 'executing', message: `Adding task: ${sanitizedName}...` });
+          
+          try {
+            const { data: newTask, error } = await supabase
+              .from('tasks')
+              .insert({
+                user_id: user.id,
+                name: sanitizedName,
+                estimated_pomodoros: parsedArgs.estimated_pomodoros || 1,
+                completed: false,
+                is_active: false,
+                time_spent: 0
+              })
+              .select()
+              .single();
+
+            if (error) throw error;
+            
+            // Replace optimistic task with real one
+            const mappedTask: Task = {
+              id: newTask.id,
+              name: newTask.name,
+              estimatedPomodoros: newTask.estimated_pomodoros,
+              completed: newTask.completed,
+              createdAt: newTask.created_at,
+              updatedAt: newTask.updated_at,
+              completedAt: newTask.completed_at || undefined,
+              completedPomodoros: newTask.completed_pomodoros || undefined,
+              isActive: newTask.is_active || false,
+              timeSpent: newTask.time_spent,
+              timeSpentSeconds: newTask.time_spent_seconds
+            };
+            
+            setTasks(prev => prev.map(t => t.id === optimisticId ? mappedTask : t));
+            
+            await supabase.from('coach_actions').insert({
+              conversation_id: conversationId,
+              user_id: user.id,
+              action_type: 'add_task',
+              action_params: { task_id: newTask.id, name: parsedArgs.name },
+              success: true
+            });
+
+            setCurrentAction({ type: 'add_task', status: 'success', message: `Added: ${parsedArgs.name}` });
+            setTimeout(() => setCurrentAction(null), 3000);
+            
+            result = { success: true, task_id: newTask.id, message: `Task "${parsedArgs.name}" added successfully` };
+          } catch (error) {
+            // Rollback optimistic update
+            setTasks(prev => prev.filter(t => t.id !== optimisticId));
+            throw error;
+          }
+          break;
+        }
+
+        case 'complete_task': {
+          const taskToComplete = tasks.find(t => t.id === parsedArgs.task_id);
+          if (!taskToComplete) {
+            result = { success: false, error: 'Task not found' };
+            break;
+          }
+          
+          // Capture previous state for rollback
+          const previousTasks = [...tasks];
+          
+          // Optimistic update - remove from list immediately
+          setTasks(prev => prev.filter(t => t.id !== parsedArgs.task_id));
+          setCurrentAction({ type: 'complete_task', status: 'executing', message: 'Completing task...' });
+          
+          // Clear active task if needed
+          if (timer.activeTaskId === parsedArgs.task_id) {
+            timer.setActiveTaskId(null);
+          }
+          
+          try {
+            const { error } = await supabase
+              .from('tasks')
+              .update({ completed: true, completed_at: new Date().toISOString() })
+              .eq('id', parsedArgs.task_id)
+              .eq('user_id', user.id);
+
+            if (error) throw error;
+            
+            await supabase.from('coach_actions').insert({
+              conversation_id: conversationId,
+              user_id: user.id,
+              action_type: 'complete_task',
+              action_params: { task_id: parsedArgs.task_id },
+              success: true
+            });
+
+            setCurrentAction({ type: 'complete_task', status: 'success', message: `Task completed!` });
+            setTimeout(() => setCurrentAction(null), 3000);
+            
+            result = { success: true, message: `Task completed` };
+          } catch (error) {
+            // Rollback optimistic update
+            setTasks(previousTasks);
+            // Restore active task if it was cleared
+            if (timer.activeTaskId === null && taskToComplete.isActive) {
+              timer.setActiveTaskId(parsedArgs.task_id);
+            }
+            throw error;
+          }
+          break;
+        }
+
+        case 'start_timer': {
+          setCurrentAction({ type: 'start_timer', status: 'executing', message: 'Starting timer...' });
+          
+          timer.handleStart();
+          
+          await supabase.from('coach_actions').insert({
+            conversation_id: conversationId,
+            user_id: user.id,
+            action_type: 'start_timer',
+            action_params: {},
+            success: true
+          });
+
+          setCurrentAction({ type: 'start_timer', status: 'success', message: 'Timer started!' });
+          setTimeout(() => setCurrentAction(null), 3000);
+          
+          result = { success: true, message: 'Timer started' };
+          break;
+        }
+
+        case 'pause_timer': {
+          setCurrentAction({ type: 'pause_timer', status: 'executing', message: 'Pausing timer...' });
+          
+          timer.handlePause();
+          
+          await supabase.from('coach_actions').insert({
+            conversation_id: conversationId,
+            user_id: user.id,
+            action_type: 'pause_timer',
+            action_params: {},
+            success: true
+          });
+
+          setCurrentAction({ type: 'pause_timer', status: 'success', message: 'Timer paused' });
+          setTimeout(() => setCurrentAction(null), 3000);
+          
+          result = { success: true, message: 'Timer paused' };
+          break;
+        }
+
+        case 'set_active_task': {
+          const taskToActivate = tasks.find(t => t.id === parsedArgs.task_id);
+          setCurrentAction({ 
+            type: 'set_active_task', 
+            status: 'executing', 
+            message: `Setting active task...` 
+          });
+          
+          // Deactivate all tasks
+          await supabase
+            .from('tasks')
+            .update({ is_active: false })
+            .eq('user_id', user.id);
+
+          // Activate selected task
+          if (parsedArgs.task_id) {
+            await supabase
+              .from('tasks')
+              .update({ is_active: true })
+              .eq('id', parsedArgs.task_id)
+              .eq('user_id', user.id);
+          }
+
+          // Keep timer context in sync with the active task (purple box)
+          timer.setActiveTaskId(parsedArgs.task_id || null);
+
+          setTasks(prev => prev.map(t => ({ ...t, isActive: t.id === parsedArgs.task_id })));
+          
+          await supabase.from('coach_actions').insert({
+            conversation_id: conversationId,
+            user_id: user.id,
+            action_type: 'set_active_task',
+            action_params: { task_id: parsedArgs.task_id },
+            success: true
+          });
+
+          setCurrentAction({ 
+            type: 'set_active_task', 
+            status: 'success', 
+            message: taskToActivate ? `Now working on: ${taskToActivate.name}` : 'Task cleared' 
+          });
+          setTimeout(() => setCurrentAction(null), 3000);
+          
+          result = { success: true, message: parsedArgs.task_id ? 'Active task set' : 'Active task cleared' };
+          break;
+        }
+
+        case 'delete_task': {
+          const taskToDelete = tasks.find(t => t.id === parsedArgs.task_id);
+          if (!taskToDelete) {
+            result = { success: false, error: 'Task not found' };
+            break;
+          }
+          
+          // Capture previous state for rollback
+          const previousTasks = [...tasks];
+          const previousSubTasks = [...subTasks];
+          
+          // Optimistic update - remove from list immediately
+          setTasks(prev => prev.filter(t => t.id !== parsedArgs.task_id));
+          setSubTasks(prev => prev.filter(st => st.parent_task_id !== parsedArgs.task_id));
+          setCurrentAction({ 
+            type: 'delete_task', 
+            status: 'executing', 
+            message: `Deleting task...` 
+          });
+          
+          try {
+            const { error } = await supabase
+              .from('tasks')
+              .delete()
+              .eq('id', parsedArgs.task_id)
+              .eq('user_id', user.id);
+
+            if (error) throw error;
+            
+            await supabase.from('coach_actions').insert({
+              conversation_id: conversationId,
+              user_id: user.id,
+              action_type: 'delete_task',
+              action_params: { task_id: parsedArgs.task_id },
+              success: true
+            });
+
+            setCurrentAction({ 
+              type: 'delete_task', 
+              status: 'success', 
+              message: `Deleted: ${taskToDelete.name}` 
+            });
+            setTimeout(() => setCurrentAction(null), 3000);
+            
+            result = { success: true, message: 'Task deleted' };
+          } catch (error) {
+            // Rollback optimistic update
+            setTasks(previousTasks);
+            setSubTasks(previousSubTasks);
+            throw error;
+          }
+          break;
+        }
+
+        case 'get_tasks': {
+          setCurrentAction({ 
+            type: 'get_tasks', 
+            status: 'executing', 
+            message: 'Getting tasks...' 
+          });
+          
+          const { data: tasksList, error } = await supabase
+            .from('tasks')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('completed', false)
+            .order('created_at', { ascending: true });
+
+          if (error) throw error;
+
+          // Get sub-tasks for these tasks
+          const taskIds = tasksList.map(t => t.id);
+          const { data: subTasksList } = await supabase
+            .from('sub_tasks')
+            .select('*')
+            .eq('user_id', user.id)
+            .in('parent_task_id', taskIds)
+            .order('sort_order', { ascending: true });
+
+          await supabase.from('coach_actions').insert({
+            conversation_id: conversationId,
+            user_id: user.id,
+            action_type: 'get_tasks',
+            action_params: {},
+            success: true
+          });
+
+          setCurrentAction({ 
+            type: 'get_tasks', 
+            status: 'success', 
+            message: tasksList.length === 0 ? 'No tasks found' : `Found ${tasksList.length} task${tasksList.length > 1 ? 's' : ''}` 
+          });
+          setTimeout(() => setCurrentAction(null), 2000);
+          
+          result = {
+            success: true,
+            tasks: tasksList.map(t => ({
+              ...t,
+              sub_tasks: (subTasksList || []).filter(st => st.parent_task_id === t.id)
+            })),
+            message: tasksList.length === 0 
+              ? 'You have no tasks yet' 
+              : `You have ${tasksList.length} task${tasksList.length > 1 ? 's' : ''}`
+          };
+          break;
+        }
+
+        case 'add_subtask': {
+          // Sanitize user input
+          const sanitizedSubtaskName = sanitizeInput(parsedArgs.name);
+          if (!sanitizedSubtaskName) {
+            result = { success: false, error: 'Sub-task name cannot be empty' };
+            break;
+          }
+          
+          setCurrentAction({ type: 'add_subtask', status: 'executing', message: `Adding sub-task...` });
+          
+          // Get current max sort_order
+          const { data: existingSubTasks } = await supabase
+            .from('sub_tasks')
+            .select('sort_order')
+            .eq('parent_task_id', parsedArgs.parent_task_id)
+            .eq('user_id', user.id)
+            .order('sort_order', { ascending: false })
+            .limit(1);
+
+          const maxSortOrder = existingSubTasks?.[0]?.sort_order ?? -1;
+
+          const { data: newSubTask, error } = await supabase
+            .from('sub_tasks')
+            .insert({
+              user_id: user.id,
+              parent_task_id: parsedArgs.parent_task_id,
+              name: sanitizedSubtaskName,
+              sort_order: maxSortOrder + 1,
+              completed: false
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+
+          setSubTasks(prev => [...prev, newSubTask]);
+          
+          await supabase.from('coach_actions').insert({
+            conversation_id: conversationId,
+            user_id: user.id,
+            action_type: 'add_subtask',
+            action_params: { subtask_id: newSubTask.id, name: parsedArgs.name, parent_task_id: parsedArgs.parent_task_id },
+            success: true
+          });
+
+          setCurrentAction({ type: 'add_subtask', status: 'success', message: `Added sub-task: ${parsedArgs.name}` });
+          setTimeout(() => setCurrentAction(null), 3000);
+          
+          result = { success: true, subtask_id: newSubTask.id, message: `Sub-task "${parsedArgs.name}" added successfully` };
+          break;
+        }
+
+        case 'delete_subtask': {
+          const subTaskToDelete = subTasks.find(st => st.id === parsedArgs.subtask_id);
+          setCurrentAction({ 
+            type: 'delete_subtask', 
+            status: 'executing', 
+            message: 'Deleting sub-task...' 
+          });
+          
+          const { error } = await supabase
+            .from('sub_tasks')
+            .delete()
+            .eq('id', parsedArgs.subtask_id)
+            .eq('user_id', user.id);
+
+          if (error) throw error;
+
+          setSubTasks(prev => prev.filter(st => st.id !== parsedArgs.subtask_id));
+          
+          await supabase.from('coach_actions').insert({
+            conversation_id: conversationId,
+            user_id: user.id,
+            action_type: 'delete_subtask',
+            action_params: { subtask_id: parsedArgs.subtask_id },
+            success: true
+          });
+
+          setCurrentAction({ 
+            type: 'delete_subtask', 
+            status: 'success', 
+            message: subTaskToDelete ? `Deleted sub-task: ${subTaskToDelete.name}` : 'Sub-task deleted' 
+          });
+          setTimeout(() => setCurrentAction(null), 3000);
+          
+          result = { success: true, message: 'Sub-task deleted' };
+          break;
+        }
+
+        case 'toggle_subtask': {
+          const subTaskToToggle = subTasks.find(st => st.id === parsedArgs.subtask_id);
+          if (!subTaskToToggle) {
+            result = { success: false, error: 'Sub-task not found' };
+            break;
+          }
+
+          // Capture previous state for rollback
+          const previousSubTasks = [...subTasks];
+          const newCompletedState = !subTaskToToggle.completed;
+          
+          // Optimistic update - toggle immediately
+          setSubTasks(prev => prev.map(st => 
+            st.id === parsedArgs.subtask_id 
+              ? { ...st, completed: newCompletedState, updated_at: new Date().toISOString() }
+              : st
+          ));
+          setCurrentAction({ 
+            type: 'toggle_subtask', 
+            status: 'executing', 
+            message: 'Updating sub-task...' 
+          });
+          
+          try {
+            const { error } = await supabase
+              .from('sub_tasks')
+              .update({ 
+                completed: newCompletedState,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', parsedArgs.subtask_id)
+              .eq('user_id', user.id);
+
+            if (error) throw error;
+            
+            await supabase.from('coach_actions').insert({
+              conversation_id: conversationId,
+              user_id: user.id,
+              action_type: 'toggle_subtask',
+              action_params: { subtask_id: parsedArgs.subtask_id, completed: newCompletedState },
+              success: true
+            });
+
+            setCurrentAction({ 
+              type: 'toggle_subtask', 
+              status: 'success', 
+              message: newCompletedState ? `Completed: ${subTaskToToggle.name}` : `Uncompleted: ${subTaskToToggle.name}`
+            });
+            setTimeout(() => setCurrentAction(null), 3000);
+            
+            result = { success: true, message: `Sub-task ${newCompletedState ? 'completed' : 'uncompleted'}` };
+          } catch (error) {
+            // Rollback optimistic update
+            setSubTasks(previousSubTasks);
+            throw error;
+          }
+          break;
+        }
+
+        default:
+          result = { error: `Unknown tool: ${name}` };
+      }
+
+      return result;
+
+    } catch (error) {
+      console.error('Tool execution error:', error);
+      setCurrentAction({ 
+        type: name, 
+        status: 'error', 
+        message: error instanceof Error ? error.message : 'Action failed' 
+      });
+      setTimeout(() => setCurrentAction(null), 3000);
+
+      await supabase.from('coach_actions').insert({
+        conversation_id: conversationId,
+        user_id: user.id,
+        action_type: name,
+        action_params: parsedArgs,
+        success: false,
+        error_message: error instanceof Error ? error.message : 'Unknown error'
+      });
+
+      return { error: error instanceof Error ? error.message : 'Tool execution failed' };
+    }
+  }, [user, conversationId, tasks, subTasks, timer]);
+
+  // Get current state for context injection
+  const getCurrentState = useCallback(() => {
+    return {
+      timerState: {
+        isRunning: timer.isRunning,
+        mode: timer.timerMode,
+        timeRemaining: timer.timeRemaining,
+        currentSessionIndex: timer.currentSessionIndex,
+        sessionsUntilLongBreak: timer.settings.sessionsUntilLongBreak,
+        activeTaskId: timer.activeTaskId
+      },
+      taskState: {
+        tasks: tasks.map(t => ({
+          id: t.id,
+          name: t.name,
+          estimated_pomodoros: t.estimatedPomodoros,
+          is_active: t.id === timer.activeTaskId,
+          completed: t.completed,
+          sub_tasks: subTasks.filter(st => st.parent_task_id === t.id).map(st => ({
+            id: st.id,
+            name: st.name,
+            completed: st.completed
+          }))
+        }))
+      }
+    };
+  }, [timer, tasks, subTasks]);
+
+  // Load or create conversation
+  useEffect(() => {
+    if (!user) return;
+
+    const loadConversation = async () => {
+      // Get or create conversation
+      const { data: existingConv } = await supabase
+        .from('coach_conversations')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('last_message_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingConv) {
+        setConversationId(existingConv.id);
+        
+        // Load messages
+        const { data: msgs } = await supabase
+          .from('coach_messages')
+          .select('*')
+          .eq('conversation_id', existingConv.id)
+          .order('created_at', { ascending: true });
+
+        if (msgs) {
+          setMessages(msgs.map(m => ({
+            id: m.id,
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+            created_at: m.created_at
+          })));
+        }
+      }
+      // Note: We intentionally do NOT auto-trigger a first_interaction AI call on load.
+      // The UI already shows a local welcome state when there are no messages.
+      // This prevents consuming user quota (and hitting rate limits) without an explicit user action.
+
+    };
+
+    loadConversation();
+  }, [user]);
+
+  // Listen for coaching triggers from TimerContext
+  useEffect(() => {
+    const handlePomodoroEvents = (e: Event) => {
+      if (isMinimized) return; // don't consume AI quota while coach is closed
+      const customEvent = e as CustomEvent;
+      triggerProactiveCoaching('pomodoro_cycle_complete', customEvent.detail);
+    };
+
+    const handleExtendedWork = (e: Event) => {
+      if (isMinimized) return; // don't consume AI quota while coach is closed
+      const customEvent = e as CustomEvent;
+      triggerProactiveCoaching('extended_work_detected', customEvent.detail);
+    };
+
+    window.addEventListener('coach:pomodoro-cycle', handlePomodoroEvents);
+    window.addEventListener('coach:extended-work', handleExtendedWork);
+
+    return () => {
+      window.removeEventListener('coach:pomodoro-cycle', handlePomodoroEvents);
+      window.removeEventListener('coach:extended-work', handleExtendedWork);
+    };
+  }, [isMinimized]);
+
+  const createConversationIfNeeded = async () => {
+    if (!user) return null;
+    
+    if (conversationId) return conversationId;
+
+    const { data, error } = await supabase
+      .from('coach_conversations')
+      .insert({
+        user_id: user.id,
+        started_at: new Date().toISOString(),
+        last_message_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    
+    setConversationId(data.id);
+    return data.id;
+  };
+
+  const sendMessage = useCallback(async (content: string) => {
+    if (!user || isLoading) return;
+
+    // Rate limiting check: block if in cooldown
+    if (cooldownUntil && Date.now() < cooldownUntil) {
+      toast({
+        title: 'Please wait',
+        description: `You can send another message in ${Math.ceil((cooldownUntil - Date.now()) / 1000)} seconds`,
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Clean up old timestamps outside the rate limit window
+    const now = Date.now();
+    messageTimestampsRef.current = messageTimestampsRef.current.filter(
+      ts => now - ts < RATE_LIMIT_WINDOW_MS
+    );
+
+    // Check rate limit: warn if too many messages in window
+    if (messageTimestampsRef.current.length >= RATE_LIMIT_MAX_MESSAGES) {
+      toast({
+        title: 'Slow down',
+        description: `You've sent ${RATE_LIMIT_MAX_MESSAGES} messages in the last minute. Please wait before sending more to avoid API rate limits.`,
+        variant: 'destructive'
+      });
+      // Still allow the message but warn the user
+    }
+
+    // Record this message timestamp
+    messageTimestampsRef.current.push(now);
+
+    // Set cooldown for next message
+    setCooldownUntil(now + COOLDOWN_SECONDS * 1000);
+
+    const requestId = (globalThis.crypto?.randomUUID?.() ?? `req_${Date.now()}_${Math.random().toString(16).slice(2)}`);
+    console.log('[coach] sendMessage called', {
+      requestId,
+      userId: user.id,
+      mode,
+      contentChars: content.length,
+      messagesInWindow: messageTimestampsRef.current.length,
+      ts: new Date().toISOString(),
+    });
+
+    setIsLoading(true);
+    try {
+      const convId = await createConversationIfNeeded();
+      if (!convId) throw new Error('No conversation');
+
+      // Add user message to UI
+      const userMessage: CoachMessage = {
+        id: `temp-${Date.now()}`,
+        role: 'user',
+        content,
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, userMessage]);
+
+      // Sanitize and save user message to DB
+      const sanitizedContent = sanitizeInput(content);
+      await supabase.from('coach_messages').insert({
+        conversation_id: convId,
+        user_id: user.id,
+        role: 'user',
+        content: sanitizedContent,
+      });
+
+      // Get user's session token for edge function auth
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error('No session found');
+
+      console.log('[coach] invoking ai-coach', {
+        requestId,
+        conversationId: convId,
+        ts: new Date().toISOString(),
+      });
+
+      // Stream AI response with tool support
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-coach`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          request_id: requestId,
+          messages: [...messages, userMessage].map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
+          mode,
+          ...getCurrentState(),
+        }),
+      });
+
+      console.log('[coach] ai-coach response', { requestId, status: response.status, ok: response.ok });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to get response');
+      }
+
+      // Handle streaming with tool calls
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let assistantContent = '';
+      let assistantMessageId = `temp-assistant-${Date.now()}`;
+      let toolCalls: any[] = [];
+
+      // Add initial assistant message
+      setMessages(prev => [...prev, {
+        id: assistantMessageId,
+        role: 'assistant',
+        content: '',
+        created_at: new Date().toISOString()
+      }]);
+
+      if (reader) {
+        let buffer = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (!line.trim() || line.startsWith(':')) continue;
+            if (!line.startsWith('data: ')) continue;
+
+            const jsonStr = line.slice(6).trim();
+            if (jsonStr === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(jsonStr);
+              const delta = parsed.choices?.[0]?.delta;
+              
+              // Handle tool calls
+              if (delta?.tool_calls) {
+                for (const toolCallDelta of delta.tool_calls) {
+                  const index = toolCallDelta.index || 0;
+                  
+                  if (!toolCalls[index]) {
+                    // Only initialize if we have a function name
+                    if (toolCallDelta.function?.name) {
+                      toolCalls[index] = {
+                        id: toolCallDelta.id || `tool_${index}`,
+                        type: 'function',
+                        function: {
+                          name: toolCallDelta.function.name,
+                          arguments: toolCallDelta.function?.arguments || ''
+                        }
+                      };
+                    }
+                  } else {
+                    // Update existing tool call
+                    if (toolCallDelta.function?.name && !toolCalls[index].function.name) {
+                      toolCalls[index].function.name = toolCallDelta.function.name;
+                    }
+                    if (toolCallDelta.function?.arguments) {
+                      toolCalls[index].function.arguments += toolCallDelta.function.arguments;
+                    }
+                  }
+                }
+              }
+              
+              // Handle regular content
+              const content = delta?.content;
+              if (content) {
+                assistantContent += content;
+                // Use functional update with queueMicrotask to ensure smooth streaming
+                queueMicrotask(() => {
+                  setMessages(prev => prev.map(m => 
+                    m.id === assistantMessageId 
+                      ? { ...m, content: assistantContent }
+                      : m
+                  ));
+                });
+              }
+            } catch (e) {
+              console.error('Parse error:', e);
+            }
+          }
+        }
+      }
+
+      // Execute any tool calls and get follow-up response
+      if (toolCalls.length > 0) {
+        console.log('Tool calls detected:', toolCalls);
+        
+        const toolResults = [];
+        for (const toolCall of toolCalls) {
+          // Ensure function name is present
+          if (!toolCall.function?.name) {
+            console.error('Tool call missing function name:', toolCall);
+            continue;
+          }
+          
+          const result = await executeToolAction(toolCall);
+          console.log('Tool result:', result);
+          toolResults.push({
+            tool_call_id: toolCall.id,
+            role: 'tool',
+            name: toolCall.function.name,
+            content: JSON.stringify(result)
+          });
+        }
+
+        // NOTE: We intentionally do NOT make a follow-up AI call after tool execution.
+        // Doing so can create 2+ Gemini requests per single user message.
+        // The assistant's primary response is the streamed content above.
+      }
+
+      // Save assistant message to DB
+      const { data: savedMsg } = await supabase
+        .from('coach_messages')
+        .insert({
+          conversation_id: convId,
+          user_id: user.id,
+          role: 'assistant',
+          content: assistantContent
+        })
+        .select()
+        .single();
+
+      if (savedMsg) {
+        setMessages(prev => prev.map(m => 
+          m.id === assistantMessageId 
+            ? { ...m, id: savedMsg.id }
+            : m
+        ));
+      }
+
+      // Update conversation
+      await supabase
+        .from('coach_conversations')
+        .update({ last_message_at: new Date().toISOString() })
+        .eq('id', convId);
+
+      // Increment unread if minimized
+      if (isMinimized) {
+        setUnreadCount(prev => prev + 1);
+      }
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to send message',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, messages, isLoading, conversationId, isMinimized, cooldownUntil, mode]);
+
+  const triggerProactiveCoaching = useCallback(async (_trigger: string, _context?: any) => {
+    // IMPORTANT: Do not make ANY background/proactive AI calls.
+    // Gemini requests must only happen when the user explicitly sends a message in the tutor chat.
+    // This prevents surprise quota usage and avoids bursts that cause 429 errors.
+    return;
+  }, []);
+
+
+  const showCheckIn = useCallback(() => {
+    setCheckInModalOpen(true);
+  }, []);
+
+  const submitCheckIn = useCallback(async (mood: number, energy: number, stress: number, notes?: string) => {
+    if (!user) return;
+
+    try {
+      // Sanitize notes if provided
+      const sanitizedNotes = notes ? sanitizeInput(notes) : null;
+      
+      await supabase
+        .from('coach_check_ins')
+        .insert({
+          user_id: user.id,
+          mood_rating: mood,
+          energy_level: energy,
+          stress_level: stress,
+          notes: sanitizedNotes
+        });
+
+      setCheckInModalOpen(false);
+
+      // NOTE: We intentionally do NOT trigger any AI call after a check-in.
+      // Gemini requests must only happen when the user explicitly sends a tutor message.
+
+      toast({
+        title: 'Check-in saved',
+        description: 'Your wellbeing coach will respond shortly'
+      });
+
+    } catch (error) {
+      console.error('Error submitting check-in:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save check-in',
+        variant: 'destructive'
+      });
+    }
+  }, [user, triggerProactiveCoaching]);
+
+  const toggleMinimize = useCallback(() => {
+    setIsMinimized(prev => !prev);
+    if (isMinimized) {
+      setUnreadCount(0);
+    }
+  }, [isMinimized]);
+
+  const markAsRead = useCallback(() => {
+    setUnreadCount(0);
+  }, []);
+
+  const value: CoachContextType = {
+    messages,
+    isLoading,
+    isMinimized,
+    unreadCount,
+    conversationId,
+    currentAction,
+    mode,
+    setMode,
+    sendMessage,
+    triggerProactiveCoaching,
+    showCheckIn,
+    submitCheckIn,
+    toggleMinimize,
+    markAsRead,
+    checkInModalOpen,
+    setCheckInModalOpen,
+    tasks,
+    setTasks,
+    subTasks,
+    setSubTasks,
+    isCooldown,
+    cooldownSecondsRemaining
+  };
+
+  return (
+    <CoachContext.Provider value={value}>
+      {children}
+    </CoachContext.Provider>
+  );
+};
+
+export const useCoach = () => {
+  const context = useContext(CoachContext);
+  if (context === undefined) {
+    throw new Error('useCoach must be used within a CoachProvider');
+  }
+  return context;
+};
