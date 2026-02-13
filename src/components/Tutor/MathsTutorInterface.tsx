@@ -224,11 +224,17 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       
       // Auto-start lesson if this is a new session in Explain mode
       if (session && isTopicId && forcedMode === 'explain') {
-        // Check if this session already has messages (use the already-loaded messages state)
-        // instead of querying DB again to avoid race conditions
-        const hasExistingMessages = messages && messages.length > 0;
+        // Check if this session has any messages in the database
+        // (don't rely on messages state due to async loading race condition)
+        const { count } = await supabase
+          .from('coach_messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('conversation_id', session.id)
+          .eq('mode', forcedMode);
         
-        if (!hasExistingMessages) {
+        const hasNoMessages = !count || count === 0;
+        
+        if (hasNoMessages) {
           // Start the lesson state regardless of subtopic
           const lessonSubtopic = subtopic || '';
           await lessonState.startLesson(taskId, lessonSubtopic);

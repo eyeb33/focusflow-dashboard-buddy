@@ -90,6 +90,8 @@
   /* Prevent text reflow by allocating space */
   overflow-wrap: break-word;
   word-break: break-word;
+  /* Preserve line breaks while allowing text wrapping */
+  white-space: pre-line;
   /* Use GPU acceleration for smoother rendering */
   transform: translateZ(0);
   backface-visibility: hidden;
