@@ -199,6 +199,22 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
     return ids;
   }, [sessions]);
 
+  // Safety mechanism: Clear stuck loading states after 30 seconds
+  useEffect(() => {
+    if (!isLoading) return;
+    
+    const timeout = setTimeout(() => {
+      if (isLoading) {
+        console.warn('[tutor] Loading state stuck - force clearing after 30s timeout');
+        setIsLoading(false);
+        setLoadingForSessionId(null);
+        inFlightSendRef.current = false;
+      }
+    }, 30000);
+    
+    return () => clearTimeout(timeout);
+  }, [isLoading]);
+
   // Expose openTaskSession and linkedTaskIds via ref for parent components
   useImperativeHandle(ref, () => ({
     openTaskSession: async (taskId: string, taskName: string, isTopicId: boolean = false, subtopic?: string) => {
@@ -347,11 +363,22 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
       
       // Delay slightly to ensure state is settled
       const timer = setTimeout(() => {
+        // Double-check we're still in the right state before sending
+        if (mode !== 'practice' || isLoading || inFlightSendRef.current) {
+          return;
+        }
+        
         const topicName = props.activeTopic?.name || 'this topic';
         const introPrompt = `[PRACTICE_MODE_AUTO_QUESTION] Generate a past-paper style Edexcel A-Level Maths question specifically about "${activeSubtopic}" from the ${topicName} topic. Search the curriculum documents for relevant past-paper questions on this exact subtopic. Present only the question clearly (with proper LaTeX formatting), state the marks available, then wait for my attempt.`;
         
         // Use sendHiddenPrompt to avoid showing the prompt as a user message
-        sendHiddenPrompt(introPrompt, 'practice');
+        sendHiddenPrompt(introPrompt, 'practice').catch(err => {
+          console.error('Failed to send practice question:', err);
+          // Ensure loading state is cleared on error
+          setIsLoading(false);
+          setLoadingForSessionId(null);
+          inFlightSendRef.current = false;
+        });
       }, 200);
       
       return () => clearTimeout(timer);
@@ -1109,11 +1136,11 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         });
       }
     } finally {
+      // ALWAYS clear loading state, even if aborted
+      // Abort is an intentional user action (switching topics/modes), not an error
       inFlightSendRef.current = false;
-      if (!abortControllerRef.current?.signal.aborted) {
-        setIsLoading(false);
-        setLoadingForSessionId(null);
-      }
+      setIsLoading(false);
+      setLoadingForSessionId(null);
     }
   };
 
