@@ -1177,17 +1177,37 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         if (session) {
           setMode(newMode);
 
-          // Start structured lesson for Explain mode
+          // Start structured lesson for Explain mode ONLY if session is empty
+          // Wait a bit for messages to load from the session before checking
           if (newMode === 'explain' && props.activeTopic.activeSubtopic) {
-            await lessonState.startLesson(props.activeTopic.id, props.activeTopic.activeSubtopic);
+            // Give time for messages to load
+            setTimeout(async () => {
+              // Only start lesson if no messages exist yet
+              if (messages.length === 0 && !isLoadingMessages) {
+                await lessonState.startLesson(props.activeTopic.id, props.activeTopic.activeSubtopic);
+              }
+            }, 300);
           }
 
-          // The Practice auto-question is handled by the effect keyed by (topicId + subtopic + mode)
-          // Only manually trigger if no subtopic is active
-          if (newMode === 'practice' && messages.length === 0 && !props.activeTopic.activeSubtopic) {
-            const topicContext = props.activeTopic.name ? `on the topic "${props.activeTopic.name}"` : '';
-            const practicePrompt = `Generate an exam-style practice question ${topicContext}. Present the question clearly, then wait for my answer.`;
-            await sendHiddenPrompt(practicePrompt, newMode);
+          // Generate practice question for Practice mode ONLY if session is truly empty
+          // Wait for messages to load first to avoid regenerating if questions exist
+          if (newMode === 'practice' && !isLoadingMessages) {
+            // Small delay to let messages load from the new session
+            setTimeout(() => {
+              // Double-check messages are still empty after loading
+              if (messages.length === 0) {
+                const topicName = props.activeTopic.name || 'this topic';
+                const activeSubtopic = props.activeTopic.activeSubtopic;
+                
+                const practicePrompt = activeSubtopic 
+                  ? `[PRACTICE_MODE_AUTO_QUESTION] Generate a past-paper style Edexcel A-Level Maths question specifically about "${activeSubtopic}" from the ${topicName} topic. Search the curriculum documents for relevant past-paper questions on this exact subtopic. Present only the question clearly (with proper LaTeX formatting), state the marks available, then wait for my attempt.`
+                  : `Generate an exam-style practice question on the topic "${topicName}". Present the question clearly, then wait for my answer.`;
+                
+                sendHiddenPrompt(practicePrompt, newMode).catch(err => {
+                  console.error('Failed to generate practice question:', err);
+                });
+              }
+            }, 300);
           }
         }
       } catch (error) {
@@ -1211,12 +1231,20 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
         }
       }
 
-      // Trigger AI action for practice mode
-      if (newMode === 'practice') {
-        const topicName = currentSession?.title && currentSession.title !== 'A-Level Maths Tutor' ? currentSession.title : '';
-        const topicContext = topicName ? `on the topic "${topicName}"` : '';
-        const practicePrompt = `Generate an exam-style practice question ${topicContext}. Present the question clearly, then wait for my answer.`;
-        await sendHiddenPrompt(practicePrompt, newMode);
+      // Trigger AI action for practice mode ONLY if truly empty
+      if (newMode === 'practice' && !isLoadingMessages) {
+        // Small delay to let messages load
+        setTimeout(() => {
+          if (messages.length === 0) {
+            const topicName = currentSession?.title && currentSession.title !== 'A-Level Maths Tutor' ? currentSession.title : '';
+            const topicContext = topicName ? `on the topic "${topicName}"` : '';
+            const practicePrompt = `Generate an exam-style practice question ${topicContext}. Present the question clearly, then wait for my answer.`;
+            
+            sendHiddenPrompt(practicePrompt, newMode).catch(err => {
+              console.error('Failed to generate practice question:', err);
+            });
+          }
+        }, 300);
       }
     }
   };
@@ -1690,8 +1718,8 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
 
       {/* Messages - Scrollable */}
       <div ref={messagesContainerRef} className="messages-container flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Always show topic overview as a collapsible card above messages */}
-        {mode === 'explain' && props.activeTopic && (
+        {/* Show topic overview card only when messages exist (lesson has started) */}
+        {mode === 'explain' && props.activeTopic && messages.length > 0 && (
           <TopicOverviewCard 
             activeTopic={props.activeTopic}
             getSubtopicOverview={getSubtopicOverview}
@@ -1757,9 +1785,10 @@ const MathsTutorInterface = forwardRef<MathsTutorInterfaceRef, MathsTutorInterfa
                 </div>
               </>
             ) : (
-              // For explain mode with active topic but no messages, show friendly prompt
-              <div className="flex flex-col items-center justify-center py-8">
-                <p className="text-sm text-muted-foreground">Ask me anything about this topic!</p>
+              // For explain mode with active topic but no messages, show loading while AI intro generates
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4" />
+                <p className="text-sm text-muted-foreground">Starting lesson...</p>
               </div>
             )}
           </div>
